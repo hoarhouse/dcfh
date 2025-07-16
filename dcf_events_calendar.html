@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events Calendar - DCF Hungary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .create-event-card {
+            background: linear-gradient(135deg, #000, #333);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .create-event-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        .create-event-card p {
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .create-event-card .btn {
+            background: white;
+            color: #000;
+        }
+
+        .create-event-card .btn:hover {
+            background: #f8f9fa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-tag {
+            padding: 0.3rem 0.8rem;
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag.active {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        .filter-tag:hover {
+            border-color: #333;
+        }
+
+        .upcoming-events {
+            margin-bottom: 1.5rem;
+        }
+
+        .upcoming-event {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upcoming-event:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .event-date-mini {
+            width: 50px;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .event-date-mini .day {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .event-date-mini .month {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .event-info-mini {
+            flex: 1;
+        }
+
+        .event-title-mini {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .event-time-mini {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2rem 1rem 2rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.25rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .calendar-nav-btn {
+            padding: 0.5rem;
+            background: none;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            border-color: #333;
+            color: #333;
+        }
+
+        .calendar-month {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .calendar-view {
+            padding: 2rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e5e5e5;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 0.5rem;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            background: #f8f9fa;
+        }
+
+        .calendar-day.other-month {
+            background: #fafafa;
+            color: #ccc;
+        }
+
+        .calendar-day.today {
+            background: #e8f4fd;
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .day-events {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .day-event {
+            background: #000;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .day-event:hover {
+            background: #333;
+        }
+
+        .day-event.workshop {
+            background: #007bff;
+        }
+
+        .day-event.conference {
+            background: #28a745;
+        }
+
+        .day-event.webinar {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .day-event.meeting {
+            background: #6f42c1;
+        }
+
+        .day-event.networking {
+            background: #fd7e14;
+        }
+
+        .list-view {
+            display: none;
+            padding: 2rem;
+        }
+
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .event-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .event-card:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-card.featured {
+            border-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .event-date-large {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .event-date-box {
+            width: 80px;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .event-date-box .day {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .event-date-box .month {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .event-main-info {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .event-status {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-featured {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-virtual {
+            background: #e1f5fe;
+            color: #01579b;
+        }
+
+        .status-in-person {
+            background: #e8f5e8;
+            color: #2d7d2d;
+        }
+
+        .status-hybrid {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .attendee-count {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .event-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .event-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: #f8f9fa;
+            color: #666;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid #e5e5e5;
+        }
+
+        .event-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .event-organizer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .organizer-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .main-content {
+                order: 1;
+            }
+
+            .calendar-grid {
+                grid-template-columns: repeat(7, 1fr);
+            }
+
+            .calendar-day {
+                min-height: 80px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .content-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .calendar-nav {
+                order: 1;
+            }
+
+            .view-toggle {
+                order: 2;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .calendar-day {
+                min-height: 60px;
+                padding: 0.25rem;
+            }
+
+            .day-event {
+                font-size: 0.6rem;
+                padding: 0.1rem 0.3rem;
+            }
+
+            .event-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .event-date-large {
+                align-self: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation Hungary
+            </a>
+            <ul class="nav-menu">
+                <li><a href="dcf_member_home.html">Home</a></li>
+                <li><a href="dcf_members_directory.html">Members</a></li>
+                <li><a href="dcf_projects_home.html">Projects</a></li>
+                <li><a href="dcf_events_calendar.html" class="active">Events</a></li>
+                <li><a href="dcf_resources_library.html">Resources</a></li>
+            </ul>
+            <div class="user-menu">
+                <div class="user-avatar" onclick="window.location.href='dcf_member_profile.html'">SJ</div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Events Calendar</h1>
+            <p class="page-subtitle">
+                Join workshops, conferences, and community gatherings that advance ethical AI and human-centered technology
+            </p>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="sidebar">
+                <div class="create-event-card">
+                    <h3>Create an Event</h3>
+                    <p>Organize workshops, conferences, or community gatherings</p>
+                    <button class="btn" onclick="openCreateEventModal()">📅 Create Event</button>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Event Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">24</div>
+                            <div class="stat-label">This Month</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">156</div>
+                            <div class="stat-label">Attendees</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">8</div>
+                            <div class="stat-label">Upcoming</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">12</div>
+                            <div class="stat-label">Countries</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Filter Events</h3>
+                    
+                    <div class="filter-section">
+                        <label class="filter-label">Event Type</label>
+                        <select class="filter-select" id="typeFilter">
+                            <option value="">All Types</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="conference">Conference</option>
+                            <option value="webinar">Webinar</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="networking">Networking</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-label">Format</label>
+                        <div class="filter-tags">
+                            <span class="filter-tag" data-format="virtual">Virtual</span>
+                            <span class="filter-tag" data-format="in-person">In-Person</span>
+                            <span class="filter-tag" data-format="hybrid">Hybrid</span>
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-label">Location</label>
+                        <select class="filter-select" id="locationFilter">
+                            <option value="">All Locations</option>
+                            <option value="virtual">Virtual/Online</option>
+                            <option value="budapest">Budapest</option>
+                            <option value="washington">Washington DC</option>
+                            <option value="accra">Accra</option>
+                            <option value="global">Global</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Upcoming Events</h3>
+                    <div class="upcoming-events">
+                        <div class="upcoming-event" onclick="openEventDetails('ai-ethics-workshop')">
+                            <div class="event-date-mini">
+                                <div class="day">16</div>
+                                <div class="month">JUL</div>
+                            </div>
+                            <div class="event-info-mini">
+                                <div class="event-title-mini">AI Ethics Workshop</div>
+                                <div class="event-time-mini">2:00 PM - 4:00 PM</div>
+                            </div>
+                        </div>
+                        <div class="upcoming-event" onclick="openEventDetails('global-summit')">
+                            <div class="event-date-mini">
+                                <div class="day">20</div>
+                                <div class="month">JUL</div>
+                            </div>
+                            <div class="event-info-mini">
+                                <div class="event-title-mini">DCF Global Summit</div>
+                                <div class="event-time-mini">9:00 AM - 5:00 PM</div>
+                            </div>
+                        </div>
+                        <div class="upcoming-event" onclick="openEventDetails('networking-budapest')">
+                            <div class="event-date-mini">
+                                <div class="day">25</div>
+                                <div class="month">JUL</div>
+                            </div>
+                            <div class="event-info-mini">
+                                <div class="event-title-mini">Budapest Networking</div>
+                                <div class="event-time-mini">6:00 PM - 8:00 PM</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="#" style="color: #666; text-decoration: none; font-size: 0.9rem; text-align: center; display: block;">View all upcoming events</a>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="openCreateEventModal()">📅 Create Event</button>
+                        <button class="btn btn-secondary">📊 Event Analytics</button>
+                        <button class="btn btn-secondary">📧 Send Invites</button>
+                        <button class="btn btn-secondary">🔔 Set Reminders</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="view-toggle">
+                        <button class="view-btn active" onclick="switchView('calendar')">📅 Calendar</button>
+                        <button class="view-btn" onclick="switchView('list')">📋 List</button>
+                    </div>
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" onclick="previousMonth()">‹</button>
+                        <div class="calendar-month" id="calendarMonth">July 2025</div>
+                        <button class="calendar-nav-btn" onclick="nextMonth()">›</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="openCreateEventModal()">📅 Create Event</button>
+                </div>
+
+                <!-- Calendar View -->
+                <div class="calendar-view" id="calendarView">
+                    <div class="calendar-grid">
+                        <div class="calendar-header">Sun</div>
+                        <div class="calendar-header">Mon</div>
+                        <div class="calendar-header">Tue</div>
+                        <div class="calendar-header">Wed</div>
+                        <div class="calendar-header">Thu</div>
+                        <div class="calendar-header">Fri</div>
+                        <div class="calendar-header">Sat</div>
+
+                        <!-- June days -->
+                        <div class="calendar-day other-month">
+                            <div class="day-number">29</div>
+                        </div>
+                        <div class="calendar-day other-month">
+                            <div class="day-number">30</div>
+                        </div>
+
+                        <!-- July days -->
+                        <div class="calendar-day">
+                            <div class="day-number">1</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">2</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">3</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">4</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">5</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">6</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">7</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">8</div>
+                            <div class="day-events">
+                                <div class="day-event webinar">Vatican AI Guidelines Webinar</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">9</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">10</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">11</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">12</div>
+                            <div class="day-events">
+                                <div class="day-event meeting">Project Team Meeting</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">13</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">14</div>
+                        </div>
+                        <div class="calendar-day today">
+                            <div class="day-number">15</div>
+                            <div class="day-events">
+                                <div class="day-event workshop">Today</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">16</div>
+                            <div class="day-events">
+                                <div class="day-event workshop">AI Ethics Workshop</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">17</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">18</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">19</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">20</div>
+                            <div class="day-events">
+                                <div class="day-event conference">DCF Global Summit</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">21</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">22</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">23</div>
+                            <div class="day-events">
+                                <div class="day-event webinar">Research Presentation</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">24</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">25</div>
+                            <div class="day-events">
+                                <div class="day-event networking">Budapest Networking</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">26</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">27</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">28</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">29</div>
+                            <div class="day-events">
+                                <div class="day-event meeting">Board Meeting</div>
+                            </div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">30</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div class="day-number">31</div>
+                        </div>
+
+                        <!-- August days -->
+                        <div class="calendar-day other-month">
+                            <div class="day-number">1</div>
+                        </div>
+                        <div class="calendar-day other-month">
+                            <div class="day-number">2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div class="list-view" id="listView">
+                    <div class="events-list">
+                        <div class="event-card featured" data-type="workshop" data-format="virtual">
+                            <div class="event-header">
+                                <div class="event-date-large">
+                                    <div class="event-date-box">
+                                        <div class="day">16</div>
+                                        <div class="month">JUL</div>
+                                    </div>
+                                    <div class="event-main-info">
+                                        <div class="event-title">AI Ethics Workshop: Implementing Catholic Social Teaching</div>
+                                        <div class="event-meta">
+                                            <div class="event-meta-item">
+                                                <span>⏰</span>
+                                                <span>2:00 PM - 4:00 PM EST</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>📍</span>
+                                                <span>Virtual/Online</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>👥</span>
+                                                <span>45 registered</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-status">
+                                    <span class="status-badge status-featured">Featured</span>
+                                    <span class="status-badge status-virtual">Virtual</span>
+                                </div>
+                            </div>
+                            <div class="event-description">
+                                Interactive workshop exploring practical ways to integrate Catholic Social Teaching principles into AI development workflows. Led by Dr. Sarah Johnson and Fr. Michael Torres, this session will provide concrete frameworks and tools for ethical AI development.
+                            </div>
+                            <div class="event-tags">
+                                <span class="tag">AI Ethics</span>
+                                <span class="tag">Catholic Social Teaching</span>
+                                <span class="tag">Workshop</span>
+                                <span class="tag">Development</span>
+                            </div>
+                            <div class="event-footer">
+                                <div class="event-organizer">
+                                    <div class="organizer-avatar">SJ</div>
+                                    <span>Organized by Dr. Sarah Johnson</span>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="btn btn-secondary btn-small">📄 Details</button>
+                                    <button class="btn btn-primary btn-small">🎫 Register</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event-card" data-type="conference" data-format="hybrid">
+                            <div class="event-header">
+                                <div class="event-date-large">
+                                    <div class="event-date-box">
+                                        <div class="day">20</div>
+                                        <div class="month">JUL</div>
+                                    </div>
+                                    <div class="event-main-info">
+                                        <div class="event-title">DCF Global Summit 2025: Technology for Human Flourishing</div>
+                                        <div class="event-meta">
+                                            <div class="event-meta-item">
+                                                <span>⏰</span>
+                                                <span>9:00 AM - 5:00 PM CET</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>📍</span>
+                                                <span>Budapest, Hungary + Virtual</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>👥</span>
+                                                <span>234 registered</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-status">
+                                    <span class="status-badge status-hybrid">Hybrid</span>
+                                </div>
+                            </div>
+                            <div class="event-description">
+                                Annual summit bringing together global leaders in AI ethics, technology, and human development. Features keynote presentations, panel discussions, and networking opportunities with DCF community members from around the world.
+                            </div>
+                            <div class="event-tags">
+                                <span class="tag">Conference</span>
+                                <span class="tag">Global Summit</span>
+                                <span class="tag">AI Ethics</span>
+                                <span class="tag">Networking</span>
+                                <span class="tag">Budapest</span>
+                            </div>
+                            <div class="event-footer">
+                                <div class="event-organizer">
+                                    <div class="organizer-avatar">AP</div>
+                                    <span>Organized by Dr. Alessio Pecorario</span>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="btn btn-secondary btn-small">📄 Details</button>
+                                    <button class="btn btn-primary btn-small">🎫 Register</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event-card" data-type="webinar" data-format="virtual">
+                            <div class="event-header">
+                                <div class="event-date-large">
+                                    <div class="event-date-box">
+                                        <div class="day">23</div>
+                                        <div class="month">JUL</div>
+                                    </div>
+                                    <div class="event-main-info">
+                                        <div class="event-title">Research Presentation: AI Impact on Child Development</div>
+                                        <div class="event-meta">
+                                            <div class="event-meta-item">
+                                                <span>⏰</span>
+                                                <span>11:00 AM - 12:30 PM EST</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>📍</span>
+                                                <span>Virtual/Online</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>👥</span>
+                                                <span>67 registered</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-status">
+                                    <span class="status-badge status-virtual">Virtual</span>
+                                </div>
+                            </div>
+                            <div class="event-description">
+                                Dr. Mary Aiken presents findings from her 2-year study on how AI interaction affects child psychological development. Essential viewing for educators, parents, and AI developers working on child-focused applications.
+                            </div>
+                            <div class="event-tags">
+                                <span class="tag">Research</span>
+                                <span class="tag">Child Psychology</span>
+                                <span class="tag">Education</span>
+                                <span class="tag">Webinar</span>
+                            </div>
+                            <div class="event-footer">
+                                <div class="event-organizer">
+                                    <div class="organizer-avatar">MA</div>
+                                    <span>Organized by Dr. Mary Aiken</span>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="btn btn-secondary btn-small">📄 Details</button>
+                                    <button class="btn btn-primary btn-small">🎫 Register</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event-card" data-type="networking" data-format="in-person">
+                            <div class="event-header">
+                                <div class="event-date-large">
+                                    <div class="event-date-box">
+                                        <div class="day">25</div>
+                                        <div class="month">JUL</div>
+                                    </div>
+                                    <div class="event-main-info">
+                                        <div class="event-title">Budapest Networking Evening: AI & Innovation</div>
+                                        <div class="event-meta">
+                                            <div class="event-meta-item">
+                                                <span>⏰</span>
+                                                <span>6:00 PM - 8:00 PM CET</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>📍</span>
+                                                <span>Budapest University of Technology</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>👥</span>
+                                                <span>28 registered</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-status">
+                                    <span class="status-badge status-in-person">In-Person</span>
+                                </div>
+                            </div>
+                            <div class="event-description">
+                                Local networking event for DCF members and AI professionals in Budapest. Casual environment to share ideas, discuss current projects, and build meaningful connections in the Central European AI ethics community.
+                            </div>
+                            <div class="event-tags">
+                                <span class="tag">Networking</span>
+                                <span class="tag">Budapest</span>
+                                <span class="tag">Local</span>
+                                <span class="tag">Innovation</span>
+                            </div>
+                            <div class="event-footer">
+                                <div class="event-organizer">
+                                    <div class="organizer-avatar">AK</div>
+                                    <span>Organized by Dr. Antal Kuthy</span>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="btn btn-secondary btn-small">📄 Details</button>
+                                    <button class="btn btn-primary btn-small">🎫 Register</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event-card" data-type="meeting" data-format="virtual">
+                            <div class="event-header">
+                                <div class="event-date-large">
+                                    <div class="event-date-box">
+                                        <div class="day">29</div>
+                                        <div class="month">JUL</div>
+                                    </div>
+                                    <div class="event-main-info">
+                                        <div class="event-title">DCF Board Meeting: Q3 Planning Session</div>
+                                        <div class="event-meta">
+                                            <div class="event-meta-item">
+                                                <span>⏰</span>
+                                                <span>10:00 AM - 12:00 PM EST</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>📍</span>
+                                                <span>Virtual/Online</span>
+                                            </div>
+                                            <div class="event-meta-item">
+                                                <span>👥</span>
+                                                <span>Board members only</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-status">
+                                    <span class="status-badge status-virtual">Virtual</span>
+                                </div>
+                            </div>
+                            <div class="event-description">
+                                Quarterly planning session for DCF board members to review progress, discuss strategic initiatives, and plan upcoming activities for Q3 2025.
+                            </div>
+                            <div class="event-tags">
+                                <span class="tag">Board Meeting</span>
+                                <span class="tag">Planning</span>
+                                <span class="tag">Strategy</span>
+                                <span class="tag">Internal</span>
+                            </div>
+                            <div class="event-footer">
+                                <div class="event-organizer">
+                                    <div class="organizer-avatar">AP</div>
+                                    <span>Organized by DCF Administration</span>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="btn btn-secondary btn-small">📄 Details</button>
+                                    <button class="btn btn-secondary btn-small">🔒 Private</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Event Modal -->
+    <div class="modal" id="createEventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Event</h2>
+                <button class="close-btn" onclick="closeCreateEventModal()">&times;</button>
+            </div>
+            <form id="createEventForm">
+                <div class="form-group">
+                    <label class="form-label" for="eventTitle">Event Title *</label>
+                    <input type="text" id="eventTitle" class="form-input" placeholder="Enter event title" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="eventDescription">Description *</label>
+                    <textarea id="eventDescription" class="textarea" placeholder="Describe your event, goals, and what attendees can expect..." required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="eventType">Event Type *</label>
+                        <select id="eventType" class="form-select" required>
+                            <option value="">Select type</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="conference">Conference</option>
+                            <option value="webinar">Webinar</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="networking">Networking</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventFormat">Format *</label>
+                        <select id="eventFormat" class="form-select" required>
+                            <option value="">Select format</option>
+                            <option value="virtual">Virtual</option>
+                            <option value="in-person">In-Person</option>
+                            <option value="hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="eventDate">Date *</label>
+                        <input type="date" id="eventDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventTime">Time *</label>
+                        <input type="time" id="eventTime" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="eventLocation">Location</label>
+                    <input type="text" id="eventLocation" class="form-input" placeholder="Virtual link or physical address">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="eventCapacity">Capacity</label>
+                        <input type="number" id="eventCapacity" class="form-input" placeholder="Maximum attendees">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventTimezone">Timezone</label>
+                        <select id="eventTimezone" class="form-select">
+                            <option value="EST">Eastern Time (EST)</option>
+                            <option value="CET">Central European Time (CET)</option>
+                            <option value="GMT">Greenwich Mean Time (GMT)</option>
+                            <option value="PST">Pacific Time (PST)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateEventModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentMonth = 6; // July (0-based)
+        let currentYear = 2025;
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // View switching
+        function switchView(view) {
+            const calendarView = document.getElementById('calendarView');
+            const listView = document.getElementById('listView');
+            const calendarBtn = document.querySelector('.view-btn');
+            const listBtn = document.querySelector('.view-btn:nth-child(2)');
+
+            if (view === 'calendar') {
+                calendarView.style.display = 'block';
+                listView.style.display = 'none';
+                calendarBtn.classList.add('active');
+                listBtn.classList.remove('active');
+            } else {
+                calendarView.style.display = 'none';
+                listView.style.display = 'block';
+                calendarBtn.classList.remove('active');
+                listBtn.classList.add('active');
+            }
+        }
+
+        // Calendar navigation
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            updateCalendarDisplay();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            updateCalendarDisplay();
+        }
+
+        function updateCalendarDisplay() {
+            document.getElementById('calendarMonth').textContent = `${months[currentMonth]} ${currentYear}`;
+            // In a real app, this would regenerate the calendar grid with proper dates and events
+        }
+
+        // Filter functionality
+        document.getElementById('typeFilter').addEventListener('change', function() {
+            filterEvents();
+        });
+
+        document.getElementById('locationFilter').addEventListener('change', function() {
+            filterEvents();
+        });
+
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                this.classList.toggle('active');
+                filterEvents();
+            });
+        });
+
+        function filterEvents() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const locationFilter = document.getElementById('locationFilter').value;
+            const formatFilters = Array.from(document.querySelectorAll('.filter-tag.active'))
+                .map(tag => tag.dataset.format);
+
+            const events = document.querySelectorAll('.event-card');
+
+            events.forEach(event => {
+                let show = true;
+
+                // Type filter
+                if (typeFilter && event.dataset.type !== typeFilter) {
+                    show = false;
+                }
+
+                // Format filter
+                if (formatFilters.length > 0 && !formatFilters.includes(event.dataset.format)) {
+                    show = false;
+                }
+
+                event.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        // Modal functions
+        function openCreateEventModal() {
+            document.getElementById('createEventModal').classList.add('active');
+        }
+
+        function closeCreateEventModal() {
+            document.getElementById('createEventModal').classList.remove('active');
+            document.getElementById('createEventForm').reset();
+        }
+
+        // Event creation form
+        document.getElementById('createEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDescription').value,
+                type: document.getElementById('eventType').value,
+                format: document.getElementById('eventFormat').value,
+                date: document.getElementById('eventDate').value,
+                time: document.getElementById('eventTime').value,
+                location: document.getElementById('eventLocation').value,
+                capacity: document.getElementById('eventCapacity').value,
+                timezone: document.getElementById('eventTimezone').value
+            };
+            
+            console.log('New event:', formData);
+            alert('Event created successfully!');
+            closeCreateEventModal();
+        });
+
+        // Event registration
+        document.querySelectorAll('.event-card').forEach(card => {
+            const registerBtn = card.querySelector('.btn-primary');
+            if (registerBtn && registerBtn.textContent.includes('Register')) {
+                registerBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (this.textContent.includes('Register')) {
+                        this.textContent = '✓ Registered';
+                        this.classList.remove('btn-primary');
+                        this.classList.add('btn-secondary');
+                        alert('Successfully registered for this event!');
+                    }
+                });
+            }
+        });
+
+        // Event details
+        document.querySelectorAll('.event-card').forEach(card => {
+            card.addEventListener('click', function() {
+                alert('Event details view would be implemented here.');
+            });
+        });
+
+        document.querySelectorAll('.upcoming-event').forEach(event => {
+            event.addEventListener('click', function() {
+                alert('Event details view would be implemented here.');
+            });
+        });
+
+        // Calendar day clicks
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.addEventListener('click', function() {
+                const dayNumber = this.querySelector('.day-number').textContent;
+                alert(`Day ${dayNumber} clicked. Event creation or day view would be implemented here.`);
+            });
+        });
+
+        // Day event clicks
+        document.querySelectorAll('.day-event').forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                alert(`Event "${this.textContent}" clicked. Event details would be shown here.`);
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('createEventModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateEventModal();
+            }
+        });
+
+        // Set minimum date to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').setAttribute('min', today);
+        });
+
+        function openEventDetails(eventId) {
+            alert(`Opening details for event: ${eventId}`);
+        }
+    </script>
+</body>
+</html>
