@@ -277,11 +277,22 @@
             justify-content: center;
             gap: 0.5rem;
             margin-bottom: 0.5rem;
+            text-decoration: none;
         }
 
         .social-btn:hover {
             border-color: #333;
             background: #f8f9fa;
+        }
+
+        .social-btn.github {
+            border-color: #24292e;
+            color: #24292e;
+        }
+
+        .social-btn.github:hover {
+            background: #24292e;
+            color: white;
         }
 
         .demo-credentials {
@@ -359,6 +370,24 @@
                 Login successful! Redirecting...
             </div>
 
+            <!-- GitHub OAuth Login -->
+            <div class="social-login">
+                <a href="#" class="social-btn github" onclick="loginWithGitHub()">
+                    <span>💻</span>
+                    Continue with GitHub
+                </a>
+                <button class="social-btn" onclick="socialLogin('google')">
+                    <span>🔍</span>
+                    Continue with Google
+                </button>
+                <button class="social-btn" onclick="socialLogin('microsoft')">
+                    <span>🪟</span>
+                    Continue with Microsoft
+                </button>
+            </div>
+
+            <div class="divider">or</div>
+
             <form id="loginForm">
                 <div class="form-group">
                     <label class="form-label" for="email">Email Address</label>
@@ -381,27 +410,35 @@
                 <button type="submit" class="btn btn-primary">Sign In</button>
             </form>
 
-            <div class="divider">or</div>
-
-            <div class="social-login">
-                <button class="social-btn" onclick="socialLogin('google')">
-                    <span>🔍</span>
-                    Continue with Google
-                </button>
-                <button class="social-btn" onclick="socialLogin('microsoft')">
-                    <span>🪟</span>
-                    Continue with Microsoft
-                </button>
-            </div>
-
             <div class="signup-prompt">
-                New to DCF Hungary? 
+                New to DCF Hungary?
                 <a href="dcf_profile_signup.html" class="signup-link">Create an account</a>
             </div>
         </div>
     </main>
 
     <script>
+        // GitHub OAuth configuration
+        const GITHUB_CLIENT_ID = 'Iv23lieXGFtPFcQs4DNl';
+        const GITHUB_REDIRECT_URI = 'https://hoarhouse.github.io/dcfh/auth-callback.html';
+
+        // GitHub OAuth login function
+        function loginWithGitHub() {
+            // Generate a random state parameter for CSRF protection
+            const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            sessionStorage.setItem('github_oauth_state', state);
+
+            // Construct GitHub OAuth URL
+            const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
+            githubAuthUrl.searchParams.append('client_id', GITHUB_CLIENT_ID);
+            githubAuthUrl.searchParams.append('redirect_uri', GITHUB_REDIRECT_URI);
+            githubAuthUrl.searchParams.append('scope', 'user:email');
+            githubAuthUrl.searchParams.append('state', state);
+
+            // Redirect to GitHub
+            window.location.href = githubAuthUrl.toString();
+        }
+
         // Handle form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -433,6 +470,7 @@
                     }
                     localStorage.setItem('dcf_user_email', email);
                     localStorage.setItem('dcf_user_name', 'Dr. Sarah Johnson');
+                    localStorage.setItem('dcf_user_logged_in', 'true');
                     
                     // Redirect after short delay
                     setTimeout(() => {
@@ -477,6 +515,13 @@
                     document.getElementById('email').value = userEmail;
                     document.getElementById('remember').checked = true;
                 }
+            }
+
+            // Check if user is already logged in via GitHub or demo
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+            if (isLoggedIn === 'true') {
+                // User is already logged in, redirect to dashboard
+                window.location.href = 'dcf_member_home.html';
             }
         });
 
