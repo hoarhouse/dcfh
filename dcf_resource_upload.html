@@ -1801,6 +1801,72 @@
             return overlay;
         }
 
-        function updateUserDropdownInfo() {
-            const userName = localStorage.getItem('dcf_user_name') || 'User';
-            const userEmail = localSto
+        updateUserDropdownInfo() {
+            const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+            const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+            const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+
+            const nameElement = document.getElementById('dropdownUserName');
+            const emailElement = document.getElementById('dropdownUserEmail');
+
+            if (nameElement) nameElement.textContent = userName;
+            if (emailElement) emailElement.textContent = userEmail;
+
+            const initials = generateInitials(userName);
+            const avatarElement = document.getElementById('userAvatar');
+            const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+
+            if (avatarElement) avatarElement.textContent = initials;
+            if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
+
+            if (authProvider === 'github') {
+                if (emailElement) emailElement.textContent = ${userEmail} (GitHub);
+            }
+        }
+
+        function generateInitials(name) {
+            if (!name) return 'SJ';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                localStorage.removeItem('dcf_github_session');
+                localStorage.removeItem('dcf_user_logged_in');
+                localStorage.removeItem('dcf_user_name');
+                localStorage.removeItem('dcf_user_email');
+                localStorage.removeItem('dcf_auth_provider');
+                localStorage.removeItem('dcf_remember_login');
+
+                sessionStorage.clear();
+
+                alert('You have been signed out successfully.');
+                window.location.href = 'dcf_login_page.html';
+            }
+        }
+
+        // Initialize user menu on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateUserDropdownInfo();
+
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+            if (isLoggedIn !== 'true') {
+                alert('Please log in to access member pages.');
+                window.location.href = 'dcf_login_page.html';
+            }
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isDropdownOpen) {
+                    closeUserMenu();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
