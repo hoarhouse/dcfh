@@ -11,11 +11,10 @@ function toggleDropdown(button) {
     const dropdown = document.createElement('div');
     dropdown.className = 'dropdown-menu active';
     dropdown.innerHTML = `
-        <a href="dcf_member_profile.html" class="dropdown-item">View Profile</a>
-        <a href="dcf_account_settings.html" class="dropdown-item">Account Settings</a>
-        <a href="dcf_notifications_center.html" class="dropdown-item">Notifications</a>
-        <div class="dropdown-item logout-item" onclick="event.stopPropagation(); localStorage.clear(); window.location.href='login.html';">LOGOUT</div>
-    `;
+    <a href="dcf_member_profile.html" class="dropdown-item">View Profile</a>
+    <a href="dcf_account_settings.html" class="dropdown-item">Account Settings</a>
+    <a href="dcf_notifications_center.html" class="dropdown-item">Notifications</a>
+`;
     
     // Position and show dropdown
     button.style.position = 'relative';
