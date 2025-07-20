@@ -8,16 +8,22 @@ class DCFUniversalNavbar {
         this.init();
     }
 
-    // Check if user is logged in (checks for auth tokens, session storage, etc.)
-    checkLoginStatus() {
-        // Check multiple indicators of login status
-        return !!(
-            localStorage.getItem('dcf_auth_token') ||
-            sessionStorage.getItem('dcf_user_session') ||
-            document.cookie.includes('dcf_logged_in=true') ||
-            document.querySelector('[data-user-logged-in="true"]')
-        );
-    }
+   // Check if user is logged in (checks for auth tokens, session storage, etc.)
+checkLoginStatus() {
+    // Check multiple indicators of login status
+    return !!(
+        localStorage.getItem('dcf_auth_token') ||
+        sessionStorage.getItem('dcf_user_session') ||
+        document.cookie.includes('dcf_logged_in=true') ||
+        document.querySelector('[data-user-logged-in="true"]') ||
+        // GitHub login detection
+        window.location.href.includes('code=') ||
+        window.location.href.includes('token=') ||
+        localStorage.getItem('github_token') ||
+        sessionStorage.getItem('github_user') ||
+        document.cookie.includes('github_auth=true')
+    );
+}
 
     // Get current page name for navigation highlighting
     getCurrentPage() {
