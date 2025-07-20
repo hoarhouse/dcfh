@@ -26,6 +26,53 @@ class DCFUniversalNavbar {
         return filename.replace('.html', '').replace('dcf_', '');
     }
 
+    // Hide existing navbar elements (SAFE METHOD - keeps old code intact)
+    hideExistingNavbars() {
+        // Add CSS to hide old navbars
+        const hideNavbarCSS = `
+        <style id="dcf-hide-old-navbars">
+        /* Hide old navbar elements - they remain in DOM but invisible */
+        nav:not(.dcf-universal-navbar),
+        .navbar:not(.dcf-universal-navbar),
+        .navigation:not(.dcf-universal-navbar),
+        .header-nav:not(.dcf-universal-navbar),
+        .main-nav:not(.dcf-universal-navbar),
+        .top-nav:not(.dcf-universal-navbar),
+        #navbar:not(.dcf-universal-navbar),
+        #navigation:not(.dcf-universal-navbar),
+        .nav-container:not(.dcf-universal-navbar),
+        .dcf-nav:not(.dcf-universal-navbar),
+        .dcf-navbar:not(.dcf-universal-navbar) {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        /* Hide old dropdown scripts and buttons */
+        .old-dropdown,
+        button[onclick*="toggleDropdown"],
+        [class*="SJ-button"],
+        .user-toggle:not(.dcf-universal-navbar *) {
+            display: none !important;
+        }
+        
+        /* Ensure our universal navbar is always visible */
+        .dcf-universal-navbar {
+            display: block !important;
+            visibility: visible !important;
+        }
+        </style>
+        `;
+        
+        // Insert CSS to hide old navbars
+        document.head.insertAdjacentHTML('beforeend', hideNavbarCSS);
+        
+        // Log what we're hiding for debugging
+        const oldNavElements = document.querySelectorAll('nav:not(.dcf-universal-navbar), .navbar:not(.dcf-universal-navbar), #navbar:not(.dcf-universal-navbar)');
+        if (oldNavElements.length > 0) {
+            console.log(`DCF Universal Navbar: Hiding ${oldNavElements.length} old navbar elements`, oldNavElements);
+        }
+    }
+
     // Initialize the navbar
     init() {
         // First hide existing navbars (safe method)
