@@ -1,29 +1,51 @@
-// Universal Navbar System for DCF Hungary
+// Universal Navbar System for DCF Hungary - COMPLETE REWRITE
 // Provides consistent navigation across all pages with smart login state detection
 
 class DCFUniversalNavbar {
     constructor() {
+        // Prevent duplicate initialization
+        if (window.dcfNavbar || document.getElementById('dcf-navbar')) {
+            console.log('DCF Navbar already exists, skipping initialization');
+            return;
+        }
+        
         this.isLoggedIn = this.checkLoginStatus();
         this.currentPage = this.getCurrentPage();
         this.init();
     }
 
-   // Check if user is logged in (checks for auth tokens, session storage, etc.)
-checkLoginStatus() {
-    // Check multiple indicators of login status
-    return !!(
-        localStorage.getItem('dcf_auth_token') ||
-        sessionStorage.getItem('dcf_user_session') ||
-        document.cookie.includes('dcf_logged_in=true') ||
-        document.querySelector('[data-user-logged-in="true"]') ||
-        // GitHub login detection
-        window.location.href.includes('code=') ||
-        window.location.href.includes('token=') ||
-        localStorage.getItem('github_token') ||
-        sessionStorage.getItem('github_user') ||
-        document.cookie.includes('github_auth=true')
-    );
-}
+    // Check if user is logged in - enhanced GitHub detection
+    checkLoginStatus() {
+        // Check multiple indicators of login status
+        const loginIndicators = [
+            localStorage.getItem('dcf_auth_token'),
+            sessionStorage.getItem('dcf_user_session'),
+            localStorage.getItem('github_token'),
+            sessionStorage.getItem('github_user'),
+            sessionStorage.getItem('user_data'),
+            document.cookie.includes('dcf_logged_in=true'),
+            document.cookie.includes('github_auth=true'),
+            document.querySelector('[data-user-logged-in="true"]'),
+            // Check for GitHub OAuth parameters
+            window.location.href.includes('code='),
+            window.location.href.includes('access_token='),
+            // Check for user info in DOM
+            document.querySelector('.user-info'),
+            document.querySelector('#user-avatar'),
+        ];
+
+        const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+        
+        // Debug output
+        console.log('DCF Login Check:', {
+            url: window.location.href,
+            hasGitHubCode: window.location.href.includes('code='),
+            hasTokens: !!(localStorage.getItem('github_token') || sessionStorage.getItem('github_user')),
+            finalStatus: isLoggedIn
+        });
+        
+        return isLoggedIn;
+    }
 
     // Get current page name for navigation highlighting
     getCurrentPage() {
@@ -47,8 +69,7 @@ checkLoginStatus() {
         #navbar:not(.dcf-universal-navbar),
         #navigation:not(.dcf-universal-navbar),
         .nav-container:not(.dcf-universal-navbar),
-        .dcf-nav:not(.dcf-universal-navbar),
-        .dcf-navbar:not(.dcf-universal-navbar) {
+        .dcf-nav:not(.dcf-universal-navbar) {
             display: none !important;
             visibility: hidden !important;
         }
@@ -70,12 +91,14 @@ checkLoginStatus() {
         `;
         
         // Insert CSS to hide old navbars
-        document.head.insertAdjacentHTML('beforeend', hideNavbarCSS);
+        if (!document.getElementById('dcf-hide-old-navbars')) {
+            document.head.insertAdjacentHTML('beforeend', hideNavbarCSS);
+        }
         
         // Log what we're hiding for debugging
-        const oldNavElements = document.querySelectorAll('nav:not(.dcf-universal-navbar), .navbar:not(.dcf-universal-navbar), #navbar:not(.dcf-universal-navbar)');
+        const oldNavElements = document.querySelectorAll('nav:not(.dcf-universal-navbar), .navbar:not(.dcf-universal-navbar)');
         if (oldNavElements.length > 0) {
-            console.log(`DCF Universal Navbar: Hiding ${oldNavElements.length} old navbar elements`, oldNavElements);
+            console.log(`DCF Universal Navbar: Hiding ${oldNavElements.length} old navbar elements`);
         }
     }
 
@@ -91,7 +114,7 @@ checkLoginStatus() {
         
         // Add rollback function to window for easy debugging
         window.dcfNavbarRollback = this.rollback.bind(this);
-        console.log('DCF Universal Navbar initialized. Call dcfNavbarRollback() to restore old navbar.');
+        console.log('DCF Universal Navbar initialized successfully. Login status:', this.isLoggedIn);
     }
 
     // Create the complete navbar HTML structure
@@ -170,7 +193,7 @@ checkLoginStatus() {
                     </div>
                 </div>
 
-                <!-- CENTER: Search -->
+                <!-- CENTER: Search - REDUCED WIDTH -->
                 <div class="navbar-center">
                     <div class="navbar-search">
                         <div class="search-container">
@@ -509,8 +532,10 @@ checkLoginStatus() {
         </style>
         `;
 
-        // Insert navbar at the beginning of body
-        document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+        // Insert navbar at the beginning of body if it doesn't exist
+        if (!document.getElementById('dcf-navbar')) {
+            document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+        }
     }
 
     // Generate right navigation for logged-out users
@@ -528,12 +553,12 @@ checkLoginStatus() {
     getLoggedInRightNav() {
         return `
             <div class="notifications">
-                <button class="navbar-btn btn-secondary">
+                <button class="navbar-btn btn-secondary" title="Notifications">
                     🔔 <span class="notification-count">3</span>
                 </button>
             </div>
             <div class="messages">
-                <button class="navbar-btn btn-secondary">✉️</button>
+                <button class="navbar-btn btn-secondary" title="Messages">✉️</button>
             </div>
             <div class="user-dropdown" id="user-dropdown">
                 <button class="user-menu-btn" id="user-menu-toggle">
@@ -546,7 +571,7 @@ checkLoginStatus() {
                     <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
                     <a href="dcf_messages.html" class="dropdown-item">Messages</a>
                     <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" onclick="dcfNavbar.logout()">LOGOUT</button>
+                    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
                 </div>
             </div>
         `;
@@ -565,8 +590,10 @@ checkLoginStatus() {
             });
 
             // Close dropdown when clicking outside
-            document.addEventListener('click', () => {
-                userDropdown.classList.remove('active');
+            document.addEventListener('click', (event) => {
+                if (!userDropdown.contains(event.target)) {
+                    userDropdown.classList.remove('active');
+                }
             });
         }
 
@@ -616,25 +643,23 @@ checkLoginStatus() {
             return;
         }
 
-        // Mock search suggestions - replace with actual search logic
         const suggestions = this.getSearchSuggestions(query);
         this.displaySearchSuggestions(suggestions);
     }
 
     // Get search suggestions
     getSearchSuggestions(query) {
-        // Mock data - replace with actual search API
+        // Search data based on your actual pages
         const allItems = [
-            { title: 'AI Ethics Research', type: 'project', url: 'dcf_projects.html' },
+            { title: 'About DCF Hungary', type: 'page', url: 'dcf_about.html' },
+            { title: 'Contact Us', type: 'page', url: 'dcf_contact.html' },
+            { title: 'Events Calendar', type: 'events', url: 'dcf_events_calendar.html' },
+            { title: 'Event Details', type: 'events', url: 'dcf_event_details.html' },
             { title: 'Members Directory', type: 'community', url: 'dcf_members_directory.html' },
-            { title: 'Discussion Board', type: 'community', url: 'dcf_discussion_board.html' },
-            { title: 'Events Calendar', type: 'event', url: 'dcf_events_calendar.html' },
-            { title: 'Learning Materials', type: 'resource', url: 'dcf_learning_materials.html' },
-            { title: 'Document Library', type: 'resource', url: 'dcf_document_library.html' },
-            { title: 'Media Resources', type: 'resource', url: 'dcf_media_resources.html' },
-            { title: 'Working Groups', type: 'community', url: 'dcf_working_groups.html' },
             { title: 'Profile Dashboard', type: 'member', url: 'dcf_profile_dashboard.html' },
-            { title: 'Contact Us', type: 'contact', url: 'dcf_contact.html' }
+            { title: 'Learning Materials', type: 'resources', url: 'dcf_learning_materials.html' },
+            { title: 'Login', type: 'account', url: 'dcf_login_page.html' },
+            { title: 'Sign Up', type: 'account', url: 'dcf_profile_signup.html' }
         ];
 
         return allItems.filter(item => 
@@ -681,14 +706,22 @@ checkLoginStatus() {
     logout() {
         // Clear all auth tokens and session data
         localStorage.removeItem('dcf_auth_token');
+        localStorage.removeItem('github_token');
         sessionStorage.removeItem('dcf_user_session');
+        sessionStorage.removeItem('github_user');
+        sessionStorage.removeItem('user_data');
+        
+        // Clear cookies
         document.cookie = 'dcf_logged_in=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'github_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        console.log('User logged out, clearing all session data');
         
         // Redirect to homepage
         window.location.href = 'index.html';
     }
 
-    // Update login status (call this after login/logout)
+    // Update login status dynamically
     updateLoginStatus(isLoggedIn) {
         this.isLoggedIn = isLoggedIn;
         
@@ -698,24 +731,48 @@ checkLoginStatus() {
             rightNav.innerHTML = isLoggedIn ? this.getLoggedInRightNav() : this.getLoggedOutRightNav();
             this.attachEventListeners(); // Reattach listeners
         }
+        
+        console.log('Login status updated to:', isLoggedIn);
+    }
+
+    // Rollback function - restore old navbar if needed
+    rollback() {
+        // Remove our universal navbar
+        const ourNavbar = document.getElementById('dcf-navbar');
+        if (ourNavbar) {
+            ourNavbar.remove();
+        }
+        
+        // Remove the CSS that hides old navbars
+        const hideCSS = document.getElementById('dcf-hide-old-navbars');
+        if (hideCSS) {
+            hideCSS.remove();
+        }
+        
+        console.log('DCF Universal Navbar removed. Old navbar should now be visible.');
+        
+        // Clean up window references
+        delete window.dcfNavbar;
+        delete window.dcfNavbarRollback;
     }
 }
 
-// Initialize the universal navbar when DOM is loaded
+// Initialize the universal navbar when DOM is loaded (prevent duplicates)
 document.addEventListener('DOMContentLoaded', () => {
-    window.dcfNavbar = new DCFUniversalNavbar();
-});
-
-// Initialize the universal navbar when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.dcfNavbar = new DCFUniversalNavbar();
-    
-    // Hide navbar on login/auth pages after authentication
-    if (window.location.href.includes('login') && 
-        (window.location.href.includes('code=') || window.location.href.includes('token='))) {
-        const navbar = document.querySelector('.dcf-universal-navbar');
-        if (navbar) {
-            navbar.style.display = 'none';
+    // Only create if it doesn't already exist
+    if (!window.dcfNavbar && !document.getElementById('dcf-navbar')) {
+        window.dcfNavbar = new DCFUniversalNavbar();
+        
+        // Hide navbar on login/auth pages with parameters
+        if (window.location.href.includes('login') && 
+            (window.location.href.includes('code=') || window.location.href.includes('token='))) {
+            setTimeout(() => {
+                const navbar = document.querySelector('.dcf-universal-navbar');
+                if (navbar) {
+                    navbar.style.display = 'none';
+                    console.log('Navbar hidden on login page with auth parameters');
+                }
+            }, 100);
         }
     }
 });
