@@ -761,21 +761,26 @@ class DCFUniversalNavbar {
 
 // Initialize the universal navbar when DOM is loaded (prevent duplicates)
 document.addEventListener('DOMContentLoaded', () => {
-    // Only create if it doesn't already exist
+    // Check if we're on a login/auth page that should NOT have navbar
+    const isAuthPage = window.location.href.includes('login') || 
+                      window.location.href.includes('auth') ||
+                      window.location.href.includes('code=') ||
+                      window.location.href.includes('token=') ||
+                      window.location.href.includes('access_token=') ||
+                      document.querySelector('.github-auth') ||
+                      document.querySelector('.auth-container') ||
+                      document.body.classList.contains('auth-page');
+    
+    // If it's an auth page, don't create navbar at all
+    if (isAuthPage) {
+        console.log('Auth page detected - skipping navbar creation');
+        return;
+    }
+    
+    // Only create if it doesn't already exist AND not on auth page
     if (!window.dcfNavbar && !document.getElementById('dcf-navbar')) {
         window.dcfNavbar = new DCFUniversalNavbar();
-        
-        // Hide navbar on login/auth pages with parameters
-        if (window.location.href.includes('login') && 
-            (window.location.href.includes('code=') || window.location.href.includes('token='))) {
-            setTimeout(() => {
-                const navbar = document.querySelector('.dcf-universal-navbar');
-                if (navbar) {
-                    navbar.style.display = 'none';
-                    console.log('Navbar hidden on login page with auth parameters');
-                }
-            }, 100);
-        }
+        console.log('DCF Universal Navbar initialized on non-auth page');
     }
 });
 
