@@ -513,8 +513,8 @@ class DCFUniversalNavbar {
             <div class="language-selector">
                 <button class="navbar-btn btn-secondary" title="Language/Region Selector">🌐 EN</button>
             </div>
-            <a href="dcf_login.html" class="navbar-btn btn-secondary">Login</a>
-            <a href="dcf_signup.html" class="navbar-btn btn-primary">Join Movement</a>
+            <a href="dcf_login_page.html" class="navbar-btn btn-secondary">Login</a>
+            <a href="dcf_signup_page.html" class="navbar-btn btn-primary">Join Movement</a>
         `;
     }
 
