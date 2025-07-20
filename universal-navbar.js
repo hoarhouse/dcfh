@@ -14,24 +14,19 @@ class DCFUniversalNavbar {
         this.init();
     }
 
-    // Check if user is logged in - enhanced GitHub detection
+    // Check if user is logged in - FIXED to detect your actual login data
     checkLoginStatus() {
-        // Check multiple indicators of login status
+        // Check your actual login indicators from localStorage
         const loginIndicators = [
+            localStorage.getItem('dcf_user_logged_in'),
+            localStorage.getItem('dcf_github_session'),
+            localStorage.getItem('dcf_user_name'),
+            localStorage.getItem('dcf_auth_provider'),
+            // Backup checks
             localStorage.getItem('dcf_auth_token'),
             sessionStorage.getItem('dcf_user_session'),
-            localStorage.getItem('github_token'),
-            sessionStorage.getItem('github_user'),
-            sessionStorage.getItem('user_data'),
             document.cookie.includes('dcf_logged_in=true'),
-            document.cookie.includes('github_auth=true'),
-            document.querySelector('[data-user-logged-in="true"]'),
-            // Check for GitHub OAuth parameters
-            window.location.href.includes('code='),
-            window.location.href.includes('access_token='),
-            // Check for user info in DOM
-            document.querySelector('.user-info'),
-            document.querySelector('#user-avatar'),
+            document.querySelector('[data-user-logged-in="true"]')
         ];
 
         const isLoggedIn = loginIndicators.some(indicator => !!indicator);
@@ -39,8 +34,9 @@ class DCFUniversalNavbar {
         // Debug output
         console.log('DCF Login Check:', {
             url: window.location.href,
-            hasGitHubCode: window.location.href.includes('code='),
-            hasTokens: !!(localStorage.getItem('github_token') || sessionStorage.getItem('github_user')),
+            dcf_user_logged_in: localStorage.getItem('dcf_user_logged_in'),
+            dcf_github_session: !!localStorage.getItem('dcf_github_session'),
+            dcf_user_name: localStorage.getItem('dcf_user_name'),
             finalStatus: isLoggedIn
         });
         
@@ -702,20 +698,26 @@ class DCFUniversalNavbar {
         }
     }
 
-    // Logout function
+    // Logout function - UPDATED to clear your actual login data
     logout() {
-        // Clear all auth tokens and session data
+        // Clear all your actual auth tokens and session data
+        localStorage.removeItem('dcf_user_logged_in');
+        localStorage.removeItem('dcf_github_session');
+        localStorage.removeItem('dcf_user_name');
+        localStorage.removeItem('dcf_user_email');
+        localStorage.removeItem('dcf_auth_provider');
+        localStorage.removeItem('isWhitelist');
+        localStorage.removeItem('debug');
+        
+        // Clear backup auth data
         localStorage.removeItem('dcf_auth_token');
-        localStorage.removeItem('github_token');
         sessionStorage.removeItem('dcf_user_session');
-        sessionStorage.removeItem('github_user');
-        sessionStorage.removeItem('user_data');
         
         // Clear cookies
         document.cookie = 'dcf_logged_in=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'github_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
-        console.log('User logged out, clearing all session data');
+        console.log('User logged out, clearing all DCF session data');
         
         // Redirect to homepage
         window.location.href = 'index.html';
