@@ -284,11 +284,7 @@ class DCFUniversalNavbar {
             color: #2563eb;
         }
 
-        /* Dropdown Styles */
-        .has-dropdown:hover .mega-dropdown {
-            display: block;
-        }
-
+        /* Dropdown Styles - FIXED TO HIDE BY DEFAULT */
         .mega-dropdown {
             display: none;
             position: absolute;
@@ -301,6 +297,10 @@ class DCFUniversalNavbar {
             padding: 16px;
             min-width: 200px;
             z-index: 1001;
+        }
+
+        .has-dropdown:hover .mega-dropdown {
+            display: block;
         }
 
         .dropdown-content a {
@@ -318,9 +318,9 @@ class DCFUniversalNavbar {
             color: #2563eb;
         }
 
-        /* CENTER: Search */
+        /* CENTER: Search - REDUCED BY 50% */
         .navbar-center {
-            flex: 0 0 400px;
+            flex: 0 0 200px;
             margin: 0 20px;
         }
 
@@ -511,7 +511,7 @@ class DCFUniversalNavbar {
     getLoggedOutRightNav() {
         return `
             <div class="language-selector">
-                <button class="navbar-btn btn-secondary">🌐 Global</button>
+                <button class="navbar-btn btn-secondary" title="Language/Region Selector">🌐 EN</button>
             </div>
             <a href="dcf_login.html" class="navbar-btn btn-secondary">Login</a>
             <a href="dcf_signup.html" class="navbar-btn btn-primary">Join Movement</a>
