@@ -700,6 +700,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.dcfNavbar = new DCFUniversalNavbar();
 });
 
+// Initialize the universal navbar when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.dcfNavbar = new DCFUniversalNavbar();
+    
+    // Hide navbar on login/auth pages after authentication
+    if (window.location.href.includes('login') && 
+        (window.location.href.includes('code=') || window.location.href.includes('token='))) {
+        const navbar = document.querySelector('.dcf-universal-navbar');
+        if (navbar) {
+            navbar.style.display = 'none';
+        }
+    }
+});
+
 // Close search suggestions when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.navbar-search')) {
