@@ -110,7 +110,7 @@ class DCFUniversalNavbar {
                                         <a href="dcf_mission.html">Our Mission</a>
                                         <a href="dcf_leadership.html">Leadership Team</a>
                                         <a href="dcf_global_network.html">Global Network</a>
-                                        <a href="dcf_impact_reports.html">Impact Reports</a>
+                                        <a href="dcf_community_guidelines.html">Community Guidelines</a>
                                     </div>
                                 </div>
                             </li>
@@ -118,10 +118,10 @@ class DCFUniversalNavbar {
                                 <a href="dcf_research.html" class="menu-link">Research</a>
                                 <div class="mega-dropdown">
                                     <div class="dropdown-content">
-                                        <a href="dcf_current_projects.html">Current Projects</a>
+                                        <a href="dcf_projects.html">Current Projects</a>
                                         <a href="dcf_publications.html">Publications</a>
                                         <a href="dcf_case_studies.html">Case Studies</a>
-                                        <a href="dcf_funding.html">Funding Opportunities</a>
+                                        <a href="dcf_funding.html">Funding</a>
                                     </div>
                                 </div>
                             </li>
@@ -131,8 +131,8 @@ class DCFUniversalNavbar {
                                     <div class="dropdown-content">
                                         <a href="dcf_members_directory.html">Members Directory</a>
                                         <a href="dcf_working_groups.html">Working Groups</a>
-                                        <a href="dcf_mentorship.html">Mentorship Program</a>
-                                        <a href="dcf_discussion_board.html">Discussion Board</a>
+                                        <a href="dcf_mentorship.html">Mentorship</a>
+                                        <a href="dcf_profile_dashboard.html">Member Dashboard</a>
                                     </div>
                                 </div>
                             </li>
@@ -140,9 +140,9 @@ class DCFUniversalNavbar {
                                 <a href="dcf_events.html" class="menu-link">Events</a>
                                 <div class="mega-dropdown">
                                     <div class="dropdown-content">
-                                        <a href="dcf_upcoming_events.html">Upcoming Events</a>
-                                        <a href="dcf_past_events.html">Past Events</a>
-                                        <a href="dcf_submit_event.html">Submit Event</a>
+                                        <a href="dcf_events_calendar.html">Events Calendar</a>
+                                        <a href="dcf_event_details.html">Event Details</a>
+                                        <a href="dcf_event_registration.html">Register for Events</a>
                                     </div>
                                 </div>
                             </li>
@@ -150,10 +150,10 @@ class DCFUniversalNavbar {
                                 <a href="dcf_resources.html" class="menu-link">Resources</a>
                                 <div class="mega-dropdown">
                                     <div class="dropdown-content">
-                                        <a href="dcf_educational_materials.html">Educational Materials</a>
-                                        <a href="dcf_policy_briefs.html">Policy Briefs</a>
-                                        <a href="dcf_technical_resources.html">Technical Resources</a>
-                                        <a href="dcf_media_kit.html">Media Kit</a>
+                                        <a href="dcf_learning_materials.html">Learning Materials</a>
+                                        <a href="dcf_discussion_board.html">Discussion Board</a>
+                                        <a href="dcf_document_library.html">Document Library</a>
+                                        <a href="dcf_media_resources.html">Media Resources</a>
                                     </div>
                                 </div>
                             </li>
@@ -535,9 +535,10 @@ class DCFUniversalNavbar {
                     <span>▼</span>
                 </button>
                 <div class="user-dropdown-menu">
-                    <a href="dcf_profile.html" class="dropdown-item">View Profile</a>
-                    <a href="dcf_account_settings.html" class="dropdown-item">Account Settings</a>
-                    <a href="dcf_projects.html" class="dropdown-item">Projects</a>
+                    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
+                    <a href="dcf_profile_settings.html" class="dropdown-item">Profile Settings</a>
+                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
+                    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="dcfNavbar.logout()">LOGOUT</button>
                 </div>
@@ -618,11 +619,16 @@ class DCFUniversalNavbar {
     getSearchSuggestions(query) {
         // Mock data - replace with actual search API
         const allItems = [
-            { title: 'AI Ethics Research Project', type: 'project', url: 'dcf_ai_ethics.html' },
-            { title: 'Dr. John Smith - AI Researcher', type: 'member', url: 'dcf_member_profile.html?id=john-smith' },
-            { title: 'Catholic Social Teaching Guide', type: 'resource', url: 'dcf_cst_guide.html' },
-            { title: 'AI Conference 2024', type: 'event', url: 'dcf_event_ai_conference.html' },
-            { title: 'Technology and Human Dignity', type: 'publication', url: 'dcf_tech_dignity.html' }
+            { title: 'AI Ethics Research', type: 'project', url: 'dcf_projects.html' },
+            { title: 'Members Directory', type: 'community', url: 'dcf_members_directory.html' },
+            { title: 'Discussion Board', type: 'community', url: 'dcf_discussion_board.html' },
+            { title: 'Events Calendar', type: 'event', url: 'dcf_events_calendar.html' },
+            { title: 'Learning Materials', type: 'resource', url: 'dcf_learning_materials.html' },
+            { title: 'Document Library', type: 'resource', url: 'dcf_document_library.html' },
+            { title: 'Media Resources', type: 'resource', url: 'dcf_media_resources.html' },
+            { title: 'Working Groups', type: 'community', url: 'dcf_working_groups.html' },
+            { title: 'Profile Dashboard', type: 'member', url: 'dcf_profile_dashboard.html' },
+            { title: 'Contact Us', type: 'contact', url: 'dcf_contact.html' }
         ];
 
         return allItems.filter(item => 
