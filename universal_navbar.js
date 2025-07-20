@@ -28,9 +28,17 @@ class DCFUniversalNavbar {
 
     // Initialize the navbar
     init() {
+        // First hide existing navbars (safe method)
+        this.hideExistingNavbars();
+        
+        // Then create our universal navbar
         this.createNavbarHTML();
         this.attachEventListeners();
         this.highlightCurrentPage();
+        
+        // Add rollback function to window for easy debugging
+        window.dcfNavbarRollback = this.rollback.bind(this);
+        console.log('DCF Universal Navbar initialized. Call dcfNavbarRollback() to restore old navbar.');
     }
 
     // Create the complete navbar HTML structure
