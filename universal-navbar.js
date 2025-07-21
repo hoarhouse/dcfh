@@ -175,7 +175,7 @@ class DCFUniversalNavbar {
                                 <a href="#" class="menu-link" onclick="dcfNavigateToProjects(event)">Projects</a>
                             </li>
                             <li class="menu-item has-dropdown" data-page="events">
-    <a href="dcf_events.html" class="menu-link">Events</a>
+<a href="#" class="menu-link" onclick="dcfNavigateToEvents(event)">Events</a>
     <div class="mega-dropdown">
         <div class="dropdown-content">
             <a href="dcf_events_calendar.html">Events Calendar</a>
