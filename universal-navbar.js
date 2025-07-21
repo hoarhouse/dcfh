@@ -1,5 +1,5 @@
-// Universal Navbar System for DCF Hungary - COMPLETE REWRITE WITH SMART ROUTING
-// Provides consistent navigation across all pages with smart login state detection
+// Universal Navbar System for DCF Hungary - COMPLETE WITH ALL FEATURES
+// Full-featured navbar with search, dropdowns, mobile menu, and smart routing
 
 class DCFUniversalNavbar {
     constructor() {
@@ -14,15 +14,13 @@ class DCFUniversalNavbar {
         this.init();
     }
 
-    // Check if user is logged in - FIXED to detect your actual login data
+    // Check if user is logged in
     checkLoginStatus() {
-        // Check your actual login indicators from localStorage
         const loginIndicators = [
             localStorage.getItem('dcf_user_logged_in'),
             localStorage.getItem('dcf_github_session'),
             localStorage.getItem('dcf_user_name'),
             localStorage.getItem('dcf_auth_provider'),
-            // Backup checks
             localStorage.getItem('dcf_auth_token'),
             sessionStorage.getItem('dcf_user_session'),
             document.cookie.includes('dcf_logged_in=true'),
@@ -31,7 +29,6 @@ class DCFUniversalNavbar {
 
         const isLoggedIn = loginIndicators.some(indicator => !!indicator);
         
-        // Debug output
         console.log('DCF Login Check:', {
             url: window.location.href,
             dcf_user_logged_in: localStorage.getItem('dcf_user_logged_in'),
@@ -50,12 +47,10 @@ class DCFUniversalNavbar {
         return filename.replace('.html', '').replace('dcf_', '');
     }
 
-    // Hide existing navbar elements (SAFE METHOD - keeps old code intact)
+    // Hide existing navbar elements
     hideExistingNavbars() {
-        // Add CSS to hide old navbars
         const hideNavbarCSS = `
         <style id="dcf-hide-old-navbars">
-        /* Hide old navbar elements - they remain in DOM but invisible */
         nav:not(.dcf-universal-navbar),
         .navbar:not(.dcf-universal-navbar),
         .navigation:not(.dcf-universal-navbar),
@@ -70,15 +65,6 @@ class DCFUniversalNavbar {
             visibility: hidden !important;
         }
         
-        /* Hide old dropdown scripts and buttons */
-        .old-dropdown,
-        button[onclick*="toggleDropdown"],
-        [class*="SJ-button"],
-        .user-toggle:not(.dcf-universal-navbar *) {
-            display: none !important;
-        }
-        
-        /* Ensure our universal navbar is always visible */
         .dcf-universal-navbar {
             display: block !important;
             visibility: visible !important;
@@ -86,29 +72,18 @@ class DCFUniversalNavbar {
         </style>
         `;
         
-        // Insert CSS to hide old navbars
         if (!document.getElementById('dcf-hide-old-navbars')) {
             document.head.insertAdjacentHTML('beforeend', hideNavbarCSS);
-        }
-        
-        // Log what we're hiding for debugging
-        const oldNavElements = document.querySelectorAll('nav:not(.dcf-universal-navbar), .navbar:not(.dcf-universal-navbar)');
-        if (oldNavElements.length > 0) {
-            console.log(`DCF Universal Navbar: Hiding ${oldNavElements.length} old navbar elements`);
         }
     }
 
     // Initialize the navbar
     init() {
-        // First hide existing navbars (safe method)
         this.hideExistingNavbars();
-        
-        // Then create our universal navbar
         this.createNavbarHTML();
         this.attachEventListeners();
         this.highlightCurrentPage();
         
-        // Add rollback function to window for easy debugging
         window.dcfNavbarRollback = this.rollback.bind(this);
         console.log('DCF Universal Navbar initialized successfully. Login status:', this.isLoggedIn);
     }
@@ -165,8 +140,8 @@ class DCFUniversalNavbar {
                                 <a href="#" class="menu-link" onclick="dcfNavigateToEvents(event)">Events</a>
                                 <div class="mega-dropdown">
                                     <div class="dropdown-content">
+                                        <a href="#" onclick="dcfNavigateToEvents(event)">My Events</a>
                                         <a href="dcf_events_calendar.html">Events Calendar</a>
-                                        <a href="dcf_event_details.html">Event Details</a>
                                         <a href="dcf_event_registration.html">Register for Events</a>
                                     </div>
                                 </div>
@@ -174,21 +149,25 @@ class DCFUniversalNavbar {
                             <li class="menu-item" data-page="projects">
                                 <a href="#" class="menu-link" onclick="dcfNavigateToProjects(event)">Projects</a>
                             </li>
-                            <li class="menu-item has-dropdown" data-page="events">
-<a href="#" class="menu-link" onclick="dcfNavigateToEvents(event)">Events</a>
-    <div class="mega-dropdown">
-        <div class="dropdown-content">
-            <a href="dcf_events_calendar.html">Events Calendar</a>
-            <a href="dcf_event_details.html">Event Details</a>
-            <a href="dcf_event_registration.html">Register for Events</a>
-        </div>
-    </div>
-</li>
+                            <li class="menu-item has-dropdown" data-page="resources">
+                                <a href="dcf_resources.html" class="menu-link">Resources</a>
+                                <div class="mega-dropdown">
+                                    <div class="dropdown-content">
+                                        <a href="dcf_learning_materials.html">Learning Materials</a>
+                                        <a href="dcf_discussion_board.html">Discussion Board</a>
+                                        <a href="dcf_document_library.html">Document Library</a>
+                                        <a href="dcf_media_resources.html">Media Resources</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="menu-item" data-page="contact">
+                                <a href="dcf_contact.html" class="menu-link">Contact</a>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- CENTER: Search - REDUCED WIDTH -->
+                <!-- CENTER: Search -->
                 <div class="navbar-center">
                     <div class="navbar-search">
                         <div class="search-container">
@@ -223,13 +202,23 @@ class DCFUniversalNavbar {
             <!-- Mobile Menu -->
             <div class="mobile-menu" id="mobile-menu" style="display: none;">
                 <div class="mobile-menu-content">
-                    <!-- Mobile menu items will be populated by JavaScript -->
+                    <div class="mobile-menu-items">
+                        <a href="dcf_about.html" class="mobile-menu-item">About</a>
+                        <a href="#" class="mobile-menu-item" onclick="dcfNavigateToProjects(event)">Projects</a>
+                        <a href="#" class="mobile-menu-item" onclick="dcfNavigateToEvents(event)">Events</a>
+                        <a href="dcf_resources.html" class="mobile-menu-item">Resources</a>
+                        <a href="dcf_contact.html" class="mobile-menu-item">Contact</a>
+                        ${this.isLoggedIn ? 
+                            '<a href="dcf_profile_dashboard.html" class="mobile-menu-item">Dashboard</a><a href="#" class="mobile-menu-item" onclick="window.dcfNavbar.logout()">Logout</a>' : 
+                            '<a href="dcf_login_page.html" class="mobile-menu-item">Login</a><a href="dcf_profile_signup.html" class="mobile-menu-item">Join Movement</a>'
+                        }
+                    </div>
                 </div>
             </div>
         </nav>
 
         <style>
-        /* Universal Navbar Styles */
+        /* Universal Navbar Styles - COMPLETE CSS */
         .dcf-universal-navbar {
             background: #ffffff;
             border-bottom: 1px solid #e5e7eb;
@@ -308,7 +297,7 @@ class DCFUniversalNavbar {
             color: #2563eb;
         }
 
-        /* Dropdown Styles - FIXED TO HIDE BY DEFAULT */
+        /* Dropdown Styles */
         .mega-dropdown {
             display: none;
             position: absolute;
@@ -342,9 +331,9 @@ class DCFUniversalNavbar {
             color: #2563eb;
         }
 
-        /* CENTER: Search - REDUCED BY 50% */
+        /* CENTER: Search */
         .navbar-center {
-            flex: 0 0 200px;
+            flex: 0 0 300px;
             margin: 0 20px;
         }
 
@@ -390,6 +379,18 @@ class DCFUniversalNavbar {
             max-height: 300px;
             overflow-y: auto;
             z-index: 1002;
+        }
+
+        .search-suggestion-item {
+            display: block;
+            padding: 12px;
+            text-decoration: none;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .search-suggestion-item:hover {
+            background-color: #f9fafb;
         }
 
         /* RIGHT SIDE */
@@ -486,9 +487,35 @@ class DCFUniversalNavbar {
             margin: 4px 0;
         }
 
+        .notification-count {
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
         /* Mobile Styles */
         .mobile-menu-toggle {
             display: none;
+        }
+
+        .mobile-menu-content {
+            padding: 20px;
+        }
+
+        .mobile-menu-item {
+            display: block;
+            padding: 12px 0;
+            color: #4b5563;
+            text-decoration: none;
+            font-size: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .mobile-menu-item:hover {
+            color: #2563eb;
         }
 
         @media (max-width: 968px) {
@@ -521,13 +548,11 @@ class DCFUniversalNavbar {
             .mobile-menu {
                 background: white;
                 border-top: 1px solid #e5e7eb;
-                padding: 20px;
             }
         }
         </style>
         `;
 
-        // Insert navbar at the beginning of body if it doesn't exist
         if (!document.getElementById('dcf-navbar')) {
             document.body.insertAdjacentHTML('afterbegin', navbarHTML);
         }
@@ -546,6 +571,9 @@ class DCFUniversalNavbar {
 
     // Generate right navigation for logged-in users
     getLoggedInRightNav() {
+        const userName = localStorage.getItem('dcf_user_name') || 'Guest User';
+        const userInitials = this.generateInitials(userName);
+        
         return `
             <div class="notifications">
                 <button class="navbar-btn btn-secondary" title="Notifications">
@@ -557,19 +585,30 @@ class DCFUniversalNavbar {
             </div>
             <div class="user-dropdown" id="user-dropdown">
                 <button class="user-menu-btn" id="user-menu-toggle">
-                    <span>GU</span>
+                    <span>${userInitials}</span>
                     <span>▼</span>
                 </button>
                 <div class="user-dropdown-menu">
                     <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
                     <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
-                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
+                    <a href="#" class="dropdown-item" onclick="dcfNavigateToProjects(event)">My Projects</a>
+                    <a href="#" class="dropdown-item" onclick="dcfNavigateToEvents(event)">My Events</a>
                     <a href="dcf_messages.html" class="dropdown-item">Messages</a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
                 </div>
             </div>
         `;
+    }
+
+    // Generate user initials
+    generateInitials(name) {
+        if (!name) return 'GU';
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
     }
 
     // Attach all event listeners
@@ -597,6 +636,9 @@ class DCFUniversalNavbar {
         if (searchInput) {
             searchInput.addEventListener('input', this.handleSearch.bind(this));
             searchInput.addEventListener('focus', this.showSearchSuggestions.bind(this));
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => this.hideSearchSuggestions(), 200);
+            });
         }
 
         // Mobile menu toggle
@@ -644,12 +686,12 @@ class DCFUniversalNavbar {
 
     // Get search suggestions
     getSearchSuggestions(query) {
-        // Search data based on your actual pages
         const allItems = [
             { title: 'About DCF Hungary', type: 'page', url: 'dcf_about.html' },
             { title: 'Contact Us', type: 'page', url: 'dcf_contact.html' },
+            { title: 'My Events', type: 'events', url: '#', onclick: 'dcfNavigateToEvents(event)' },
             { title: 'Events Calendar', type: 'events', url: 'dcf_events_calendar.html' },
-            { title: 'Event Details', type: 'events', url: 'dcf_event_details.html' },
+            { title: 'My Projects', type: 'projects', url: '#', onclick: 'dcfNavigateToProjects(event)' },
             { title: 'Members Directory', type: 'community', url: 'dcf_members_directory.html' },
             { title: 'Profile Dashboard', type: 'member', url: 'dcf_profile_dashboard.html' },
             { title: 'Learning Materials', type: 'resources', url: 'dcf_learning_materials.html' },
@@ -658,8 +700,9 @@ class DCFUniversalNavbar {
         ];
 
         return allItems.filter(item => 
-            item.title.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 5);
+            item.title.toLowerCase().includes(query.toLowerCase()) ||
+            item.type.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 6);
     }
 
     // Display search suggestions
@@ -671,7 +714,7 @@ class DCFUniversalNavbar {
             suggestionsContainer.innerHTML = '<div style="padding: 12px; color: #6b7280;">No results found</div>';
         } else {
             suggestionsContainer.innerHTML = suggestions.map(item => `
-                <a href="${item.url}" class="search-suggestion-item" style="display: block; padding: 12px; text-decoration: none; color: #374151; border-bottom: 1px solid #f3f4f6;">
+                <a href="${item.url}" class="search-suggestion-item" ${item.onclick ? `onclick="${item.onclick}"` : ''}>
                     <div style="font-weight: 500;">${item.title}</div>
                     <div style="font-size: 12px; color: #6b7280; text-transform: uppercase;">${item.type}</div>
                 </a>
@@ -697,9 +740,8 @@ class DCFUniversalNavbar {
         }
     }
 
-    // Logout function - UPDATED to clear your actual login data
+    // Logout function
     logout() {
-        // Clear all your actual auth tokens and session data
         localStorage.removeItem('dcf_user_logged_in');
         localStorage.removeItem('dcf_github_session');
         localStorage.removeItem('dcf_user_name');
@@ -707,18 +749,13 @@ class DCFUniversalNavbar {
         localStorage.removeItem('dcf_auth_provider');
         localStorage.removeItem('isWhitelist');
         localStorage.removeItem('debug');
-        
-        // Clear backup auth data
         localStorage.removeItem('dcf_auth_token');
         sessionStorage.removeItem('dcf_user_session');
         
-        // Clear cookies
         document.cookie = 'dcf_logged_in=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'github_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
         console.log('User logged out, clearing all DCF session data');
-        
-        // Redirect to homepage
         window.location.href = 'index.html';
     }
 
@@ -726,86 +763,34 @@ class DCFUniversalNavbar {
     updateLoginStatus(isLoggedIn) {
         this.isLoggedIn = isLoggedIn;
         
-        // Regenerate right navigation
         const rightNav = document.querySelector('.navbar-right');
         if (rightNav) {
             rightNav.innerHTML = isLoggedIn ? this.getLoggedInRightNav() : this.getLoggedOutRightNav();
-            this.attachEventListeners(); // Reattach listeners
+            this.attachEventListeners();
         }
         
         console.log('Login status updated to:', isLoggedIn);
     }
 
-    // Rollback function - restore old navbar if needed
+    // Rollback function
     rollback() {
-        // Remove our universal navbar
         const ourNavbar = document.getElementById('dcf-navbar');
-        if (ourNavbar) {
-            ourNavbar.remove();
-        }
+        if (ourNavbar) ourNavbar.remove();
         
-        // Remove the CSS that hides old navbars
         const hideCSS = document.getElementById('dcf-hide-old-navbars');
-        if (hideCSS) {
-            hideCSS.remove();
-        }
+        if (hideCSS) hideCSS.remove();
         
         console.log('DCF Universal Navbar removed. Old navbar should now be visible.');
         
-        // Clean up window references
         delete window.dcfNavbar;
         delete window.dcfNavbarRollback;
     }
 }
 
-// SMART PROJECTS NAVIGATION FUNCTION - GLOBAL FUNCTION
+// GLOBAL NAVIGATION FUNCTIONS
 function dcfNavigateToProjects(event) {
-    // SMART EVENTS NAVIGATION FUNCTION - ADD THIS
-function dcfNavigateToEvents(event) {
     event.preventDefault();
     
-    // Check login status using same logic as navbar class
-    const loginIndicators = [
-        localStorage.getItem('dcf_user_logged_in'),
-        localStorage.getItem('dcf_github_session'),
-        localStorage.getItem('dcf_user_name'),
-        localStorage.getItem('dcf_auth_provider')
-    ];
-    
-    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
-    
-    console.log('Smart Events Navigation:', {
-        isLoggedIn: isLoggedIn,
-        redirectingTo: isLoggedIn ? 'dcf_events.html' : 'dcf_events_public.html'
-    });
-    
-    if (isLoggedIn) {
-        window.location.href = 'dcf_events.html';  // Personal events dashboard
-    } else {
-        window.location.href = 'dcf_events_public.html';  // Public events showcase
-    }
-}// SMART EVENTS NAVIGATION FUNCTION
-function dcfNavigateToEvents(event) {
-    event.preventDefault();
-    
-    const loginIndicators = [
-        localStorage.getItem('dcf_user_logged_in'),
-        localStorage.getItem('dcf_github_session'),
-        localStorage.getItem('dcf_user_name'),
-        localStorage.getItem('dcf_auth_provider')
-    ];
-    
-    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
-    
-    if (isLoggedIn) {
-        window.location.href = 'dcf_events.html';
-    } else {
-        window.location.href = 'dcf_events_public.html';
-    }
-}
-    event.preventDefault();
-    
-    // Check login status using same logic as navbar class
     const loginIndicators = [
         localStorage.getItem('dcf_user_logged_in'),
         localStorage.getItem('dcf_github_session'),
@@ -821,34 +806,55 @@ function dcfNavigateToEvents(event) {
     });
     
     if (isLoggedIn) {
-        window.location.href = 'dcf_projects.html';  // Personal project dashboard
+        window.location.href = 'dcf_projects.html';
     } else {
-        window.location.href = 'dcf_projects_public.html';  // Public projects showcase
+        window.location.href = 'dcf_projects_public.html';
     }
 }
 
-// Initialize the universal navbar when DOM is loaded (prevent duplicates)
+function dcfNavigateToEvents(event) {
+    event.preventDefault();
+    
+    const loginIndicators = [
+        localStorage.getItem('dcf_user_logged_in'),
+        localStorage.getItem('dcf_github_session'),
+        localStorage.getItem('dcf_user_name'),
+        localStorage.getItem('dcf_auth_provider')
+    ];
+    
+    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+    
+    console.log('Smart Events Navigation:', {
+        isLoggedIn: isLoggedIn,
+        redirectingTo: isLoggedIn ? 'dcf_events.html' : 'dcf_events_public.html'
+    });
+    
+    if (isLoggedIn) {
+        window.location.href = 'dcf_events.html';
+    } else {
+        window.location.href = 'dcf_events_public.html';
+    }
+}
+
+// Initialize the universal navbar when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Check if we're on a login/auth page that should NOT have navbar
     const isAuthPage = window.location.href.includes('login') || 
                       window.location.href.includes('auth') ||
                       window.location.href.includes('code=') ||
                       window.location.href.includes('token=') ||
-                      window.location.href.includes('access_token=') ||
                       document.querySelector('.github-auth') ||
                       document.querySelector('.auth-container') ||
                       document.body.classList.contains('auth-page');
     
-    // If it's an auth page, don't create navbar at all
     if (isAuthPage) {
         console.log('Auth page detected - skipping navbar creation');
         return;
     }
     
-    // Only create if it doesn't already exist AND not on auth page
     if (!window.dcfNavbar && !document.getElementById('dcf-navbar')) {
         window.dcfNavbar = new DCFUniversalNavbar();
-        console.log('DCF Universal Navbar initialized on non-auth page');
+        console.log('DCF Universal Navbar initialized successfully');
     }
 });
 
