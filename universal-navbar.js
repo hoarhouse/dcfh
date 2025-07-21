@@ -784,6 +784,24 @@ function dcfNavigateToEvents(event) {
     } else {
         window.location.href = 'dcf_events_public.html';  // Public events showcase
     }
+}// SMART EVENTS NAVIGATION FUNCTION
+function dcfNavigateToEvents(event) {
+    event.preventDefault();
+    
+    const loginIndicators = [
+        localStorage.getItem('dcf_user_logged_in'),
+        localStorage.getItem('dcf_github_session'),
+        localStorage.getItem('dcf_user_name'),
+        localStorage.getItem('dcf_auth_provider')
+    ];
+    
+    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+    
+    if (isLoggedIn) {
+        window.location.href = 'dcf_events.html';
+    } else {
+        window.location.href = 'dcf_events_public.html';
+    }
 }
     event.preventDefault();
     
