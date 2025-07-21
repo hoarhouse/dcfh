@@ -1,4 +1,4 @@
-// Universal Navbar System for DCF Hungary - COMPLETE REWRITE
+// Universal Navbar System for DCF Hungary - COMPLETE REWRITE WITH SMART ROUTING
 // Provides consistent navigation across all pages with smart login state detection
 
 class DCFUniversalNavbar {
@@ -143,7 +143,7 @@ class DCFUniversalNavbar {
                                 <a href="dcf_research.html" class="menu-link">Research</a>
                                 <div class="mega-dropdown">
                                     <div class="dropdown-content">
-                                        <a href="dcf_projects.html">Current Projects</a>
+                                        <a href="#" onclick="dcfNavigateToProjects(event)">Current Projects</a>
                                         <a href="dcf_publications.html">Publications</a>
                                         <a href="dcf_case_studies.html">Case Studies</a>
                                         <a href="dcf_funding.html">Funding</a>
@@ -170,6 +170,9 @@ class DCFUniversalNavbar {
                                         <a href="dcf_event_registration.html">Register for Events</a>
                                     </div>
                                 </div>
+                            </li>
+                            <li class="menu-item" data-page="projects">
+                                <a href="#" class="menu-link" onclick="dcfNavigateToProjects(event)">Projects</a>
                             </li>
                             <li class="menu-item has-dropdown" data-page="resources">
                                 <a href="dcf_resources.html" class="menu-link">Resources</a>
@@ -561,14 +564,14 @@ class DCFUniversalNavbar {
                     <span>GU</span>
                     <span>▼</span>
                 </button>
-            <div class="user-dropdown-menu">
-    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
-    <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
-    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
-    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
-    <div class="dropdown-divider"></div>
-    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
-</div>
+                <div class="user-dropdown-menu">
+                    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
+                    <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
+                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
+                    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
+                </div>
             </div>
         `;
     }
@@ -756,6 +759,32 @@ class DCFUniversalNavbar {
         // Clean up window references
         delete window.dcfNavbar;
         delete window.dcfNavbarRollback;
+    }
+}
+
+// SMART PROJECTS NAVIGATION FUNCTION - GLOBAL FUNCTION
+function dcfNavigateToProjects(event) {
+    event.preventDefault();
+    
+    // Check login status using same logic as navbar class
+    const loginIndicators = [
+        localStorage.getItem('dcf_user_logged_in'),
+        localStorage.getItem('dcf_github_session'),
+        localStorage.getItem('dcf_user_name'),
+        localStorage.getItem('dcf_auth_provider')
+    ];
+    
+    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+    
+    console.log('Smart Projects Navigation:', {
+        isLoggedIn: isLoggedIn,
+        redirectingTo: isLoggedIn ? 'dcf_projects.html' : 'dcf_projects_public.html'
+    });
+    
+    if (isLoggedIn) {
+        window.location.href = 'dcf_projects.html';  // Personal project dashboard
+    } else {
+        window.location.href = 'dcf_projects_public.html';  // Public projects showcase
     }
 }
 
