@@ -561,14 +561,14 @@ class DCFUniversalNavbar {
                     <span>GU</span>
                     <span>▼</span>
                 </button>
-                <div class="user-dropdown-menu">
-                    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
-                    <a href="dcf_profile_settings.html" class="dropdown-item">Profile Settings</a>
-                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
-                    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
-                </div>
+            <div class="user-dropdown-menu">
+    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
+    <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
+    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
+    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
+</div>
             </div>
         `;
     }
