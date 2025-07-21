@@ -174,17 +174,9 @@ class DCFUniversalNavbar {
                             <li class="menu-item" data-page="projects">
                                 <a href="#" class="menu-link" onclick="dcfNavigateToProjects(event)">Projects</a>
                             </li>
-                            <li class="menu-item has-dropdown" data-page="resources">
-                                <a href="dcf_resources.html" class="menu-link">Resources</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="dcf_learning_materials.html">Learning Materials</a>
-                                        <a href="dcf_discussion_board.html">Discussion Board</a>
-                                        <a href="dcf_document_library.html">Document Library</a>
-                                        <a href="dcf_media_resources.html">Media Resources</a>
-                                    </div>
-                                </div>
-                            </li>
+                            <li class="menu-item" data-page="events">
+    <a href="#" class="menu-link" onclick="dcfNavigateToEvents(event)">Events</a>
+</li>
                             <li class="menu-item" data-page="contact">
                                 <a href="dcf_contact.html" class="menu-link">Contact</a>
                             </li>
@@ -764,6 +756,31 @@ class DCFUniversalNavbar {
 
 // SMART PROJECTS NAVIGATION FUNCTION - GLOBAL FUNCTION
 function dcfNavigateToProjects(event) {
+    // SMART EVENTS NAVIGATION FUNCTION - ADD THIS
+function dcfNavigateToEvents(event) {
+    event.preventDefault();
+    
+    // Check login status using same logic as navbar class
+    const loginIndicators = [
+        localStorage.getItem('dcf_user_logged_in'),
+        localStorage.getItem('dcf_github_session'),
+        localStorage.getItem('dcf_user_name'),
+        localStorage.getItem('dcf_auth_provider')
+    ];
+    
+    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+    
+    console.log('Smart Events Navigation:', {
+        isLoggedIn: isLoggedIn,
+        redirectingTo: isLoggedIn ? 'dcf_events.html' : 'dcf_events_public.html'
+    });
+    
+    if (isLoggedIn) {
+        window.location.href = 'dcf_events.html';  // Personal events dashboard
+    } else {
+        window.location.href = 'dcf_events_public.html';  // Public events showcase
+    }
+}
     event.preventDefault();
     
     // Check login status using same logic as navbar class
