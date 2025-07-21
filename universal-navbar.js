@@ -1,5 +1,6 @@
-// Universal Navbar System for DCF Hungary - COMPLETE WITH ALL FEATURES
-// Full-featured navbar with search, dropdowns, mobile menu, and smart routing
+// Universal Navbar System for DCF Hungary - UPDATED PROJECT ROUTING
+// Projects link now goes to dcf_projects_home.html for logged-in users
+// My Projects moved to user dropdown menu
 
 class DCFUniversalNavbar {
     constructor() {
@@ -209,7 +210,7 @@ class DCFUniversalNavbar {
                         <a href="dcf_resources.html" class="mobile-menu-item">Resources</a>
                         <a href="dcf_contact.html" class="mobile-menu-item">Contact</a>
                         ${this.isLoggedIn ? 
-                            '<a href="dcf_profile_dashboard.html" class="mobile-menu-item">Dashboard</a><a href="#" class="mobile-menu-item" onclick="window.dcfNavbar.logout()">Logout</a>' : 
+                            '<a href="dcf_profile_dashboard.html" class="mobile-menu-item">Dashboard</a><a href="dcf_projects.html" class="mobile-menu-item">My Projects</a><a href="#" class="mobile-menu-item" onclick="window.dcfNavbar.logout()">Logout</a>' : 
                             '<a href="dcf_login_page.html" class="mobile-menu-item">Login</a><a href="dcf_profile_signup.html" class="mobile-menu-item">Join Movement</a>'
                         }
                     </div>
@@ -569,7 +570,7 @@ class DCFUniversalNavbar {
         `;
     }
 
-    // Generate right navigation for logged-in users
+    // Generate right navigation for logged-in users - UPDATED WITH MY PROJECTS
     getLoggedInRightNav() {
         const userName = localStorage.getItem('dcf_user_name') || 'Guest User';
         const userInitials = this.generateInitials(userName);
@@ -591,7 +592,7 @@ class DCFUniversalNavbar {
                 <div class="user-dropdown-menu">
                     <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
                     <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
-                    <a href="#" class="dropdown-item" onclick="dcfNavigateToProjects(event)">My Projects</a>
+                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
                     <a href="#" class="dropdown-item" onclick="dcfNavigateToEvents(event)">My Events</a>
                     <a href="dcf_messages.html" class="dropdown-item">Messages</a>
                     <div class="dropdown-divider"></div>
@@ -689,9 +690,11 @@ class DCFUniversalNavbar {
         const allItems = [
             { title: 'About DCF Hungary', type: 'page', url: 'dcf_about.html' },
             { title: 'Contact Us', type: 'page', url: 'dcf_contact.html' },
+            { title: 'Browse All Projects', type: 'projects', url: '#', onclick: 'dcfNavigateToProjects(event)' },
+            { title: 'My Projects', type: 'projects', url: 'dcf_projects.html' },
+            { title: 'Create Project', type: 'projects', url: 'dcf_create_project.html' },
             { title: 'My Events', type: 'events', url: '#', onclick: 'dcfNavigateToEvents(event)' },
             { title: 'Events Calendar', type: 'events', url: 'dcf_events_calendar.html' },
-            { title: 'My Projects', type: 'projects', url: '#', onclick: 'dcfNavigateToProjects(event)' },
             { title: 'Members Directory', type: 'community', url: 'dcf_members_directory.html' },
             { title: 'Profile Dashboard', type: 'member', url: 'dcf_profile_dashboard.html' },
             { title: 'Learning Materials', type: 'resources', url: 'dcf_learning_materials.html' },
@@ -787,7 +790,7 @@ class DCFUniversalNavbar {
     }
 }
 
-// GLOBAL NAVIGATION FUNCTIONS
+// UPDATED GLOBAL NAVIGATION FUNCTIONS
 function dcfNavigateToProjects(event) {
     event.preventDefault();
     
@@ -802,13 +805,13 @@ function dcfNavigateToProjects(event) {
     
     console.log('Smart Projects Navigation:', {
         isLoggedIn: isLoggedIn,
-        redirectingTo: isLoggedIn ? 'dcf_projects.html' : 'dcf_projects_public.html'
+        redirectingTo: isLoggedIn ? 'dcf_projects_home.html' : 'dcf_projects_public.html'
     });
     
     if (isLoggedIn) {
-        window.location.href = 'dcf_projects.html';
+        window.location.href = 'dcf_projects_home.html';  // Browse all projects (member-only)
     } else {
-        window.location.href = 'dcf_projects_public.html';
+        window.location.href = 'dcf_projects_public.html';  // Public projects showcase
     }
 }
 
@@ -830,9 +833,9 @@ function dcfNavigateToEvents(event) {
     });
     
     if (isLoggedIn) {
-        window.location.href = 'dcf_events.html';
+        window.location.href = 'dcf_events.html';  // Personal events dashboard
     } else {
-        window.location.href = 'dcf_events_public.html';
+        window.location.href = 'dcf_events_public.html';  // Public events showcase
     }
 }
 
