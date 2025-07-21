@@ -1,116 +1,124 @@
-// Quick Actions Configuration for DCF Hungary
-// Edit this file to modify quick actions for any page
+// Universal Quick Actions Engine for DCF Hungary
+// This file handles the rendering logic - rarely needs changes
+// Edit quickactions.js to modify the actual quick actions
 
-const quickActionsConfig = {
-    // Projects Pages
-    'dcf_projects_home.html': [
-        { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
-        { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' },
-        { icon: '📊', text: 'View Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' },
-        { icon: '📅', text: 'Events Calendar', action: 'dcf_events_calendar.html', type: 'secondary' },
-        { icon: '💬', text: 'Discussion Forum', action: 'dcf_member_home.html', type: 'secondary' }
-    ],
+class DCFQuickActions {
+    constructor() {
+        this.currentPage = this.getCurrentPageName();
+        this.init();
+    }
 
-    'dcf_projects.html': [
-        { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
-        { icon: '📊', text: 'Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' },
-        { icon: '📅', text: 'Events Calendar', action: 'dcf_events_calendar.html', type: 'secondary' },
-        { icon: '💬', text: 'Discussion Board', action: 'dcf_member_home.html', type: 'secondary' }
-    ],
+    getCurrentPageName() {
+        const path = window.location.pathname;
+        const filename = path.split('/').pop() || 'index.html';
+        return filename;
+    }
 
-    'dcf_create_project.html': [
-        { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' },
-        { icon: '🌍', text: 'All Projects', action: 'dcf_projects_home.html', type: 'secondary' },
-        { icon: '📊', text: 'Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' }
-    ],
+    getActionsForCurrentPage() {
+        // Check if config is loaded
+        if (typeof quickActionsConfig === 'undefined') {
+            console.warn('Quick Actions config not loaded. Make sure quickactions.js is included before universal-quick-actions.js');
+            return [];
+        }
 
-    'dcf_project_detail.html': [
-        { icon: '✏️', text: 'Edit Project', action: 'javascript:editProject()', type: 'primary' },
-        { icon: '👥', text: 'Manage Team', action: 'javascript:manageTeam()', type: 'secondary' },
-        { icon: '📊', text: 'Project Analytics', action: 'javascript:viewProjectAnalytics()', type: 'secondary' },
-        { icon: '📁', text: 'All Projects', action: 'dcf_projects_home.html', type: 'secondary' }
-    ],
+        return quickActionsConfig[this.currentPage] || quickActionsConfig['default'] || [];
+    }
 
-    // Events Pages
-    'dcf_events_home.html': [
-        { icon: '🎉', text: 'Create Event', action: 'dcf_create_event.html', type: 'primary' },
-        { icon: '📅', text: 'My Events', action: 'dcf_events.html', type: 'secondary' },
-        { icon: '📊', text: 'Event Analytics', action: 'dcf_event_analytics.html', type: 'secondary' },
-        { icon: '🎯', text: 'Browse Categories', action: 'javascript:filterEvents()', type: 'secondary' },
-        { icon: '💬', text: 'Event Discussions', action: 'dcf_member_home.html', type: 'secondary' }
-    ],
+    generateQuickActionsHTML() {
+        const actions = this.getActionsForCurrentPage();
+        
+        if (actions.length === 0) {
+            return ''; // Don't render anything if no actions
+        }
+        
+        let buttonsHTML = '';
+        actions.forEach(action => {
+            const btnClass = action.type === 'primary' ? 'btn btn-primary' : 'btn btn-secondary';
+            const clickAction = action.action.startsWith('javascript:') 
+                ? action.action.replace('javascript:', '') 
+                : `window.location.href='${action.action}'`;
+            
+            buttonsHTML += `<button class="${btnClass}" onclick="${clickAction}" style="margin-bottom: 0.5rem;">${action.icon} ${action.text}</button>`;
+        });
 
-    'dcf_events.html': [
-        { icon: '🎉', text: 'Create Event', action: 'dcf_create_event.html', type: 'primary' },
-        { icon: '📈', text: 'My Event Analytics', action: 'dcf_event_analytics.html', type: 'secondary' },
-        { icon: '📋', text: 'Registration Management', action: 'javascript:manageRegistrations()', type: 'secondary' },
-        { icon: '📅', text: 'Calendar View', action: 'dcf_events_calendar.html', type: 'secondary' }
-    ],
+        return `
+            <div class="card" id="universal-quick-actions">
+                <h3 class="card-title">Quick Actions</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    ${buttonsHTML}
+                </div>
+            </div>
+        `;
+    }
 
-    'dcf_create_event.html': [
-        { icon: '📅', text: 'My Events', action: 'dcf_events.html', type: 'secondary' },
-        { icon: '🌍', text: 'All Events', action: 'dcf_events_home.html', type: 'secondary' },
-        { icon: '📊', text: 'Event Analytics', action: 'dcf_event_analytics.html', type: 'secondary' }
-    ],
+    render(containerId = 'quick-actions-container') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = this.generateQuickActionsHTML();
+        } else {
+            console.warn(`Quick Actions container with ID '${containerId}' not found`);
+        }
+    }
 
-    'dcf_event_creation.html': [
-        { icon: '📅', text: 'My Events', action: 'dcf_events.html', type: 'secondary' },
-        { icon: '🌍', text: 'All Events', action: 'dcf_events_home.html', type: 'secondary' },
-        { icon: '📊', text: 'Event Analytics', action: 'dcf_event_analytics.html', type: 'secondary' }
-    ],
+    // Method to replace existing Quick Actions boxes
+    replaceExistingQuickActions() {
+        // Look for existing Quick Actions cards and replace them
+        const existingCards = document.querySelectorAll('.card');
+        existingCards.forEach(card => {
+            const title = card.querySelector('.card-title');
+            if (title && title.textContent.trim() === 'Quick Actions') {
+                const newHTML = this.generateQuickActionsHTML();
+                if (newHTML) {
+                    card.outerHTML = newHTML;
+                }
+            }
+        });
+    }
 
-    // Admin Pages
-    'dcf_admin_dashboard.html': [
-        { icon: '👥', text: 'Manage Members', action: 'dcf_admin_members.html', type: 'primary' },
-        { icon: '📊', text: 'Site Analytics', action: 'dcf_admin_analytics.html', type: 'secondary' },
-        { icon: '⚙️', text: 'Site Settings', action: 'dcf_admin_settings.html', type: 'secondary' },
-        { icon: '📧', text: 'Send Announcements', action: 'dcf_admin_messaging.html', type: 'secondary' },
-        { icon: '🔐', text: 'Security Logs', action: 'dcf_admin_security.html', type: 'secondary' }
-    ],
+    init() {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.replaceExistingQuickActions();
+            });
+        } else {
+            this.replaceExistingQuickActions();
+        }
+    }
 
-    // Member Pages
-    'dcf_member_home.html': [
-        { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
-        { icon: '🎉', text: 'Create Event', action: 'dcf_create_event.html', type: 'primary' },
-        { icon: '👤', text: 'Edit Profile', action: 'dcf_member_profile.html', type: 'secondary' },
-        { icon: '💬', text: 'Messages', action: 'dcf_messages.html', type: 'secondary' }
-    ],
+    // Static method to add Quick Actions to any page
+    static addToPage(containerId = 'quick-actions-container') {
+        const quickActions = new DCFQuickActions();
+        quickActions.render(containerId);
+    }
 
-    'dcf_member_profile.html': [
-        { icon: '✏️', text: 'Edit Profile', action: 'javascript:editProfile()', type: 'primary' },
-        { icon: '📊', text: 'My Analytics', action: 'dcf_profile_dashboard.html', type: 'secondary' },
-        { icon: '🏠', text: 'Dashboard', action: 'dcf_member_home.html', type: 'secondary' },
-        { icon: '⚙️', text: 'Settings', action: 'dcf_settings.html', type: 'secondary' }
-    ],
+    // Method to refresh actions (useful after config changes)
+    refresh() {
+        this.replaceExistingQuickActions();
+    }
+}
 
-    'dcf_profile_dashboard.html': [
-        { icon: '👤', text: 'View Profile', action: 'dcf_member_profile.html', type: 'secondary' },
-        { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' },
-        { icon: '📅', text: 'My Events', action: 'dcf_events.html', type: 'secondary' },
-        { icon: '🏠', text: 'Dashboard', action: 'dcf_member_home.html', type: 'secondary' }
-    ],
+// Auto-initialize when script loads
+window.addEventListener('DOMContentLoaded', () => {
+    // Initialize universal quick actions
+    if (typeof window.dcfQuickActions === 'undefined') {
+        window.dcfQuickActions = new DCFQuickActions();
+    }
+});
 
-    // Resource Pages
-    'dcf_resources_library.html': [
-        { icon: '📄', text: 'Upload Resource', action: 'dcf_upload_resource.html', type: 'primary' },
-        { icon: '📚', text: 'Learning Materials', action: 'dcf_learning_materials.html', type: 'secondary' },
-        { icon: '💬', text: 'Discussion Board', action: 'dcf_discussion_board.html', type: 'secondary' },
-        { icon: '🔍', text: 'Advanced Search', action: 'javascript:advancedSearch()', type: 'secondary' }
-    ],
+// Global function for easy manual initialization
+function initializeQuickActions(containerId) {
+    return DCFQuickActions.addToPage(containerId);
+}
 
-    // Messages & Communication
-    'dcf_messages.html': [
-        { icon: '✉️', text: 'Compose Message', action: 'javascript:composeMessage()', type: 'primary' },
-        { icon: '👥', text: 'Group Messages', action: 'javascript:viewGroupMessages()', type: 'secondary' },
-        { icon: '🔔', text: 'Notifications', action: 'dcf_notifications.html', type: 'secondary' },
-        { icon: '⚙️', text: 'Message Settings', action: 'dcf_message_settings.html', type: 'secondary' }
-    ],
+// Global function to refresh quick actions
+function refreshQuickActions() {
+    if (window.dcfQuickActions) {
+        window.dcfQuickActions.refresh();
+    }
+}
 
-    // Default actions for any page not specifically configured
-    'default': [
-        { icon: '🏠', text: 'Dashboard', action: 'dcf_member_home.html', type: 'secondary' },
-        { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
-        { icon: '🎉', text: 'Create Event', action: 'dcf_create_event.html', type: 'secondary' },
-        { icon: '💬', text: 'Messages', action: 'dcf_messages.html', type: 'secondary' }
-    ]
-};
+// Export for module usage if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = DCFQuickActions;
+}

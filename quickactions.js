@@ -6,14 +6,14 @@ const quickActionsConfig = {
     'dcf_projects_home.html': [
         { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
         { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' },
-        { icon: '📊', text: 'View Analytics', action: 'dcf_analytics_dashboard.html', type: 'secondary' },
-        { icon: '📅', text: 'Project Calendar', action: 'dcf_events_calendar.html', type: 'secondary' },
+        { icon: '📊', text: 'View Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' },
+        { icon: '📅', text: 'Events Calendar', action: 'dcf_events_calendar.html', type: 'secondary' },
         { icon: '💬', text: 'Discussion Forum', action: 'dcf_member_home.html', type: 'secondary' }
     ],
 
     'dcf_projects.html': [
         { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
-        { icon: '📊', text: 'Analytics', action: 'dcf_analytics_dashboard.html', type: 'secondary' },
+        { icon: '📊', text: 'Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' },
         { icon: '📅', text: 'Events Calendar', action: 'dcf_events_calendar.html', type: 'secondary' },
         { icon: '💬', text: 'Discussion Board', action: 'dcf_member_home.html', type: 'secondary' }
     ],
@@ -21,7 +21,7 @@ const quickActionsConfig = {
     'dcf_create_project.html': [
         { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' },
         { icon: '🌍', text: 'All Projects', action: 'dcf_projects_home.html', type: 'secondary' },
-        { icon: '📊', text: 'Analytics', action: 'dcf_analytics_dashboard.html', type: 'secondary' }
+        { icon: '📊', text: 'Analytics', action: 'dcf_personal_analytics.html', type: 'secondary' }
     ],
 
     'dcf_project_detail.html': [
