@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCF Hungary - Website Audit Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 2rem;
+            border-bottom: 3px solid #333;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .last-updated {
+            background: #e3f2fd;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #1565c0;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number.green { color: #28a745; }
+        .stat-number.yellow { color: #ffc107; }
+        .stat-number.red { color: #dc3545; }
+        .stat-number.blue { color: #007bff; }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section {
+            background: white;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            background: #333;
+            color: white;
+            padding: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .page-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .page-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .page-item:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .page-info {
+            flex: 1;
+        }
+
+        .page-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .page-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-green {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-yellow {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-blue {
+            background: #e1f5fe;
+            color: #01579b;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-right: 1rem;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .priority-high { border-left: 4px solid #dc3545; }
+        .priority-medium { border-left: 4px solid #ffc107; }
+        .priority-low { border-left: 4px solid #28a745; }
+
+        .action-items {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .action-item {
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .action-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-meta {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.5s ease;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e5e5;
+            background: white;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom-color: #333;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1.5rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .update-section {
+            background: #fff3cd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .notes-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .dashboard-header {
+                padding: 1rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="container">
+            <h1 class="dashboard-title">DCF Hungary Website Audit</h1>
+            <p class="dashboard-subtitle">Comprehensive site analysis and standardization tracking</p>
+            <div class="last-updated">Last Updated: <span id="lastUpdated">July 22, 2025</span></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number green" id="pagesStandardized">4</div>
+                <div class="stat-label">Pages Standardized</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number yellow" id="pagesInProgress">3</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number red" id="pagesNeedWork">8</div>
+                <div class="stat-label">Need Standardization</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number blue" id="totalPages">15</div>
+                <div class="stat-label">Total Pages</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="section">
+            <div class="section-header">Overall Progress</div>
+            <div class="section-content">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 27%" id="overallProgress"></div>
+                </div>
+                <p>27% Complete - 4 of 15 pages standardized</p>
+            </div>
+        </div>
+
+        <!-- Tabbed Content -->
+        <div class="section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('pages')">Page Inventory</button>
+                <button class="tab" onclick="switchTab('javascript')">JavaScript System</button>
+                <button class="tab" onclick="switchTab('broken-links')">Broken Links</button>
+                <button class="tab" onclick="switchTab('actions')">Priority Actions</button>
+                <button class="tab" onclick="switchTab('notes')">Session Notes</button>
+            </div>
+
+            <!-- Page Inventory Tab -->
+            <div class="tab-content active" id="pages">
+                <div class="page-grid">
+                    <!-- Core Navigation Pages -->
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">index.html (Homepage)</div>
+                            <div class="page-details">Landing page - needs member conversion optimization</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-yellow">Needs Review</span>
+                            <span class="badge badge-red">No Sidebar</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_member_home.html</div>
+                            <div class="page-details">Member dashboard - needs standardization</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Needs Standardization</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_projects_home.html</div>
+                            <div class="page-details">280px sidebar, Quick Actions working</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-green">Standardized</span>
+                            <span class="badge badge-green">JS Working</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_events_calendar.html</div>
+                            <div class="page-details">280px sidebar, Quick Actions working</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-green">Standardized</span>
+                            <span class="badge badge-green">JS Working</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_resources_library.html</div>
+                            <div class="page-details">280px sidebar, Quick Actions working</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-green">Standardized</span>
+                            <span class="badge badge-green">JS Working</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_members_directory.html</div>
+                            <div class="page-details">Member directory - needs audit</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Needs Audit</span>
+                        </div>
+                    </div>
+
+                    <!-- Authentication & Profile Pages -->
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_login_page.html</div>
+                            <div class="page-details">Login system - no sidebar needed</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-blue">Special Layout</span>
+                            <span class="badge badge-yellow">Needs Review</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_member_profile.html</div>
+                            <div class="page-details">280px sidebar, Quick Actions working</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-green">Standardized</span>
+                            <span class="badge badge-green">JS Working</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_profile_signup.html</div>
+                            <div class="page-details">Registration form - no sidebar needed</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-blue">Special Layout</span>
+                            <span class="badge badge-yellow">Needs Review</span>
+                        </div>
+                    </div>
+
+                    <!-- Utility Pages -->
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_settings.html</div>
+                            <div class="page-details">Account settings - needs standardization</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Needs Standardization</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_contact.html</div>
+                            <div class="page-details">Contact/support page - needs audit</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Needs Audit</span>
+                        </div>
+                    </div>
+
+                    <!-- Project-Related Pages -->
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_create_project.html</div>
+                            <div class="page-details">Project creation form - needs audit</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Needs Audit</span>
+                        </div>
+                    </div>
+
+                    <!-- Missing/Referenced Pages -->
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">dcf_personal_analytics.html</div>
+                            <div class="page-details">Referenced in Quick Actions - may not exist</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-red">Missing/Broken</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">Project Detail Pages</div>
+                            <div class="page-details">Individual project pages - status unknown</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-yellow">Need Verification</span>
+                        </div>
+                    </div>
+
+                    <div class="page-item">
+                        <div class="page-info">
+                            <div class="page-name">Event Detail Pages</div>
+                            <div class="page-details">Individual event pages - status unknown</div>
+                        </div>
+                        <div class="status-badges">
+                            <span class="badge badge-yellow">Need Verification</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JavaScript System Tab -->
+            <div class="tab-content" id="javascript">
+                <div class="update-section">
+                    <strong>JavaScript System Status</strong><br>
+                    Universal system implemented with 3 core files. Quick Actions populate dynamically based on page filename.
+                </div>
+                
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>universal-navbar.js - User dropdown and navigation system</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>quickactions.js - Quick Actions content mapping system</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>universal-quick-actions.js - Quick Actions rendering system</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>dcf_projects_home.html - Quick Actions working correctly</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>dcf_events_calendar.html - Quick Actions working correctly</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>dcf_resources_library.html - Quick Actions working correctly</span>
+                    </li>
+                    <li>
+                        <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                        <span>dcf_member_profile.html - Quick Actions working correctly</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test Quick Actions on dcf_member_home.html</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test Quick Actions on dcf_members_directory.html</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test Quick Actions on dcf_settings.html</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Verify user dropdown system across all pages</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test logout functionality site-wide</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Broken Links Tab -->
+            <div class="tab-content" id="broken-links">
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Verify dcf_personal_analytics.html exists (referenced in Quick Actions)</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Check all navigation menu links from main nav</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test all Quick Actions links across standardized pages</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Verify project detail page links from projects listing</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Check event detail page links from events calendar</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test member profile links from directory</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Verify login/logout flows work correctly</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Check footer links (if any) across all pages</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Test breadcrumb navigation (if implemented)</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" onclick="toggleCheck(this)"></div>
+                        <span>Verify all form action destinations exist</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Priority Actions Tab -->
+            <div class="tab-content" id="actions">
+                <div class="action-items">
+                    <div class="action-item priority-high">
+                        <div class="action-title">🔥 Critical: Complete Page Audit</div>
+                        <div class="action-description">Map all existing pages, identify which ones exist vs referenced, document current layouts and functionality</div>
+                        <div class="action-meta">Priority: High | Estimated: 2 hours</div>
+                    </div>
+
+                    <div class="action-item priority-high">
+                        <div class="action-title">🔥 Critical: Standardize Member Home Page</div>
+                        <div class="action-description">dcf_member_home.html is the main dashboard - needs 280px sidebar and Quick Actions integration</div>
+                        <div class="action-meta">Priority: High | Estimated: 1 hour</div>
+                    </div>
+
+                    <div class="action-item priority-medium">
+                        <div class="action-title">⚠️ Medium: Standardize Members Directory</div>
+                        <div class="action-description">Apply 280px sidebar layout and integrate Quick Actions system</div>
+                        <div class="action-meta">Priority: Medium | Estimated: 1 hour</div>
+                    </div>
+
+                    <div class="action-item priority-medium">
+                        <div class="action-title">⚠️ Medium: Fix Missing Analytics Page</div>
+                        <div class="action-description">dcf_personal_analytics.html is referenced but may not exist - create or fix links</div>
+                        <div class="action-meta">Priority: Medium | Estimated: 1-2 hours</div>
+                    </div>
+
+                    <div class="action-item priority-medium">
+                        <div class="action-title">⚠️ Medium: Standardize Settings Page</div>
+                        <div class="action-description">Apply standard layout to dcf_settings.html</div>
+                        <div class="action-meta">Priority: Medium | Estimated: 1 hour</div>
+                    </div>
+
+                    <div class="action-item priority-low">
+                        <div class="action-title">✅ Low: Review Contact Page</div>
+                        <div class="action-description">Audit dcf_contact.html and determine if standardization needed</div>
+                        <div class="action-meta">Priority: Low | Estimated: 30 minutes</div>
+                    </div>
+
+                    <div class="action-item priority-low">
+                        <div class="action-title">✅ Low: Optimize Homepage</div>
+                        <div class="action-description">Review homepage for member conversion opportunities</div>
+                        <div class="action-meta">Priority: Low | Estimated: 1 hour</div>
+                    </div>
+
+                    <div class="action-item priority-low">
+                        <div class="action-title">✅ Low: Test Mobile Responsiveness</div>
+                        <div class="action-description">Verify all standardized pages work well on mobile devices</div>
+                        <div class="action-meta">Priority: Low | Estimated: 1 hour</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Notes Tab -->
+            <div class="tab-content" id="notes">
+                <div class="update-section">
+                    <strong>Session Notes & Progress Tracking</strong><br>
+                    Use this area to track progress across multiple Claude conversations. Save this file to your repository.
+                </div>
+                
+                <textarea class="notes-area" placeholder="Enter session notes, completed tasks, and next steps here...
+
+Example format:
+- [DATE] Completed standardization of dcf_member_home.html
+- [DATE] Fixed broken link to analytics page
+- [DATE] Next: Work on members directory standardization
+
+This will help maintain context across different conversations."></textarea>
+                
+                <div style="margin-top: 1rem;">
+                    <button onclick="saveNotes()" style="padding: 0.5rem 1rem; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">Save Notes (Local Storage)</button>
+                    <button onclick="loadNotes()" style="padding: 0.5rem 1rem; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: 0.5rem;">Load Saved Notes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function toggleCheck(checkbox) {
+            checkbox.classList.toggle('checked');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const totalTasks = document.querySelectorAll('.checkbox').length;
+            const completedTasks = document.querySelectorAll('.checkbox.checked').length;
+            const percentage = Math.round((completedTasks / totalTasks) * 100);
+            
+            document.getElementById('overallProgress').style.width = percentage + '%';
+            
+            // Update stats if needed
+            const standardizedCount = document.querySelectorAll('.badge-green').length;
+            document.getElementById('pagesStandardized').textContent = Math.floor(standardizedCount / 2); // Rough estimate
+        }
+
+        function saveNotes() {
+            const notes = document.querySelector('.notes-area').value;
+            localStorage.setItem('dcf_audit_notes', notes);
+            localStorage.setItem('dcf_audit_last_updated', new Date().toLocaleDateString());
+            alert('Notes saved successfully!');
+        }
+
+        function loadNotes() {
+            const notes = localStorage.getItem('dcf_audit_notes');
+            const lastUpdated = localStorage.getItem('dcf_audit_last_updated');
+            
+            if (notes) {
+                document.querySelector('.notes-area').value = notes;
+                if (lastUpdated) {
+                    document.getElementById('lastUpdated').textContent = lastUpdated;
+                }
+                alert('Notes loaded successfully!');
+            } else {
+                alert('No saved notes found.');
+            }
+        }
+
+        // Auto-load notes on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotes();
+        });
+
+        // Update progress on initial load
+        updateProgress();
+    </script>
+</body>
+</html>
