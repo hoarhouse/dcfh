@@ -1,877 +1,209 @@
-// Universal Navbar System for DCF Hungary - UPDATED PROJECT ROUTING
-// Projects link now goes to dcf_projects_home.html for logged-in users
-// My Projects moved to user dropdown menu
+// universal-navbar.js - Updated with Personal Dashboard Focus IDM
 
-class DCFUniversalNavbar {
-    constructor() {
-        // Prevent duplicate initialization
-        if (window.dcfNavbar || document.getElementById('dcf-navbar')) {
-            console.log('DCF Navbar already exists, skipping initialization');
-            return;
-        }
+// User menu functionality
+let isDropdownOpen = false;
+
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    const overlay = getOrCreateOverlay();
+    
+    if (isDropdownOpen) {
+        closeUserMenu();
+    } else {
+        openUserMenu();
+    }
+}
+
+function openUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    const overlay = getOrCreateOverlay();
+    
+    dropdown.classList.add('active');
+    overlay.classList.add('active');
+    isDropdownOpen = true;
+    
+    updateUserDropdownInfo();
+}
+
+function closeUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    const overlay = document.querySelector('.dropdown-overlay');
+    
+    dropdown.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    isDropdownOpen = false;
+}
+
+function getOrCreateOverlay() {
+    let overlay = document.querySelector('.dropdown-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'dropdown-overlay';
+        overlay.onclick = closeUserMenu;
+        document.body.appendChild(overlay);
+    }
+    return overlay;
+}
+
+function updateUserDropdownInfo() {
+    const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+    const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+    const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+
+    const nameElement = document.getElementById('dropdownUserName');
+    const emailElement = document.getElementById('dropdownUserEmail');
+
+    if (nameElement) nameElement.textContent = userName;
+    if (emailElement) emailElement.textContent = userEmail;
+
+    const initials = generateInitials(userName);
+    const avatarElement = document.getElementById('userAvatar');
+    const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+
+    if (avatarElement) avatarElement.textContent = initials;
+    if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
+
+    if (authProvider === 'github') {
+        if (emailElement) emailElement.textContent = `${userEmail} (GitHub)`;
+    }
+
+    // Update IDM with Personal Dashboard Focus navigation
+    updateIDMNavigation();
+}
+
+function updateIDMNavigation() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown) return;
+
+    // Find the dropdown content area (after header)
+    const dropdownHeader = dropdown.querySelector('.dropdown-header');
+    if (!dropdownHeader) return;
+
+    // Remove existing navigation items (everything after header)
+    const existingItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-divider');
+    existingItems.forEach(item => item.remove());
+
+    // Create Personal Dashboard Focus navigation
+    const navigationHTML = `
+        <div class="dropdown-divider"></div>
         
-        this.isLoggedIn = this.checkLoginStatus();
-        this.currentPage = this.getCurrentPage();
-        this.init();
-    }
-
-    // Check if user is logged in
-    checkLoginStatus() {
-        const loginIndicators = [
-            localStorage.getItem('dcf_user_logged_in'),
-            localStorage.getItem('dcf_github_session'),
-            localStorage.getItem('dcf_user_name'),
-            localStorage.getItem('dcf_auth_provider'),
-            localStorage.getItem('dcf_auth_token'),
-            sessionStorage.getItem('dcf_user_session'),
-            document.cookie.includes('dcf_logged_in=true'),
-            document.querySelector('[data-user-logged-in="true"]')
-        ];
-
-        const isLoggedIn = loginIndicators.some(indicator => !!indicator);
+        <!-- Personal Dashboard Focus Navigation -->
+        <a href="dcf_member_home.html" class="dropdown-item">
+            <span class="dropdown-icon">🏠</span>
+            My Feed
+        </a>
+        <a href="dcf_member_profile.html" class="dropdown-item">
+            <span class="dropdown-icon">👤</span>
+            My Profile
+        </a>
+        <a href="#" class="dropdown-item" onclick="alert('My Connections page coming soon!'); return false;">
+            <span class="dropdown-icon">🤝</span>
+            My Connections
+        </a>
+        <a href="dcf_projects.html" class="dropdown-item">
+            <span class="dropdown-icon">📁</span>
+            My Projects
+        </a>
+        <a href="dcf_events.html" class="dropdown-item">
+            <span class="dropdown-icon">📅</span>
+            My Events
+        </a>
+        <a href="dcf_personal_analytics.html" class="dropdown-item">
+            <span class="dropdown-icon">📊</span>
+            My Stats
+        </a>
         
-        console.log('DCF Login Check:', {
-            url: window.location.href,
-            dcf_user_logged_in: localStorage.getItem('dcf_user_logged_in'),
-            dcf_github_session: !!localStorage.getItem('dcf_github_session'),
-            dcf_user_name: localStorage.getItem('dcf_user_name'),
-            finalStatus: isLoggedIn
-        });
+        <div class="dropdown-divider"></div>
         
-        return isLoggedIn;
-    }
-
-    // Get current page name for navigation highlighting
-    getCurrentPage() {
-        const path = window.location.pathname;
-        const filename = path.split('/').pop() || 'index.html';
-        return filename.replace('.html', '').replace('dcf_', '');
-    }
-
-    // Hide existing navbar elements
-    hideExistingNavbars() {
-        const hideNavbarCSS = `
-        <style id="dcf-hide-old-navbars">
-        nav:not(.dcf-universal-navbar),
-        .navbar:not(.dcf-universal-navbar),
-        .navigation:not(.dcf-universal-navbar),
-        .header-nav:not(.dcf-universal-navbar),
-        .main-nav:not(.dcf-universal-navbar),
-        .top-nav:not(.dcf-universal-navbar),
-        #navbar:not(.dcf-universal-navbar),
-        #navigation:not(.dcf-universal-navbar),
-        .nav-container:not(.dcf-universal-navbar),
-        .dcf-nav:not(.dcf-universal-navbar) {
-            display: none !important;
-            visibility: hidden !important;
-        }
+        <a href="dcf_account_settings.html" class="dropdown-item">
+            <span class="dropdown-icon">⚙️</span>
+            Settings
+        </a>
+        <a href="dcf_contact.html" class="dropdown-item">
+            <span class="dropdown-icon">💬</span>
+            Help & Support
+        </a>
         
-        .dcf-universal-navbar {
-            display: block !important;
-            visibility: visible !important;
-        }
-        </style>
-        `;
+        <div class="dropdown-divider"></div>
         
-        if (!document.getElementById('dcf-hide-old-navbars')) {
-            document.head.insertAdjacentHTML('beforeend', hideNavbarCSS);
-        }
+        <a href="#" onclick="handleLogout(); return false;" class="dropdown-item logout-btn">
+            <span class="dropdown-icon">🚪</span>
+            Logout
+        </a>
+    `;
+
+    // Insert the new navigation after the header
+    dropdownHeader.insertAdjacentHTML('afterend', navigationHTML);
+}
+
+function generateInitials(name) {
+    if (!name) return 'SJ';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
+    return name.substring(0, 2).toUpperCase();
+}
 
-    // Initialize the navbar
-    init() {
-        this.hideExistingNavbars();
-        this.createNavbarHTML();
-        this.attachEventListeners();
-        this.highlightCurrentPage();
-        
-        window.dcfNavbarRollback = this.rollback.bind(this);
-        console.log('DCF Universal Navbar initialized successfully. Login status:', this.isLoggedIn);
-    }
-
-    // Create the complete navbar HTML structure
-    createNavbarHTML() {
-        const navbarHTML = `
-        <nav class="dcf-universal-navbar" id="dcf-navbar">
-            <div class="navbar-container">
-                <!-- LEFT SIDE: Logo + Main Navigation -->
-                <div class="navbar-left">
-                    <div class="navbar-logo">
-                        <a href="index.html" class="logo-link">
-                            <img src="assets/dcf-logo.png" alt="DCF Hungary" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                            <span class="logo-text">DCF Hungary</span>
-                        </a>
-                    </div>
-                    <div class="navbar-main-menu">
-                        <ul class="main-menu-list">
-                            <li class="menu-item has-dropdown" data-page="about">
-                                <a href="dcf_about.html" class="menu-link">About</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="dcf_mission.html">Our Mission</a>
-                                        <a href="dcf_leadership.html">Leadership Team</a>
-                                        <a href="dcf_global_network.html">Global Network</a>
-                                        <a href="dcf_community_guidelines.html">Community Guidelines</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="menu-item has-dropdown" data-page="research">
-                                <a href="dcf_research.html" class="menu-link">Research</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="#" onclick="dcfNavigateToProjects(event)">Current Projects</a>
-                                        <a href="dcf_publications.html">Publications</a>
-                                        <a href="dcf_case_studies.html">Case Studies</a>
-                                        <a href="dcf_funding.html">Funding</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="menu-item has-dropdown" data-page="community">
-                                <a href="dcf_community.html" class="menu-link">Community</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="dcf_members_directory.html">Members Directory</a>
-                                        <a href="dcf_working_groups.html">Working Groups</a>
-                                        <a href="dcf_mentorship.html">Mentorship</a>
-                                        <a href="dcf_profile_dashboard.html">Member Dashboard</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="menu-item has-dropdown" data-page="events">
-                                <a href="#" class="menu-link" onclick="dcfNavigateToEvents(event)">Events</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="#" onclick="dcfNavigateToEvents(event)">My Events</a>
-                                        <a href="dcf_events_calendar.html">Events Calendar</a>
-                                        <a href="dcf_event_registration.html">Register for Events</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="menu-item" data-page="projects">
-                                <a href="#" class="menu-link" onclick="dcfNavigateToProjects(event)">Projects</a>
-                            </li>
-                            <li class="menu-item has-dropdown" data-page="resources">
-                                <a href="dcf_resources.html" class="menu-link">Resources</a>
-                                <div class="mega-dropdown">
-                                    <div class="dropdown-content">
-                                        <a href="dcf_learning_materials.html">Learning Materials</a>
-                                        <a href="dcf_discussion_board.html">Discussion Board</a>
-                                        <a href="dcf_document_library.html">Document Library</a>
-                                        <a href="dcf_media_resources.html">Media Resources</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="menu-item" data-page="contact">
-                                <a href="dcf_contact.html" class="menu-link">Contact</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- CENTER: Search -->
-                <div class="navbar-center">
-                    <div class="navbar-search">
-                        <div class="search-container">
-                            <input type="text" 
-                                   id="dcf-search" 
-                                   class="search-input" 
-                                   placeholder="Search projects, members, resources..."
-                                   autocomplete="off">
-                            <button class="search-btn" type="button">
-                                <span class="search-icon">🔍</span>
-                            </button>
-                        </div>
-                        <div class="search-suggestions" id="search-suggestions" style="display: none;"></div>
-                    </div>
-                </div>
-
-                <!-- RIGHT SIDE: Dynamic based on login status -->
-                <div class="navbar-right">
-                    ${this.isLoggedIn ? this.getLoggedInRightNav() : this.getLoggedOutRightNav()}
-                </div>
-
-                <!-- Mobile Menu Toggle -->
-                <div class="mobile-menu-toggle">
-                    <button class="mobile-toggle-btn" id="mobile-menu-btn">
-                        <span class="hamburger-line"></span>
-                        <span class="hamburger-line"></span>
-                        <span class="hamburger-line"></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Mobile Menu -->
-            <div class="mobile-menu" id="mobile-menu" style="display: none;">
-                <div class="mobile-menu-content">
-                    <div class="mobile-menu-items">
-                        <a href="dcf_about.html" class="mobile-menu-item">About</a>
-                        <a href="#" class="mobile-menu-item" onclick="dcfNavigateToProjects(event)">Projects</a>
-                        <a href="#" class="mobile-menu-item" onclick="dcfNavigateToEvents(event)">Events</a>
-                        <a href="dcf_resources.html" class="mobile-menu-item">Resources</a>
-                        <a href="dcf_contact.html" class="mobile-menu-item">Contact</a>
-                        ${this.isLoggedIn ? 
-                            '<a href="dcf_profile_dashboard.html" class="mobile-menu-item">Dashboard</a><a href="dcf_projects.html" class="mobile-menu-item">My Projects</a><a href="#" class="mobile-menu-item" onclick="window.dcfNavbar.logout()">Logout</a>' : 
-                            '<a href="dcf_login_page.html" class="mobile-menu-item">Login</a><a href="dcf_profile_signup.html" class="mobile-menu-item">Join Movement</a>'
-                        }
-                    </div>
-                </div>
-            </div>
-        </nav>
-
-        <style>
-        /* Universal Navbar Styles - COMPLETE CSS */
-        .dcf-universal-navbar {
-            background: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+function handleLogout() {
+    closeUserMenu();
+    setTimeout(() => {
+        if(confirm('Are you sure you want to sign out?')){
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href='dcf_login_page.html';
         }
+    }, 100);
+}
 
-        .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 64px;
-        }
-
-        /* LEFT SIDE: Logo + Main Menu */
-        .navbar-left {
-            display: flex;
-            align-items: center;
-            flex: 1;
-        }
-
-        .navbar-logo {
-            margin-right: 40px;
-        }
-
-        .logo-link {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #1f2937;
-        }
-
-        .logo-img {
-            height: 32px;
-            width: auto;
-            margin-right: 8px;
-        }
-
-        .logo-text {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .main-menu-list {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            align-items: center;
-        }
-
-        .menu-item {
-            position: relative;
-            margin-right: 32px;
-        }
-
-        .menu-link {
-            display: block;
-            padding: 8px 0;
-            color: #4b5563;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .menu-link:hover, 
-        .menu-item.active .menu-link {
-            color: #2563eb;
-        }
-
-        /* Dropdown Styles */
-        .mega-dropdown {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            padding: 16px;
-            min-width: 200px;
-            z-index: 1001;
-        }
-
-        .has-dropdown:hover .mega-dropdown {
-            display: block;
-        }
-
-        .dropdown-content a {
-            display: block;
-            padding: 8px 12px;
-            color: #4b5563;
-            text-decoration: none;
-            font-size: 14px;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-
-        .dropdown-content a:hover {
-            background-color: #f3f4f6;
-            color: #2563eb;
-        }
-
-        /* CENTER: Search */
-        .navbar-center {
-            flex: 0 0 300px;
-            margin: 0 20px;
-        }
-
-        .search-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 8px 40px 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 20px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .search-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .search-btn {
-            position: absolute;
-            right: 8px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-        }
-
-        .search-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1002;
-        }
-
-        .search-suggestion-item {
-            display: block;
-            padding: 12px;
-            text-decoration: none;
-            color: #374151;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .search-suggestion-item:hover {
-            background-color: #f9fafb;
-        }
-
-        /* RIGHT SIDE */
-        .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .navbar-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-secondary {
-            background: #f9fafb;
-            color: #4b5563;
-            border: 1px solid #d1d5db;
-        }
-
-        .btn-secondary:hover {
-            background: #f3f4f6;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-
-        .user-dropdown {
-            position: relative;
-        }
-
-        .user-menu-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: #f9fafb;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .user-dropdown-menu {
-            display: none;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            padding: 8px 0;
-            min-width: 180px;
-            z-index: 1001;
-        }
-
-        .user-dropdown.active .user-dropdown-menu {
-            display: block;
-        }
-
-        .dropdown-item {
-            display: block;
-            width: 100%;
-            padding: 8px 16px;
-            text-align: left;
-            color: #4b5563;
-            text-decoration: none;
-            font-size: 14px;
-            border: none;
-            background: none;
-            cursor: pointer;
-        }
-
-        .dropdown-item:hover {
-            background: #f3f4f6;
-        }
-
-        .dropdown-divider {
-            height: 1px;
-            background: #e5e7eb;
-            margin: 4px 0;
-        }
-
-        .notification-count {
-            background: #ef4444;
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 4px;
-        }
-
-        /* Mobile Styles */
-        .mobile-menu-toggle {
-            display: none;
-        }
-
-        .mobile-menu-content {
-            padding: 20px;
-        }
-
-        .mobile-menu-item {
-            display: block;
-            padding: 12px 0;
-            color: #4b5563;
-            text-decoration: none;
-            font-size: 16px;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .mobile-menu-item:hover {
-            color: #2563eb;
-        }
-
-        @media (max-width: 968px) {
-            .navbar-main-menu,
-            .navbar-center {
-                display: none;
-            }
-            
-            .mobile-menu-toggle {
-                display: block;
-            }
-            
-            .mobile-toggle-btn {
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                gap: 3px;
-            }
-            
-            .hamburger-line {
-                width: 20px;
-                height: 2px;
-                background: #4b5563;
-                transition: 0.3s;
-            }
-            
-            .mobile-menu {
-                background: white;
-                border-top: 1px solid #e5e7eb;
-            }
-        }
-        </style>
-        `;
-
-        if (!document.getElementById('dcf-navbar')) {
-            document.body.insertAdjacentHTML('afterbegin', navbarHTML);
-        }
-    }
-
-    // Generate right navigation for logged-out users
-    getLoggedOutRightNav() {
-        return `
-            <div class="language-selector">
-                <button class="navbar-btn btn-secondary" title="Language/Region Selector">🌐 EN</button>
-            </div>
-            <a href="dcf_login_page.html" class="navbar-btn btn-secondary">Login</a>
-            <a href="dcf_profile_signup.html" class="navbar-btn btn-primary">Join Movement</a>
-        `;
-    }
-
-    // Generate right navigation for logged-in users - UPDATED WITH MY PROJECTS
-    getLoggedInRightNav() {
-        const userName = localStorage.getItem('dcf_user_name') || 'Guest User';
-        const userInitials = this.generateInitials(userName);
-        
-        return `
-            <div class="notifications">
-                <button class="navbar-btn btn-secondary" title="Notifications">
-                    🔔 <span class="notification-count">3</span>
-                </button>
-            </div>
-            <div class="messages">
-                <button class="navbar-btn btn-secondary" title="Messages">✉️</button>
-            </div>
-            <div class="user-dropdown" id="user-dropdown">
-                <button class="user-menu-btn" id="user-menu-toggle">
-                    <span>${userInitials}</span>
-                    <span>▼</span>
-                </button>
-                <div class="user-dropdown-menu">
-                    <a href="dcf_profile_dashboard.html" class="dropdown-item">Dashboard</a>
-                    <a href="dcf_member_profile.html" class="dropdown-item">My Profile</a>
-                    <a href="dcf_projects.html" class="dropdown-item">My Projects</a>
-                    <a href="#" class="dropdown-item" onclick="dcfNavigateToEvents(event)">My Events</a>
-                    <a href="dcf_messages.html" class="dropdown-item">Messages</a>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" onclick="window.dcfNavbar.logout()">LOGOUT</button>
-                </div>
-            </div>
-        `;
-    }
-
-    // Generate user initials
-    generateInitials(name) {
-        if (!name) return 'GU';
-        const parts = name.split(' ');
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-    }
-
-    // Attach all event listeners
-    attachEventListeners() {
-        // User dropdown toggle for logged-in users
-        const userDropdown = document.getElementById('user-dropdown');
-        const userToggle = document.getElementById('user-menu-toggle');
-        
-        if (userToggle && userDropdown) {
-            userToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                userDropdown.classList.toggle('active');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (event) => {
-                if (!userDropdown.contains(event.target)) {
-                    userDropdown.classList.remove('active');
-                }
-            });
-        }
-
-        // Search functionality
-        const searchInput = document.getElementById('dcf-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', this.handleSearch.bind(this));
-            searchInput.addEventListener('focus', this.showSearchSuggestions.bind(this));
-            searchInput.addEventListener('blur', () => {
-                setTimeout(() => this.hideSearchSuggestions(), 200);
-            });
-        }
-
-        // Mobile menu toggle
-        const mobileBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
-        
-        if (mobileBtn && mobileMenu) {
-            mobileBtn.addEventListener('click', () => {
-                const isVisible = mobileMenu.style.display !== 'none';
-                mobileMenu.style.display = isVisible ? 'none' : 'block';
-            });
-        }
-
-        // Close mobile menu on window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 968) {
-                const mobileMenu = document.getElementById('mobile-menu');
-                if (mobileMenu) mobileMenu.style.display = 'none';
-            }
-        });
-    }
-
-    // Highlight current page in navigation
-    highlightCurrentPage() {
-        const menuItems = document.querySelectorAll('.menu-item');
-        menuItems.forEach(item => {
-            const page = item.getAttribute('data-page');
-            if (page && this.currentPage.includes(page)) {
-                item.classList.add('active');
-            }
-        });
-    }
-
-    // Handle search input
-    handleSearch(event) {
-        const query = event.target.value.trim();
-        if (query.length < 2) {
-            this.hideSearchSuggestions();
-            return;
-        }
-
-        const suggestions = this.getSearchSuggestions(query);
-        this.displaySearchSuggestions(suggestions);
-    }
-
-    // Get search suggestions
-    getSearchSuggestions(query) {
-        const allItems = [
-            { title: 'About DCF Hungary', type: 'page', url: 'dcf_about.html' },
-            { title: 'Contact Us', type: 'page', url: 'dcf_contact.html' },
-            { title: 'Browse All Projects', type: 'projects', url: '#', onclick: 'dcfNavigateToProjects(event)' },
-            { title: 'My Projects', type: 'projects', url: 'dcf_projects.html' },
-            { title: 'Create Project', type: 'projects', url: 'dcf_create_project.html' },
-            { title: 'My Events', type: 'events', url: '#', onclick: 'dcfNavigateToEvents(event)' },
-            { title: 'Events Calendar', type: 'events', url: 'dcf_events_calendar.html' },
-            { title: 'Members Directory', type: 'community', url: 'dcf_members_directory.html' },
-            { title: 'Profile Dashboard', type: 'member', url: 'dcf_profile_dashboard.html' },
-            { title: 'Learning Materials', type: 'resources', url: 'dcf_learning_materials.html' },
-            { title: 'Login', type: 'account', url: 'dcf_login_page.html' },
-            { title: 'Sign Up', type: 'account', url: 'dcf_profile_signup.html' }
-        ];
-
-        return allItems.filter(item => 
-            item.title.toLowerCase().includes(query.toLowerCase()) ||
-            item.type.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 6);
-    }
-
-    // Display search suggestions
-    displaySearchSuggestions(suggestions) {
-        const suggestionsContainer = document.getElementById('search-suggestions');
-        if (!suggestionsContainer) return;
-
-        if (suggestions.length === 0) {
-            suggestionsContainer.innerHTML = '<div style="padding: 12px; color: #6b7280;">No results found</div>';
-        } else {
-            suggestionsContainer.innerHTML = suggestions.map(item => `
-                <a href="${item.url}" class="search-suggestion-item" ${item.onclick ? `onclick="${item.onclick}"` : ''}>
-                    <div style="font-weight: 500;">${item.title}</div>
-                    <div style="font-size: 12px; color: #6b7280; text-transform: uppercase;">${item.type}</div>
-                </a>
-            `).join('');
-        }
-
-        suggestionsContainer.style.display = 'block';
-    }
-
-    // Show search suggestions
-    showSearchSuggestions() {
-        const searchInput = document.getElementById('dcf-search');
-        if (searchInput && searchInput.value.trim().length >= 2) {
-            this.handleSearch({ target: searchInput });
-        }
-    }
-
-    // Hide search suggestions
-    hideSearchSuggestions() {
-        const suggestionsContainer = document.getElementById('search-suggestions');
-        if (suggestionsContainer) {
-            suggestionsContainer.style.display = 'none';
-        }
-    }
-
-    // Logout function
-    logout() {
-        localStorage.removeItem('dcf_user_logged_in');
+function logout() {
+    if (confirm('Are you sure you want to sign out?')) {
         localStorage.removeItem('dcf_github_session');
+        localStorage.removeItem('dcf_user_logged_in');
         localStorage.removeItem('dcf_user_name');
         localStorage.removeItem('dcf_user_email');
         localStorage.removeItem('dcf_auth_provider');
-        localStorage.removeItem('isWhitelist');
-        localStorage.removeItem('debug');
-        localStorage.removeItem('dcf_auth_token');
-        sessionStorage.removeItem('dcf_user_session');
-        
-        document.cookie = 'dcf_logged_in=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'github_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
-        console.log('User logged out, clearing all DCF session data');
-        window.location.href = 'index.html';
-    }
+        localStorage.removeItem('dcf_remember_login');
 
-    // Update login status dynamically
-    updateLoginStatus(isLoggedIn) {
-        this.isLoggedIn = isLoggedIn;
-        
-        const rightNav = document.querySelector('.navbar-right');
-        if (rightNav) {
-            rightNav.innerHTML = isLoggedIn ? this.getLoggedInRightNav() : this.getLoggedOutRightNav();
-            this.attachEventListeners();
-        }
-        
-        console.log('Login status updated to:', isLoggedIn);
-    }
+        sessionStorage.clear();
 
-    // Rollback function
-    rollback() {
-        const ourNavbar = document.getElementById('dcf-navbar');
-        if (ourNavbar) ourNavbar.remove();
-        
-        const hideCSS = document.getElementById('dcf-hide-old-navbars');
-        if (hideCSS) hideCSS.remove();
-        
-        console.log('DCF Universal Navbar removed. Old navbar should now be visible.');
-        
-        delete window.dcfNavbar;
-        delete window.dcfNavbarRollback;
+        alert('You have been signed out successfully.');
+        window.location.href = 'dcf_login_page.html';
     }
 }
 
-// UPDATED GLOBAL NAVIGATION FUNCTIONS
-function dcfNavigateToProjects(event) {
-    event.preventDefault();
-    
-    const loginIndicators = [
-        localStorage.getItem('dcf_user_logged_in'),
-        localStorage.getItem('dcf_github_session'),
-        localStorage.getItem('dcf_user_name'),
-        localStorage.getItem('dcf_auth_provider')
-    ];
-    
-    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
-    
-    console.log('Smart Projects Navigation:', {
-        isLoggedIn: isLoggedIn,
-        redirectingTo: isLoggedIn ? 'dcf_projects_home.html' : 'dcf_projects_public.html'
-    });
-    
-    if (isLoggedIn) {
-        window.location.href = 'dcf_projects_home.html';  // Browse all projects (member-only)
-    } else {
-        window.location.href = 'dcf_projects_public.html';  // Public projects showcase
-    }
-}
+// Initialize user menu on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateUserDropdownInfo();
 
-function dcfNavigateToEvents(event) {
-    event.preventDefault();
-    
-    const loginIndicators = [
-        localStorage.getItem('dcf_user_logged_in'),
-        localStorage.getItem('dcf_github_session'),
-        localStorage.getItem('dcf_user_name'),
-        localStorage.getItem('dcf_auth_provider')
-    ];
-    
-    const isLoggedIn = loginIndicators.some(indicator => !!indicator);
-    
-    console.log('Smart Events Navigation:', {
-        isLoggedIn: isLoggedIn,
-        redirectingTo: isLoggedIn ? 'dcf_events.html' : 'dcf_events_public.html'
-    });
-    
-    if (isLoggedIn) {
-        window.location.href = 'dcf_events.html';  // Personal events dashboard
-    } else {
-        window.location.href = 'dcf_events_public.html';  // Public events showcase
-    }
-}
-
-// Initialize the universal navbar when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if we're on a login/auth page that should NOT have navbar
-    const isAuthPage = window.location.href.includes('login') || 
-                      window.location.href.includes('auth') ||
-                      window.location.href.includes('code=') ||
-                      window.location.href.includes('token=') ||
-                      document.querySelector('.github-auth') ||
-                      document.querySelector('.auth-container') ||
-                      document.body.classList.contains('auth-page');
-    
-    if (isAuthPage) {
-        console.log('Auth page detected - skipping navbar creation');
-        return;
-    }
-    
-    if (!window.dcfNavbar && !document.getElementById('dcf-navbar')) {
-        window.dcfNavbar = new DCFUniversalNavbar();
-        console.log('DCF Universal Navbar initialized successfully');
-    }
-});
-
-// Close search suggestions when clicking outside
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.navbar-search')) {
-        const suggestionsContainer = document.getElementById('search-suggestions');
-        if (suggestionsContainer) {
-            suggestionsContainer.style.display = 'none';
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+    if (isLoggedIn !== 'true') {
+        // Redirect to login for member pages only
+        const currentPage = window.location.pathname;
+        const publicPages = ['index.html', 'dcf_login_page.html', 'dcf_profile_signup.html', 
+                            'dcf_about.html', 'dcf_contact.html', 'dcf_projects_public.html', 
+                            'dcf_events_public.html'];
+        
+        const isPublicPage = publicPages.some(page => currentPage.includes(page)) || currentPage === '/';
+        
+        if (!isPublicPage) {
+            window.location.href = 'dcf_login_page.html';
         }
     }
-});
 
-// Export for use in other scripts
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = DCFUniversalNavbar;
-}
+    // Close dropdown on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isDropdownOpen) {
+            closeUserMenu();
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const userMenu = document.querySelector('.user-menu');
+        if (isDropdownOpen && userMenu && !userMenu.contains(e.target)) {
+            closeUserMenu();
+        }
+    });
+});
