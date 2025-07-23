@@ -159,37 +159,8 @@ function updateIDMNavigation() {
 }
 
 function fixDropdownClickEvents() {
-    document.querySelectorAll('.dropdown-item').forEach(link => {
-        // Remove existing event listeners by cloning the element
-        const newLink = link.cloneNode(true);
-        link.parentNode.replaceChild(newLink, link);
-        
-        // Add proper event handling
-        newLink.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Handle onclick functions
-            if (this.onclick) {
-                this.onclick();
-                return;
-            }
-            
-            // Handle regular navigation
-            if (this.href && !this.href.includes('#')) {
-                setTimeout(() => {
-                    window.location.href = this.href;
-                }, 100);
-                return;
-            }
-        });
-        
-        // Also handle regular clicks as backup
-        newLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-    });
+    // Do nothing - let normal link behavior work
+    return;
 }
 
 function generateInitials(name) {
