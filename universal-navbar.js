@@ -1,6 +1,5 @@
-// universal-navbar.js - Fixed to handle click events properly
+// universal-navbar.js - Clean working version
 
-// User menu functionality
 let isDropdownOpen = false;
 
 function toggleUserMenu() {
@@ -48,68 +47,52 @@ function getOrCreateOverlay() {
 function updateUserDropdownInfo() {
     const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
     const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
-    const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
 
+    // Update user info in dropdown header
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-
     if (nameElement) nameElement.textContent = userName;
     if (emailElement) emailElement.textContent = userEmail;
 
+    // Generate and update initials
     const initials = generateInitials(userName);
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
-
     if (avatarElement) avatarElement.textContent = initials;
     if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
 
-    if (authProvider === 'github') {
-        if (emailElement) emailElement.textContent = `${userEmail} (GitHub)`;
-    }
-
-    // Update IDM with Personal Dashboard Focus navigation
-    updateIDMNavigation();
+    // Add navigation if not already present
+    addNavigationItems();
 }
 
-function updateIDMNavigation() {
+function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown) return;
 
-    // Find the dropdown content area (after header)
-    const dropdownHeader = dropdown.querySelector('.dropdown-header');
-    if (!dropdownHeader) return;
+    // Check if navigation already exists
+    const existingItems = dropdown.querySelectorAll('.dropdown-item');
+    if (existingItems.length > 0) return; // Already added
 
-    // Check if navigation is already populated
-    const existingNav = dropdown.querySelector('.dropdown-item');
-    if (existingNav) return; // Already populated
-
-    // Find the comment placeholder and replace it with navigation
-    const commentPlaceholder = Array.from(dropdown.childNodes).find(node => 
-        node.nodeType === 8 && node.textContent.includes('Navigation will be dynamically generated')
-    );
-
-    // Create Personal Dashboard Focus navigation
+    // Create navigation HTML
     const navigationHTML = `
         <div class="dropdown-divider"></div>
-        
-        <!-- Personal Dashboard Focus Navigation -->
         <a href="dcf_member_home.html" class="dropdown-item">
             <span class="dropdown-icon">🏠</span>
             My Feed
         </a>
-        <a href="dcf_member_profile.html" class="dropdown-item">
+        <a href="dcf_member_profile.html" class="dropdown-item">  
             <span class="dropdown-icon">👤</span>
             My Profile
         </a>
-        <a href="#" class="dropdown-item" onclick="showComingSoon('My Connections'); return false;">
-            <span class="dropdown-icon">🤝</span>
+        <a href="dcf_members_directory.html" class="dropdown-item">
+            <span class="dropdown-icon">👥</span>
             My Connections
         </a>
-        <a href="dcf_projects.html" class="dropdown-item">
-            <span class="dropdown-icon">📁</span>
+        <a href="dcf_projects_home.html" class="dropdown-item">
+            <span class="dropdown-icon">📋</span>
             My Projects
         </a>
-        <a href="dcf_events.html" class="dropdown-item">
+        <a href="dcf_events_calendar.html" class="dropdown-item">
             <span class="dropdown-icon">📅</span>
             My Events
         </a>
@@ -117,50 +100,22 @@ function updateIDMNavigation() {
             <span class="dropdown-icon">📊</span>
             My Stats
         </a>
-        
-        <div class="dropdown-divider"></div>
-        
-        <a href="dcf_account_settings.html" class="dropdown-item">
+        <a href="dcf_settings.html" class="dropdown-item">
             <span class="dropdown-icon">⚙️</span>
             Settings
         </a>
-        <a href="dcf_contact.html" class="dropdown-item">
-            <span class="dropdown-icon">💬</span>
-            Help & Support
-        </a>
-        
         <div class="dropdown-divider"></div>
-        
-        <a href="#" onclick="handleLogout(); return false;" class="dropdown-item logout-btn">
+        <button onclick="handleLogout()" class="dropdown-item logout-btn">
             <span class="dropdown-icon">🚪</span>
-            Logout
-        </a>
+            Sign Out
+        </button>
     `;
 
-    // Insert the new navigation after the header
-    if (commentPlaceholder) {
-        // Replace the comment with navigation
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = navigationHTML;
-        
-        while (tempDiv.firstChild) {
-            dropdown.insertBefore(tempDiv.firstChild, commentPlaceholder);
-        }
-        dropdown.removeChild(commentPlaceholder);
-    } else {
-        // Fallback: append after header
-        dropdownHeader.insertAdjacentHTML('afterend', navigationHTML);
+    // Add to dropdown after header
+    const header = dropdown.querySelector('.dropdown-header');
+    if (header) {
+        header.insertAdjacentHTML('afterend', navigationHTML);
     }
-
-    // Fix click event handling for dropdown items
-    setTimeout(() => {
-        fixDropdownClickEvents();
-    }, 100);
-}
-
-function fixDropdownClickEvents() {
-    // Do nothing - let normal link behavior work
-    return;
 }
 
 function generateInitials(name) {
@@ -175,13 +130,6 @@ function generateInitials(name) {
     return 'SJ';
 }
 
-function showComingSoon(feature) {
-    closeUserMenu();
-    setTimeout(() => {
-        alert(`${feature} page coming soon!`);
-    }, 100);
-}
-
 function handleLogout() {
     closeUserMenu();
     setTimeout(() => {
@@ -193,35 +141,15 @@ function handleLogout() {
     }, 100);
 }
 
-function logout() {
-    if (confirm('Are you sure you want to sign out?')) {
-        localStorage.removeItem('dcf_github_session');
-        localStorage.removeItem('dcf_user_logged_in');
-        localStorage.removeItem('dcf_user_name');
-        localStorage.removeItem('dcf_user_email');
-        localStorage.removeItem('dcf_auth_provider');
-        localStorage.removeItem('dcf_remember_login');
-
-        sessionStorage.clear();
-
-        alert('You have been signed out successfully.');
-        window.location.href = 'dcf_login_page.html';
-    }
-}
-
-// Initialize user menu on page load
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateUserDropdownInfo();
 
-    // Check if user is logged in
+    // Check login status for member pages
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
     if (isLoggedIn !== 'true') {
-        // Redirect to login for member pages only
         const currentPage = window.location.pathname;
-        const publicPages = ['index.html', 'dcf_login_page.html', 'dcf_profile_signup.html', 
-                            'dcf_about.html', 'dcf_contact.html', 'dcf_projects_public.html', 
-                            'dcf_events_public.html'];
-        
+        const publicPages = ['index.html', 'dcf_login_page.html', 'dcf_profile_signup.html'];
         const isPublicPage = publicPages.some(page => currentPage.includes(page)) || currentPage === '/';
         
         if (!isPublicPage) {
@@ -229,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Close dropdown on escape key
+    // Close dropdown on escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && isDropdownOpen) {
             closeUserMenu();
