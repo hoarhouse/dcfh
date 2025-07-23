@@ -91,11 +91,11 @@ function addNavigationItems() {
             <span class="dropdown-icon">👥</span>
             My Connections
         </a>
-        <a href="dcf_projects_home.html" class="dropdown-item">
+        <a href="dcf_projects.html" class="dropdown-item">
             <span class="dropdown-icon">📋</span>
             My Projects
         </a>
-        <a href="dcf_events_calendar.html" class="dropdown-item">
+        <a href="dcf_events.html" class="dropdown-item">
             <span class="dropdown-icon">📅</span>
             My Events
         </a>
@@ -103,7 +103,7 @@ function addNavigationItems() {
             <span class="dropdown-icon">📊</span>
             My Stats
         </a>
-        <a href="dcf_settings.html" class="dropdown-item">
+        <a href="dcf_account_settings.html" class="dropdown-item">
             <span class="dropdown-icon">⚙️</span>
             Settings
         </a>
