@@ -194,11 +194,14 @@ function fixDropdownClickEvents() {
 
 function generateInitials(name) {
     if (!name) return 'SJ';
-    const parts = name.split(' ');
+    const parts = name.split(' ').filter(part => !['Dr.', 'Mr.', 'Ms.', 'Mrs.', 'Prof.'].includes(part));
+    
     if (parts.length >= 2) {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else if (parts.length === 1) {
+        return parts[0].substring(0, 2).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return 'SJ';
 }
 
 function showComingSoon(feature) {
