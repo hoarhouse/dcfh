@@ -1,4 +1,4 @@
-// universal-navbar.js - Updated with Personal Dashboard Focus IDM
+// universal-navbar.js - Corrected to work with new simplified HTML structure
 
 // User menu functionality
 let isDropdownOpen = false;
@@ -79,9 +79,14 @@ function updateIDMNavigation() {
     const dropdownHeader = dropdown.querySelector('.dropdown-header');
     if (!dropdownHeader) return;
 
-    // Remove existing navigation items (everything after header)
-    const existingItems = dropdown.querySelectorAll('.dropdown-item, .dropdown-divider');
-    existingItems.forEach(item => item.remove());
+    // Check if navigation is already populated
+    const existingNav = dropdown.querySelector('.dropdown-item');
+    if (existingNav) return; // Already populated
+
+    // Find the comment placeholder and replace it with navigation
+    const commentPlaceholder = Array.from(dropdown.childNodes).find(node => 
+        node.nodeType === 8 && node.textContent.includes('Navigation will be dynamically generated')
+    );
 
     // Create Personal Dashboard Focus navigation
     const navigationHTML = `
@@ -96,7 +101,7 @@ function updateIDMNavigation() {
             <span class="dropdown-icon">👤</span>
             My Profile
         </a>
-        <a href="#" class="dropdown-item" onclick="alert('My Connections page coming soon!'); return false;">
+        <a href="#" class="dropdown-item" onclick="showComingSoon('My Connections'); return false;">
             <span class="dropdown-icon">🤝</span>
             My Connections
         </a>
@@ -133,7 +138,19 @@ function updateIDMNavigation() {
     `;
 
     // Insert the new navigation after the header
-    dropdownHeader.insertAdjacentHTML('afterend', navigationHTML);
+    if (commentPlaceholder) {
+        // Replace the comment with navigation
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = navigationHTML;
+        
+        while (tempDiv.firstChild) {
+            dropdown.insertBefore(tempDiv.firstChild, commentPlaceholder);
+        }
+        dropdown.removeChild(commentPlaceholder);
+    } else {
+        // Fallback: append after header
+        dropdownHeader.insertAdjacentHTML('afterend', navigationHTML);
+    }
 }
 
 function generateInitials(name) {
@@ -143,6 +160,10 @@ function generateInitials(name) {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+}
+
+function showComingSoon(feature) {
+    alert(`${feature} page coming soon!`);
 }
 
 function handleLogout() {
