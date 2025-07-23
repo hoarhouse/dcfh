@@ -18,6 +18,9 @@ function openUserMenu() {
     const overlay = getOrCreateOverlay();
     
     dropdown.classList.add('active');
+    dropdown.style.opacity = '1';
+    dropdown.style.visibility = 'visible';
+    dropdown.style.transform = 'translateY(0)';
     overlay.classList.add('active');
     isDropdownOpen = true;
     
