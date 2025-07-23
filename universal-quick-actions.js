@@ -1,23 +1,49 @@
-// universal-quick-actions.js - Context-Sensitive Quick Actions Box
+// universal-quick-actions.js - Corrected to work with new HTML structure
 
 // Initialize Quick Actions based on current page
 document.addEventListener('DOMContentLoaded', function() {
-    initializeQuickActions();
+    // Small delay to ensure DOM is fully loaded
+    setTimeout(initializeQuickActions, 100);
 });
 
 function initializeQuickActions() {
     const currentPage = getCurrentPageType();
-    const quickActionsContainer = document.querySelector('.sidebar .card:first-child');
+    const quickActionsContainer = findQuickActionsContainer();
     
-    if (!quickActionsContainer) return;
+    if (!quickActionsContainer) {
+        console.log('Quick Actions container not found');
+        return;
+    }
     
     // Update Quick Actions based on page context
     updateQuickActions(currentPage, quickActionsContainer);
 }
 
+function findQuickActionsContainer() {
+    // Look for the Quick Actions card in the sidebar
+    const quickActionsCards = document.querySelectorAll('.card');
+    
+    for (let card of quickActionsCards) {
+        const title = card.querySelector('.card-title');
+        if (title && title.textContent.includes('Quick Actions')) {
+            return card;
+        }
+    }
+    
+    // Fallback: look for first card in sidebar
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        return sidebar.querySelector('.card');
+    }
+    
+    return null;
+}
+
 function getCurrentPageType() {
     const path = window.location.pathname.toLowerCase();
     const filename = path.split('/').pop();
+    
+    console.log('Current page:', filename); // Debug log
     
     // Projects Pages
     if (filename.includes('projects_home') || filename.includes('project_detail')) {
@@ -28,6 +54,12 @@ function getCurrentPageType() {
     }
     if (filename === 'dcf_projects.html') {
         return 'my_projects';
+    }
+    if (filename.includes('project_manage')) {
+        return 'manage_project';
+    }
+    if (filename.includes('project_analytics')) {
+        return 'project_analytics';
     }
     
     // Events Pages
@@ -65,9 +97,23 @@ function getCurrentPageType() {
 
 function updateQuickActions(pageType, container) {
     const title = container.querySelector('.card-title');
-    const actionsDiv = container.querySelector('div[style*="flex-direction: column"]');
+    let actionsDiv = container.querySelector('div[style*="flex-direction: column"]');
     
-    if (!title || !actionsDiv) return;
+    // If no actions div found, look for any div with buttons
+    if (!actionsDiv) {
+        actionsDiv = container.querySelector('div');
+        if (actionsDiv && !actionsDiv.querySelector('button, .btn')) {
+            // Create actions div if it doesn't exist
+            actionsDiv = document.createElement('div');
+            actionsDiv.style.cssText = 'display: flex; flex-direction: column; gap: 0.5rem;';
+            container.appendChild(actionsDiv);
+        }
+    }
+    
+    if (!title || !actionsDiv) {
+        console.log('Quick Actions structure not found');
+        return;
+    }
     
     // Keep the title as "Quick Actions"
     title.textContent = 'Quick Actions';
@@ -75,6 +121,8 @@ function updateQuickActions(pageType, container) {
     // Generate context-sensitive actions
     const actionsHTML = getQuickActionsHTML(pageType);
     actionsDiv.innerHTML = actionsHTML;
+    
+    console.log('Updated Quick Actions for page type:', pageType); // Debug log
 }
 
 function getQuickActionsHTML(pageType) {
@@ -124,6 +172,38 @@ function getQuickActionsHTML(pageType) {
                 </button>
                 <button class="btn btn-secondary" onclick="window.location.href='dcf_members_directory.html'">
                     👥 Find Team Members
+                </button>
+            `;
+
+        case 'manage_project':
+            return `
+                <button class="btn btn-primary" onclick="window.location.href='dcf_project_analytics.html'">
+                    📊 View Analytics
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_projects_home.html'">
+                    🔍 Browse Projects
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_members_directory.html'">
+                    👥 Manage Team
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_projects.html'">
+                    📁 My Projects
+                </button>
+            `;
+
+        case 'project_analytics':
+            return `
+                <button class="btn btn-primary" onclick="window.location.href='dcf_project_manage.html'">
+                    ⚙️ Manage Project
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_projects.html'">
+                    📁 My Projects
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_projects_home.html'">
+                    🔍 Browse Projects
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dcf_personal_analytics.html'">
+                    📊 Personal Analytics
                 </button>
             `;
             
@@ -183,7 +263,7 @@ function getQuickActionsHTML(pageType) {
                 <button class="btn btn-secondary" onclick="connectWithMembers()">
                     🤝 Connect with Members
                 </button>
-                <button class="btn btn-secondary" onclick="alert('My Network page coming soon!')">
+                <button class="btn btn-secondary" onclick="showComingSoon('My Network')">
                     🌐 View My Network
                 </button>
                 <button class="btn btn-secondary" onclick="window.location.href='dcf_personal_analytics.html'">
@@ -259,7 +339,7 @@ function getQuickActionsHTML(pageType) {
 
 // Helper functions for Quick Actions
 function focusSearchProjects() {
-    const searchInput = document.querySelector('#projectSearch, .search-input');
+    const searchInput = document.querySelector('#projectSearch, .search-input, input[placeholder*="Search projects"], input[placeholder*="search projects"]');
     if (searchInput) {
         searchInput.focus();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -271,7 +351,7 @@ function focusSearchProjects() {
 function exploreJoinableProjects() {
     // Focus on projects that are recruiting
     if (window.location.pathname.includes('projects_home')) {
-        const recruitingBtn = document.querySelector('.category-btn[data-category="recruiting"]');
+        const recruitingBtn = document.querySelector('.category-btn[data-category="recruiting"], button[data-category="recruiting"]');
         if (recruitingBtn) {
             recruitingBtn.click();
         }
@@ -281,7 +361,7 @@ function exploreJoinableProjects() {
 }
 
 function focusSearchEvents() {
-    const searchInput = document.querySelector('#eventSearch, .search-input');
+    const searchInput = document.querySelector('#eventSearch, .search-input, input[placeholder*="Search events"], input[placeholder*="search events"]');
     if (searchInput) {
         searchInput.focus();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -303,7 +383,7 @@ function exploreUpcomingEvents() {
 }
 
 function focusSearchMembers() {
-    const searchInput = document.querySelector('#memberSearch, .search-input');
+    const searchInput = document.querySelector('#memberSearch, .search-input, input[placeholder*="Search members"], input[placeholder*="search members"]');
     if (searchInput) {
         searchInput.focus();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -317,7 +397,7 @@ function connectWithMembers() {
 }
 
 function focusSearchResources() {
-    const searchInput = document.querySelector('#resourceSearch, .search-input');
+    const searchInput = document.querySelector('#resourceSearch, .search-input, input[placeholder*="Search resources"], input[placeholder*="search resources"]');
     if (searchInput) {
         searchInput.focus();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -332,4 +412,8 @@ function viewMyContributions() {
 
 function viewBookmarks() {
     window.location.href = 'dcf_resources_library.html?filter=bookmarks';
+}
+
+function showComingSoon(feature) {
+    alert(`${feature} page coming soon!`);
 }
