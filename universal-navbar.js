@@ -77,36 +77,33 @@ function addNavigationItems() {
     if (existingItems.length > 0) return; // Already added
 
     // Create navigation HTML
-    const navigationHTML = `
-        <div class="dropdown-divider"></div>
-        <a href="dcf_member_home.html" class="dropdown-item">
-            <span class="dropdown-icon">🏠</span>
-            My Feed
-        </a>
-        <a href="dcf_member_profile.html" class="dropdown-item">  
-            <span class="dropdown-icon">👤</span>
-            My Profile
-        </a>
-        <a href="dcf_members_directory.html" class="dropdown-item">
-            <span class="dropdown-icon">👥</span>
-            My Connections
-        </a>
-        <a href="dcf_projects.html" class="dropdown-item">
-            <span class="dropdown-icon">📋</span>
-            My Projects
-        </a>
-        <a href="dcf_events.html" class="dropdown-item">
-            <span class="dropdown-icon">📅</span>
-            My Events
-        </a>
-        <a href="dcf_personal_analytics.html" class="dropdown-item">
-            <span class="dropdown-icon">📊</span>
-            My Stats
-        </a>
-        <a href="dcf_account_settings.html" class="dropdown-item">
-            <span class="dropdown-icon">⚙️</span>
-            Settings
-        </a>
+   // Get current page to hide it from dropdown
+    const currentPage = window.location.pathname.split('/').pop() || 'dcf_member_home.html';
+    
+    const allLinks = [
+        { href: 'dcf_member_home.html', icon: '🏠', text: 'My Feed' },
+        { href: 'dcf_member_profile.html', icon: '👤', text: 'My Profile' },
+        { href: 'dcf_members_directory.html', icon: '👥', text: 'My Connections' },
+        { href: 'dcf_projects.html', icon: '📋', text: 'My Projects' },
+        { href: 'dcf_events.html', icon: '📅', text: 'My Events' },
+        { href: 'dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
+        { href: 'dcf_account_settings.html', icon: '⚙️', text: 'Settings' }
+    ];
+    
+    // Filter out current page
+    const visibleLinks = allLinks.filter(link => link.href !== currentPage);
+    
+    // Build navigation HTML
+    let navigationHTML = '<div class="dropdown-divider"></div>';
+    visibleLinks.forEach(link => {
+        navigationHTML += `
+            <a href="${link.href}" class="dropdown-item">
+                <span class="dropdown-icon">${link.icon}</span>
+                ${link.text}
+            </a>
+        `;
+    });
+    navigationHTML += `
         <div class="dropdown-divider"></div>
         <button onclick="handleLogout()" class="dropdown-item logout-btn">
             <span class="dropdown-icon">🚪</span>
