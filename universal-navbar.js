@@ -1,4 +1,4 @@
-// universal-navbar.js - Corrected to work with new simplified HTML structure
+// universal-navbar.js - Fixed to handle click events properly
 
 // User menu functionality
 let isDropdownOpen = false;
@@ -151,6 +151,45 @@ function updateIDMNavigation() {
         // Fallback: append after header
         dropdownHeader.insertAdjacentHTML('afterend', navigationHTML);
     }
+
+    // Fix click event handling for dropdown items
+    setTimeout(() => {
+        fixDropdownClickEvents();
+    }, 100);
+}
+
+function fixDropdownClickEvents() {
+    document.querySelectorAll('.dropdown-item').forEach(link => {
+        // Remove existing event listeners by cloning the element
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+        
+        // Add proper event handling
+        newLink.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Handle onclick functions
+            if (this.onclick) {
+                this.onclick();
+                return;
+            }
+            
+            // Handle regular navigation
+            if (this.href && !this.href.includes('#')) {
+                setTimeout(() => {
+                    window.location.href = this.href;
+                }, 100);
+                return;
+            }
+        });
+        
+        // Also handle regular clicks as backup
+        newLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
 }
 
 function generateInitials(name) {
@@ -163,7 +202,10 @@ function generateInitials(name) {
 }
 
 function showComingSoon(feature) {
-    alert(`${feature} page coming soon!`);
+    closeUserMenu();
+    setTimeout(() => {
+        alert(`${feature} page coming soon!`);
+    }, 100);
 }
 
 function handleLogout() {
