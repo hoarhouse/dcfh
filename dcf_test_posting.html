@@ -1,191 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MINIMAL POSTING TEST</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .test-container { max-width: 600px; margin: 0 auto; }
-        .post-input { width: 100%; height: 100px; margin: 10px 0; padding: 10px; }
-        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
-        .post { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
-        .error { color: red; background: #ffe; padding: 10px; margin: 10px 0; }
-        .success { color: green; background: #efe; padding: 10px; margin: 10px 0; }
-    </style>
+    <title>CDN Debug</title>
 </head>
 <body>
-    <div class="test-container">
-        <h1>MINIMAL POSTING TEST</h1>
-        
-        <div id="statusDisplay"></div>
-        
-        <textarea id="postContent" class="post-input" placeholder="Type something..."></textarea>
-        <button onclick="testCreatePost()" class="btn">CREATE POST (TEST)</button>
-        <button onclick="testConnection()" class="btn">TEST SUPABASE CONNECTION</button>
-        
-        <div id="postsContainer">
-            <div>Loading posts...</div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
+    <h1>CDN Debug Test</h1>
+    <div id="output"></div>
+    
     <script>
-        // Show status messages
-        function showStatus(message, type = 'info') {
-            const div = document.getElementById('statusDisplay');
-            div.innerHTML = `<div class="${type}">${message}</div>`;
-            console.log(`${type.toUpperCase()}: ${message}`);
+        function log(msg) {
+            document.getElementById('output').innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
         }
-
-        // Test if Supabase loaded
-        if (typeof window.supabase === 'undefined') {
-            showStatus('ERROR: Supabase CDN failed to load!', 'error');
-        } else {
-            showStatus('SUCCESS: Supabase CDN loaded', 'success');
-        }
-
-        // Initialize Supabase
-        // Wait for Supabase to fully load before creating client
-        let supabase;
         
-        function initializeSupabase() {
-            try {
-                if (!window.supabase) {
-                    showStatus('ERROR: Supabase not loaded yet', 'error');
-                    return false;
-                }
-                
-                const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-                
-                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                
-                if (supabase) {
-                    showStatus('SUCCESS: Supabase client created', 'success');
-                    return true;
-                } else {
-                    showStatus('ERROR: Failed to create Supabase client', 'error');
-                    return false;
-                }
-            } catch (error) {
-                showStatus(`ERROR creating Supabase client: ${error.message}`, 'error');
-                console.error('Supabase init error:', error);
-                return false;
-            }
+        log('Starting CDN test...');
+        
+        // Check what's on window before loading
+        log('Window keys before: ' + Object.keys(window).length);
+        
+        // Load multiple CDN versions and see which one works
+        const cdnUrls = [
+            'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js',
+            'https://unpkg.com/@supabase/supabase-js@1/dist/umd/supabase.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/supabase/1.35.7/supabase.min.js'
+        ];
+        
+        function testCDN(url, index) {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = () => {
+                    log(`CDN ${index + 1} LOADED: ${url}`);
+                    log('Window.supabase: ' + typeof window.supabase);
+                    log('Window.Supabase: ' + typeof window.Supabase);
+                    
+                    if (window.supabase || window.Supabase) {
+                        log(`SUCCESS: CDN ${index + 1} has Supabase!`);
+                        resolve(true);
+                    } else {
+                        log(`FAIL: CDN ${index + 1} loaded but no Supabase object`);
+                        resolve(false);
+                    }
+                };
+                script.onerror = () => {
+                    log(`ERROR: CDN ${index + 1} failed to load: ${url}`);
+                    resolve(false);
+                };
+                document.head.appendChild(script);
+            });
         }
-
-        // Test connection
-        async function testConnection() {
-            if (!supabase) {
-                showStatus('ERROR: Supabase not initialized - trying to initialize...', 'error');
-                if (!initializeSupabase()) {
-                    return;
+        
+        async function testAllCDNs() {
+            for (let i = 0; i < cdnUrls.length; i++) {
+                log(`Testing CDN ${i + 1}...`);
+                const success = await testCDN(cdnUrls[i], i);
+                if (success) {
+                    log('FOUND WORKING CDN!');
+                    break;
                 }
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
-            showStatus('Testing Supabase connection...', 'info');
-            try {
-                const { data, error } = await supabase
-                    .from('posts')
-                    .select('count')
-                    .limit(1);
-                
-                if (error) {
-                    showStatus(`CONNECTION ERROR: ${error.message}`, 'error');
-                } else {
-                    showStatus('SUCCESS: Database connection working!', 'success');
-                }
-            } catch (error) {
-                showStatus(`FATAL ERROR: ${error.message}`, 'error');
-            }
+            log('Final window inspection:');
+            const supaKeys = Object.keys(window).filter(key => 
+                key.toLowerCase().includes('supa') || 
+                key.toLowerCase().includes('client') ||
+                key.toLowerCase().includes('base')
+            );
+            log('Relevant keys: ' + JSON.stringify(supaKeys));
         }
-
-        // Test create post
-        async function testCreatePost() {
-            if (!supabase) {
-                showStatus('ERROR: Supabase not initialized - trying to initialize...', 'error');
-                if (!initializeSupabase()) {
-                    return;
-                }
-            }
-            
-            const content = document.getElementById('postContent').value.trim();
-            
-            if (!content) {
-                showStatus('ERROR: Please enter some text', 'error');
-                return;
-            }
-
-            showStatus('Attempting to create post...', 'info');
-
-            try {
-                const { data, error } = await supabase
-                    .from('posts')
-                    .insert({
-                        content: content,
-                        author_email: 'test@dcfhungary.org',
-                        author_name: 'Test User'
-                    })
-                    .select();
-
-                if (error) {
-                    showStatus(`POST CREATION ERROR: ${error.message}`, 'error');
-                    console.error('Full error:', error);
-                } else {
-                    showStatus('SUCCESS: Post created!', 'success');
-                    document.getElementById('postContent').value = '';
-                    loadPosts();
-                }
-            } catch (error) {
-                showStatus(`FATAL POST ERROR: ${error.message}`, 'error');
-                console.error('Full error:', error);
-            }
-        }
-
-        // Load posts
-        async function loadPosts() {
-            try {
-                const { data, error } = await supabase
-                    .from('posts')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-
-                if (error) {
-                    showStatus(`LOAD ERROR: ${error.message}`, 'error');
-                    return;
-                }
-
-                const container = document.getElementById('postsContainer');
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(post => `
-                        <div class="post">
-                            <strong>${post.author_name}</strong><br>
-                            ${post.content}<br>
-                            <small>${new Date(post.created_at).toLocaleString()}</small>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div>No posts found</div>';
-                }
-            } catch (error) {
-                showStatus(`LOAD FATAL ERROR: ${error.message}`, 'error');
-            }
-        }
-
-        // Auto-test on load
-        document.addEventListener('DOMContentLoaded', function() {
-            showStatus('Page loaded, initializing Supabase...', 'info');
-            setTimeout(() => {
-                if (initializeSupabase()) {
-                    testConnection();
-                    loadPosts();
-                } else {
-                    showStatus('FAILED: Could not initialize Supabase', 'error');
-                }
-            }, 1000);
-        });
+        
+        testAllCDNs();
     </script>
 </body>
 </html>
