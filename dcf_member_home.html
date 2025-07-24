@@ -253,6 +253,20 @@
             flex-shrink: 0;
         }
 
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
+        }
+
         .main-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -703,6 +717,23 @@
                                 <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
                             </div>
                         </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="dcf_member_profile.html" class="dropdown-item">
+                            <span class="dropdown-icon">👤</span>
+                            View Profile
+                        </a>
+                        <a href="dcf_settings.html" class="dropdown-item">
+                            <span class="dropdown-icon">⚙️</span>
+                            Settings
+                        </a>
+                        <a href="dcf_contact.html" class="dropdown-item">
+                            <span class="dropdown-icon">💬</span>
+                            Help & Support
+                        </a>
+                        <button onclick="handleLogout()" class="dropdown-item logout-btn">
+                            <span class="dropdown-icon">🚪</span>
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </div>
@@ -792,6 +823,84 @@
         let currentMedia = null;
         let posts = [];
         let notificationSystem;
+        let isDropdownOpen = false;
+
+        // User menu functionality
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            if (isDropdownOpen) {
+                closeUserMenu();
+            } else {
+                openUserMenu();
+            }
+        }
+
+        function openUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            dropdown.classList.add('active');
+            overlay.classList.add('active');
+            isDropdownOpen = true;
+            
+            updateUserDropdownInfo();
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = document.querySelector('.dropdown-overlay');
+            
+            dropdown.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            isDropdownOpen = false;
+        }
+
+        function getOrCreateOverlay() {
+            let overlay = document.querySelector('.dropdown-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'dropdown-overlay';
+                overlay.onclick = closeUserMenu;
+                document.body.appendChild(overlay);
+            }
+            return overlay;
+        }
+
+        function updateUserDropdownInfo() {
+            const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+            const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+            const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+
+            const nameElement = document.getElementById('dropdownUserName');
+            const emailElement = document.getElementById('dropdownUserEmail');
+
+            if (nameElement) nameElement.textContent = userName;
+            if (emailElement) emailElement.textContent = userEmail;
+
+            const initials = generateInitials(userName);
+            const avatarElement = document.getElementById('userAvatar');
+            const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+
+            if (avatarElement) avatarElement.textContent = initials;
+            if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
+
+            if (authProvider === 'github') {
+                if (emailElement) emailElement.textContent = `${userEmail} (GitHub)`;
+            }
+        }
+
+        function handleLogout() {
+            closeUserMenu();
+            setTimeout(() => {
+                if(confirm('Are you sure you want to sign out?')){
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href='dcf_login_page.html';
+                }
+            }, 100);
+        }
 
         // Handle image upload
         function handleImageUpload(event) {
@@ -845,8 +954,17 @@
             reader.readAsDataURL(file);
         }
 
+        // Remove media preview
+        function removeMedia() {
+            currentMedia = null;
+            document.getElementById('mediaPreview').style.display = 'none';
+            document.getElementById('previewImage').src = '';
+            document.getElementById('previewVideo').src = '';
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            updateUserDropdownInfo();
             loadPosts();
             
             // Initialize notification system after a delay
@@ -878,6 +996,13 @@
                     loadPosts();
                 })
                 .subscribe();
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isDropdownOpen) {
+                    closeUserMenu();
+                }
+            });
         });
 
         // Load posts from database
@@ -1033,66 +1158,6 @@
                 console.error('Error creating post:', error);
                 showMessage('Failed to create post', 'error');
             }
-        }
-
-        // Handle image upload
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.size > 10 * 1024 * 1024) {
-                showMessage('Image must be smaller than 10MB', 'error');
-                return;
-            }
-
-            currentMedia = file;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('mediaPreview');
-                const img = document.getElementById('previewImage');
-                const video = document.getElementById('previewVideo');
-                
-                video.style.display = 'none';
-                img.style.display = 'block';
-                img.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Handle video upload
-        function handleVideoUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.size > 50 * 1024 * 1024) {
-                showMessage('Video must be smaller than 50MB', 'error');
-                return;
-            }
-
-            currentMedia = file;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('mediaPreview');
-                const img = document.getElementById('previewImage');
-                const video = document.getElementById('previewVideo');
-                
-                img.style.display = 'none';
-                video.style.display = 'block';
-                video.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Remove media preview
-        function removeMedia() {
-            currentMedia = null;
-            document.getElementById('mediaPreview').style.display = 'none';
-            document.getElementById('previewImage').src = '';
-            document.getElementById('previewVideo').src = '';
         }
 
         // Edit post function
@@ -1339,7 +1404,6 @@
                 setTimeout(() => document.body.removeChild(messageDiv), 300);
             }, 3000);
         }
-
 
         function focusCreatePost() {
             document.getElementById('postContent').focus();
