@@ -679,6 +679,42 @@
                 flex-direction: column;
             }
         }
+    /* Notification Bell Styles */
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+    margin-right: 1rem;
+}
+
+.notification-bell:hover {
+    background-color: #f0f0f0;
+}
+
+.notification-icon {
+    font-size: 1.2rem;
+    display: block;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 2px solid white;
+    min-width: 20px;
+}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
     <script src="universal-navbar.js"></script>
@@ -1300,6 +1336,37 @@
         function focusCreatePost() {
             document.getElementById('postContent').focus();
         }
+    </script>
+<script>
+        // Initialize notification system
+        let notificationSystem;
+
+        // Add notification system initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize notification system after a delay
+            setTimeout(() => {
+                if (typeof NotificationSystem !== 'undefined') {
+                    notificationSystem = new NotificationSystem(supabase);
+                    
+                    // Update notification badge on page load
+                    notificationSystem.updateNotificationBadge();
+                    
+                    // Subscribe to real-time updates for badge
+                    const currentUserEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+                    supabase
+                        .channel('notification-badge')
+                        .on('postgres_changes', {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'notifications',
+                            filter: `recipient_email=eq.${currentUserEmail}`
+                        }, () => {
+                            notificationSystem.updateNotificationBadge();
+                        })
+                        .subscribe();
+                }
+            }, 2000);
+        });
     </script>
 </body>
 </html>
