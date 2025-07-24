@@ -1,82 +1,21 @@
-// universal-navbar.js - Complete working version with proper click-away functionality
+// universal-navbar.js - Ultra simple approach
 
-let isDropdownOpen = false;
-let clickTimeout = null;
+let dropdownOpen = false;
 
-function toggleUserMenu(event) {
-    // Prevent the click from bubbling up immediately
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown) return;
     
-    // Clear any pending close operations
-    if (clickTimeout) {
-        clearTimeout(clickTimeout);
-        clickTimeout = null;
-    }
-    
-    if (isDropdownOpen) {
-        closeUserMenu();
+    if (dropdownOpen) {
+        // Close dropdown
+        dropdown.classList.remove('active');
+        dropdownOpen = false;
     } else {
-        openUserMenu();
-        // Add click-away listener AFTER dropdown opens
-        setTimeout(addClickAwayListener, 50);
+        // Open dropdown
+        dropdown.classList.add('active');
+        dropdownOpen = true;
+        updateUserDropdownInfo();
     }
-}
-
-function openUserMenu() {
-    const dropdown = document.getElementById('userDropdown');
-    if (!dropdown) return;
-    
-    dropdown.classList.add('active');
-    dropdown.style.opacity = '1';
-    dropdown.style.visibility = 'visible';
-    dropdown.style.transform = 'translateY(0)';
-    
-    isDropdownOpen = true;
-    updateUserDropdownInfo();
-}
-
-function closeUserMenu() {
-    const dropdown = document.getElementById('userDropdown');
-    if (!dropdown) return;
-    
-    dropdown.classList.remove('active');
-    dropdown.style.opacity = '0';
-    dropdown.style.visibility = 'hidden';
-    dropdown.style.transform = 'translateY(-10px)';
-    
-    isDropdownOpen = false;
-    removeClickAwayListener();
-}
-
-function addClickAwayListener() {
-    // Remove any existing listener first
-    removeClickAwayListener();
-    
-    // Add the click-away listener
-    document.addEventListener('click', handleDocumentClick, true);
-}
-
-function removeClickAwayListener() {
-    document.removeEventListener('click', handleDocumentClick, true);
-}
-
-function handleDocumentClick(event) {
-    // Check if click is inside the user menu area
-    const userMenu = document.querySelector('.user-dropdown');
-    const userAvatar = document.getElementById('userAvatar');
-    
-    if (!userMenu || !userAvatar) return;
-    
-    // If click is inside user menu or on avatar, don't close
-    if (userMenu.contains(event.target) || userAvatar.contains(event.target)) {
-        return;
-    }
-    
-    // Click is outside - close the menu
-    closeUserMenu();
 }
 
 function updateUserDropdownInfo() {
@@ -162,14 +101,11 @@ function generateInitials(name) {
 }
 
 function handleLogout() {
-    closeUserMenu();
-    setTimeout(() => {
-        if(confirm('Are you sure you want to sign out?')){
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href='dcf_login_page.html';
-        }
-    }, 100);
+    if(confirm('Are you sure you want to sign out?')){
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href='dcf_login_page.html';
+    }
 }
 
 // Initialize on page load
@@ -188,10 +124,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Simple click-away handler
+    document.addEventListener('click', function(event) {
+        // Only check if dropdown is open
+        if (!dropdownOpen) return;
+        
+        // Check if click was on avatar or inside dropdown
+        const avatar = document.getElementById('userAvatar');
+        const dropdown = document.getElementById('userDropdown');
+        
+        if (!avatar || !dropdown) return;
+        
+        // If click was on avatar, let toggleUserMenu handle it
+        if (avatar.contains(event.target)) return;
+        
+        // If click was inside dropdown, don't close
+        if (dropdown.contains(event.target)) return;
+        
+        // Click was outside - close dropdown
+        dropdown.classList.remove('active');
+        dropdownOpen = false;
+    });
+
     // Close dropdown on escape key
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isDropdownOpen) {
-            closeUserMenu();
+        if (e.key === 'Escape' && dropdownOpen) {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('active');
+                dropdownOpen = false;
+            }
         }
     });
 });
