@@ -80,12 +80,16 @@ function updateUserDropdownInfo() {
 
 // Generate user initials for avatar
 function generateInitials(name) {
-    if (!name || name === 'Dr. Sarah Johnson') return 'SJ';
-    const parts = name.split(' ');
+    if (!name) return 'SJ';
+    
+    // Remove titles like Dr., Mr., Ms., etc.
+    const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.)\s+/i, '');
+    const parts = cleanName.split(' ');
+    
     if (parts.length >= 2) {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return cleanName.substring(0, 2).toUpperCase();
 }
 
 // Add navigation items to dropdown
