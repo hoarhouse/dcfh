@@ -1,9 +1,13 @@
 console.log('universal-navbar.js is loading!');
+
+// Test if functions are being defined
+console.log('About to define toggleUserMenu function');
 // universal-navbar.js - Clean working version
 
 let isDropdownOpen = false;
 
 function toggleUserMenu() {
+    console.log('toggleUserMenu called!');
     const dropdown = document.getElementById('userDropdown');
     const overlay = getOrCreateOverlay();
     
@@ -13,6 +17,7 @@ function toggleUserMenu() {
         openUserMenu();
     }
 }
+console.log('toggleUserMenu function defined!');
 
 function openUserMenu() {
     const dropdown = document.getElementById('userDropdown');
