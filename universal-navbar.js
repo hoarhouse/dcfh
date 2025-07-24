@@ -10,14 +10,17 @@ console.log('Step 2: Variables declared');
 
 function toggleUserMenu(event) {
     console.log('toggleUserMenu called!');
+    console.log('isDropdownOpen is currently:', isDropdownOpen);
     if (event) event.stopPropagation();
     
     const dropdown = document.getElementById('userDropdown');
     const overlay = getOrCreateOverlay();
     
     if (isDropdownOpen) {
+        console.log('Going to closeUserMenu');
         closeUserMenu();
     } else {
+        console.log('Going to openUserMenu');
         openUserMenu();
     }
 }
