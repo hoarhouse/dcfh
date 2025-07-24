@@ -4,7 +4,9 @@ console.log('universal-navbar.js is loading!');
 console.log('About to define toggleUserMenu function');
 // universal-navbar.js - Clean working version
 
+console.log('Step 1: Starting variable declarations');
 let isDropdownOpen = false;
+console.log('Step 2: Variables declared');
 
 function toggleUserMenu() {
     console.log('toggleUserMenu called!');
