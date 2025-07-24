@@ -8,8 +8,10 @@ console.log('Step 1: Starting variable declarations');
 let isDropdownOpen = false;
 console.log('Step 2: Variables declared');
 
-function toggleUserMenu() {
+function toggleUserMenu(event) {
     console.log('toggleUserMenu called!');
+    if (event) event.stopPropagation();
+    
     const dropdown = document.getElementById('userDropdown');
     const overlay = getOrCreateOverlay();
     
