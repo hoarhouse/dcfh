@@ -24,6 +24,7 @@ function toggleUserMenu(event) {
 console.log('toggleUserMenu function defined!');
 
 function openUserMenu() {
+    console.log('openUserMenu called!');
     const dropdown = document.getElementById('userDropdown');
     const overlay = getOrCreateOverlay();
     
@@ -33,6 +34,7 @@ function openUserMenu() {
     dropdown.style.transform = 'translateY(0)';
     overlay.classList.add('active');
     isDropdownOpen = true;
+    console.log('isDropdownOpen set to:', isDropdownOpen);
     
     updateUserDropdownInfo();
 }
