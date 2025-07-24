@@ -1463,6 +1463,10 @@ window.location.reload();
                             <div class="post-action">👍 Like</div>
                             <div class="post-action">💬 Comment</div>
                             <div class="post-action">📤 Share</div>
+                            ${post.author_email === (localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org') ? `
+                                <div class="post-action" onclick="editPost('${post.id}', '${post.content?.replace(/'/g, "\\'")}')">✏️ Edit</div>
+                                <div class="post-action" onclick="deletePost('${post.id}')" style="color: #dc3545;">🗑️ Delete</div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1522,6 +1526,49 @@ window.location.reload();
 
         // Make functions global for onclick handlers
         window.removeMedia = removeMedia;
+        window.editPost = editPost;
+        window.deletePost = deletePost;
+
+        // Edit post function
+        async function editPost(postId, currentContent) {
+            const newContent = prompt('Edit your post:', currentContent);
+            if (newContent === null || newContent.trim() === '') return;
+
+            try {
+                const { error } = await supabase
+                    .from('posts')
+                    .update({ content: newContent.trim() })
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                showMessage('Post updated successfully! ✏️', 'success');
+                loadPosts();
+            } catch (error) {
+                console.error('Edit error:', error);
+                showMessage('Failed to update post. Please try again.', 'error');
+            }
+        }
+
+        // Delete post function
+        async function deletePost(postId) {
+            if (!confirm('Are you sure you want to delete this post?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('posts')
+                    .delete()
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                showMessage('Post deleted successfully! 🗑️', 'success');
+                loadPosts();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showMessage('Failed to delete post. Please try again.', 'error');
+            }
+        }
     </script>
 </body>
 </html>
