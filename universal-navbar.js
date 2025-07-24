@@ -28,12 +28,14 @@ function openUserMenu() {
 }
 
 function closeUserMenu() {
+    console.log('closeUserMenu called!');
     const dropdown = document.getElementById('userDropdown');
     const overlay = document.querySelector('.dropdown-overlay');
     
     dropdown.classList.remove('active');
     if (overlay) overlay.classList.remove('active');
     isDropdownOpen = false;
+}
 }
 
 function getOrCreateOverlay() {
@@ -164,9 +166,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-  // Close dropdown when clicking outside
+ // Close dropdown when clicking outside - DEBUG VERSION
     document.addEventListener('click', function(e) {
-        if (isDropdownOpen && !e.target.closest('.user-menu')) {
+        console.log('Click detected!', e.target);
+        console.log('isDropdownOpen:', isDropdownOpen);
+        
+        if (isDropdownOpen) {
+            console.log('Dropdown is open, closing...');
             closeUserMenu();
         }
     });
