@@ -1,69 +1,82 @@
-console.log('universal-navbar.js is loading!');
+// universal-navbar.js - Complete working version with proper click-away functionality
 
-// Test if functions are being defined
-console.log('About to define toggleUserMenu function');
-// universal-navbar.js - Clean working version
-
-console.log('Step 1: Starting variable declarations');
 let isDropdownOpen = false;
-console.log('Step 2: Variables declared');
+let clickTimeout = null;
 
 function toggleUserMenu(event) {
-    console.log('toggleUserMenu called!');
-    console.log('isDropdownOpen is currently:', isDropdownOpen);
-    if (event) event.stopPropagation();
+    // Prevent the click from bubbling up immediately
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
-    const dropdown = document.getElementById('userDropdown');
-    const overlay = getOrCreateOverlay();
+    // Clear any pending close operations
+    if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+    }
     
     if (isDropdownOpen) {
-        console.log('Going to closeUserMenu');
         closeUserMenu();
     } else {
-        console.log('Going to openUserMenu');
         openUserMenu();
+        // Add click-away listener AFTER dropdown opens
+        setTimeout(addClickAwayListener, 50);
     }
 }
-console.log('toggleUserMenu function defined!');
 
 function openUserMenu() {
-    console.log('openUserMenu called!');
     const dropdown = document.getElementById('userDropdown');
-    const overlay = getOrCreateOverlay();
+    if (!dropdown) return;
     
     dropdown.classList.add('active');
     dropdown.style.opacity = '1';
     dropdown.style.visibility = 'visible';
     dropdown.style.transform = 'translateY(0)';
-    overlay.classList.add('active');
-    isDropdownOpen = true;
-    console.log('isDropdownOpen set to:', isDropdownOpen);
     
+    isDropdownOpen = true;
     updateUserDropdownInfo();
 }
 
 function closeUserMenu() {
-    console.log('closeUserMenu called!');
     const dropdown = document.getElementById('userDropdown');
-    const overlay = document.querySelector('.dropdown-overlay');
+    if (!dropdown) return;
     
-     dropdown.classList.remove('active');
-    if (overlay) overlay.classList.remove('active');
+    dropdown.classList.remove('active');
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(-10px)';
+    
     isDropdownOpen = false;
+    removeClickAwayListener();
 }
 
-function getOrCreateOverlay() {
-    let overlay = document.querySelector('.dropdown-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'dropdown-overlay';
-        overlay.addEventListener('click', function() {
-            console.log('Overlay clicked!');
-            closeUserMenu();
-        });
-        document.body.appendChild(overlay);
+function addClickAwayListener() {
+    // Remove any existing listener first
+    removeClickAwayListener();
+    
+    // Add the click-away listener
+    document.addEventListener('click', handleDocumentClick, true);
+}
+
+function removeClickAwayListener() {
+    document.removeEventListener('click', handleDocumentClick, true);
+}
+
+function handleDocumentClick(event) {
+    // Check if click is inside the user menu area
+    const userMenu = document.querySelector('.user-dropdown');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (!userMenu || !userAvatar) return;
+    
+    // If click is inside user menu or on avatar, don't close
+    if (userMenu.contains(event.target) || userAvatar.contains(event.target)) {
+        return;
     }
-    return overlay;
+    
+    // Click is outside - close the menu
+    closeUserMenu();
 }
 
 function updateUserDropdownInfo() {
@@ -95,8 +108,7 @@ function addNavigationItems() {
     const existingItems = dropdown.querySelectorAll('.dropdown-item');
     if (existingItems.length > 0) return; // Already added
 
-    // Create navigation HTML
-   // Get current page to hide it from dropdown
+    // Get current page to hide it from dropdown
     const currentPage = window.location.pathname.split('/').pop() || 'dcf_member_home.html';
     
     const allLinks = [
@@ -176,20 +188,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Close dropdown on escape
+    // Close dropdown on escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && isDropdownOpen) {
             closeUserMenu();
         }
     });
-
-     // REMOVE click outside listener completely for now
-    // document.addEventListener('click', function(e) {
-    //     setTimeout(function() {
-    //         if (isDropdownOpen && !e.target.closest('.user-menu')) {
-    //             closeUserMenu();
-    //         }
-    //     }, 10);
-    // });
 });
-console.log('universal-navbar.js finished loading!');
