@@ -1,159 +1,190 @@
-// universal-navbar.js - Ultra simple approach
+// DCF Hungary Universal Navbar - Complete Working Implementation
+// Chris - Replace your entire universal-navbar.js file with this code
 
-let dropdownOpen = false;
+let isDropdownOpen = false;
 
+// Core toggle function - called by onclick="toggleUserMenu()" in HTML
 function toggleUserMenu() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown) return;
     
-    if (dropdownOpen) {
-        // Close dropdown
-        dropdown.classList.remove('active');
-        dropdownOpen = false;
+    if (isDropdownOpen) {
+        closeUserMenu();
     } else {
-        // Open dropdown
-        dropdown.classList.add('active');
-        dropdownOpen = true;
-        updateUserDropdownInfo();
+        openUserMenu();
     }
 }
 
+function openUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown) return;
+    
+    dropdown.classList.add('active');
+    isDropdownOpen = true;
+    updateUserDropdownInfo();
+    addNavigationItems();
+    
+    // Add document click listener ONLY when dropdown opens
+    setTimeout(() => {
+        document.addEventListener('click', handleDocumentClick, true);
+    }, 10);
+}
+
+function closeUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown) return;
+    
+    dropdown.classList.remove('active');
+    isDropdownOpen = false;
+    
+    // Remove document click listener when dropdown closes
+    document.removeEventListener('click', handleDocumentClick, true);
+}
+
+// Critical click-away handler - this is where previous versions failed
+function handleDocumentClick(event) {
+    const userDropdown = document.querySelector('.user-dropdown');
+    
+    // If click is outside the entire user dropdown area, close menu
+    if (userDropdown && !userDropdown.contains(event.target)) {
+        closeUserMenu();
+    }
+}
+
+// Update dropdown with user info from localStorage
 function updateUserDropdownInfo() {
     const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
     const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+    const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
 
-    // Update user info in dropdown header
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-    if (nameElement) nameElement.textContent = userName;
-    if (emailElement) emailElement.textContent = userEmail;
 
-    // Generate and update initials
+    if (nameElement) nameElement.textContent = userName;
+    if (emailElement) {
+        if (authProvider === 'github') {
+            emailElement.textContent = `${userEmail} (GitHub)`;
+        } else {
+            emailElement.textContent = userEmail;
+        }
+    }
+
+    // Update avatar initials
     const initials = generateInitials(userName);
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+
     if (avatarElement) avatarElement.textContent = initials;
     if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
-
-    // Add navigation if not already present
-    addNavigationItems();
 }
 
+// Generate user initials for avatar
+function generateInitials(name) {
+    if (!name) return 'SJ';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
+// Add navigation items to dropdown
 function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown) return;
 
-    // Check if navigation already exists
-    const existingItems = dropdown.querySelectorAll('.dropdown-item');
-    if (existingItems.length > 0) return; // Already added
+    // Check if navigation already added
+    if (dropdown.querySelector('.nav-item')) return;
 
-    // Get current page to hide it from dropdown
-    const currentPage = window.location.pathname.split('/').pop() || 'dcf_member_home.html';
+    const currentPage = window.location.pathname.split('/').pop();
     
-    const allLinks = [
+    const navigationItems = [
         { href: 'dcf_member_home.html', icon: '🏠', text: 'My Feed' },
         { href: 'dcf_member_profile.html', icon: '👤', text: 'My Profile' },
         { href: 'dcf_members_directory.html', icon: '👥', text: 'My Connections' },
-        { href: 'dcf_projects.html', icon: '📋', text: 'My Projects' },
-        { href: 'dcf_events.html', icon: '📅', text: 'My Events' },
+        { href: 'dcf_projects_home.html', icon: '📋', text: 'My Projects' },
+        { href: 'dcf_events_calendar.html', icon: '📅', text: 'My Events' },
         { href: 'dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
-        { href: 'dcf_account_settings.html', icon: '⚙️', text: 'Settings' }
+        { href: 'dcf_settings.html', icon: '⚙️', text: 'Settings' }
     ];
-    
-    // Filter out current page
-    const visibleLinks = allLinks.filter(link => link.href !== currentPage);
-    
-    // Build navigation HTML
-    let navigationHTML = '<div class="dropdown-divider"></div>';
-    visibleLinks.forEach(link => {
-        navigationHTML += `
-            <a href="${link.href}" class="dropdown-item">
-                <span class="dropdown-icon">${link.icon}</span>
-                ${link.text}
-            </a>
-        `;
-    });
-    navigationHTML += `
+
+    // Create navigation section
+    const navSection = document.createElement('div');
+    navSection.innerHTML = '<div class="dropdown-divider"></div>';
+
+    // Add filtered navigation items (exclude current page)
+    navigationItems
+        .filter(item => item.href !== currentPage)
+        .forEach(item => {
+            const navItem = document.createElement('a');
+            navItem.href = item.href;
+            navItem.className = 'dropdown-item nav-item';
+            navItem.innerHTML = `
+                <span class="dropdown-icon">${item.icon}</span>
+                ${item.text}
+            `;
+            navSection.appendChild(navItem);
+        });
+
+    // Add logout item
+    const logoutItem = document.createElement('div');
+    logoutItem.innerHTML = `
         <div class="dropdown-divider"></div>
         <button onclick="handleLogout()" class="dropdown-item logout-btn">
             <span class="dropdown-icon">🚪</span>
             Sign Out
         </button>
     `;
+    navSection.appendChild(logoutItem);
 
-    // Add to dropdown after header
-    const header = dropdown.querySelector('.dropdown-header');
-    if (header) {
-        header.insertAdjacentHTML('afterend', navigationHTML);
+    // Insert after dropdown header
+    const dropdownHeader = dropdown.querySelector('.dropdown-header');
+    if (dropdownHeader && dropdownHeader.nextSibling) {
+        dropdown.insertBefore(navSection, dropdownHeader.nextSibling);
+    } else if (dropdownHeader) {
+        dropdown.appendChild(navSection);
     }
 }
 
-function generateInitials(name) {
-    if (!name) return 'SJ';
-    const parts = name.split(' ').filter(part => !['Dr.', 'Mr.', 'Ms.', 'Mrs.', 'Prof.'].includes(part));
-    
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    } else if (parts.length === 1) {
-        return parts[0].substring(0, 2).toUpperCase();
-    }
-    return 'SJ';
-}
-
+// Handle user logout
 function handleLogout() {
-    if(confirm('Are you sure you want to sign out?')){
-        localStorage.clear();
+    closeUserMenu();
+    
+    if (confirm('Are you sure you want to sign out?')) {
+        // Clear all stored data
+        localStorage.removeItem('dcf_github_session');
+        localStorage.removeItem('dcf_user_logged_in');
+        localStorage.removeItem('dcf_user_name');
+        localStorage.removeItem('dcf_user_email');
+        localStorage.removeItem('dcf_auth_provider');
+        localStorage.removeItem('dcf_remember_login');
         sessionStorage.clear();
-        window.location.href='dcf_login_page.html';
+        
+        // Redirect to login
+        window.location.href = 'dcf_login_page.html';
     }
 }
 
-// Initialize on page load
+// Initialize when DOM loads
 document.addEventListener('DOMContentLoaded', function() {
-    updateUserDropdownInfo();
-
-    // Check login status for member pages
+    // Check authentication
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
     if (isLoggedIn !== 'true') {
-        const currentPage = window.location.pathname;
-        const publicPages = ['index.html', 'dcf_login_page.html', 'dcf_profile_signup.html'];
-        const isPublicPage = publicPages.some(page => currentPage.includes(page)) || currentPage === '/';
-        
-        if (!isPublicPage) {
-            window.location.href = 'dcf_login_page.html';
-        }
+        window.location.href = 'dcf_login_page.html';
+        return;
     }
 
-    // Simple click-away handler
-    document.addEventListener('click', function(event) {
-        // Only check if dropdown is open
-        if (!dropdownOpen) return;
-        
-        // Check if click was on avatar or inside dropdown
-        const avatar = document.getElementById('userAvatar');
-        const dropdown = document.getElementById('userDropdown');
-        
-        if (!avatar || !dropdown) return;
-        
-        // If click was on avatar, let toggleUserMenu handle it
-        if (avatar.contains(event.target)) return;
-        
-        // If click was inside dropdown, don't close
-        if (dropdown.contains(event.target)) return;
-        
-        // Click was outside - close dropdown
-        dropdown.classList.remove('active');
-        dropdownOpen = false;
-    });
+    // Initialize user info
+    updateUserDropdownInfo();
 
-    // Close dropdown on escape key
+    // ESC key handler
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && dropdownOpen) {
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown) {
-                dropdown.classList.remove('active');
-                dropdownOpen = false;
-            }
+        if (e.key === 'Escape' && isDropdownOpen) {
+            closeUserMenu();
         }
     });
 });
+
+// Make functions globally available for HTML onclick attributes
+window.toggleUserMenu = toggleUserMenu;
+window.handleLogout = handleLogout;
