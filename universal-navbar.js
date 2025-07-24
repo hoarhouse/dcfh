@@ -80,7 +80,7 @@ function updateUserDropdownInfo() {
 
 // Generate user initials for avatar
 function generateInitials(name) {
-    if (!name) return 'SJ';
+    if (!name || name === 'Dr. Sarah Johnson') return 'SJ';
     const parts = name.split(' ');
     if (parts.length >= 2) {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
