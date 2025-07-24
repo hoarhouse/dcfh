@@ -57,7 +57,10 @@ function getOrCreateOverlay() {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'dropdown-overlay';
-        overlay.addEventListener('click', closeUserMenu);
+        overlay.addEventListener('click', function() {
+            console.log('Overlay clicked!');
+            closeUserMenu();
+        });
         document.body.appendChild(overlay);
     }
     return overlay;
@@ -180,13 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Close dropdown when clicking outside - DELAYED
-    document.addEventListener('click', function(e) {
-        setTimeout(function() {
-            if (isDropdownOpen && !e.target.closest('.user-menu')) {
-                closeUserMenu();
-            }
-        }, 10);
-    });
+     // REMOVE click outside listener completely for now
+    // document.addEventListener('click', function(e) {
+    //     setTimeout(function() {
+    //         if (isDropdownOpen && !e.target.closest('.user-menu')) {
+    //             closeUserMenu();
+    //         }
+    //     }, 10);
+    // });
 });
 console.log('universal-navbar.js finished loading!');
