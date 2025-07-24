@@ -31,29 +31,59 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
     <script>
+        // Show status messages
         function showStatus(message, type = 'info') {
             const div = document.getElementById('statusDisplay');
             div.innerHTML = `<div class="${type}">${message}</div>`;
             console.log(`${type.toUpperCase()}: ${message}`);
         }
 
+        // Test if Supabase loaded
         if (typeof window.supabase === 'undefined') {
             showStatus('ERROR: Supabase CDN failed to load!', 'error');
         } else {
             showStatus('SUCCESS: Supabase CDN loaded', 'success');
         }
 
+        // Initialize Supabase
+        // Wait for Supabase to fully load before creating client
         let supabase;
-        try {
-            const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            showStatus('SUCCESS: Supabase client created', 'success');
-        } catch (error) {
-            showStatus(`ERROR creating Supabase client: ${error.message}`, 'error');
+        
+        function initializeSupabase() {
+            try {
+                if (!window.supabase) {
+                    showStatus('ERROR: Supabase not loaded yet', 'error');
+                    return false;
+                }
+                
+                const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                
+                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                
+                if (supabase) {
+                    showStatus('SUCCESS: Supabase client created', 'success');
+                    return true;
+                } else {
+                    showStatus('ERROR: Failed to create Supabase client', 'error');
+                    return false;
+                }
+            } catch (error) {
+                showStatus(`ERROR creating Supabase client: ${error.message}`, 'error');
+                console.error('Supabase init error:', error);
+                return false;
+            }
         }
 
+        // Test connection
         async function testConnection() {
+            if (!supabase) {
+                showStatus('ERROR: Supabase not initialized - trying to initialize...', 'error');
+                if (!initializeSupabase()) {
+                    return;
+                }
+            }
+            
             showStatus('Testing Supabase connection...', 'info');
             try {
                 const { data, error } = await supabase
@@ -71,7 +101,15 @@
             }
         }
 
+        // Test create post
         async function testCreatePost() {
+            if (!supabase) {
+                showStatus('ERROR: Supabase not initialized - trying to initialize...', 'error');
+                if (!initializeSupabase()) {
+                    return;
+                }
+            }
+            
             const content = document.getElementById('postContent').value.trim();
             
             if (!content) {
@@ -105,6 +143,7 @@
             }
         }
 
+        // Load posts
         async function loadPosts() {
             try {
                 const { data, error } = await supabase
@@ -135,11 +174,16 @@
             }
         }
 
+        // Auto-test on load
         document.addEventListener('DOMContentLoaded', function() {
-            showStatus('Page loaded, testing connection...', 'info');
+            showStatus('Page loaded, initializing Supabase...', 'info');
             setTimeout(() => {
-                testConnection();
-                loadPosts();
+                if (initializeSupabase()) {
+                    testConnection();
+                    loadPosts();
+                } else {
+                    showStatus('FAILED: Could not initialize Supabase', 'error');
+                }
             }, 1000);
         });
     </script>
