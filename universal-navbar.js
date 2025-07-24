@@ -40,10 +40,9 @@ function closeUserMenu() {
     const dropdown = document.getElementById('userDropdown');
     const overlay = document.querySelector('.dropdown-overlay');
     
-    dropdown.classList.remove('active');
+     dropdown.classList.remove('active');
     if (overlay) overlay.classList.remove('active');
     isDropdownOpen = false;
-}
 }
 
 function getOrCreateOverlay() {
