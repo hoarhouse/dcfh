@@ -1,3 +1,4 @@
+console.log('universal-navbar.js is loading!');
 // universal-navbar.js - Clean working version
 
 let isDropdownOpen = false;
@@ -171,3 +172,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('ANY CLICK DETECTED ANYWHERE!');
     }, true);
 });
+console.log('universal-navbar.js finished loading!');
