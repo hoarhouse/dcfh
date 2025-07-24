@@ -47,7 +47,7 @@
         .logo-icon {
             width: 24px;
             height: 24px;
-            background: blue;
+            background: yellow;
             border-radius: 50%;
             margin-right: 8px;
         }
@@ -804,15 +804,42 @@
     </main>
 
     <script>
-        // Supabase configuration
-        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        // Global variables
+        // Global variables - DECLARE FIRST
         let currentMedia = null;
         let posts = [];
         let isDropdownOpen = false;
+        let supabase = null;
+
+        // Initialize Supabase when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Supabase to load
+            if (typeof window.supabase !== 'undefined') {
+                const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                
+                updateUserDropdownInfo();
+                loadPosts();
+                
+                // Real-time subscription for posts
+                supabase
+                    .channel('posts')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+                        loadPosts();
+                    })
+                    .subscribe();
+            } else {
+                console.error('Supabase not loaded');
+                showMessage('Database connection failed', 'error');
+            }
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isDropdownOpen) {
+                    closeUserMenu();
+                }
+            });
+        });
 
         // User menu functionality
         function toggleUserMenu() {
