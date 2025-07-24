@@ -166,14 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
- // Close dropdown when clicking outside - DEBUG VERSION
+    // Close dropdown when clicking outside - BASIC TEST
     document.addEventListener('click', function(e) {
-        console.log('Click detected!', e.target);
-        console.log('isDropdownOpen:', isDropdownOpen);
-        
-        if (isDropdownOpen) {
-            console.log('Dropdown is open, closing...');
-            closeUserMenu();
-        }
-    });
+        console.log('ANY CLICK DETECTED ANYWHERE!');
+    }, true);
 });
