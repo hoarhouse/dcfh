@@ -1615,44 +1615,142 @@
             });
         }
 
-        // Edit post function
+        // Edit post function - inline editing
         async function editPost(postId) {
-            console.log('Edit function called with ID:', postId);
-            
             const postElement = document.querySelector(`[data-post-id="${postId}"]`);
-            console.log('Found post element:', postElement);
-            
             const contentElement = postElement.querySelector('.post-content');
-            const currentContent = contentElement ? contentElement.textContent : '';
             
-            const newContent = prompt('Edit your post:', currentContent);
-            console.log('New content entered:', newContent);
-            
-            if (newContent === null || newContent.trim() === '') {
-                console.log('Exiting edit - content was null or empty');
+            if (!contentElement) {
+                showMessage('Cannot edit posts without text content', 'error');
                 return;
             }
 
-            try {
-                console.log('Attempting to update post with content:', newContent.trim());
+            const currentContent = contentElement.textContent;
+            
+            // Create textarea for editing
+            const textarea = document.createElement('textarea');
+            textarea.className = 'edit-textarea';
+            textarea.value = currentContent;
+            textarea.style.cssText = `
+                width: 100%;
+                min-height: 80px;
+                padding: 0.75rem;
+                border: 2px solid #333;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-family: inherit;
+                resize: vertical;
+                background: #f8f9fa;
+                margin-bottom: 0.75rem;
+            `;
+            
+            // Create action buttons
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'edit-actions';
+            actionsDiv.style.cssText = `
+                display: flex;
+                gap: 0.5rem;
+                justify-content: flex-end;
+                margin-bottom: 1rem;
+            `;
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn btn-primary btn-small';
+            saveBtn.textContent = 'Save';
+            saveBtn.style.cssText = `
+                padding: 0.4rem 0.8rem;
+                background: #000;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                cursor: pointer;
+                font-weight: 600;
+            `;
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn btn-secondary btn-small';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.cssText = `
+                padding: 0.4rem 0.8rem;
+                background: transparent;
+                color: #666;
+                border: 2px solid #e5e5e5;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                cursor: pointer;
+                font-weight: 600;
+            `;
+            
+            // Store original content for restoration
+            const originalContent = contentElement.innerHTML;
+            
+            // Replace content with edit interface
+            contentElement.innerHTML = '';
+            contentElement.appendChild(textarea);
+            contentElement.appendChild(actionsDiv);
+            actionsDiv.appendChild(cancelBtn);
+            actionsDiv.appendChild(saveBtn);
+            
+            // Focus on textarea
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            
+            // Cancel editing
+            cancelBtn.onclick = function() {
+                contentElement.innerHTML = originalContent;
+            };
+            
+            // Save editing
+            saveBtn.onclick = async function() {
+                const newContent = textarea.value.trim();
                 
-                const { data, error } = await supabase
-                    .from('posts')
-                    .update({ content: newContent.trim() })
-                    .eq('id', postId)
-                    .select();
+                if (!newContent) {
+                    showMessage('Post content cannot be empty', 'error');
+                    return;
+                }
+                
+                if (newContent === currentContent) {
+                    // No changes made
+                    contentElement.innerHTML = originalContent;
+                    return;
+                }
+                
+                // Show saving state
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('posts')
+                        .update({ content: newContent })
+                        .eq('id', postId)
+                        .select();
 
-                console.log('Supabase update response - data:', data);
-                console.log('Supabase update response - error:', error);
+                    if (error) throw error;
 
-                if (error) throw error;
+                    // Update the content display
+                    contentElement.innerHTML = newContent;
+                    showMessage('Post updated successfully! ✏️', 'success');
 
-                showMessage('Post updated successfully! ✏️', 'success');
-                await loadPosts();
-            } catch (error) {
-                console.error('Edit error:', error);
-                showMessage('Failed to update post. Please try again.', 'error');
-            }
+                } catch (error) {
+                    console.error('Edit error:', error);
+                    showMessage('Failed to update post. Please try again.', 'error');
+                    // Restore original content on error
+                    contentElement.innerHTML = originalContent;
+                }
+            };
+            
+            // Handle Enter key (with Shift+Enter for new lines)
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveBtn.click();
+                }
+                if (e.key === 'Escape') {
+                    cancelBtn.click();
+                }
+            });
         }
 
         // Delete post function
