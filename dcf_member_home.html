@@ -403,6 +403,12 @@
             border-color: #333;
         }
 
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
         /* Status Messages */
         .message {
             padding: 1rem;
@@ -513,6 +519,7 @@
 
         .post-action.liked {
             color: #e74c3c;
+            font-weight: 600;
         }
 
         .post-action.delete {
@@ -521,6 +528,122 @@
 
         .post-action.delete:hover {
             background: #fee;
+        }
+
+        /* Comments Section */
+        .comments-section {
+            margin-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 1rem;
+        }
+
+        .comments-list {
+            margin-bottom: 1rem;
+        }
+
+        .comment-item {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #666, #999);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .comment-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .comment-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .comment-actions {
+            margin-left: auto;
+        }
+
+        .delete-comment-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .delete-comment-btn:hover {
+            background: #fee;
+        }
+
+        .comment-text {
+            color: #333;
+            line-height: 1.4;
+            font-size: 0.9rem;
+        }
+
+        .comment-form {
+            border-top: 1px solid #e5e5e5;
+            padding-top: 1rem;
+        }
+
+        .comment-composer {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .comment-input {
+            flex: 1;
+            min-height: 60px;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .comment-form-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
         }
 
         .project-item {
@@ -1205,43 +1328,291 @@
                 postCountElement.textContent = userPosts.length;
             }
 
-            // Render posts
-            feedSection.innerHTML = allPosts.map(post => {
-                const postDate = new Date(post.created_at);
-                const timeAgo = getTimeAgo(postDate);
-                const authorInitials = generateInitials(post.author_name);
-                const isUserPost = post.author_email === userEmail && !post.id.startsWith('example_');
+            // Render posts with likes and comments
+            Promise.all(allPosts.map(post => renderPostWithEngagement(post, userEmail)))
+                .then(renderedPosts => {
+                    feedSection.innerHTML = renderedPosts.join('');
+                    // Initialize comment forms after rendering
+                    initializeCommentForms();
+                });
+        }
 
-                return `
-                    <div class="feed-post" data-post-id="${post.id}">
-                        <div class="post-header">
-                            <div class="post-avatar">${authorInitials}</div>
-                            <div class="post-author">
-                                <div class="post-name">${post.author_name}</div>
-                                <div class="post-meta">${timeAgo}</div>
-                            </div>
-                        </div>
-                        ${post.content ? `<div class="post-content">${post.content}</div>` : ''}
-                        ${post.media_url ? `
-                            <div class="post-media">
-                                ${post.media_type === 'image' 
-                                    ? `<img src="${post.media_url}" alt="Post image" class="post-image">` 
-                                    : `<video src="${post.media_url}" controls class="post-video"></video>`
-                                }
-                            </div>
-                        ` : ''}
-                        <div class="post-actions">
-                            <div class="post-action like-btn" onclick="toggleLike(this)">👍 Like</div>
-                            <div class="post-action">💬 Comment</div>
-                            <div class="post-action">📤 Share</div>
-                            ${isUserPost ? `
-                                <div class="post-action" onclick="editPost('${post.id}')">✏️ Edit</div>
-                                <div class="post-action delete" onclick="deletePost('${post.id}')">🗑️ Delete</div>
-                            ` : ''}
+        // Render individual post with engagement data
+        async function renderPostWithEngagement(post, userEmail) {
+            const postDate = new Date(post.created_at);
+            const timeAgo = getTimeAgo(postDate);
+            const authorInitials = generateInitials(post.author_name);
+            const isUserPost = post.author_email === userEmail && !post.id.startsWith('example_');
+
+            // Get likes and comments for real posts only
+            let likesData = { count: 0, userLiked: false, users: [] };
+            let commentsData = [];
+
+            if (!post.id.startsWith('example_')) {
+                try {
+                    // Get likes
+                    const { data: likes } = await supabase
+                        .from('post_likes')
+                        .select('user_email, user_name')
+                        .eq('post_id', post.id);
+
+                    if (likes) {
+                        likesData.count = likes.length;
+                        likesData.userLiked = likes.some(like => like.user_email === userEmail);
+                        likesData.users = likes;
+                    }
+
+                    // Get comments
+                    const { data: comments } = await supabase
+                        .from('post_comments')
+                        .select('id, content, author_name, author_email, created_at')
+                        .eq('post_id', post.id)
+                        .order('created_at', { ascending: true });
+
+                    if (comments) {
+                        commentsData = comments;
+                    }
+                } catch (error) {
+                    console.error('Error fetching engagement data:', error);
+                }
+            } else {
+                // Mock data for example posts
+                likesData = { count: Math.floor(Math.random() * 15) + 3, userLiked: false, users: [] };
+                commentsData = [];
+            }
+
+            return `
+                <div class="feed-post" data-post-id="${post.id}">
+                    <div class="post-header">
+                        <div class="post-avatar">${authorInitials}</div>
+                        <div class="post-author">
+                            <div class="post-name">${post.author_name}</div>
+                            <div class="post-meta">${timeAgo}</div>
                         </div>
                     </div>
-                `;
-            }).join('');
+                    ${post.content ? `<div class="post-content">${post.content}</div>` : ''}
+                    ${post.media_url ? `
+                        <div class="post-media">
+                            ${post.media_type === 'image' 
+                                ? `<img src="${post.media_url}" alt="Post image" class="post-image">` 
+                                : `<video src="${post.media_url}" controls class="post-video"></video>`
+                            }
+                        </div>
+                    ` : ''}
+                    <div class="post-actions">
+                        <div class="post-action like-btn ${likesData.userLiked ? 'liked' : ''}" onclick="togglePostLike('${post.id}', this)" data-post-id="${post.id}">
+                            ${likesData.userLiked ? '❤️' : '👍'} ${likesData.count > 0 ? likesData.count : 'Like'}
+                        </div>
+                        <div class="post-action comment-btn" onclick="toggleCommentForm('${post.id}')">
+                            💬 ${commentsData.length > 0 ? commentsData.length : 'Comment'}
+                        </div>
+                        <div class="post-action">📤 Share</div>
+                        ${isUserPost ? `
+                            <div class="post-action" onclick="editPost('${post.id}')">✏️ Edit</div>
+                            <div class="post-action delete" onclick="deletePost('${post.id}')">🗑️ Delete</div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Comments Section -->
+                    <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                        <div class="comments-list">
+                            ${commentsData.map(comment => `
+                                <div class="comment-item" data-comment-id="${comment.id}">
+                                    <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
+                                    <div class="comment-content">
+                                        <div class="comment-header">
+                                            <span class="comment-author">${comment.author_name}</span>
+                                            <span class="comment-time">${getTimeAgo(new Date(comment.created_at))}</span>
+                                            ${comment.author_email === userEmail ? `
+                                                <span class="comment-actions">
+                                                    <button onclick="deleteComment('${comment.id}', '${post.id}')" class="delete-comment-btn">🗑️</button>
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                        <div class="comment-text">${comment.content}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="comment-form">
+                            <div class="comment-composer">
+                                <div class="composer-avatar">${generateInitials(localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson')}</div>
+                                <textarea class="comment-input" placeholder="Write a comment..." data-post-id="${post.id}"></textarea>
+                            </div>
+                            <div class="comment-form-actions">
+                                <button class="btn btn-secondary btn-small" onclick="toggleCommentForm('${post.id}')">Cancel</button>
+                                <button class="btn btn-primary btn-small" onclick="submitComment('${post.id}')">Comment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Toggle post like
+        async function togglePostLike(postId, element) {
+            if (postId.startsWith('example_')) {
+                // Handle example posts with UI-only functionality
+                element.classList.toggle('liked');
+                const currentCount = parseInt(element.textContent.match(/\d+/)?.[0]) || 0;
+                if (element.classList.contains('liked')) {
+                    element.innerHTML = `❤️ ${currentCount + 1}`;
+                } else {
+                    element.innerHTML = `👍 ${Math.max(0, currentCount - 1) || 'Like'}`;
+                }
+                return;
+            }
+
+            const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+            const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+
+            try {
+                // Check if user already liked this post
+                const { data: existingLike } = await supabase
+                    .from('post_likes')
+                    .select('id')
+                    .eq('post_id', postId)
+                    .eq('user_email', userEmail)
+                    .single();
+
+                if (existingLike) {
+                    // Remove like
+                    const { error } = await supabase
+                        .from('post_likes')
+                        .delete()
+                        .eq('post_id', postId)
+                        .eq('user_email', userEmail);
+
+                    if (error) throw error;
+                } else {
+                    // Add like
+                    const { error } = await supabase
+                        .from('post_likes')
+                        .insert([{
+                            post_id: postId,
+                            user_email: userEmail,
+                            user_name: userName
+                        }]);
+
+                    if (error) throw error;
+                }
+
+                // Refresh the specific post to show updated like count
+                await refreshPostEngagement(postId);
+
+            } catch (error) {
+                console.error('Like error:', error);
+                showMessage('Failed to update like. Please try again.', 'error');
+            }
+        }
+
+        // Toggle comment form visibility
+        function toggleCommentForm(postId) {
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            if (commentsSection.style.display === 'none') {
+                commentsSection.style.display = 'block';
+                // Focus on comment input
+                const commentInput = commentsSection.querySelector('.comment-input');
+                if (commentInput) {
+                    setTimeout(() => commentInput.focus(), 100);
+                }
+            } else {
+                commentsSection.style.display = 'none';
+            }
+        }
+
+        // Submit comment
+        async function submitComment(postId) {
+            if (postId.startsWith('example_')) {
+                showMessage('Comments not available for example posts', 'error');
+                return;
+            }
+
+            const commentInput = document.querySelector(`.comment-input[data-post-id="${postId}"]`);
+            const content = commentInput.value.trim();
+
+            if (!content) {
+                showMessage('Please enter a comment', 'error');
+                return;
+            }
+
+            const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+            const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+
+            try {
+                const { error } = await supabase
+                    .from('post_comments')
+                    .insert([{
+                        post_id: postId,
+                        content: content,
+                        author_name: userName,
+                        author_email: userEmail
+                    }]);
+
+                if (error) throw error;
+
+                // Clear input and refresh post
+                commentInput.value = '';
+                await refreshPostEngagement(postId);
+                showMessage('Comment added! 💬', 'success');
+
+            } catch (error) {
+                console.error('Comment error:', error);
+                showMessage('Failed to add comment. Please try again.', 'error');
+            }
+        }
+
+        // Delete comment
+        async function deleteComment(commentId, postId) {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('post_comments')
+                    .delete()
+                    .eq('id', commentId);
+
+                if (error) throw error;
+
+                await refreshPostEngagement(postId);
+                showMessage('Comment deleted! 🗑️', 'success');
+
+            } catch (error) {
+                console.error('Delete comment error:', error);
+                showMessage('Failed to delete comment. Please try again.', 'error');
+            }
+        }
+
+        // Refresh engagement data for a specific post
+        async function refreshPostEngagement(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            if (!postElement) return;
+
+            // Find the post in allPosts array
+            const post = allPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+            const newPostHtml = await renderPostWithEngagement(post, userEmail);
+            
+            // Replace the post element
+            postElement.outerHTML = newPostHtml;
+            
+            // Reinitialize comment forms for the updated post
+            initializeCommentForms();
+        }
+
+        // Initialize comment forms (for enter key support)
+        function initializeCommentForms() {
+            document.querySelectorAll('.comment-input').forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        const postId = this.dataset.postId;
+                        submitComment(postId);
+                    }
+                });
+            });
         }
 
         // Edit post function
@@ -1258,18 +1629,10 @@
             console.log('New content entered:', newContent);
             
             if (newContent === null || newContent.trim() === '') {
-    console.log('Exiting edit - content was null or empty');
-    return;
-}
-console.log('Content validation passed, proceeding to Supabase update...');
-// First, let's check if the post exists
-const { data: existingPost, error: checkError } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('id', postId);
+                console.log('Exiting edit - content was null or empty');
+                return;
+            }
 
-console.log('Checking if post exists - data:', existingPost);
-console.log('Checking if post exists - error:', checkError);
             try {
                 console.log('Attempting to update post with content:', newContent.trim());
                 
@@ -1292,7 +1655,7 @@ console.log('Checking if post exists - error:', checkError);
             }
         }
 
-       // Delete post function
+        // Delete post function
         async function deletePost(postId) {
             console.log('Delete function called with ID:', postId);
             
@@ -1313,16 +1676,6 @@ console.log('Checking if post exists - error:', checkError);
             } catch (error) {
                 console.error('Delete error:', error);
                 showMessage('Failed to delete post. Please try again.', 'error');
-            }
-        }
-
-        // Toggle like functionality
-        function toggleLike(element) {
-            element.classList.toggle('liked');
-            if (element.classList.contains('liked')) {
-                element.innerHTML = '❤️ Liked';
-            } else {
-                element.innerHTML = '👍 Like';
             }
         }
 
@@ -1405,7 +1758,10 @@ console.log('Checking if post exists - error:', checkError);
         window.removeMedia = removeMedia;
         window.editPost = editPost;
         window.deletePost = deletePost;
-        window.toggleLike = toggleLike;
+        window.togglePostLike = togglePostLike;
+        window.toggleCommentForm = toggleCommentForm;
+        window.submitComment = submitComment;
+        window.deleteComment = deleteComment;
         window.toggleUserMenu = toggleUserMenu;
         window.handleLogout = handleLogout;
     </script>
