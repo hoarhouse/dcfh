@@ -175,11 +175,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Close dropdown when clicking outside
+    // Close dropdown when clicking outside - DELAYED
     document.addEventListener('click', function(e) {
-        if (isDropdownOpen && !e.target.closest('.user-menu')) {
-            closeUserMenu();
-        }
+        setTimeout(function() {
+            if (isDropdownOpen && !e.target.closest('.user-menu')) {
+                closeUserMenu();
+            }
+        }, 10);
     });
 });
 console.log('universal-navbar.js finished loading!');
