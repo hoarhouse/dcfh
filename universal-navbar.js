@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         const userMenu = document.querySelector('.user-menu');
-        if (isDropdownOpen && userMenu && !userMenu.contains(e.target)) {
+        if (isDropdownOpen && userDropdown && !userDropdown.contains(e.target)) {
             closeUserMenu();
         }
     });
