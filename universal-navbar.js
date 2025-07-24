@@ -173,9 +173,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Close dropdown when clicking outside - BASIC TEST
+    // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
-        console.log('ANY CLICK DETECTED ANYWHERE!');
-    }, true);
+        if (isDropdownOpen && !e.target.closest('.user-menu')) {
+            closeUserMenu();
+        }
+    });
 });
 console.log('universal-navbar.js finished loading!');
