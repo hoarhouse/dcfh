@@ -41,7 +41,7 @@ function getOrCreateOverlay() {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'dropdown-overlay';
-        overlay.onclick = closeUserMenu;
+        overlay.addEventListener('click', closeUserMenu);
         document.body.appendChild(overlay);
     }
     return overlay;
