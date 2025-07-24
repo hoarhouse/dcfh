@@ -166,12 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
-        const userDropdown = document.getElementById('userDropdown');
-        const userAvatar = document.getElementById('userAvatar');
-        
-        if (isDropdownOpen && 
-            !userDropdown.contains(e.target) && 
-            !userAvatar.contains(e.target)) {
+        if (isDropdownOpen && !e.target.closest('.user-menu')) {
             closeUserMenu();
         }
     });
