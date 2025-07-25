@@ -584,6 +584,8 @@ function handlePublicPageAuth() {
 // 7. MAIN INITIALIZATION - EVERYTHING HAPPENS HERE
 // =============================================================================
 document.addEventListener('DOMContentLoaded', function() {
+    // ALL REDIRECTS DISABLED - EMERGENCY FIX
+    return;
     const pageType = getPageType();
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
     
