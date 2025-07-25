@@ -170,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize member page components
         updateUserDropdownInfo();
+        populateTopNavigation();
         
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && isDropdownOpen) {
@@ -181,9 +182,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Public pages - show sign up button instead of avatar
         if (!isLoggedIn) {
             handlePublicPageAuth();
+            populateTopNavigation();
         } else {
             // Logged in user on public page - show avatar
             updateUserDropdownInfo();
+            populateTopNavigation();
         }
     }
 });
@@ -223,6 +226,44 @@ function handlePublicPageAuth() {
             </a>
         `;
     }
+}
+
+function populateTopNavigation() {
+    const navMenu = document.getElementById('navMenu');
+    if (!navMenu) return;
+    
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    // Clear existing nav items
+    navMenu.innerHTML = '';
+    
+    let navItems = [];
+    
+    if (!isLoggedIn) {
+        // Not logged in: Show Home, About, Contact (excluding current page)
+        const publicNav = [
+            { href: 'index.html', text: 'Home' },
+            { href: 'about.html', text: 'About' },
+            { href: 'contact.html', text: 'Contact' }
+        ];
+        navItems = publicNav.filter(item => item.href !== currentPage);
+    } else {
+        // Logged in: Show only Contact (excluding if on contact page)
+        if (currentPage !== 'contact.html') {
+            navItems = [{ href: 'contact.html', text: 'Contact' }];
+        }
+    }
+    
+    // Create and append nav items
+    navItems.forEach(item => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = item.href;
+        a.textContent = item.text;
+        li.appendChild(a);
+        navMenu.appendChild(li);
+    });
 }
 
 // GLOBAL FUNCTIONS
