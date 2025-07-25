@@ -1027,29 +1027,67 @@
             }
         }
 
-        // Edit post function
+        // Edit post function - inline editing
         async function editPost(postId) {
-            const post = posts.find(p => p.id === postId);
-            if (!post) return;
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentElement = postElement.querySelector('.post-content');
+            if (!contentElement) return;
 
-            const newContent = prompt('Edit your post:', post.content || '');
-            if (newContent === null) return; // User cancelled
+            const originalContent = contentElement.textContent;
+            
+            // Replace content with textarea
+            contentElement.innerHTML = `
+                <textarea style="width: 100%; min-height: 80px; padding: 0.5rem; border: 2px solid #333; border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical;" id="edit-textarea-${postId}">${originalContent}</textarea>
+                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button onclick="saveEdit('${postId}')" style="padding: 0.5rem 1rem; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">Save</button>
+                    <button onclick="cancelEdit('${postId}', '${originalContent.replace(/'/g, "\\'")}' )" style="padding: 0.5rem 1rem; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                </div>
+            `;
+            
+            // Focus the textarea
+            document.getElementById(`edit-textarea-${postId}`).focus();
+        }
+
+        // Save inline edit
+        async function saveEdit(postId) {
+            const textarea = document.getElementById(`edit-textarea-${postId}`);
+            const newContent = textarea.value.trim();
+            
+            if (!newContent) {
+                showMessage('Post content cannot be empty', 'error');
+                return;
+            }
             
             try {
                 const { error } = await supabase
                     .from('posts')
-                    .update({ content: newContent.trim() })
+                    .update({ content: newContent })
                     .eq('id', postId);
 
                 if (error) throw error;
 
+                // Update the post in local array
+                const post = posts.find(p => p.id === postId);
+                if (post) post.content = newContent;
+
+                // Update the display
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                const contentElement = postElement.querySelector('.post-content');
+                contentElement.textContent = newContent;
+
                 showMessage('Post updated successfully!', 'success');
-                loadPosts(); // Refresh the feed
 
             } catch (error) {
                 console.error('Error updating post:', error);
                 showMessage('Failed to update post', 'error');
             }
+        }
+
+        // Cancel inline edit
+        function cancelEdit(postId, originalContent) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentElement = postElement.querySelector('.post-content');
+            contentElement.textContent = originalContent;
         }
 
         // Delete post function
