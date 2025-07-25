@@ -612,8 +612,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pageType === 'member') {
         // Member pages require login
         if (!isLoggedIn) {
-            // Don't redirect if already on login page to avoid loops
-            if (!window.location.pathname.includes('login')) {
+            // Don't redirect if already on login/signup pages to avoid loops
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage !== 'dcf_login_page.html' && currentPage !== 'dcf_profile_signup.html') {
                 window.location.href = 'dcf_login_page.html';
             }
             return;
