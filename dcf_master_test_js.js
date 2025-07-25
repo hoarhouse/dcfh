@@ -582,23 +582,102 @@ function addUniversalFooter() {
     document.body.insertAdjacentHTML('beforeend', footerHTML);
 }
 
+// PAGE TYPE DETECTION
+function getPageType() {
+    const path = window.location.pathname.toLowerCase();
+    const filename = path.split('/').pop();
+    
+    // Public pages (no login required)
+    if (filename === 'index.html' || filename === '' || 
+        filename.includes('contact') || filename.includes('about') ||
+        filename.includes('login') || filename.includes('signup')) {
+        return 'public';
+    }
+    
+    // Member pages (login required)
+    if (filename.includes('dcf_member') || filename.includes('dcf_projects') ||
+        filename.includes('dcf_events') || filename.includes('dcf_resources') ||
+        filename.includes('dcf_admin') || filename.includes('dcf_personal')) {
+        return 'member';
+    }
+    
+    // Default to public if unsure
+    return 'public';
+}
+
+function needsFooter() {
+    // Check if page already has footer or shouldn't have one
+    const existingFooter = document.querySelector('.site-footer, footer');
+    if (existingFooter) return false;
+    
+    // Add footer to most pages except login/signup flows
+    const filename = window.location.pathname.split('/').pop().toLowerCase();
+    const noFooterPages = ['dcf_login_page.html', 'dcf_profile_signup.html'];
+    
+    return !noFooterPages.includes(filename);
+}
+
+function needsQuickActions() {
+    // Only add quick actions if there's a sidebar with cards
+    const sidebar = document.querySelector('.sidebar');
+    const quickActionsCard = document.querySelector('.card .card-title');
+    
+    return sidebar && quickActionsCard;
+}
+
+function handlePublicPageAuth() {
+    // For public pages, replace user avatar with Sign Up button if present
+    const userMenu = document.querySelector('.user-menu');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (userAvatar && userMenu) {
+        userMenu.innerHTML = `
+            <a href="dcf_profile_signup.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Join DCF Hungary
+            </a>
+        `;
+    }
+}
+
 // MAIN INITIALIZATION
 document.addEventListener('DOMContentLoaded', function() {
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
-    if (isLoggedIn !== 'true') {
-        window.location.href = 'dcf_login_page.html';
-        return;
-    }
-
-    updateUserDropdownInfo();
-    setTimeout(initializeQuickActions, 100);
-    addUniversalFooter();
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isDropdownOpen) {
-            closeUserMenu();
+    const pageType = getPageType();
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    
+    if (pageType === 'member') {
+        // Member pages require login
+        if (!isLoggedIn) {
+            window.location.href = 'dcf_login_page.html';
+            return;
         }
-    });
+        
+        // Initialize member page components
+        updateUserDropdownInfo();
+        
+        if (needsQuickActions()) {
+            setTimeout(initializeQuickActions, 100);
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isDropdownOpen) {
+                closeUserMenu();
+            }
+        });
+        
+    } else if (pageType === 'public') {
+        // Public pages - show sign up button instead of avatar
+        if (!isLoggedIn) {
+            handlePublicPageAuth();
+        } else {
+            // Logged in user on public page - show avatar
+            updateUserDropdownInfo();
+        }
+    }
+    
+    // Add footer only if needed
+    if (needsFooter()) {
+        addUniversalFooter();
+    }
 });
 
 // GLOBAL FUNCTIONS
