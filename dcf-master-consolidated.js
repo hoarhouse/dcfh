@@ -612,7 +612,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pageType === 'member') {
         // Member pages require login
         if (!isLoggedIn) {
-            window.location.href = 'dcf_login_page.html';
+            // Don't redirect if already on login page to avoid loops
+            if (!window.location.pathname.includes('login')) {
+                window.location.href = 'dcf_login_page.html';
+            }
             return;
         }
         
