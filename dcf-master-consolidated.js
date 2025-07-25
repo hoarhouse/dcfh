@@ -170,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize member page components
         updateUserDropdownInfo();
-        populateTopNavigation();
         
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && isDropdownOpen) {
