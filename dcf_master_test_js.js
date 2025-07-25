@@ -66,8 +66,16 @@ function updateUserDropdownInfo() {
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    if (avatarElement) avatarElement.textContent = initials;
-    if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
+    if (avatarElement) {
+        avatarElement.textContent = initials;
+        // Add neon green styling to indicate master JS is active
+        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+    }
+    if (dropdownAvatarElement) {
+        dropdownAvatarElement.textContent = initials;
+        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+    }
 }
 
 function generateInitials(name) {
