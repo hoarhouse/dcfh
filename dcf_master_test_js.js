@@ -55,9 +55,13 @@ let isDropdownOpen = false;
 // NAVIGATION GENERATION
 function generateNavigation() {
     const navContainer = document.getElementById('mainNavigation');
-    if (!navContainer) return;
+    if (!navContainer) {
+        console.error('Navigation container not found');
+        return;
+    }
 
     const currentPage = window.location.pathname.split('/').pop();
+    console.log('Generating navigation for page:', currentPage);
 
     navContainer.innerHTML = `
         <a href="${navigationConfig.logo.href}" class="logo">
@@ -84,6 +88,8 @@ function generateNavigation() {
             </div>
         </div>
     `;
+    
+    console.log('Navigation generated successfully');
 }
 
 // USER MENU FUNCTIONS
@@ -224,13 +230,18 @@ function handleLogout() {
 // QUICK ACTIONS GENERATION
 function generateQuickActions() {
     const container = document.getElementById('quickActionsContainer');
-    if (!container) return;
+    if (!container) {
+        console.error('Quick actions container not found');
+        return;
+    }
 
     const currentPage = window.location.pathname.split('/').pop();
     const actions = quickActionsConfig[currentPage] || quickActionsConfig['default'];
+    
+    console.log('Generating quick actions for page:', currentPage, 'Actions:', actions);
 
     container.innerHTML = `
-        <div class="quick-actions-container">
+        <div class="card">
             <h3 class="card-title">Quick Actions</h3>
             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                 ${actions.map(action => `
@@ -241,6 +252,8 @@ function generateQuickActions() {
             </div>
         </div>
     `;
+    
+    console.log('Quick actions generated successfully');
 }
 
 function handleQuickAction(action) {
@@ -291,18 +304,25 @@ function generateFooter() {
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DCF Master JS initializing...');
+    
     // Check authentication
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
     if (isLoggedIn !== 'true') {
+        console.log('User not logged in, redirecting...');
         window.location.href = 'dcf_login_page.html';
         return;
     }
+
+    console.log('User is logged in, generating components...');
 
     // Generate all components
     generateNavigation();
     generateQuickActions();
     generateFooter();
     updateUserDropdownInfo();
+
+    console.log('All components generated');
 
     // ESC key handler
     document.addEventListener('keydown', function(e) {
