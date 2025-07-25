@@ -177,14 +177,14 @@ function populateTopNavigation() {
         // Not logged in: Show Home, About, Contact (excluding current page)
         const publicNav = [
             { href: 'index.html', text: 'Home' },
-            { href: 'about.html', text: 'About' },
-            { href: 'contact.html', text: 'Contact' }
+            { href: 'dcf_about.html', text: 'About' },
+            { href: 'dcf_contact.html', text: 'Contact' }
         ];
         navItems = publicNav.filter(item => item.href !== currentPage);
     } else {
         // Logged in: Show only Contact (excluding if on contact page)
-        if (currentPage !== 'contact.html') {
-            navItems = [{ href: 'contact.html', text: 'Contact' }];
+        if (currentPage !== 'dcf_contact.html') {
+            navItems = [{ href: 'dcf_contact.html', text: 'Contact' }];
         }
     }
     
