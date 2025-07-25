@@ -94,6 +94,23 @@ function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown || dropdown.querySelector('.nav-item')) return;
 
+    // Create dropdown structure if it doesn't exist
+    if (!dropdown.querySelector('.dropdown-header')) {
+        const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+        const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+        const initials = generateInitials(userName);
+        
+        dropdown.innerHTML = `
+            <div class="dropdown-header">
+                <div class="dropdown-avatar">${initials}</div>
+                <div class="dropdown-info">
+                    <div class="dropdown-name">${userName}</div>
+                    <div class="dropdown-email">${userEmail}</div>
+                </div>
+            </div>
+        `;
+    }
+
     const currentPage = window.location.pathname.split('/').pop();
     
     const navigationItems = [
@@ -132,12 +149,8 @@ function addNavigationItems() {
     `;
     navSection.appendChild(logoutItem);
 
-    const dropdownHeader = dropdown.querySelector('.dropdown-header');
-    if (dropdownHeader && dropdownHeader.nextSibling) {
-        dropdown.insertBefore(navSection, dropdownHeader.nextSibling);
-    } else if (dropdownHeader) {
-        dropdown.appendChild(navSection);
-    }
+    dropdown.appendChild(navSection);
+}
 }
 
 function handleLogout() {
