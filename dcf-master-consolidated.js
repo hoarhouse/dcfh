@@ -151,7 +151,6 @@ function addNavigationItems() {
 
     dropdown.appendChild(navSection);
 }
-}
 
 function handleLogout() {
     closeUserMenu();
