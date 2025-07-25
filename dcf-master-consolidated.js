@@ -593,33 +593,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize footer for all pages
     setTimeout(initializeFooter, 50);
     
-    if (pageType === 'member') {
-        // Member pages require login
-        if (!isLoggedIn) {
-            window.location.href = 'https://hoarhouse.github.io/dcfh/dcf_login_page.html';
-            return;
-        }
-        
-        // Initialize member page components
+    // EMERGENCY: All redirects disabled
+    if (isLoggedIn) {
         updateUserDropdownInfo();
-        
-        // Initialize Quick Actions with delay for DOM readiness
         setTimeout(initializeQuickActions, 100);
-        
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && isDropdownOpen) {
                 closeUserMenu();
             }
         });
-        
-    } else if (pageType === 'public') {
-        // Public pages - show sign up button instead of avatar
-        if (!isLoggedIn) {
-            handlePublicPageAuth();
-        } else {
-            // Logged in user on public page - show avatar
-            updateUserDropdownInfo();
-        }
+    } else {
+        handlePublicPageAuth();
     }
 });
 
