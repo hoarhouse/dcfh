@@ -94,22 +94,53 @@ function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown || dropdown.querySelector('.nav-item')) return;
 
-    // Create dropdown structure if it doesn't exist
-    if (!dropdown.querySelector('.dropdown-header')) {
-        const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
-        const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
-        const initials = generateInitials(userName);
-        
-        dropdown.innerHTML = `
-            <div class="dropdown-header">
-                <div class="dropdown-avatar">${initials}</div>
-                <div class="dropdown-info">
-                    <div class="dropdown-name">${userName}</div>
-                    <div class="dropdown-email">${userEmail}</div>
-                </div>
-            </div>
-        `;
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    const navigationItems = [
+        { href: 'dcf_member_home.html', icon: '🏠', text: 'My Feed' },
+        { href: 'dcf_member_profile.html', icon: '👤', text: 'My Profile' },
+        { href: 'dcf_members_directory.html', icon: '👥', text: 'My Connections' },
+        { href: 'dcf_projects_home.html', icon: '📋', text: 'My Projects' },
+        { href: 'dcf_events_calendar.html', icon: '📅', text: 'My Events' },
+        { href: 'dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
+        { href: 'dcf_account_settings.html', icon: '⚙️', text: 'Settings' }
+    ];
+
+    const navSection = document.createElement('div');
+    navSection.innerHTML = '<div class="dropdown-divider"></div>';
+
+    navigationItems
+        .filter(item => item.href !== currentPage)
+        .forEach(item => {
+            const navItem = document.createElement('a');
+            navItem.href = item.href;
+            navItem.className = 'dropdown-item nav-item';
+            navItem.innerHTML = `
+                <span class="dropdown-icon">${item.icon}</span>
+                ${item.text}
+            `;
+            navSection.appendChild(navItem);
+        });
+
+    const logoutItem = document.createElement('div');
+    logoutItem.innerHTML = `
+        <div class="dropdown-divider"></div>
+        <button onclick="handleLogout()" class="dropdown-item logout-btn">
+            <span class="dropdown-icon">🚪</span>
+            Sign Out
+        </button>
+    `;
+    navSection.appendChild(logoutItem);
+
+    const dropdownHeader = dropdown.querySelector('.dropdown-header');
+    if (dropdownHeader && dropdownHeader.nextSibling) {
+        dropdown.insertBefore(navSection, dropdownHeader.nextSibling);
+    } else if (dropdownHeader) {
+        dropdown.appendChild(navSection);
     }
+}function addNavigationItems() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown || dropdown.querySelector('.nav-item')) return;
 
     const currentPage = window.location.pathname.split('/').pop();
     
@@ -149,7 +180,13 @@ function addNavigationItems() {
     `;
     navSection.appendChild(logoutItem);
 
-    dropdown.appendChild(navSection);
+    const dropdownHeader = dropdown.querySelector('.dropdown-header');
+    if (dropdownHeader && dropdownHeader.nextSibling) {
+        dropdown.insertBefore(navSection, dropdownHeader.nextSibling);
+    } else if (dropdownHeader) {
+        dropdown.appendChild(navSection);
+    }
+}pendChild(navSection);
 }
 
 function handleLogout() {
