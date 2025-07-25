@@ -564,25 +564,6 @@ function initializeFooter() {
 // 6. PAGE TYPE DETECTION AND PUBLIC PAGE HANDLING
 // =============================================================================
 function getPageType() {
-    const path = window.location.pathname.toLowerCase();
-    const filename = path.split('/').pop();
-    
-    // Public pages (no login required)
-    if (filename === 'index.html' || filename === '' || 
-        filename.includes('contact') || filename.includes('about') ||
-        filename.includes('login') || filename.includes('signup') ||
-        filename === 'dcf_login_page.html' || filename === 'dcf_profile_signup.html') {
-        return 'public';
-    }
-    
-    // Member pages (login required)
-    if (filename.includes('dcf_member') || filename.includes('dcf_projects') ||
-        filename.includes('dcf_events') || filename.includes('dcf_resources') ||
-        filename.includes('dcf_admin') || filename.includes('dcf_personal') ||
-        filename.includes('dcf_account_settings')) {
-        return 'member';
-    }
-    
     return 'public';
 }
 
