@@ -994,8 +994,10 @@
                     mediaType = currentMedia.type.startsWith('image/') ? 'image' : 'video';
                 }
 
-                // Create post
-                const { error } = await supabase
+                                // This line gets replaced by the code above
+
+                // Insert post and get the actual data back
+                const { data: insertedPost, error: insertError } = await supabase
                     .from('posts')
                     .insert({
                         content: content || null,
@@ -1003,23 +1005,14 @@
                         media_type: mediaType,
                         author_email: currentUserEmail,
                         author_name: currentUserName
-                    });
+                    })
+                    .select()
+                    .single();
 
-                if (error) throw error;
+                if (insertError) throw insertError;
 
-                // Create the new post object to add to feed immediately
-                const newPost = {
-                    id: Date.now(), // Temporary ID until real-time sync
-                    content: content || null,
-                    media_url: mediaUrl,
-                    media_type: mediaType,
-                    author_email: currentUserEmail,
-                    author_name: currentUserName,
-                    created_at: new Date().toISOString()
-                };
-
-                // Add to top of posts array and refresh display
-                posts.unshift(newPost);
+                // Add the real post to top of posts array and refresh display
+                posts.unshift(insertedPost);
                 displayPosts();
 
                 // Clear form
