@@ -613,9 +613,13 @@ function handlePublicPageAuth() {
                 <a href="dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-block;">Join Us</a>
             `;
         } else {
-            // User IS logged in - CREATE basic dropdown structure, let existing functions populate it
+            // User IS logged in - CREATE basic dropdown structure with notification bell
             navActions.innerHTML = `
                 <div class="user-menu">
+                    <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
+                        <span class="notification-icon">🔔</span>
+                        <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                    </div>
                     <div class="user-dropdown">
                         <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
                         <div class="dropdown-menu" id="userDropdown">
