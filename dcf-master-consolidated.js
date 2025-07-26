@@ -612,8 +612,25 @@ function handlePublicPageAuth() {
                 <a href="dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px; transition: all 0.3s ease;">Login</a>
                 <a href="dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-block;">Join Us</a>
             `;
+        } else {
+            // User IS logged in - CREATE the green dropdown
+            navActions.innerHTML = `
+                <div class="user-menu">
+                    <div class="user-dropdown">
+                        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                        <div class="dropdown-menu" id="userDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-avatar">SJ</div>
+                                <div class="dropdown-info">
+                                    <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
+                                    <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-        // If logged in, do nothing - keep existing user menu/dropdown
     }
 }
 
