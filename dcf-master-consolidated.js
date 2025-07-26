@@ -598,14 +598,12 @@ function getPageType() {
 
 
 function handlePublicPageAuth() {
-    const userMenu = document.querySelector('.user-menu');
-    const userAvatar = document.getElementById('userAvatar');
+    const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
     
-    if (userAvatar && userMenu) {
-        userMenu.innerHTML = `
-            <a href="dcf_profile_signup.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                Join DCF Hungary
-            </a>
+    if (navActions) {
+        navActions.innerHTML = `
+            <a href="dcf_login_page.html" class="login-btn">Login</a>
+            <a href="dcf_profile_signup.html" class="join-btn">Join Us</a>
         `;
     }
 }
