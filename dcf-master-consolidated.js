@@ -182,13 +182,14 @@ function populateTopNavigation() {
         ];
         navItems = publicNav.filter(item => item.href !== currentPage);
     } else {
-        // MEMBER NAVIGATION: Home, Members, Projects, Events, Resources (excluding current page)
+        // MEMBER NAVIGATION: Home, Members, Projects, Events, Resources, Contact (excluding current page)
         const memberNav = [
             { href: 'dcf_member_home.html', text: 'Home' },
             { href: 'dcf_members_directory.html', text: 'Members' },
             { href: 'dcf_projects_home.html', text: 'Projects' },
             { href: 'dcf_events_calendar.html', text: 'Events' },
-            { href: 'dcf_resources_library.html', text: 'Resources' }
+            { href: 'dcf_resources_library.html', text: 'Resources' },
+            { href: 'dcf_contact.html', text: 'Contact' }
         ];
         navItems = memberNav.filter(item => item.href !== currentPage);
     }
