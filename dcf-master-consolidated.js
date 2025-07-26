@@ -24,7 +24,10 @@ function openUserMenu() {
     dropdown.classList.add('active');
     isDropdownOpen = true;
     updateUserDropdownInfo();
-    addNavigationItems();
+    // Only add navigation items on member pages, not public pages
+    if (getPageType() === 'member') {
+        addNavigationItems();
+    }
     
     setTimeout(() => {
         document.addEventListener('click', handleDocumentClick, true);
