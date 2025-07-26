@@ -602,13 +602,18 @@ function getPageType() {
 
 
 function handlePublicPageAuth() {
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
     const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
     
     if (navActions) {
-        navActions.innerHTML = `
-            <a href="dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px; transition: all 0.3s ease;">Login</a>
-            <a href="dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-block;">Join Us</a>
-        `;
+        if (!isLoggedIn) {
+            // User is NOT logged in - show Login/Join buttons
+            navActions.innerHTML = `
+                <a href="dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px; transition: all 0.3s ease;">Login</a>
+                <a href="dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-block;">Join Us</a>
+            `;
+        }
+        // If logged in, do nothing - keep existing user menu/dropdown
     }
 }
 
