@@ -542,7 +542,7 @@ function initializeFooter() {
                     <h4 class="footer-title">Quick Links</h4>
                     <ul class="footer-links">
                         <li><a href="index.html">Home</a></li>
-                        <li><a href="#mission">About Us</a></li>
+                        <li><a href="dcf_about.html">About Us</a></li>
                         <li><a href="dcf_contact.html">Contact</a></li>
                         <li><a href="dcf_login_page.html">Member Login</a></li>
                         <li><a href="dcf_profile_signup.html">Join Us</a></li>
