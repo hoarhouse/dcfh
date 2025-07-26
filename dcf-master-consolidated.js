@@ -640,6 +640,44 @@ document.addEventListener('DOMContentLoaded', function() {
         // Public pages - no redirects, just UI
         if (isLoggedIn) {
             updateUserDropdownInfo();
+            // Show user dropdown on public pages when logged in
+            const navActions = document.querySelector('.nav-actions');
+            if (navActions) {
+                navActions.innerHTML = `
+                    <div class="user-dropdown">
+                        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                        <div class="dropdown-menu" id="userDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-avatar">SJ</div>
+                                <div class="dropdown-info">
+                                    <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
+                                    <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="dcf_member_profile.html" class="dropdown-item">
+                                <span class="dropdown-icon">👤</span>
+                                View Profile
+                            </a>
+                            <a href="dcf_settings.html" class="dropdown-item">
+                                <span class="dropdown-icon">⚙️</span>
+                                Settings
+                            </a>
+                            <a href="dcf_contact.html" class="dropdown-item">
+                                <span class="dropdown-icon">💬</span>
+                                Help & Support
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item logout-btn" onclick="handleLogout()">
+                                <span class="dropdown-icon">🚪</span>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                `;
+                // Update the user info after creating the dropdown
+                updateUserDropdownInfo();
+            }
         } else {
             handlePublicPageAuth();
         }
