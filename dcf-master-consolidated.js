@@ -656,7 +656,12 @@ function handlePublicPageAuth() {
                 document.head.appendChild(style);
             }
             
-            // Use existing functions to popula
+// Use existing functions to populate everything correctly
+            setTimeout(() => {
+                updateUserDropdownInfo(); // Sets correct user data and green styling
+                addNavigationItems(); // Adds menu items and logout using your existing system
+            }, 10);
+        }
     }
 }
 
