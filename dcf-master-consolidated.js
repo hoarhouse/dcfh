@@ -209,14 +209,6 @@ function populateTopNavigation() {
         navMenu.appendChild(li);
     });
 }
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = item.href;
-        a.textContent = item.text;
-        li.appendChild(a);
-        navMenu.appendChild(li);
-    });
-}
 
 // =============================================================================
 // 3. QUICK ACTIONS CONFIGURATION (from quickactions.js)
