@@ -638,25 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    
-    // Initialize top navigation for all pages
-    populateTopNavigation();
-    
-    // Initialize footer for all pages
-    setTimeout(initializeFooter, 50);
-    
-    // EMERGENCY: All redirects disabled
-    if (isLoggedIn) {
-        updateUserDropdownInfo();
-        setTimeout(initializeQuickActions, 100);
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && isDropdownOpen) {
-                closeUserMenu();
-            }
-        });
-    } else {
-        handlePublicPageAuth();
-    }
+   
 });
 
 // =============================================================================
