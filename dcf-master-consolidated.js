@@ -564,8 +564,27 @@ function initializeFooter() {
 // 6. PAGE TYPE DETECTION AND PUBLIC PAGE HANDLING
 // =============================================================================
 function getPageType() {
+    const path = window.location.pathname.toLowerCase();
+    const filename = path.split('/').pop();
+    
+    // Public pages (no login required)
+    if (filename === 'index.html' || filename === '' || 
+        filename.includes('contact') || filename.includes('about') ||
+        filename.includes('login') || filename.includes('signup')) {
+        return 'public';
+    }
+    
+    // Member pages (login required)
+    if (filename.includes('dcf_member') || filename.includes('dcf_projects') ||
+        filename.includes('dcf_events') || filename.includes('dcf_resources') ||
+        filename.includes('dcf_admin') || filename.includes('dcf_personal') ||
+        filename.includes('dcf_account_settings')) {
+        return 'member';
+    }
+    
     return 'public';
 }
+
 
 function handlePublicPageAuth() {
     const userMenu = document.querySelector('.user-menu');
@@ -584,10 +603,41 @@ function handlePublicPageAuth() {
 // 7. MAIN INITIALIZATION - EVERYTHING HAPPENS HERE
 // =============================================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // ALL REDIRECTS DISABLED - EMERGENCY FIX
-    return;
     const pageType = getPageType();
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    
+    // Initialize top navigation for all pages
+    populateTopNavigation();
+    
+    // Initialize footer for all pages
+    setTimeout(initializeFooter, 50);
+    
+    if (pageType === 'member') {
+        // Member pages require login
+        if (!isLoggedIn) {
+            window.location.href = 'dcf_login_page.html';
+            return;
+        }
+        
+        // Initialize member page components
+        updateUserDropdownInfo();
+        setTimeout(initializeQuickActions, 100);
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isDropdownOpen) {
+                closeUserMenu();
+            }
+        });
+        
+    } else {
+        // Public pages
+        if (isLoggedIn) {
+            updateUserDropdownInfo();
+        } else {
+            handlePublicPageAuth();
+        }
+    }
+    
     
     // Initialize top navigation for all pages
     populateTopNavigation();
