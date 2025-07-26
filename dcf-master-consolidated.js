@@ -159,7 +159,7 @@ function handleLogout() {
 }
 
 // =============================================================================
-// 2. TOP NAVIGATION FUNCTIONALITY
+// 2. UPDATED TOP NAVIGATION FUNCTIONALITY - REPLACES ALL HARDCODED NAV
 // =============================================================================
 function populateTopNavigation() {
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
@@ -174,7 +174,7 @@ function populateTopNavigation() {
     let navItems = [];
     
     if (!isLoggedIn) {
-        // Not logged in: Show Home, About, Contact (excluding current page)
+        // PUBLIC NAVIGATION: Home, About, Contact (excluding current page)
         const publicNav = [
             { href: 'index.html', text: 'Home' },
             { href: 'dcf_about.html', text: 'About' },
@@ -182,14 +182,33 @@ function populateTopNavigation() {
         ];
         navItems = publicNav.filter(item => item.href !== currentPage);
     } else {
-        // Logged in: Show only Contact (excluding if on contact page)
-        if (currentPage !== 'dcf_contact.html') {
-            navItems = [{ href: 'dcf_contact.html', text: 'Contact' }];
-        }
+        // MEMBER NAVIGATION: Home, Members, Projects, Events, Resources (excluding current page)
+        const memberNav = [
+            { href: 'dcf_member_home.html', text: 'Home' },
+            { href: 'dcf_members_directory.html', text: 'Members' },
+            { href: 'dcf_projects_home.html', text: 'Projects' },
+            { href: 'dcf_events_calendar.html', text: 'Events' },
+            { href: 'dcf_resources_library.html', text: 'Resources' }
+        ];
+        navItems = memberNav.filter(item => item.href !== currentPage);
     }
     
     // Create and append nav items
     navItems.forEach(item => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = item.href;
+        a.textContent = item.text;
+        
+        // Add active class if this is the current page
+        if (item.href === currentPage) {
+            a.classList.add('active');
+        }
+        
+        li.appendChild(a);
+        navMenu.appendChild(li);
+    });
+}
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.href = item.href;
