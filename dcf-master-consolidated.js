@@ -639,7 +639,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // Public pages - no redirects, just UI
         if (isLoggedIn) {
-            updateUserDropdownInfo();
             // Show user dropdown on public pages when logged in
             const navActions = document.querySelector('.nav-actions');
             if (navActions) {
@@ -675,9 +674,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 `;
-                // Update the user info after creating the dropdown
-                updateUserDropdownInfo();
             }
+            updateUserDropdownInfo();
         } else {
             handlePublicPageAuth();
         }
