@@ -602,9 +602,9 @@ function handlePublicPageAuth() {
 // =============================================================================
 // 7. MAIN INITIALIZATION - EVERYTHING HAPPENS HERE
 // =============================================================================
-ddocument.addEventListener('DOMContentLoaded', function() {
-    // EMERGENCY - ALL REDIRECTS DISABLED
-    console.log('Master JS loading - all redirects disabled');
+document.addEventListener('DOMContentLoaded', function() {
+    const pageType = getPageType();
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
     
     // Initialize top navigation for all pages
     populateTopNavigation();
@@ -612,15 +612,28 @@ ddocument.addEventListener('DOMContentLoaded', function() {
     // Initialize footer for all pages
     setTimeout(initializeFooter, 50);
     
-    // No redirects - just handle UI
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
-    if (isLoggedIn) {
+    if (pageType === 'member') {
+        // ONLY redirect if it's actually a member page AND user not logged in
+        if (!isLoggedIn) {
+            window.location.href = 'dcf_login_page.html';
+            return;
+        }
         updateUserDropdownInfo();
+        setTimeout(initializeQuickActions, 100);
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isDropdownOpen) {
+                closeUserMenu();
+            }
+        });
     } else {
-        handlePublicPageAuth();
+        // Public pages - no redirects, just UI
+        if (isLoggedIn) {
+            updateUserDropdownInfo();
+        } else {
+            handlePublicPageAuth();
+        }
     }
-    
-   
 });
 
 // =============================================================================
