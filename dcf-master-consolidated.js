@@ -669,6 +669,37 @@ function handlePublicPageAuth() {
     }
 }
 
+function addNotificationBellToMemberPages() {
+    const userMenu = document.querySelector('.user-menu');
+    if (userMenu && !userMenu.querySelector('.notification-bell')) {
+        // Check if it already has notification bell
+        const existingBell = userMenu.querySelector('.notification-bell');
+        if (!existingBell) {
+            // Add notification bell before the user dropdown
+            const bellHTML = `
+                <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
+                    <span class="notification-icon">🔔</span>
+                    <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                </div>
+            `;
+            userMenu.insertAdjacentHTML('afterbegin', bellHTML);
+            
+            // Add CSS for notification bell if not already added
+            if (!document.querySelector('#memberPageBellCSS')) {
+                const style = document.createElement('style');
+                style.id = 'memberPageBellCSS';
+                style.textContent = `
+                    .notification-bell { position: relative; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.3s ease; margin-right: 1rem; }
+                    .notification-bell:hover { background-color: #f0f0f0; }
+                    .notification-icon { font-size: 1.2rem; display: block; }
+                    .notification-badge { position: absolute; top: -2px; right: -2px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; min-width: 20px; }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    }
+}
+
 // =============================================================================
 // 7. MAIN INITIALIZATION - EVERYTHING HAPPENS HERE
 // =============================================================================
@@ -702,6 +733,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isLoggedIn) {
             updateUserDropdownInfo();
         }
+}
+    
+    // ALSO handle member pages that have existing .user-menu
+    if (pageType === 'member' && isLoggedIn) {
+        addNotificationBellToMemberPages();
     }
 });
 
