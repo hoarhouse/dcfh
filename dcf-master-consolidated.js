@@ -631,12 +631,32 @@ function handlePublicPageAuth() {
                 </div>
             `;
             
-            // Use existing functions to populate everything correctly
-            setTimeout(() => {
-                updateUserDropdownInfo(); // Sets correct user data and green styling
-                addNavigationItems(); // Adds menu items and logout using your existing system
-            }, 10);
-        }
+            // Add required CSS for public page dropdown
+            if (!document.querySelector('#publicDropdownCSS')) {
+                const style = document.createElement('style');
+                style.id = 'publicDropdownCSS';
+                style.textContent = `
+                    .user-menu { position: relative; display: flex; align-items: center; }
+                    .user-dropdown { position: relative; }
+                    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #00ff00, #32cd32); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem; font-weight: 600; cursor: pointer; box-shadow: 0 0 10px #00ff00; }
+                    .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); border: 1px solid #e5e5e5; min-width: 280px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 1000; }
+                    .dropdown-menu.active { opacity: 1; visibility: visible; transform: translateY(0); }
+                    .dropdown-header { display: flex; align-items: center; gap: 1rem; padding: 1.5rem; border-bottom: 1px solid #f0f0f0; }
+                    .dropdown-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #00ff00, #32cd32); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.1rem; flex-shrink: 0; }
+                    .dropdown-info { flex: 1; min-width: 0; }
+                    .dropdown-name { font-weight: 600; color: #333; font-size: 1rem; margin-bottom: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .dropdown-email { color: #666; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .dropdown-divider { height: 1px; background: #f0f0f0; margin: 0.5rem 0; }
+                    .dropdown-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: #333; text-decoration: none; transition: all 0.2s ease; border: none; background: none; width: 100%; text-align: left; cursor: pointer; font-size: 0.9rem; }
+                    .dropdown-item:hover { background: #f8f9fa; color: #000; }
+                    .logout-btn { color: #dc3545 !important; font-weight: 500; }
+                    .logout-btn:hover { background: #fee !important; color: #c82333 !important; }
+                    .dropdown-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Use existing functions to popula
     }
 }
 
