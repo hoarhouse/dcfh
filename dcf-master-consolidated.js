@@ -639,13 +639,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeUserMenu();
             }
         });
-    } else {
+     } else {
         // Public pages - no redirects, just UI
+        handlePublicPageAuth();
         if (isLoggedIn) {
-            // Simple approach: just update user info, no complex dropdown creation
             updateUserDropdownInfo();
-        } else {
-            handlePublicPageAuth();
         }
     }
 });
