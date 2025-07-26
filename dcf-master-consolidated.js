@@ -613,7 +613,7 @@ function handlePublicPageAuth() {
                 <a href="dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-block;">Join Us</a>
             `;
         } else {
-            // User IS logged in - CREATE the green dropdown
+            // User IS logged in - CREATE basic dropdown structure, let existing functions populate it
             navActions.innerHTML = `
                 <div class="user-menu">
                     <div class="user-dropdown">
@@ -630,6 +630,12 @@ function handlePublicPageAuth() {
                     </div>
                 </div>
             `;
+            
+            // Use existing functions to populate everything correctly
+            setTimeout(() => {
+                updateUserDropdownInfo(); // Sets correct user data and green styling
+                addNavigationItems(); // Adds menu items and logout using your existing system
+            }, 10);
         }
     }
 }
