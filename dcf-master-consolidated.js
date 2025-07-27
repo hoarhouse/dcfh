@@ -795,8 +795,11 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'dcf_login_page.html';
             return;
         }
-        updateUserDropdownInfo();
-        setTimeout(initializeQuickActions, 100);
+        // Wait for avatar to load before continuing
+        setTimeout(async () => {
+            await updateUserDropdownInfo();
+        }, 100);
+        setTimeout(initializeQuickActions, 200);
         
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && isDropdownOpen) {
@@ -807,7 +810,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Public pages - no redirects, just UI
         handlePublicPageAuth();
         if (isLoggedIn) {
-            updateUserDropdownInfo();
+            setTimeout(async () => {
+                await updateUserDropdownInfo();
+            }, 100);
         }
 }
     
