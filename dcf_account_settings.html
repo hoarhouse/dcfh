@@ -769,6 +769,7 @@
             }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
     <script src="dcf-master-consolidated.js"></script>
 </head>
 
@@ -1271,6 +1272,150 @@
     </main>
 
     <script>
+        // Supabase configuration
+        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Current user
+        let currentUser = {
+            email: localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org',
+            name: localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson'
+        };
+
+        // Load user profile data on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUserProfile();
+        });
+
+        // Load user profile from database
+        async function loadUserProfile() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', currentUser.email)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+
+                if (data) {
+                    // Populate form with database data
+                    populateForm(data);
+                } else {
+                    // Create new profile with current localStorage data
+                    await createUserProfile();
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showAlert('Error loading profile data', 'danger');
+            }
+        }
+
+        // Create new user profile
+        async function createUserProfile() {
+            try {
+                const profileData = {
+                    email: currentUser.email,
+                    name: currentUser.name,
+                    first_name: currentUser.name.split(' ')[0] || 'Sarah',
+                    last_name: currentUser.name.split(' ').slice(1).join(' ') || 'Johnson',
+                    title: 'AI Ethics Researcher',
+                    organization: 'Stanford University',
+                    location: 'Palo Alto, CA',
+                    timezone: 'PST',
+                    bio: 'AI ethics researcher focused on developing frameworks for responsible AI deployment in educational settings.',
+                    expertise: 'AI Ethics, Machine Learning, Education Technology',
+                    website: 'https://sarahjohnson.stanford.edu',
+                    profile_public: true,
+                    show_email: false,
+                    show_activity: true,
+                    email_digest: true,
+                    email_projects: true,
+                    email_events: true,
+                    email_messages: true,
+                    push_messages: true,
+                    push_mentions: true,
+                    push_events: false,
+                    analytics_consent: true,
+                    personalized_recommendations: true,
+                    login_alerts: true,
+                    suspicious_activity_alerts: true,
+                    language: 'en',
+                    date_format: 'MM/DD/YYYY'
+                };
+
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .insert([profileData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                populateForm(data);
+                showAlert('Profile created successfully!', 'success');
+            } catch (error) {
+                console.error('Error creating profile:', error);
+                showAlert('Error creating profile', 'danger');
+            }
+        }
+
+        // Populate form fields with data
+        function populateForm(data) {
+            document.getElementById('firstName').value = data.first_name || '';
+            document.getElementById('lastName').value = data.last_name || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('title').value = data.title || '';
+            document.getElementById('organization').value = data.organization || '';
+            document.getElementById('location').value = data.location || '';
+            document.getElementById('timezone').value = data.timezone || 'PST';
+            document.getElementById('bio').value = data.bio || '';
+            document.getElementById('expertise').value = data.expertise || '';
+            document.getElementById('website').value = data.website || '';
+
+            // Set checkboxes and toggles
+            setToggle(document.querySelector('.privacy-option:nth-child(1) .toggle-switch'), data.profile_public);
+            setToggle(document.querySelector('.privacy-option:nth-child(2) .toggle-switch'), data.show_email);
+            setToggle(document.querySelector('.privacy-option:nth-child(3) .toggle-switch'), data.show_activity);
+
+            document.getElementById('emailDigest').checked = data.email_digest || false;
+            document.getElementById('emailProjects').checked = data.email_projects || false;
+            document.getElementById('emailEvents').checked = data.email_events || false;
+            document.getElementById('emailMessages').checked = data.email_messages || false;
+            document.getElementById('pushMessages').checked = data.push_messages || false;
+            document.getElementById('pushMentions').checked = data.push_mentions || false;
+            document.getElementById('pushEvents').checked = data.push_events || false;
+
+            document.getElementById('loginAlerts').checked = data.login_alerts || false;
+            document.getElementById('suspiciousActivity').checked = data.suspicious_activity_alerts || false;
+
+            document.getElementById('language').value = data.language || 'en';
+            document.getElementById('dateFormat').value = data.date_format || 'MM/DD/YYYY';
+
+            // Update avatars with initials
+            updateAvatars(data.first_name, data.last_name);
+        }
+
+        // Helper function to set toggle switch state
+        function setToggle(toggleElement, isActive) {
+            if (isActive) {
+                toggleElement.classList.add('active');
+            } else {
+                toggleElement.classList.remove('active');
+            }
+        }
+
+        // Update avatar displays
+        function updateAvatars(firstName, lastName) {
+            const initials = (firstName?.[0] || '') + (lastName?.[0] || '');
+            document.querySelectorAll('.profile-avatar-large, .dropdown-avatar, .user-avatar').forEach(avatar => {
+                avatar.textContent = initials || 'SJ';
+            });
+        }
+
         // Section navigation
         function showSection(sectionId) {
             // Hide all sections
@@ -1296,10 +1441,60 @@
         }
 
         // Form submissions
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            showAlert('Profile updated successfully!', 'success');
+            await saveProfile();
         });
+
+        // Save profile data to database
+        async function saveProfile() {
+            try {
+                const profileData = {
+                    first_name: document.getElementById('firstName').value,
+                    last_name: document.getElementById('lastName').value,
+                    email: document.getElementById('email').value,
+                    title: document.getElementById('title').value,
+                    organization: document.getElementById('organization').value,
+                    location: document.getElementById('location').value,
+                    timezone: document.getElementById('timezone').value,
+                    bio: document.getElementById('bio').value,
+                    expertise: document.getElementById('expertise').value,
+                    website: document.getElementById('website').value,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .update(profileData)
+                    .eq('email', currentUser.email)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Update localStorage to match database
+                const fullName = `${profileData.first_name} ${profileData.last_name}`.trim();
+                localStorage.setItem('dcf_user_name', fullName);
+                localStorage.setItem('dcf_user_email', profileData.email);
+                
+                // Update current user object
+                currentUser.name = fullName;
+                currentUser.email = profileData.email;
+
+                // Update avatars
+                updateAvatars(profileData.first_name, profileData.last_name);
+
+                // Update navigation dropdown
+                if (typeof updateUserDropdownInfo === 'function') {
+                    updateUserDropdownInfo();
+                }
+
+                showAlert('Profile updated successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                showAlert('Error saving profile: ' + error.message, 'danger');
+            }
+        }
 
         document.getElementById('passwordForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1315,21 +1510,86 @@
             this.reset();
         });
 
-        // Notification functions
-        function saveNotifications() {
-            showAlert('Notification preferences saved!', 'success');
+       // Notification functions
+        async function saveNotifications() {
+            try {
+                const notificationData = {
+                    email_digest: document.getElementById('emailDigest').checked,
+                    email_projects: document.getElementById('emailProjects').checked,
+                    email_events: document.getElementById('emailEvents').checked,
+                    email_messages: document.getElementById('emailMessages').checked,
+                    push_messages: document.getElementById('pushMessages').checked,
+                    push_mentions: document.getElementById('pushMentions').checked,
+                    push_events: document.getElementById('pushEvents').checked,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update(notificationData)
+                    .eq('email', currentUser.email);
+
+                if (error) throw error;
+
+                showAlert('Notification preferences saved!', 'success');
+            } catch (error) {
+                console.error('Error saving notifications:', error);
+                showAlert('Error saving notification preferences', 'danger');
+            }
         }
 
-        function savePrivacy() {
-            showAlert('Privacy settings saved!', 'success');
+        async function savePrivacy() {
+            try {
+                const privacyToggles = document.querySelectorAll('.privacy-options .toggle-switch');
+                const privacyData = {
+                    profile_public: privacyToggles[0]?.classList.contains('active') || false,
+                    show_email: privacyToggles[1]?.classList.contains('active') || false,
+                    show_activity: privacyToggles[2]?.classList.contains('active') || false,
+                    analytics_consent: privacyToggles[3]?.classList.contains('active') || false,
+                    personalized_recommendations: privacyToggles[4]?.classList.contains('active') || false,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update(privacyData)
+                    .eq('email', currentUser.email);
+
+                if (error) throw error;
+
+                showAlert('Privacy settings saved!', 'success');
+            } catch (error) {
+                console.error('Error saving privacy settings:', error);
+                showAlert('Error saving privacy settings', 'danger');
+            }
         }
 
-        function saveAccountSettings() {
-            const alert = document.getElementById('accountAlert');
-            alert.style.display = 'block';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 3000);
+        async function saveAccountSettings() {
+            try {
+                const securityData = {
+                    login_alerts: document.getElementById('loginAlerts').checked,
+                    suspicious_activity_alerts: document.getElementById('suspiciousActivity').checked,
+                    language: document.getElementById('language').value,
+                    date_format: document.getElementById('dateFormat').value,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update(securityData)
+                    .eq('email', currentUser.email);
+
+                if (error) throw error;
+
+                const alert = document.getElementById('accountAlert');
+                alert.style.display = 'block';
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                console.error('Error saving account settings:', error);
+                showAlert('Error saving account settings', 'danger');
+            }
         }
 
         // Security functions
