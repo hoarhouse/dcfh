@@ -1311,7 +1311,40 @@
         // Load user profile data on page load
         document.addEventListener('DOMContentLoaded', async function() {
             await loadUserProfile();
+            await loadExistingAvatar();
         });
+
+       // Load existing avatar if it exists
+        async function loadExistingAvatar() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('avatar_url')
+                    .eq('email', currentUser.email)
+                    .single();
+
+                if (data && data.avatar_url) {
+                    // Update large profile avatar
+                    const largeAvatar = document.getElementById('profileAvatarLarge');
+                    if (largeAvatar) {
+                        largeAvatar.style.backgroundImage = `url(${data.avatar_url})`;
+                        largeAvatar.style.backgroundSize = 'cover';
+                        largeAvatar.style.backgroundPosition = 'center';
+                        largeAvatar.textContent = '';
+                    }
+                    
+                    // Update other avatars
+                    document.querySelectorAll('.dropdown-avatar, .user-avatar').forEach(avatar => {
+                        avatar.style.backgroundImage = `url(${data.avatar_url})`;
+                        avatar.style.backgroundSize = 'cover';
+                        avatar.style.backgroundPosition = 'center';
+                        avatar.textContent = '';
+                    });
+                }
+            } catch (error) {
+                console.log('No existing avatar found or error loading:', error);
+            }
+        }
 
         // Load user profile from database
         async function loadUserProfile() {
