@@ -50,7 +50,7 @@ function handleDocumentClick(event) {
     }
 }
 
-function updateUserDropdownInfo() {
+async function updateUserDropdownInfo() {
     const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
     const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
     const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
@@ -71,15 +71,57 @@ function updateUserDropdownInfo() {
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    if (avatarElement) {
-        avatarElement.textContent = initials;
-        // Add neon green styling to indicate master JS is active
-        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+    // Try to load profile picture from database
+    let avatarUrl = null;
+    try {
+        if (window.supabase) {
+            const { data, error } = await window.supabase
+                .from('user_profiles')
+                .select('avatar_url')
+                .eq('email', userEmail)
+                .single();
+            
+            if (data && data.avatar_url) {
+                avatarUrl = data.avatar_url;
+            }
+        }
+    } catch (error) {
+        console.log('Could not load avatar from database:', error);
     }
+
+    // Update both avatars (top right and dropdown)
+    if (avatarElement) {
+        if (avatarUrl) {
+            // Show profile picture
+            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
+            avatarElement.style.background = '';  // Remove gradient
+            avatarElement.style.boxShadow = '0 0 10px #00ff00';  // Keep green glow
+            avatarElement.textContent = '';  // Remove initials
+        } else {
+            // Show initials with green styling
+            avatarElement.textContent = initials;
+            avatarElement.style.backgroundImage = '';
+            avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+            avatarElement.style.boxShadow = '0 0 10px #00ff00';
+        }
+    }
+    
     if (dropdownAvatarElement) {
-        dropdownAvatarElement.textContent = initials;
-        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        if (avatarUrl) {
+            // Show profile picture
+            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.style.backgroundPosition = 'center';
+            dropdownAvatarElement.style.background = '';  // Remove gradient
+            dropdownAvatarElement.textContent = '';  // Remove initials
+        } else {
+            // Show initials
+            dropdownAvatarElement.textContent = initials;
+            dropdownAvatarElement.style.backgroundImage = '';
+            dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        }
     }
 }
 
