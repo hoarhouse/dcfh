@@ -80,25 +80,40 @@ async function updateUserDropdownInfo() {
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    // Initialize Supabase if available and wait for it to be ready
-    initializeSupabase();
-    
-    // Add proper delay to ensure Supabase is ready
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Initialize Supabase and wait longer for it to be ready
+    if (!masterSupabase) {
+        initializeSupabase();
+        // Wait longer and retry until Supabase is available
+        let retries = 0;
+        while (!masterSupabase && retries < 10) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+    }
 
     // Try to load profile picture from database
     let avatarUrl = null;
     try {
-        if (masterSupabase) {
+        if (masterSupabase && window.supabase) {
+            console.log('Attempting to load avatar for:', userEmail);
             const { data, error } = await masterSupabase
                 .from('user_profiles')
                 .select('avatar_url')
                 .eq('email', userEmail)
                 .single();
             
+            if (error) {
+                console.log('Database error:', error);
+            }
+            
             if (data && data.avatar_url) {
                 avatarUrl = data.avatar_url;
+                console.log('Found avatar URL:', avatarUrl);
+            } else {
+                console.log('No avatar URL found in database');
             }
+        } else {
+            console.log('Supabase not available');
         }
     } catch (error) {
         console.log('Could not load avatar from database:', error);
@@ -107,6 +122,7 @@ async function updateUserDropdownInfo() {
     // Update both avatars (top right and dropdown)
     if (avatarElement) {
         if (avatarUrl) {
+            console.log('Setting avatar image for top right');
             // Show profile picture
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
             avatarElement.style.backgroundSize = 'cover';
@@ -115,6 +131,7 @@ async function updateUserDropdownInfo() {
             avatarElement.style.boxShadow = '0 0 10px #00ff00';  // Keep green glow
             avatarElement.textContent = '';  // Remove initials
         } else {
+            console.log('Setting initials for top right');
             // Show initials with green styling
             avatarElement.textContent = initials;
             avatarElement.style.backgroundImage = '';
@@ -125,6 +142,7 @@ async function updateUserDropdownInfo() {
     
     if (dropdownAvatarElement) {
         if (avatarUrl) {
+            console.log('Setting avatar image for dropdown');
             // Show profile picture
             dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
             dropdownAvatarElement.style.backgroundSize = 'cover';
@@ -132,6 +150,7 @@ async function updateUserDropdownInfo() {
             dropdownAvatarElement.style.background = '';  // Remove gradient
             dropdownAvatarElement.textContent = '';  // Remove initials
         } else {
+            console.log('Setting initials for dropdown');
             // Show initials with green styling
             dropdownAvatarElement.textContent = initials;
             dropdownAvatarElement.style.backgroundImage = '';
