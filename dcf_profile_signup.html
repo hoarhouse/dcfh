@@ -396,6 +396,7 @@
             }
         }
     </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="dcf-master-consolidated.js"></script>
 </head>
 
@@ -770,12 +771,76 @@
         }
 
         // Complete signup
-        function completeSignup() {
-            // Here you would typically send userData to your backend
-            console.log('User data:', userData);
-            
-            // For now, just show the welcome step
-            goToStep(6);
+        async function completeSignup() {
+            try {
+                // Show loading state
+                const submitBtn = event.target;
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Creating Account...';
+                submitBtn.disabled = true;
+
+                // Supabase configuration
+                const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+                // Parse name
+                const nameParts = userData.fullName.trim().split(' ');
+                const firstName = nameParts[0];
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                // Create user profile in database
+                const profileData = {
+                    email: userData.email,
+                    name: userData.fullName,
+                    first_name: firstName,
+                    last_name: lastName,
+                    title: userData.role || '',
+                    organization: userData.organization || '',
+                    location: userData.country || '',
+                    bio: userData.bio || '',
+                    expertise: userData.interests ? userData.interests.join(', ') : '',
+                    skills_offered: userData.skills ? userData.skills.join(', ') : '',
+                    profile_public: true,
+                    email_digest: true,
+                    email_projects: true,
+                    email_events: true,
+                    created_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .insert([profileData])
+                    .select()
+                    .single();
+
+                if (error) {
+                    if (error.code === '23505') {
+                        throw new Error('An account with this email already exists. Please try logging in instead.');
+                    }
+                    throw error;
+                }
+
+                // Store user data in localStorage
+                localStorage.setItem('dcf_user_logged_in', 'true');
+                localStorage.setItem('dcf_user_name', userData.fullName);
+                localStorage.setItem('dcf_user_email', userData.email);
+                localStorage.setItem('dcf_auth_provider', 'signup');
+
+                console.log('Account created successfully:', data);
+                
+                // Show welcome step
+                goToStep(6);
+
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('Error creating account: ' + error.message);
+                
+                // Reset button
+                const submitBtn = event.target;
+                submitBtn.textContent = 'Join Community';
+                submitBtn.disabled = false;
+            }
         }
 
         // Initialize
