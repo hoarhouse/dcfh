@@ -82,6 +82,9 @@ async function updateUserDropdownInfo() {
 
     // Initialize Supabase if available
     initializeSupabase();
+    
+    // Add small delay to ensure Supabase is ready
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Try to load profile picture from database
     let avatarUrl = null;
