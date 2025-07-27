@@ -1745,12 +1745,31 @@
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('uploadStatus').textContent = 'Complete!';
                 
+                // Save avatar URL to database
+                const { error: updateError } = await supabase
+                    .from('user_profiles')
+                    .update({ 
+                        avatar_url: urlData.publicUrl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('email', currentUser.email);
+                
+                if (updateError) throw updateError;
+
                 // Update avatar display
                 const largeAvatar = document.getElementById('profileAvatarLarge');
                 largeAvatar.style.backgroundImage = `url(${urlData.publicUrl})`;
                 largeAvatar.style.backgroundSize = 'cover';
                 largeAvatar.style.backgroundPosition = 'center';
                 largeAvatar.textContent = '';
+                
+                // Update other avatars too
+                document.querySelectorAll('.dropdown-avatar, .user-avatar').forEach(avatar => {
+                    avatar.style.backgroundImage = `url(${urlData.publicUrl})`;
+                    avatar.style.backgroundSize = 'cover';
+                    avatar.style.backgroundPosition = 'center';
+                    avatar.textContent = '';
+                });
                 
                 // Hide progress after delay
                 setTimeout(() => {
