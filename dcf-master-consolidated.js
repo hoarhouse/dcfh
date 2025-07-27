@@ -32,7 +32,7 @@ function openUserMenu() {
     
     dropdown.classList.add('active');
     isDropdownOpen = true;
-    updateUserDropdownInfo();
+    // DON'T call updateUserDropdownInfo() here - avatar already loaded on page load
     // Only add navigation items on member pages, not public pages
     if (getPageType() === 'member') {
         addNavigationItems();
