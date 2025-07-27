@@ -212,6 +212,17 @@ async function loadPageAvatars() {
             avatarElement.style.background = '';
             avatarElement.style.boxShadow = '0 0 10px #00ff00';
             avatarElement.textContent = '';
+            
+            // Force it to stay by setting it again after a delay
+            setTimeout(() => {
+                console.log('Re-applying avatar image to ensure it stays');
+                avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+                avatarElement.style.backgroundSize = 'cover';
+                avatarElement.style.backgroundPosition = 'center';
+                avatarElement.style.background = '';
+                avatarElement.style.boxShadow = '0 0 10px #00ff00';
+                avatarElement.textContent = '';
+            }, 500);
         } else {
             console.log('Setting initials on page load');
             avatarElement.textContent = initials;
