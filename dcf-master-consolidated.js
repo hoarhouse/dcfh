@@ -80,11 +80,11 @@ async function updateUserDropdownInfo() {
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    // Initialize Supabase if available
+    // Initialize Supabase if available and wait for it to be ready
     initializeSupabase();
     
-    // Add small delay to ensure Supabase is ready
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Add proper delay to ensure Supabase is ready
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Try to load profile picture from database
     let avatarUrl = null;
@@ -132,7 +132,7 @@ async function updateUserDropdownInfo() {
             dropdownAvatarElement.style.background = '';  // Remove gradient
             dropdownAvatarElement.textContent = '';  // Remove initials
         } else {
-            // Show initials
+            // Show initials with green styling
             dropdownAvatarElement.textContent = initials;
             dropdownAvatarElement.style.backgroundImage = '';
             dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
