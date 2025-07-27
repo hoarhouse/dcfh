@@ -77,7 +77,12 @@ async function updateUserDropdownInfo() {
     }
 
     const initials = generateInitials(userName);
-    const avatarElement = document.getElementById('userAvatar');
+    // Be more specific - find the avatar in the top navigation
+    const avatarElement = document.querySelector('.user-menu .user-avatar') || document.getElementById('userAvatar');
+    
+    console.log('Found avatar element:', avatarElement);
+    console.log('Current avatar content:', avatarElement ? avatarElement.textContent : 'none');
+    console.log('Current avatar background:', avatarElement ? avatarElement.style.background : 'none');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
     // Initialize Supabase and wait longer for it to be ready
@@ -204,6 +209,8 @@ async function loadPageAvatars() {
     
     // Update avatar
     if (avatarElement) {
+        console.log('Avatar element classes:', avatarElement.className);
+        console.log('Avatar element ID:', avatarElement.id);
         if (avatarUrl) {
             console.log('Setting avatar image on page load');
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
