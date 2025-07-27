@@ -220,6 +220,10 @@ async function loadPageAvatars() {
             avatarElement.style.boxShadow = '0 0 10px #00ff00';
             avatarElement.textContent = '';
             
+            // Debug what was actually applied
+            console.log('Applied background-image:', avatarElement.style.backgroundImage);
+            console.log('Computed styles:', window.getComputedStyle(avatarElement).backgroundImage);
+            
             // Force it to stay by setting it again after a delay
             setTimeout(() => {
                 console.log('Re-applying avatar image to ensure it stays');
