@@ -1670,6 +1670,62 @@
                 alertDiv.remove();
             }, 3000);
         }
-    </script>
+
+        // Avatar upload functionality
+        document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                // Show progress
+                document.getElementById('uploadProgress').style.display = 'block';
+                document.getElementById('uploadError').style.display = 'none';
+                document.getElementById('uploadStatus').textContent = 'Uploading...';
+                document.getElementById('progressFill').style.width = '50%';
+                
+                // Generate unique filename
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const timestamp = Date.now();
+                const fileName = `avatar_${currentUser.email.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${fileExt}`;
+                
+                // Upload to Supabase Storage
+                const { data, error } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+                
+                if (error) throw error;
+                
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+                
+                // Update progress
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('uploadStatus').textContent = 'Complete!';
+                
+                // Update avatar display
+                const largeAvatar = document.getElementById('profileAvatarLarge');
+                largeAvatar.style.backgroundImage = `url(${urlData.publicUrl})`;
+                largeAvatar.style.backgroundSize = 'cover';
+                largeAvatar.style.backgroundPosition = 'center';
+                largeAvatar.textContent = '';
+                
+                // Hide progress after delay
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                    showAlert('Profile picture updated successfully!', 'success');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('uploadError').textContent = error.message;
+                document.getElementById('uploadError').style.display = 'block';
+                document.getElementById('uploadProgress').style.display =
 </body>
 </html>
