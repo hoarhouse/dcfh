@@ -233,6 +233,10 @@ async function loadPageAvatars() {
                 avatarElement.style.background = '';
                 avatarElement.style.boxShadow = '0 0 10px #00ff00';
                 avatarElement.textContent = '';
+                
+                // Debug again after re-apply
+                console.log('Re-applied background-image:', avatarElement.style.backgroundImage);
+                console.log('Final computed styles:', window.getComputedStyle(avatarElement).backgroundImage);
             }, 500);
         } else {
             console.log('Setting initials on page load');
