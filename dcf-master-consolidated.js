@@ -177,7 +177,7 @@ async function loadPageAvatars() {
     console.log('Raw userEmail from localStorage:', userEmail);
     
     // Handle cases where localStorage returns literal "undefined" string or actual undefined
-    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined) {
+    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
         userName = 'Dr. Sarah Johnson';  // Always use default fallback
         console.log('Using fallback userName:', userName);
     }
