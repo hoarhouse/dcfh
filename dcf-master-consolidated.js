@@ -168,10 +168,28 @@ async function updateUserDropdownInfo() {
 // FIXED FUNCTION - Add this after updateUserDropdownInfo()
 async function loadPageAvatars() {
     console.log('Loading page avatars...');
-    const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
-    const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+    
+    // Get user data with multiple fallbacks
+    let userName = localStorage.getItem('dcf_user_name');
+    let userEmail = localStorage.getItem('dcf_user_email');
+    
+    console.log('Raw userName from localStorage:', userName);
+    console.log('Raw userEmail from localStorage:', userEmail);
+    
+    // Handle cases where localStorage returns literal "undefined" string
+    if (!userName || userName === 'null' || userName === 'undefined') {
+        userName = 'Dr. Sarah Johnson';
+        console.log('Using fallback userName:', userName);
+    }
+    
+    if (!userEmail || userEmail === 'null' || userEmail === 'undefined') {
+        userEmail = 'sarah.johnson@dcfhungary.org';
+        console.log('Using fallback userEmail:', userEmail);
+    }
     
     const initials = generateInitials(userName);
+    console.log('Generated initials:', initials);
+    
     const avatarElement = document.getElementById('userAvatar');
     
     // FIRST - Set initials immediately to prevent "undefined" 
@@ -190,6 +208,12 @@ async function loadPageAvatars() {
         dropdownAvatarElement.style.backgroundImage = '';
         dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
     }
+    
+    // Update user info in dropdown
+    const nameElement = document.getElementById('dropdownUserName');
+    const emailElement = document.getElementById('dropdownUserEmail');
+    if (nameElement) nameElement.textContent = userName;
+    if (emailElement) emailElement.textContent = userEmail;
     
     // Force initialize Supabase
     if (!masterSupabase) {
@@ -252,8 +276,10 @@ async function loadPageAvatars() {
 
 // FIXED FUNCTION - This was the main source of "undefined"
 function generateInitials(name) {
+    console.log('generateInitials called with:', name, 'type:', typeof name);
+    
     // Handle all possible undefined/null/empty cases
-    if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string') {
+    if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string' || name.trim() === '') {
         console.log('generateInitials received invalid name:', name, 'returning default SJ');
         return 'SJ';
     }
@@ -269,12 +295,18 @@ function generateInitials(name) {
     const parts = cleanName.trim().split(' ').filter(part => part.length > 0);
     
     if (parts.length >= 2) {
-        const initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        const firstInitial = parts[0][0] || 'S';
+        const lastInitial = parts[parts.length - 1][0] || 'J';
+        const initials = (firstInitial + lastInitial).toUpperCase();
         console.log('generateInitials created initials:', initials, 'from name:', name);
         return initials;
     } else if (parts.length === 1 && parts[0].length >= 2) {
         const initials = parts[0].substring(0, 2).toUpperCase();
         console.log('generateInitials created initials from single name:', initials, 'from name:', name);
+        return initials;
+    } else if (parts.length === 1 && parts[0].length === 1) {
+        const initials = (parts[0][0] + 'J').toUpperCase(); // Default second initial
+        console.log('generateInitials created initials from single character:', initials, 'from name:', name);
         return initials;
     }
     
