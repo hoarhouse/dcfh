@@ -1,4 +1,4 @@
-// DCF Hungary Master Consolidated JavaScript - COMPLETE
+// DCF Hungary Master Consolidated JavaScript - FIXED VERSION
 // Combines: universal-navbar.js + universal-quick-actions.js + quickactions.js + footer functionality
 
 // Supabase configuration for avatar loading
@@ -10,6 +10,7 @@ function initializeSupabase() {
         masterSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     }
 }
+
 // =============================================================================
 // 1. USER MENU FUNCTIONALITY (from universal-navbar.js)
 // =============================================================================
@@ -164,7 +165,7 @@ async function updateUserDropdownInfo() {
     }
 }
 
-// NEW FUNCTION - Add this after updateUserDropdownInfo()
+// FIXED FUNCTION - Add this after updateUserDropdownInfo()
 async function loadPageAvatars() {
     console.log('Loading page avatars...');
     const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
@@ -172,6 +173,23 @@ async function loadPageAvatars() {
     
     const initials = generateInitials(userName);
     const avatarElement = document.getElementById('userAvatar');
+    
+    // FIRST - Set initials immediately to prevent "undefined" 
+    if (avatarElement) {
+        console.log('Setting initial fallback initials:', initials);
+        avatarElement.textContent = initials;
+        avatarElement.style.backgroundImage = '';
+        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+    }
+    
+    // Update dropdown avatar too
+    const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+    if (dropdownAvatarElement) {
+        dropdownAvatarElement.textContent = initials;
+        dropdownAvatarElement.style.backgroundImage = '';
+        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+    }
     
     // Force initialize Supabase
     if (!masterSupabase) {
@@ -207,61 +225,61 @@ async function loadPageAvatars() {
         console.log('Error loading avatar on page load:', error);
     }
     
-    // Update avatar
-    if (avatarElement) {
+    // Update avatar ONLY if we found a picture
+    if (avatarElement && avatarUrl) {
         console.log('Avatar element classes:', avatarElement.className);
         console.log('Avatar element ID:', avatarElement.id);
-        if (avatarUrl) {
-            console.log('Setting avatar image on page load');
-            // Clear background first, then set image
-            avatarElement.style.background = '';
-            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            avatarElement.style.backgroundSize = 'cover';
-            avatarElement.style.backgroundPosition = 'center';
-            avatarElement.style.boxShadow = '0 0 10px #00ff00';
-            avatarElement.textContent = '';
-            
-            // Debug what was actually applied
-            console.log('Applied background-image:', avatarElement.style.backgroundImage);
-            console.log('Computed styles:', window.getComputedStyle(avatarElement).backgroundImage);
-            
-            // Force it to stay by setting it again after a delay
-            setTimeout(() => {
-                console.log('Re-applying avatar image to ensure it stays');
-                // Clear background first, then set image
-                avatarElement.style.background = '';
-                avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-                avatarElement.style.backgroundSize = 'cover';
-                avatarElement.style.backgroundPosition = 'center';
-                avatarElement.style.boxShadow = '0 0 10px #00ff00';
-                avatarElement.textContent = '';
-                
-                // Debug again after re-apply
-                console.log('Re-applied background-image:', avatarElement.style.backgroundImage);
-                console.log('Final computed styles:', window.getComputedStyle(avatarElement).backgroundImage);
-            }, 500);
-        } else {
-            console.log('Setting initials on page load');
-            avatarElement.textContent = initials;
-            avatarElement.style.backgroundImage = '';
-            avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-            avatarElement.style.boxShadow = '0 0 10px #00ff00';
+        console.log('Setting avatar image on page load');
+        // Clear background first, then set image
+        avatarElement.style.background = '';
+        avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+        avatarElement.style.backgroundSize = 'cover';
+        avatarElement.style.backgroundPosition = 'center';
+        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+        avatarElement.textContent = '';
+        
+        // Update dropdown avatar too
+        if (dropdownAvatarElement) {
+            dropdownAvatarElement.style.background = '';
+            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.style.backgroundPosition = 'center';
+            dropdownAvatarElement.textContent = '';
         }
-    } else {
-        console.log('Avatar element not found on page load');
     }
+    // If no avatar URL found, keep the initials that were already set
 }
 
+// FIXED FUNCTION - This was the main source of "undefined"
 function generateInitials(name) {
-    if (!name) return 'SJ';
+    // Handle all possible undefined/null/empty cases
+    if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string') {
+        console.log('generateInitials received invalid name:', name, 'returning default SJ');
+        return 'SJ';
+    }
     
+    // Clean the name and handle titles
     const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.)\s+/i, '');
-    const parts = cleanName.split(' ');
+    
+    if (!cleanName || cleanName.trim() === '') {
+        console.log('generateInitials cleaned name is empty, returning default SJ');
+        return 'SJ';
+    }
+    
+    const parts = cleanName.trim().split(' ').filter(part => part.length > 0);
     
     if (parts.length >= 2) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        const initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        console.log('generateInitials created initials:', initials, 'from name:', name);
+        return initials;
+    } else if (parts.length === 1 && parts[0].length >= 2) {
+        const initials = parts[0].substring(0, 2).toUpperCase();
+        console.log('generateInitials created initials from single name:', initials, 'from name:', name);
+        return initials;
     }
-    return cleanName.substring(0, 2).toUpperCase();
+    
+    console.log('generateInitials falling back to default SJ for name:', name);
+    return 'SJ';
 }
 
 function addNavigationItems() {
@@ -769,7 +787,6 @@ function getPageType() {
     return 'public';
 }
 
-
 function handlePublicPageAuth() {
     const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
     const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
@@ -829,10 +846,28 @@ function handlePublicPageAuth() {
                 document.head.appendChild(style);
             }
             
-// Use existing functions to populate everything correctly
+            // Set initial avatar properly with our fixed function
             setTimeout(() => {
-                updateUserDropdownInfo(); // Sets correct user data and green styling
-                addNavigationItems(); // Adds menu items and logout using your existing system
+                const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+                const initials = generateInitials(userName);
+                const avatarElement = document.getElementById('userAvatar');
+                const dropdownAvatar = document.querySelector('.dropdown-avatar');
+                
+                if (avatarElement) {
+                    avatarElement.textContent = initials;
+                    avatarElement.style.backgroundImage = '';
+                    avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+                    avatarElement.style.boxShadow = '0 0 10px #00ff00';
+                }
+                
+                if (dropdownAvatar) {
+                    dropdownAvatar.textContent = initials;
+                    dropdownAvatar.style.backgroundImage = '';
+                    dropdownAvatar.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+                }
+                
+                updateUserDropdownInfo(); // This will try to load avatar from database
+                addNavigationItems(); // Add menu items and logout
             }, 10);
         }
     }
@@ -888,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'dcf_login_page.html';
             return;
         }
-        // Load avatar on page load
+        // Load avatar on page load - FIXED VERSION
         setTimeout(async () => {
             await loadPageAvatars();
         }, 100);
