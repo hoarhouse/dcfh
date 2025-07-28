@@ -236,6 +236,62 @@
             max-height: 200px;
             border-radius: 8px;
             margin-top: 1rem;
+            border: 2px solid #e5e5e5;
+            object-fit: cover;
+        }
+
+        .upload-progress {
+            width: 100%;
+            height: 6px;
+            background: #e5e5e5;
+            border-radius: 3px;
+            margin-top: 1rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .upload-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #000, #333);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .upload-status {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+            display: none;
+        }
+
+        .upload-status.success {
+            color: #28a745;
+        }
+
+        .upload-status.error {
+            color: #dc3545;
+        }
+
+        .photo-preview-container {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .remove-photo-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: background 0.3s ease;
+        }
+
+        .remove-photo-btn:hover {
+            background: #c82333;
         }
 
         .button-group {
@@ -659,7 +715,11 @@
                         <div class="file-upload-text">Click to upload or drag and drop your photo</div>
                         <input type="file" id="photoUpload" class="file-upload-input" accept="image/*">
                     </div>
-                    <div id="photoPreview"></div>
+                    <div class="upload-progress" id="uploadProgress">
+                        <div class="upload-progress-fill" id="uploadProgressFill"></div>
+                    </div>
+                    <div class="upload-status" id="uploadStatus">Uploading...</div>
+                    <div id="photoPreview" class="photo-preview-container"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="bio">About You</label>
@@ -839,32 +899,137 @@
             checkPasswordStrength(e.target.value);
         });
 
-        // Photo upload handling
+        // Photo upload handling with progress and preview
         document.getElementById('photoUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // Validate file
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('File size must be less than 2MB');
-                    return;
-                }
-                
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    alert('Only JPEG, PNG, and WebP images are allowed');
-                    return;
-                }
+                handlePhotoUpload(file);
+            }
+        });
 
-                userData.photoFile = file; // Store the actual file for upload
+        async function handlePhotoUpload(file) {
+            // Reset UI elements
+            const progressBar = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('uploadProgressFill');
+            const statusDiv = document.getElementById('uploadStatus');
+            const previewDiv = document.getElementById('photoPreview');
+            
+            // Hide previous preview/status
+            previewDiv.innerHTML = '';
+            statusDiv.className = 'upload-status';
+            statusDiv.style.display = 'none';
+            progressBar.style.display = 'none';
+            
+            // Validate file
+            if (file.size > 2 * 1024 * 1024) {
+                showUploadError('File size must be less than 2MB');
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showUploadError('Only JPEG, PNG, and WebP images are allowed');
+                return;
+            }
+
+            try {
+                // Show progress bar
+                progressBar.style.display = 'block';
+                statusDiv.style.display = 'block';
+                statusDiv.textContent = 'Processing image...';
                 
+                // Simulate progress for file reading (0-30%)
+                animateProgress(0, 30, 500);
+                
+                // Read file as base64 for preview
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     userData.photo = e.target.result; // Store base64 for preview
-                    document.getElementById('photoPreview').innerHTML = `<img src="${e.target.result}" alt="Profile photo" class="uploaded-image">`;
+                    userData.photoFile = file; // Store actual file for upload
+                    
+                    // Continue progress (30-70%)
+                    animateProgress(30, 70, 300);
+                    
+                    // Create preview
+                    setTimeout(() => {
+                        createPhotoPreview(e.target.result, file.name);
+                        
+                        // Complete progress (70-100%)
+                        animateProgress(70, 100, 200);
+                        
+                        // Show success
+                        setTimeout(() => {
+                            statusDiv.className = 'upload-status success';
+                            statusDiv.textContent = `✓ ${file.name} ready for upload`;
+                            
+                            // Hide progress bar after success
+                            setTimeout(() => {
+                                progressBar.style.display = 'none';
+                            }, 1000);
+                        }, 200);
+                    }, 300);
                 };
+                
+                reader.onerror = function() {
+                    showUploadError('Failed to read file');
+                };
+                
                 reader.readAsDataURL(file);
+                
+            } catch (error) {
+                showUploadError('Failed to process image: ' + error.message);
             }
-        });
+        }
+
+        function animateProgress(from, to, duration) {
+            const progressFill = document.getElementById('uploadProgressFill');
+            const startTime = Date.now();
+            
+            function updateProgress() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = from + (to - from) * progress;
+                
+                progressFill.style.width = currentValue + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateProgress);
+                }
+            }
+            
+            updateProgress();
+        }
+
+        function createPhotoPreview(imageSrc, fileName) {
+            const previewDiv = document.getElementById('photoPreview');
+            previewDiv.innerHTML = `
+                <img src="${imageSrc}" alt="Profile photo preview" class="uploaded-image">
+                <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">${fileName}</div>
+                <button type="button" class="remove-photo-btn" onclick="removePhoto()">Remove Photo</button>
+            `;
+        }
+
+        function removePhoto() {
+            userData.photo = null;
+            userData.photoFile = null;
+            document.getElementById('photoPreview').innerHTML = '';
+            document.getElementById('photoUpload').value = '';
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('uploadStatus').style.display = 'none';
+        }
+
+        function showUploadError(message) {
+            const statusDiv = document.getElementById('uploadStatus');
+            const progressBar = document.getElementById('uploadProgress');
+            
+            progressBar.style.display = 'none';
+            statusDiv.className = 'upload-status error';
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = '✗ ' + message;
+            
+            // Clear the file input
+            document.getElementById('photoUpload').value = '';
+        }
 
         // Generate profile preview
         function generateProfilePreview() {
