@@ -183,6 +183,12 @@ async function loadPageAvatars() {
         console.log('Using fallback userName:', userName);
     }
     
+    // ADDITIONAL CHECK: If userName is still problematic after the above check
+    if (typeof userName === 'string' && userName.trim() === 'undefined') {
+        console.log('Found string "undefined", forcing fallback');
+        userName = 'Dr. Sarah Johnson';
+    }
+    
     if (!userEmail || userEmail === 'null' || userEmail === 'undefined') {
         userEmail = 'sarah.johnson@dcfhungary.org';
         console.log('Using fallback userEmail:', userEmail);
