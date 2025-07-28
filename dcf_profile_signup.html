@@ -368,6 +368,42 @@
             margin-bottom: 1.5rem;
         }
 
+        .password-requirements {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-fill {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .password-strength.weak .password-strength-fill {
+            width: 33%;
+            background: #dc3545;
+        }
+
+        .password-strength.medium .password-strength-fill {
+            width: 66%;
+            background: #ffc107;
+        }
+
+        .password-strength.strong .password-strength-fill {
+            width: 100%;
+            background: #28a745;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 padding: 0 1rem;
@@ -397,7 +433,6 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="dcf-master-consolidated.js"></script></head>
 
 <body class="dcf-public-page">
@@ -416,7 +451,7 @@
             <div class="progress-fill" id="progressFill"></div>
         </div>
 
-        <!-- Step 1: Basic Info -->
+        <!-- Step 1: Basic Info + Password -->
         <div class="step-container" id="step1">
             <div class="step-header">
                 <h1 class="step-title">Join Our Global Community</h1>
@@ -430,6 +465,20 @@
                 <div class="form-group">
                     <label class="form-label" for="email">Email Address *</label>
                     <input type="email" id="email" name="email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Create Password *</label>
+                    <input type="password" id="password" name="password" class="form-input" required>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-fill"></div>
+                    </div>
+                    <div class="password-requirements">
+                        Password must be at least 8 characters with letters and numbers
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="country">Country of Residence *</label>
@@ -625,10 +674,10 @@
         <div class="step-container" id="step6" style="display: none;">
             <div class="welcome-message">
                 <h2>Welcome to DCF Hungary!</h2>
-                <p>Your profile has been created and you're now part of our global community working to ensure AI serves humanity.</p>
+                <p>Your account has been created successfully. You can now sign in and start collaborating with our global community.</p>
                 <div class="button-group">
-                    <a href="dcf_projects_home.html" class="btn btn-secondary">Browse Projects</a>
-                    <a href="dcf_member_home.html" class="btn btn-primary">Explore Platform</a>
+                    <a href="dcf_login_page.html" class="btn btn-primary">Sign In Now</a>
+                    <a href="index.html" class="btn btn-secondary">Back to Home</a>
                 </div>
             </div>
         </div>
@@ -637,6 +686,51 @@
     <script>
         let currentStep = 1;
         let userData = {};
+
+        // Password strength checker
+        function checkPasswordStrength(password) {
+            const strengthElement = document.getElementById('passwordStrength');
+            
+            if (password.length < 8) {
+                strengthElement.className = 'password-strength weak';
+                return 'weak';
+            }
+            
+            const hasLetter = /[a-zA-Z]/.test(password);
+            const hasNumber = /\d/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            
+            if (hasLetter && hasNumber && hasSpecial && password.length >= 12) {
+                strengthElement.className = 'password-strength strong';
+                return 'strong';
+            } else if (hasLetter && hasNumber && password.length >= 8) {
+                strengthElement.className = 'password-strength medium';
+                return 'medium';
+            } else {
+                strengthElement.className = 'password-strength weak';
+                return 'weak';
+            }
+        }
+
+        // Password validation
+        function validatePasswords() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password.length < 8) {
+                throw new Error('Password must be at least 8 characters long');
+            }
+            
+            if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+                throw new Error('Password must contain both letters and numbers');
+            }
+            
+            if (password !== confirmPassword) {
+                throw new Error('Passwords do not match');
+            }
+            
+            return true;
+        }
 
         // Progress tracking
         function updateProgress() {
@@ -666,10 +760,19 @@
         // Form submissions
         document.getElementById('basicForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            userData.fullName = document.getElementById('fullName').value;
-            userData.email = document.getElementById('email').value;
-            userData.country = document.getElementById('country').value;
-            goToStep(2);
+            
+            try {
+                validatePasswords();
+                
+                userData.fullName = document.getElementById('fullName').value;
+                userData.email = document.getElementById('email').value;
+                userData.password = document.getElementById('password').value;
+                userData.country = document.getElementById('country').value;
+                
+                goToStep(2);
+            } catch (error) {
+                alert(error.message);
+            }
         });
 
         document.getElementById('interestForm').addEventListener('submit', function(e) {
@@ -691,6 +794,11 @@
             userData.role = document.getElementById('role').value;
             generateProfilePreview();
             goToStep(5);
+        });
+
+        // Password strength checking
+        document.getElementById('password').addEventListener('input', function(e) {
+            checkPasswordStrength(e.target.value);
         });
 
         // Photo upload handling
@@ -798,6 +906,24 @@
                 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
                 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+                // Step 1: Create the auth user with Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: userData.email,
+                    password: userData.password,
+                    options: {
+                        data: {
+                            full_name: userData.fullName
+                        }
+                    }
+                });
+
+                if (authError) {
+                    if (authError.message.includes('already registered')) {
+                        throw new Error('An account with this email already exists. Please try signing in instead.');
+                    }
+                    throw authError;
+                }
+
                 // Parse name
                 const nameParts = userData.fullName.trim().split(' ');
                 const firstName = nameParts[0];
@@ -805,13 +931,13 @@
 
                 let avatarUrl = null;
 
-                // Upload profile photo if provided
+                // Step 2: Upload profile photo if provided
                 if (userData.photo && userData.photoFile) {
                     try {
-                        // Generate unique filename
+                        // Generate unique filename using the user ID from auth
                         const fileExt = userData.photoFile.name.split('.').pop().toLowerCase();
-                        const timestamp = Date.now();
-                        const fileName = `avatar_${userData.email.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${fileExt}`;
+                        const userId = authData.user.id;
+                        const fileName = `avatar_${userId}_${Date.now()}.${fileExt}`;
                         
                         // Upload to Supabase Storage
                         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -835,8 +961,9 @@
                     }
                 }
 
-                // Create user profile in database
+                // Step 3: Create user profile in database
                 const profileData = {
+                    id: authData.user.id, // Use the auth user ID
                     email: userData.email,
                     name: userData.fullName,
                     first_name: firstName,
@@ -855,28 +982,20 @@
                     created_at: new Date().toISOString()
                 };
 
-                const { data, error } = await supabase
+                const { data: profileInsertData, error: profileError } = await supabase
                     .from('user_profiles')
                     .insert([profileData])
                     .select()
                     .single();
 
-                if (error) {
-                    if (error.code === '23505') {
-                        throw new Error('An account with this email already exists. Please try logging in instead.');
-                    }
-                    throw error;
+                if (profileError) {
+                    console.error('Profile creation error:', profileError);
+                    // Don't throw here - auth user was created successfully
                 }
 
-                // Store user data in localStorage
-                localStorage.setItem('dcf_user_logged_in', 'true');
-                localStorage.setItem('dcf_user_name', userData.fullName);
-                localStorage.setItem('dcf_user_email', userData.email);
-                localStorage.setItem('dcf_auth_provider', 'signup');
-
-                console.log('Account created successfully:', data);
+                console.log('Account created successfully:', authData);
                 
-                // Show welcome step
+                // Show success message
                 goToStep(6);
 
             } catch (error) {
@@ -894,8 +1013,6 @@
         updateProgress();
     </script>
 <script src="universal-dropdown.js"></script>
-
-
 <script src="universal-footer.js"></script>
 </body>
 </html>
