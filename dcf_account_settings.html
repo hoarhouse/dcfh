@@ -69,11 +69,51 @@
             color: #333;
         }
 
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
         .user-menu {
             display: flex;
             align-items: center;
             gap: 1rem;
             position: relative;
+        }
+
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .notification-bell:hover {
+            background-color: #f0f0f0;
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+            display: block;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 2px solid white;
+            min-width: 20px;
         }
 
         .user-dropdown {
@@ -83,7 +123,7 @@
         .user-avatar {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, #000, #333);
+            background: linear-gradient(135deg, #00ff00, #32cd32);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -96,6 +136,7 @@
             border: 2px solid transparent;
             background-size: cover;
             background-position: center;
+            box-shadow: 0 0 10px #00ff00;
         }
 
         .user-avatar:hover {
@@ -136,7 +177,7 @@
         .dropdown-avatar {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, #000, #333);
+            background: linear-gradient(135deg, #00ff00, #32cd32);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -760,7 +801,7 @@
                 <div class="logo-icon"></div>
                 Domus Communis Foundation
             </a>
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="navMenu">
                 <li><a href="dcf_member_home.html">Home</a></li>
                 <li><a href="dcf_members_directory.html">Members</a></li>
                 <li><a href="dcf_projects_home.html">Projects</a></li>
@@ -768,11 +809,15 @@
                 <li><a href="dcf_resources_library.html">Resources</a></li>
             </ul>
             <div class="user-menu">
+                <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
+                    <span class="notification-icon">🔔</span>
+                    <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                </div>
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
-                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-avatar">SJ</div>
                             <div class="dropdown-info">
                                 <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
                                 <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
@@ -1227,6 +1272,7 @@
     </main>
 
     <footer id="main-footer">
+        <!-- Footer populated by dcf-master-consolidated.js -->
     </footer>
 
     <script>
@@ -1654,4 +1700,140 @@
                 const privacyData = {
                     profile_public: privacyToggles[0]?.classList.contains('active') || false,
                     show_email: privacyToggles[1]?.classList.contains('active') || false,
-                    show_activity: privacyToggles
+                    show_activity: privacyToggles[2]?.classList.contains('active') || false,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update(privacyData)
+                    .eq('email', currentUser.email);
+
+                if (error) throw error;
+
+                showAlert('Privacy settings saved!', 'success');
+            } catch (error) {
+                console.error('Error saving privacy settings:', error);
+                showAlert('Error saving privacy settings', 'danger');
+            }
+        }
+
+        async function saveAccountSettings() {
+            try {
+                const accountData = {
+                    language: document.getElementById('language').value,
+                    date_format: document.getElementById('dateFormat').value,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update(accountData)
+                    .eq('email', currentUser.email);
+
+                if (error) throw error;
+
+                showAlert('Account settings saved!', 'success');
+            } catch (error) {
+                console.error('Error saving account settings:', error);
+                showAlert('Error saving account settings', 'danger');
+            }
+        }
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset all changes?')) {
+                location.reload();
+            }
+        }
+
+        function showAlert(message, type) {
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+
+            const profileSection = document.getElementById('profile');
+            profileSection.insertBefore(alert, profileSection.firstChild);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Avatar upload functionality
+        document.getElementById('avatarFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file
+            if (file.size > 2 * 1024 * 1024) {
+                showAlert('File size must be less than 2MB', 'danger');
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                showAlert('Please select an image file', 'danger');
+                return;
+            }
+
+            try {
+                showUploadProgress();
+                
+                // Create file name
+                const fileExt = file.name.split('.').pop();
+                const fileName = `avatar_${currentUser.email}_${Date.now()}.${fileExt}`;
+
+                // Upload to Supabase storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, file);
+
+                if (uploadError) throw uploadError;
+
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+
+                // Update user profile with new avatar URL
+                const { error: updateError } = await supabase
+                    .from('user_profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('email', currentUser.email);
+
+                if (updateError) throw updateError;
+
+                // Update UI
+                const largeAvatar = document.getElementById('profileAvatarLarge');
+                if (largeAvatar) {
+                    largeAvatar.style.backgroundImage = `url(${publicUrl})`;
+                    largeAvatar.style.backgroundSize = 'cover';
+                    largeAvatar.style.backgroundPosition = 'center';
+                    largeAvatar.textContent = '';
+                }
+
+                hideUploadProgress();
+                showAlert('Profile picture updated successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                hideUploadProgress();
+                showAlert('Error uploading profile picture: ' + error.message, 'danger');
+            }
+        });
+
+        function showUploadProgress() {
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('uploadError').style.display = 'none';
+        }
+
+        function hideUploadProgress() {
+            document.getElementById('uploadProgress').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
