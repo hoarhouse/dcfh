@@ -642,6 +642,64 @@
             margin-bottom: 1rem;
         }
 
+        .post-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .post-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .post-modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .post-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+            z-index: 1001;
+        }
+
+        .post-modal-close:hover {
+            color: #333;
+        }
+
+        .post-detail {
+            padding: 2rem;
+        }
+
+        .post-detail .post-media img,
+        .post-detail .post-media video {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
         @media (max-width: 1024px) {
             .content-wrapper {
                 grid-template-columns: 1fr;
@@ -778,6 +836,16 @@
             </div>
         </div>
     </main>
+
+    <!-- Post Detail Modal -->
+    <div class="post-modal" id="postModal">
+        <div class="post-modal-content">
+            <button class="post-modal-close" onclick="closePostModal()">&times;</button>
+            <div class="post-detail" id="postDetail">
+                <!-- Post content will be loaded here -->
+            </div>
+        </div>
+    </div>
 
     <script>
          // Global variables - DECLARE FIRST
@@ -918,7 +986,7 @@
             }
 
             container.innerHTML = posts.map(post => `
-                <div class="post" data-post-id="${post.id}">
+                <div class="post" data-post-id="${post.id}" onclick="openPostModal('${post.id}')" style="cursor: pointer;">
                     <div class="post-header">
                         <div class="post-avatar">${generateInitials(post.author_name)}</div>
                         <div class="post-author">
@@ -1242,8 +1310,8 @@
         }
 
         // Add comment to post
-        async function addComment(postId) {
-            const commentInput = document.getElementById(`comment-input-${postId}`);
+        async function addComment(postId, isModal = false) {
+            const commentInput = document.getElementById(isModal ? `modal-comment-input-${postId}` : `comment-input-${postId}`);
             const content = commentInput.value.trim();
             
             if (!content) return;
@@ -1264,7 +1332,11 @@
                 if (error) throw error;
 
                 commentInput.value = '';
-                loadPostComments(postId);
+                if (isModal) {
+                    loadPostCommentsForModal(postId);
+                } else {
+                    loadPostComments(postId);
+                }
 
             } catch (error) {
                 console.error('Error adding comment:', error);
@@ -1333,6 +1405,88 @@
         function focusCreatePost() {
             document.getElementById('postContent').focus();
         }
+
+        // Open post in modal
+        function openPostModal(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+
+            const modalContent = document.getElementById('postDetail');
+            modalContent.innerHTML = `
+                <div class="post-header">
+                    <div class="post-avatar">${generateInitials(post.author_name)}</div>
+                    <div class="post-author">
+                        <div class="post-author-name">${post.author_name}</div>
+                        <div class="post-time">${formatTime(post.created_at)}</div>
+                    </div>
+                </div>
+                
+                ${post.content ? `<div class="post-content" style="font-size: 1.1rem; margin: 1.5rem 0;">${convertUrlsToLinks(post.content)}</div>` : ''}
+                
+                ${post.media_url ? `
+                    <div class="post-media" style="margin: 1.5rem 0;">
+                        ${post.media_type === 'image' 
+                            ? `<img src="${post.media_url}" alt="Post media">` 
+                            : `<video src="${post.media_url}" controls></video>`
+                        }
+                    </div>
+                ` : ''}
+                
+                <div class="comments-section" style="border-top: 2px solid #f0f0f0; padding-top: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">Comments</h3>
+                    <div id="modal-comments-list-${post.id}"></div>
+                    <div class="comment-input-section" style="margin-top: 1.5rem;">
+                        <textarea class="comment-input" id="modal-comment-input-${post.id}" placeholder="Write a comment..." rows="2"></textarea>
+                        <button class="comment-submit" onclick="addComment('${post.id}', true)">Post Comment</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('postModal').classList.add('active');
+            loadPostCommentsForModal(post.id);
+        }
+
+        // Close post modal
+        function closePostModal() {
+            document.getElementById('postModal').classList.remove('active');
+        }
+
+        // Load comments for modal
+        async function loadPostCommentsForModal(postId) {
+            try {
+                const { data, error } = await supabase
+                    .from('post_comments')
+                    .select('*')
+                    .eq('post_id', postId)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                const commentsList = document.getElementById(`modal-comments-list-${postId}`);
+                if (commentsList) {
+                    commentsList.innerHTML = data.map(comment => `
+                        <div class="comment" style="margin-bottom: 1.5rem;">
+                            <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
+                            <div class="comment-content">
+                                <div class="comment-author">${comment.author_name}</div>
+                                <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (error) {
+                console.error('Error loading modal comments:', error);
+            }
+        }
+}
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'postModal') {
+                closePostModal();
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="dcf-master-consolidated.js"></script>    <script>
