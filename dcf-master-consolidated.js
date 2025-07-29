@@ -910,10 +910,10 @@ function handlePublicPageAuth() {
                         <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
                     </div>
                     <div class="user-dropdown">
-                        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">DM</div>
                         <div class="dropdown-menu" id="userDropdown">
                             <div class="dropdown-header">
-                                <div class="dropdown-avatar">SJ</div>
+                                <div class="dropdown-avatar">DM</div>
                                 <div class="dropdown-info">
                                     <div class="dropdown-name" id="dropdownUserName">DCF Member</div>
                                     <div class="dropdown-email" id="dropdownUserEmail">member@dcfhungary.org</div>
