@@ -61,9 +61,48 @@ function handleDocumentClick(event) {
 }
 
 async function updateUserDropdownInfo() {
-    const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
-    const userEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
+    // Get user data - NO hardcoded fallbacks to Sarah Johnson
+    let userName = localStorage.getItem('dcf_user_name');
+    let userEmail = localStorage.getItem('dcf_user_email');
     const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+
+    // If userName is missing, try to fetch from database first
+    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
+        console.log('updateUserDropdownInfo: userName missing, fetching from database...');
+        
+        if (!masterSupabase) {
+            initializeSupabase();
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        if (masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
+            try {
+                const { data: profile, error } = await masterSupabase
+                    .from('user_profiles')
+                    .select('name, first_name, last_name')
+                    .eq('email', userEmail)
+                    .single();
+                
+                if (!error && profile) {
+                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    localStorage.setItem('dcf_user_name', userName);
+                    console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
+                }
+            } catch (error) {
+                console.log('updateUserDropdownInfo: Error fetching profile:', error);
+            }
+        }
+        
+        // Final fallback - NO Sarah Johnson
+        if (!userName || userName === 'null' || userName === 'undefined') {
+            userName = userEmail ? userEmail.split('@')[0].replace(/[._]/g, ' ') : 'DCF Member';
+        }
+    }
+
+    // Final fallback for email - NO hardcoded sarah.johnson email
+    if (!userEmail || userEmail === 'null' || userEmail === 'undefined') {
+        userEmail = 'member@dcfhungary.org';
+    }
 
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
@@ -177,20 +216,45 @@ async function loadPageAvatars() {
     console.log('Raw userEmail from localStorage:', userEmail);
     
     // Handle cases where localStorage returns literal "undefined" string or actual undefined
-    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName === 'undefined' || userName.toString() === 'undefined') {
-        console.log('Found invalid userName, using fallback. Original value was:', userName);
-        userName = 'Dr. Sarah Johnson';  // Always use default fallback
-        console.log('Using fallback userName:', userName);
+   if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName === 'undefined' || userName.toString() === 'undefined') {
+        console.log('Found invalid userName, fetching from database...');
+        
+        if (!masterSupabase) {
+            initializeSupabase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        if (masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
+            try {
+                const { data: profile, error } = await masterSupabase
+                    .from('user_profiles')
+                    .select('name, first_name, last_name')
+                    .eq('email', userEmail)
+                    .single();
+                
+                if (!error && profile) {
+                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    localStorage.setItem('dcf_user_name', userName);
+                    console.log('Fetched userName from database:', userName);
+                }
+            } catch (error) {
+                console.log('Error fetching profile:', error);
+            }
+        }
+        
+        if (!userName || userName === 'null' || userName === 'undefined') {
+            userName = userEmail ? userEmail.split('@')[0].replace(/[._]/g, ' ') : 'DCF Member';
+            console.log('Using fallback userName:', userName);
+        }
     }
     
-    // ADDITIONAL CHECK: If userName is still problematic after the above check
     if (typeof userName === 'string' && userName.trim() === 'undefined') {
         console.log('Found string "undefined", forcing fallback');
-        userName = 'Dr. Sarah Johnson';
+        userName = userEmail ? userEmail.split('@')[0].replace(/[._]/g, ' ') : 'DCF Member';
     }
     
     if (!userEmail || userEmail === 'null' || userEmail === 'undefined') {
-        userEmail = 'sarah.johnson@dcfhungary.org';
+        userEmail = 'member@dcfhungary.org';
         console.log('Using fallback userEmail:', userEmail);
     }
     
@@ -287,23 +351,23 @@ function generateInitials(name) {
     
     // Handle all possible undefined/null/empty cases
     if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string' || name.trim() === '') {
-        console.log('generateInitials received invalid name:', name, 'returning default SJ');
-        return 'SJ';
+        console.log('generateInitials received invalid name:', name, 'returning default DM');
+        return 'DM'; // DCF Member - NO reference to Sarah Johnson
     }
     
-    // Clean the name and handle titles
-    const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.)\s+/i, '');
+    // Clean the name and handle titles including Rabbi
+    const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.|Rabbi)\s+/i, '');
     
     if (!cleanName || cleanName.trim() === '') {
         console.log('generateInitials cleaned name is empty, returning default SJ');
-        return 'SJ';
+        return 'DM';
     }
     
     const parts = cleanName.trim().split(' ').filter(part => part.length > 0);
     
     if (parts.length >= 2) {
-        const firstInitial = parts[0][0] || 'S';
-        const lastInitial = parts[parts.length - 1][0] || 'J';
+        const firstInitial = parts[0][0] || 'D';
+        const lastInitial = parts[parts.length - 1][0] || 'M';
         const initials = (firstInitial + lastInitial).toUpperCase();
         console.log('generateInitials created initials:', initials, 'from name:', name);
         return initials;
@@ -312,13 +376,13 @@ function generateInitials(name) {
         console.log('generateInitials created initials from single name:', initials, 'from name:', name);
         return initials;
     } else if (parts.length === 1 && parts[0].length === 1) {
-        const initials = (parts[0][0] + 'J').toUpperCase(); // Default second initial
+        const initials = (parts[0][0] + 'M').toUpperCase(); // Default second initial
         console.log('generateInitials created initials from single character:', initials, 'from name:', name);
         return initials;
     }
     
     console.log('generateInitials falling back to default SJ for name:', name);
-    return 'SJ';
+    return 'DM';
 }
 
 function addNavigationItems() {
@@ -851,8 +915,8 @@ function handlePublicPageAuth() {
                             <div class="dropdown-header">
                                 <div class="dropdown-avatar">SJ</div>
                                 <div class="dropdown-info">
-                                    <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
-                                    <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                                    <div class="dropdown-name" id="dropdownUserName">DCF Member</div>
+                                    <div class="dropdown-email" id="dropdownUserEmail">member@dcfhungary.org</div>
                                 </div>
                             </div>
                         </div>
@@ -887,7 +951,7 @@ function handlePublicPageAuth() {
             
             // Set initial avatar properly with our fixed function
             setTimeout(() => {
-                const userName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
+                const userName = localStorage.getItem('dcf_user_name') || 'DCF Member';
                 const initials = generateInitials(userName);
                 const avatarElement = document.getElementById('userAvatar');
                 const dropdownAvatar = document.querySelector('.dropdown-avatar');
