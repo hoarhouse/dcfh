@@ -1519,11 +1519,37 @@ try {
                             try {
                                 const urls = JSON.parse(post.media_url);
                                 const types = JSON.parse(post.media_type);
-                                return urls.map((url, index) => 
-                                    types[index] === 'image' 
-                                        ? `<img src="${url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px; margin-bottom: 10px;">` 
-                                        : `<video src="${url}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px; margin-bottom: 10px;"></video>`
-                                ).join('');
+                                
+                                if (urls.length === 1) {
+                                    return types[0] === 'image' 
+                                        ? `<img src="${urls[0]}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
+                                        : `<video src="${urls[0]}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;"></video>`;
+                                } else {
+                                    return `
+                                        <div class="modal-carousel" id="carousel-${post.id}" style="position: relative;">
+                                            <div class="carousel-container" style="position: relative; width: 100%; height: 70vh; border-radius: 12px; background: #000;">
+                                                <div class="current-media" id="current-media-${post.id}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                                    ${types[0] === 'image' 
+                                                        ? `<img src="${urls[0]}" alt="Post media" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">` 
+                                                        : `<video src="${urls[0]}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;"></video>`
+                                                    }
+                                                </div>
+                                                
+                                                <button class="carousel-prev" id="prev-${post.id}" onclick="previousSlide('${post.id}')" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; transition: all 0.3s ease;">‹</button>
+                                                
+                                                <button class="carousel-next" id="next-${post.id}" onclick="nextSlide('${post.id}')" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">›</button>
+                                                
+                                                <div class="carousel-counter" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 16px; font-size: 14px; z-index: 10;">
+                                                    <span id="current-${post.id}">1</span> / ${urls.length}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <script>
+                                            window.carouselStates = window.carouselStates || {};
+                                            window.carouselStates['${post.id}'] = { currentSlide: 0, totalSlides: ${urls.length} };
+                                        </script>
+                                    `;
+                                }
                             } catch {
                                 return post.media_type === 'image' 
                                     ? `<img src="${post.media_url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
@@ -1531,7 +1557,7 @@ try {
                             }
                         })()}
                     </div>
-                ` : ''}
+                ` : ''}`
                 
                 <div class="comments-section" style="border-top: 2px solid #f0f0f0; padding-top: 1.5rem;">
                     <h3 style="margin-bottom: 1rem;">Comments</h3>
