@@ -733,7 +733,7 @@
             }
         }
     </style>
-      <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -744,7 +744,11 @@
                 Domus Communis Foundation
             </a>
             <ul class="nav-menu" id="navMenu">
-                <!-- Master JS adds navigation items here -->
+                <li><a href="dcf_member_home.html" class="active">Home</a></li>
+                <li><a href="dcf_members_directory.html">Members</a></li>
+                <li><a href="dcf_projects_home.html">Projects</a></li>
+                <li><a href="dcf_events_calendar.html">Events</a></li>
+                <li><a href="dcf_resources_library.html">Resources</a></li>
             </ul>
             <div class="user-menu">
                 <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
@@ -753,15 +757,32 @@
                 </div>
                 
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>                    <div class="dropdown-menu" id="userDropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                    <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
-                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-avatar">SJ</div>
                             <div class="dropdown-info">
                                 <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
                                 <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
                             </div>
                         </div>
-                        <!-- Master JS adds navigation items here -->
+                        <div class="dropdown-divider"></div>
+                        <a href="dcf_member_profile.html" class="dropdown-item">
+                            <span class="dropdown-icon">👤</span>
+                            View Profile
+                        </a>
+                        <a href="dcf_settings.html" class="dropdown-item">
+                            <span class="dropdown-icon">⚙️</span>
+                            Settings
+                        </a>
+                        <a href="dcf_contact.html" class="dropdown-item">
+                            <span class="dropdown-icon">💬</span>
+                            Help & Support
+                        </a>
+                        <button onclick="handleLogout()" class="dropdown-item logout-btn">
+                            <span class="dropdown-icon">🚪</span>
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </div>
@@ -848,9 +869,15 @@
     </div>
 
     <script>
-         // Global variables - DECLARE FIRST
+        // Global variables - DECLARE FIRST
         let currentMedia = [];
         let posts = [];
+        let isDropdownOpen = false;
+
+        // Supabase configuration - Initialize immediately
+        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         function convertUrlsToLinks(text) {
             if (!text) return text;
@@ -868,12 +895,57 @@
             });
         }
 
-        // Supabase configuration - Initialize immediately like the original
-        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // User menu functions
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            if (isDropdownOpen) {
+                closeUserMenu();
+            } else {
+                openUserMenu();
+            }
+        }
 
-        // User menu functions handled by master JS
+        function openUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            dropdown.classList.add('active');
+            overlay.classList.add('active');
+            isDropdownOpen = true;
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = document.querySelector('.dropdown-overlay');
+            
+            dropdown.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            isDropdownOpen = false;
+        }
+
+        function getOrCreateOverlay() {
+            let overlay = document.querySelector('.dropdown-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'dropdown-overlay';
+                overlay.onclick = closeUserMenu;
+                document.body.appendChild(overlay);
+            }
+            return overlay;
+        }
+
+        function handleLogout() {
+            closeUserMenu();
+            setTimeout(() => {
+                if(confirm('Are you sure you want to sign out?')){
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href='dcf_login_page.html';
+                }
+            }, 100);
+        }
 
         // Handle image upload
         function handleImageUpload(event) {
@@ -1009,7 +1081,7 @@
             }
 
             container.innerHTML = posts.map(post => `
-                <div class="post" data-post-id="${post.id}" onclick="openPostModal('${post.id}')" style="cursor: pointer;">
+                <div class="post" data-post-id="${post.id}" onclick="event.stopPropagation(); openPostModal('${post.id}')" style="cursor: pointer;">
                     <div class="post-header">
                         <div class="post-avatar">${generateInitials(post.author_name)}</div>
                         <div class="post-author">
@@ -1022,93 +1094,26 @@
                     
                     ${post.media_url ? `
                         <div class="post-media">
-                            ${(() => {
-try {
-                                    console.log('POST MEDIA DEBUG:', post.id, post.media_url, post.media_type);
-                                    const urls = JSON.parse(post.media_url);
-                                    const types = JSON.parse(post.media_type);
-                                    console.log('PARSED:', urls, types);
-                                    
-                                    if (urls.length === 1) {
-                                        // Single image/video - full width
-                                        return types[0] === 'image' 
-                                            ? `<img src="${urls[0]}" alt="Post media" style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;">` 
-                                            : `<video src="${urls[0]}" controls style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;"></video>`;
-                                    } else {
-                                        // Multiple images - create collage
-                                        let collageHtml = '';
-
-                                        if (urls.length === 2) {
-                                            // 2 photos: side by side
-                                            collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
-                                            collageHtml += `<img src="${urls[0]}" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += `<img src="${urls[1]}" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '</div>';
-                                        } else if (urls.length === 3) {
-                                            // 3 photos: large left + 2 stacked right
-                                            collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
-                                            collageHtml += `<img src="${urls[0]}" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '<div style="display: flex; flex-direction: column; gap: 5px; width: 33.33%;">';
-                                            collageHtml += `<img src="${urls[1]}" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += `<img src="${urls[2]}" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '</div></div>';
-                                        } else if (urls.length === 4) {
-                                            // 4 photos: 3 small left column + 1 large right
-                                            collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
-                                            collageHtml += '<div style="display: flex; flex-direction: column; gap: 3px; width: 33.33%; height: 100%;">';
-                                            collageHtml += `<img src="${urls[1]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += `<img src="${urls[2]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += `<img src="${urls[3]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '</div>';
-                                            collageHtml += `<img src="${urls[0]}" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '</div>';
-                                        } else if (urls.length === 5) {
-                                            // 5 photos: large top + 4 equal below
-                                            collageHtml = '<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;">';
-                                            collageHtml += `<img src="${urls[0]}" style="width: 100%; height: 60%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '<div style="display: flex; gap: 5px; height: 40%;">';
-                                            for (let i = 1; i < 5; i++) {
-                                                collageHtml += `<img src="${urls[i]}" style="width: 25%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            }
-                                            collageHtml += '</div></div>';
-                                        } else if (urls.length === 6) {
-                                            // 6 photos: large top + 5 equal below
-                                            collageHtml = '<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;">';
-                                            collageHtml += `<img src="${urls[0]}" style="width: 100%; height: 75%; object-fit: cover; border-radius: 8px;">`;
-                                            collageHtml += '<div style="display: flex; gap: 5px; height: 25%;">';
-                                            for (let i = 1; i < 6; i++) {
-                                                collageHtml += `<img src="${urls[i]}" style="width: 20%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                                            }
-                                            collageHtml += '</div></div>';
-                                        }
-                                        
-                                        return collageHtml;
-                                    }
-                                } catch {
-                                    return post.media_type === 'image' 
-                                        ? `<img src="${post.media_url}" alt="Post media">` 
-                                        : `<video src="${post.media_url}" controls></video>`;
-                                }
-                            })()}
+                            ${getMediaHtml(post)}
                         </div>
                     ` : ''}
                     
                     <div class="post-actions">
-                        <button class="post-action" onclick="toggleLike('${post.id}')" id="like-btn-${post.id}">
+                        <button class="post-action" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
                             <span id="like-icon-${post.id}">🤍</span>
                             <span id="like-count-${post.id}">0</span> likes
                         </button>
-                        <button class="post-action" onclick="toggleComments('${post.id}')">
+                        <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
                             💬 <span id="comment-count-${post.id}">0</span> comments
                         </button>
-                        <button class="post-action" onclick="sharePost('${post.id}')">
+                        <button class="post-action" onclick="event.stopPropagation(); sharePost('${post.id}')">
                             🔗 Share
                         </button>
                         ${post.author_email === (localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org') ? `
-                            <button class="post-action" onclick="editPost('${post.id}')">
+                            <button class="post-action" onclick="event.stopPropagation(); editPost('${post.id}')">
                                 ✏️ Edit
                             </button>
-                            <button class="post-action" onclick="deletePost('${post.id}')">
+                            <button class="post-action" onclick="event.stopPropagation(); deletePost('${post.id}')">
                                 🗑️ Delete
                             </button>
                         ` : ''}
@@ -1129,6 +1134,67 @@ try {
                 loadPostLikes(post.id);
                 loadPostComments(post.id);
             });
+        }
+
+        function getMediaHtml(post) {
+            try {
+                const urls = JSON.parse(post.media_url);
+                const types = JSON.parse(post.media_type);
+                
+                if (urls.length === 1) {
+                    return types[0] === 'image' 
+                        ? `<img src="${urls[0]}" alt="Post media" style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;">` 
+                        : `<video src="${urls[0]}" controls style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;"></video>`;
+                } else {
+                    // Multiple images - create collage
+                    let collageHtml = '';
+
+                    if (urls.length === 2) {
+                        collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
+                        collageHtml += `<img src="${urls[0]}" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[1]}" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '</div>';
+                    } else if (urls.length === 3) {
+                        collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
+                        collageHtml += `<img src="${urls[0]}" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '<div style="display: flex; flex-direction: column; gap: 5px; width: 33.33%;">';
+                        collageHtml += `<img src="${urls[1]}" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[2]}" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '</div></div>';
+                    } else if (urls.length === 4) {
+                        collageHtml = '<div style="display: flex; gap: 5px; height: 300px;">';
+                        collageHtml += '<div style="display: flex; flex-direction: column; gap: 3px; width: 33.33%; height: 100%;">';
+                        collageHtml += `<img src="${urls[1]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[2]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[3]}" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '</div>';
+                        collageHtml += `<img src="${urls[0]}" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '</div>';
+                    } else if (urls.length === 5) {
+                        collageHtml = '<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;">';
+                        collageHtml += `<img src="${urls[0]}" style="width: 100%; height: 60%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '<div style="display: flex; gap: 5px; height: 40%;">';
+                        for (let i = 1; i < 5; i++) {
+                            collageHtml += `<img src="${urls[i]}" style="width: 25%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        }
+                        collageHtml += '</div></div>';
+                    } else if (urls.length === 6) {
+                        collageHtml = '<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;">';
+                        collageHtml += `<img src="${urls[0]}" style="width: 100%; height: 75%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += '<div style="display: flex; gap: 5px; height: 25%;">';
+                        for (let i = 1; i < 6; i++) {
+                            collageHtml += `<img src="${urls[i]}" style="width: 20%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        }
+                        collageHtml += '</div></div>';
+                    }
+                    
+                    return collageHtml;
+                }
+            } catch {
+                return post.media_type === 'image' 
+                    ? `<img src="${post.media_url}" alt="Post media">` 
+                    : `<video src="${post.media_url}" controls></video>`;
+            }
         }
 
         // Create new post
@@ -1165,8 +1231,6 @@ try {
                         mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
                     }
                 }
-
-                                // This line gets replaced by the code above
 
                 // Insert post and get the actual data back
                 const { data: insertedPost, error: insertError } = await supabase
@@ -1270,7 +1334,6 @@ try {
             }
 
             try {
-                // Delete the post from database
                 const { error } = await supabase
                     .from('posts')
                     .delete()
@@ -1278,12 +1341,8 @@ try {
 
                 if (error) throw error;
 
-                // Remove from local posts array
                 posts = posts.filter(post => post.id !== postId);
-                
-                // Update display immediately
                 displayPosts();
-
                 showMessage('Post deleted successfully!', 'success');
 
             } catch (error) {
@@ -1324,7 +1383,6 @@ try {
                 const currentUserEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
                 const currentUserName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
 
-                // Check if already liked
                 const { data: existingLike, error: checkError } = await supabase
                     .from('post_likes')
                     .select('id')
@@ -1337,7 +1395,6 @@ try {
                 }
 
                 if (existingLike) {
-                    // Unlike
                     const { error: deleteError } = await supabase
                         .from('post_likes')
                         .delete()
@@ -1346,7 +1403,6 @@ try {
 
                     if (deleteError) throw deleteError;
                 } else {
-                    // Like
                     const { error: insertError } = await supabase
                         .from('post_likes')
                         .insert({
@@ -1358,7 +1414,6 @@ try {
                     if (insertError) throw insertError;
                 }
 
-                // Refresh likes
                 loadPostLikes(postId);
 
             } catch (error) {
@@ -1452,50 +1507,6 @@ try {
             });
         }
 
-        // Utility functions
-        function generateInitials(name) {
-            if (!name) return 'U';
-            const parts = name.split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            }
-            return name.substring(0, 2).toUpperCase();
-        }
-
-        function formatTime(timestamp) {
-            const now = new Date();
-            const time = new Date(timestamp);
-            const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-
-            if (diffInMinutes < 1) return 'Just now';
-            if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-            
-            const diffInHours = Math.floor(diffInMinutes / 60);
-            if (diffInHours < 24) return `${diffInHours}h ago`;
-            
-            const diffInDays = Math.floor(diffInHours / 24);
-            if (diffInDays < 7) return `${diffInDays}d ago`;
-            
-            return time.toLocaleDateString();
-        }
-
-        function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `status-message ${type}`;
-            messageDiv.textContent = message;
-            document.body.appendChild(messageDiv);
-
-            setTimeout(() => messageDiv.classList.add('show'), 100);
-            setTimeout(() => {
-                messageDiv.classList.remove('show');
-                setTimeout(() => document.body.removeChild(messageDiv), 300);
-            }, 3000);
-        }
-
-        function focusCreatePost() {
-            document.getElementById('postContent').focus();
-        }
-
         // Open post in modal
         function openPostModal(postId) {
             const post = posts.find(p => p.id === postId);
@@ -1515,47 +1526,7 @@ try {
                 
                 ${post.media_url ? `
                     <div class="post-media" style="margin: 1.5rem 0;">
-                        ${(() => {
-                            try {
-                                const urls = JSON.parse(post.media_url);
-                                const types = JSON.parse(post.media_type);
-                                
-                                if (urls.length === 1) {
-                                    return types[0] === 'image' 
-                                        ? `<img src="${urls[0]}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
-                                        : `<video src="${urls[0]}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;"></video>`;
-                                } else {
-                                    return `
-                                        <div class="modal-carousel" id="carousel-${post.id}" style="position: relative;">
-                                            <div class="carousel-container" style="position: relative; width: 100%; height: 70vh; border-radius: 12px; background: #000;">
-                                                <div class="current-media" id="current-media-${post.id}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                                                    ${types[0] === 'image' 
-                                                        ? `<img src="${urls[0]}" alt="Post media" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">` 
-                                                        : `<video src="${urls[0]}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;"></video>`
-                                                    }
-                                                </div>
-                                                
-                                                <button class="carousel-prev" id="prev-${post.id}" onclick="previousSlide('${post.id}')" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: none; align-items: center; justify-content: center; transition: all 0.3s ease;">‹</button>
-                                                
-                                                <button class="carousel-next" id="next-${post.id}" onclick="nextSlide('${post.id}')" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">›</button>
-                                                
-                                                <div class="carousel-counter" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 16px; font-size: 14px; z-index: 10;">
-                                                    <span id="current-${post.id}">1</span> / ${urls.length}
-                                                </div>
-                                            </div>
-                                        </div>
-                                 `;
-                                        window.carouselStates = window.carouselStates || {};
-                                        window.carouselStates['${post.id}'] = { currentSlide: 0, totalSlides: ${urls.length} };
-                                        return carouselHtml;
-                                    `;
-                                }
-                            } catch {
-                                return post.media_type === 'image' 
-                                    ? `<img src="${post.media_url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
-                                    : `<video src="${post.media_url}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;"></video>`;
-                            }
-                        })()}
+                        ${getMediaHtml(post)}
                     </div>
                 ` : ''}
                 
@@ -1607,115 +1578,68 @@ try {
             }
         }
 
+        // Utility functions
+        function generateInitials(name) {
+            if (!name) return 'U';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function formatTime(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+
+            if (diffInMinutes < 1) return 'Just now';
+            if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours}h ago`;
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) return `${diffInDays}d ago`;
+            
+            return time.toLocaleDateString();
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status-message ${type}`;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => messageDiv.classList.add('show'), 100);
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+                setTimeout(() => document.body.removeChild(messageDiv), 300);
+            }, 3000);
+        }
+
+        function focusCreatePost() {
+            document.getElementById('postContent').focus();
+        }
+
         // Close modal when clicking outside
         document.addEventListener('click', function(e) {
             if (e.target.id === 'postModal') {
                 closePostModal();
             }
+            
+            // Close dropdown when clicking outside
+            if (isDropdownOpen && !e.target.closest('.user-dropdown')) {
+                closeUserMenu();
+            }
         });
 
-        // Carousel functions
-        function nextSlide(postId) {
-            const state = window.carouselStates[postId];
-            if (state.currentSlide < state.totalSlides - 1) {
-                state.currentSlide++;
-                updateCarousel(postId);
+        // Close dropdown on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isDropdownOpen) {
+                closeUserMenu();
             }
-        }
-
-        function previousSlide(postId) {
-            const state = window.carouselStates[postId];
-            if (state.currentSlide > 0) {
-                state.currentSlide--;
-                updateCarousel(postId);
-            }
-        }
-
-        function goToSlide(postId, slideIndex) {
-            const state = window.carouselStates[postId];
-            state.currentSlide = slideIndex;
-            updateCarousel(postId);
-        }
-
-        function updateCarousel(postId) {
-    const state = window.carouselStates[postId];
-    const post = posts.find(p => p.id === postId);
-    
-    if (!post || !post.media_url) return;
-    
-    try {
-        const urls = JSON.parse(post.media_url);
-        const types = JSON.parse(post.media_type);
-        
-        const mediaContainer = document.getElementById(`current-media-${postId}`);
-        const counter = document.getElementById(`current-${postId}`);
-        const prevBtn = document.getElementById(`prev-${postId}`);
-        const nextBtn = document.getElementById(`next-${postId}`);
-        
-        if (mediaContainer) {
-            const currentUrl = urls[state.currentSlide];
-            const currentType = types[state.currentSlide];
-            
-            mediaContainer.innerHTML = currentType === 'image' 
-                ? `<img src="${currentUrl}" alt="Post media" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">` 
-                : `<video src="${currentUrl}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;"></video>`;
-        }
-        
-        if (counter) {
-            counter.textContent = state.currentSlide + 1;
-        }
-        
-        if (prevBtn) {
-            prevBtn.style.display = state.currentSlide > 0 ? 'flex' : 'none';
-        }
-        
-        if (nextBtn) {
-            nextBtn.style.display = state.currentSlide < state.totalSlides - 1 ? 'flex' : 'none';
-        }
-    } catch (error) {
-        console.error('Error updating carousel:', error);
-    }
-        }
+        });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="dcf-master-consolidated.js"></script>    <script>
-console.log('=== MASTER JS DIAGNOSTIC ===');
-console.log('Page loaded, checking master JS...');
-console.log('Nav menu element found:', !!document.querySelector('.nav-menu'));
-console.log('Nav menu ID:', document.querySelector('.nav-menu')?.id);
-console.log('Master JS functions available:', typeof window.populateTopNav, typeof window.initializeNavigation);
-console.log('All window functions containing "nav":', Object.keys(window).filter(key => key.toLowerCase().includes('nav')));
-console.log('All window functions containing "menu":', Object.keys(window).filter(key => key.toLowerCase().includes('menu')));
-console.log('All window functions containing "toggle":', Object.keys(window).filter(key => key.toLowerCase().includes('toggle')));
-setTimeout(() => {
-    console.log('After 1 second:');
-    console.log('Nav menu innerHTML:', document.querySelector('.nav-menu').innerHTML.trim());
-    console.log('Nav menu children count:', document.querySelector('.nav-menu').children.length);
-}, 1000);
-
-setTimeout(() => {
-    console.log('After 3 seconds:');
-    console.log('Nav menu innerHTML:', document.querySelector('.nav-menu').innerHTML.trim());
-    console.log('Trying to manually call addNavigationItems...');
-    if (typeof window.addNavigationItems === 'function') {
-        console.log('Function exists, calling with debug...');
-        try {
-            window.addNavigationItems();
-            console.log('Function completed without error');
-            console.log('Checking if master JS has page type detection...');
-            console.log('Current page URL:', window.location.href);
-            console.log('Current page pathname:', window.location.pathname);
-            console.log('Document title:', document.title);
-        } catch (error) {
-            console.log('Function threw error:', error);
-        }
-        console.log('Nav menu after call:', document.querySelector('.nav-menu').innerHTML.trim());
-        console.log('Checking other possible nav selectors:');
-        console.log('ul.nav-menu:', document.querySelector('ul.nav-menu')?.innerHTML.trim());
-        console.log('#navMenu:', document.querySelector('#navMenu')?.innerHTML.trim());
-    }
- }
-}, 3000);
-</script>
 </body>
 </html>
