@@ -849,7 +849,7 @@
 
     <script>
          // Global variables - DECLARE FIRST
-        let currentMedia = null;
+        let currentMedia = [];
         let posts = [];
 
         function convertUrlsToLinks(text) {
@@ -877,28 +877,23 @@
 
         // Handle image upload
         function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.size > 10 * 1024 * 1024) {
-                showMessage('Image must be smaller than 10MB', 'error');
+            const files = Array.from(event.target.files);
+            
+            if (files.length + currentMedia.length > 6) {
+                showMessage('Maximum 6 photos allowed', 'error');
                 return;
             }
-
-            currentMedia = file;
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('mediaPreview');
-                const img = document.getElementById('previewImage');
-                const video = document.getElementById('previewVideo');
+            files.forEach(file => {
+                if (file.size > 10 * 1024 * 1024) {
+                    showMessage('Each image must be smaller than 10MB', 'error');
+                    return;
+                }
                 
-                video.style.display = 'none';
-                img.style.display = 'block';
-                img.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+                currentMedia.push(file);
+            });
+            
+            updateMediaPreview();
         }
 
         // Handle video upload
@@ -911,28 +906,54 @@
                 return;
             }
 
-            currentMedia = file;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('mediaPreview');
-                const img = document.getElementById('previewImage');
-                const video = document.getElementById('previewVideo');
-                
-                img.style.display = 'none';
-                video.style.display = 'block';
-                video.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            currentMedia = [file];
+            updateMediaPreview();
         }
 
         // Remove media preview
-        function removeMedia() {
-            currentMedia = null;
-            document.getElementById('mediaPreview').style.display = 'none';
-            document.getElementById('previewImage').src = '';
-            document.getElementById('previewVideo').src = '';
+        function removeMedia(index = null) {
+            if (index !== null) {
+                currentMedia.splice(index, 1);
+            } else {
+                currentMedia = [];
+            }
+            updateMediaPreview();
+        }
+
+        // Update media preview
+        function updateMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            
+            if (currentMedia.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            preview.innerHTML = '';
+            
+            currentMedia.forEach((file, index) => {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.style.cssText = 'position: relative; display: inline-block; margin-right: 10px; margin-bottom: 10px;';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (file.type.startsWith('image/')) {
+                        mediaContainer.innerHTML = `
+                            <img src="${e.target.result}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
+                            <button onclick="removeMedia(${index})" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+                        `;
+                    } else {
+                        mediaContainer.innerHTML = `
+                            <video src="${e.target.result}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;" controls></video>
+                            <button onclick="removeMedia(${index})" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+                        `;
+                    }
+                };
+                reader.readAsDataURL(file);
+                
+                preview.appendChild(mediaContainer);
+            });
         }
 
         // Initialize page
@@ -999,10 +1020,21 @@
                     
                     ${post.media_url ? `
                         <div class="post-media">
-                            ${post.media_type === 'image' 
-                                ? `<img src="${post.media_url}" alt="Post media">` 
-                                : `<video src="${post.media_url}" controls></video>`
-                            }
+                            ${(() => {
+                                try {
+                                    const urls = JSON.parse(post.media_url);
+                                    const types = JSON.parse(post.media_type);
+                                    return urls.map((url, index) => 
+                                        types[index] === 'image' 
+                                            ? `<img src="${url}" alt="Post media" style="max-width: 100%; margin-bottom: 10px; border-radius: 8px;">` 
+                                            : `<video src="${url}" controls style="max-width: 100%; margin-bottom: 10px; border-radius: 8px;"></video>`
+                                    ).join('');
+                                } catch {
+                                    return post.media_type === 'image' 
+                                        ? `<img src="${post.media_url}" alt="Post media">` 
+                                        : `<video src="${post.media_url}" controls></video>`;
+                                }
+                            })()}
                         </div>
                     ` : ''}
                     
@@ -1048,7 +1080,7 @@
         async function createPost() {
             const content = document.getElementById('postContent').value.trim();
             
-            if (!content && !currentMedia) {
+            if (!content && currentMedia.length === 0) {
                 showMessage('Please write something or add media', 'error');
                 return;
             }
@@ -1057,24 +1089,26 @@
                 const currentUserEmail = localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org';
                 const currentUserName = localStorage.getItem('dcf_user_name') || 'Dr. Sarah Johnson';
 
-                let mediaUrl = null;
-                let mediaType = null;
+                let mediaUrls = [];
+                let mediaTypes = [];
 
                 // Upload media if present
-                if (currentMedia) {
-                    const fileName = `${Date.now()}-${currentMedia.name}`;
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('media')
-                        .upload(fileName, currentMedia);
+                if (currentMedia.length > 0) {
+                    for (const file of currentMedia) {
+                        const fileName = `${Date.now()}-${Math.random()}-${file.name}`;
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('media')
+                            .upload(fileName, file);
 
-                    if (uploadError) throw uploadError;
+                        if (uploadError) throw uploadError;
 
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('media')
-                        .getPublicUrl(fileName);
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('media')
+                            .getPublicUrl(fileName);
 
-                    mediaUrl = publicUrl;
-                    mediaType = currentMedia.type.startsWith('image/') ? 'image' : 'video';
+                        mediaUrls.push(publicUrl);
+                        mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
+                    }
                 }
 
                                 // This line gets replaced by the code above
@@ -1084,8 +1118,8 @@
                     .from('posts')
                     .insert({
                         content: content || null,
-                        media_url: mediaUrl,
-                        media_type: mediaType,
+                        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+                        media_type: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
                         author_email: currentUserEmail,
                         author_name: currentUserName
                     })
@@ -1100,7 +1134,8 @@
 
                 // Clear form
                 document.getElementById('postContent').value = '';
-                removeMedia();
+                currentMedia = [];
+                updateMediaPreview();
                 
                 showMessage('Post created successfully!', 'success');
 
@@ -1425,10 +1460,21 @@
                 
                 ${post.media_url ? `
                     <div class="post-media" style="margin: 1.5rem 0;">
-                        ${post.media_type === 'image' 
-                            ? `<img src="${post.media_url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
-                            : `<video src="${post.media_url}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;"></video>`
-                        }
+                        ${(() => {
+                            try {
+                                const urls = JSON.parse(post.media_url);
+                                const types = JSON.parse(post.media_type);
+                                return urls.map((url, index) => 
+                                    types[index] === 'image' 
+                                        ? `<img src="${url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px; margin-bottom: 10px;">` 
+                                        : `<video src="${url}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px; margin-bottom: 10px;"></video>`
+                                ).join('');
+                            } catch {
+                                return post.media_type === 'image' 
+                                    ? `<img src="${post.media_url}" alt="Post media" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;">` 
+                                    : `<video src="${post.media_url}" controls style="width: 100%; height: auto; max-height: 70vh; object-fit: contain; border-radius: 8px;"></video>`;
+                            }
+                        })()}
                     </div>
                 ` : ''}
                 
