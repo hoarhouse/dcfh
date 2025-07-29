@@ -1557,7 +1557,7 @@ try {
                             }
                         })()}
                     </div>
-                ` : ''}`
+                ` : ''}
                 
                 <div class="comments-section" style="border-top: 2px solid #f0f0f0; padding-top: 1.5rem;">
                     <h3 style="margin-bottom: 1rem;">Comments</h3>
@@ -1639,22 +1639,35 @@ try {
 
         function updateCarousel(postId) {
             const state = window.carouselStates[postId];
-            const slides = document.getElementById(`slides-${postId}`);
-            const counter = document.getElementById(`current-${postId}`);
-            const dots = document.querySelectorAll(`#carousel-${postId} .carousel-dot`);
+            const post = posts.find(p => p.id === postId);
+            const urls = JSON.parse(post.media_url);
+            const types = JSON.parse(post.media_type);
             
-            if (slides) {
-                slides.style.transform = `translateX(-${(state.currentSlide * 100) / state.totalSlides}%)`;
+            const mediaContainer = document.getElementById(`current-media-${postId}`);
+            const counter = document.getElementById(`current-${postId}`);
+            const prevBtn = document.getElementById(`prev-${postId}`);
+            const nextBtn = document.getElementById(`next-${postId}`);
+            
+            if (mediaContainer) {
+                const currentUrl = urls[state.currentSlide];
+                const currentType = types[state.currentSlide];
+                
+                mediaContainer.innerHTML = currentType === 'image' 
+                    ? `<img src="${currentUrl}" alt="Post media" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">` 
+                    : `<video src="${currentUrl}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;"></video>`;
             }
             
             if (counter) {
                 counter.textContent = state.currentSlide + 1;
             }
             
-            dots.forEach((dot, index) => {
-                dot.style.background = index === state.currentSlide ? 'white' : 'rgba(255,255,255,0.5)';
-                dot.classList.toggle('active', index === state.currentSlide);
-            });
+            if (prevBtn) {
+                prevBtn.style.display = state.currentSlide > 0 ? 'flex' : 'none';
+            }
+            
+            if (nextBtn) {
+                nextBtn.style.display = state.currentSlide < state.totalSlides - 1 ? 'flex' : 'none';
+            }
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1681,11 +1694,11 @@ setTimeout(() => {
         console.log('Function exists, calling with debug...');
         try {
             window.addNavigationItems();
-             console.log('Function completed without error');
-        console.log('Checking if master JS has page type detection...');
-        console.log('Current page URL:', window.location.href);
-        console.log('Current page pathname:', window.location.pathname);
-        console.log('Document title:', document.title);
+            console.log('Function completed without error');
+            console.log('Checking if master JS has page type detection...');
+            console.log('Current page URL:', window.location.href);
+            console.log('Current page pathname:', window.location.pathname);
+            console.log('Document title:', document.title);
         } catch (error) {
             console.log('Function threw error:', error);
         }
