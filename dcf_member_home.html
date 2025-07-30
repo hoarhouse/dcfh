@@ -1549,7 +1549,7 @@
                         <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
                             💬 <span id="comment-count-${post.id}">0</span> comments
                         </button>
-                        <button class="post-action" id="share-btn-${post.id}" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                        <button class="post-action" id="share-btn-${post.id}" onclick="event.stopPropagation(); this.innerHTML='🔗 Copying...'; this.disabled=true; sharePost('${post.id}', this);">
                             🔗 Share
                         </button>
                         ${post.author_email === (localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org') ? `
@@ -1966,38 +1966,39 @@
         }
 
         // Share post
-        function sharePost(postId) {
-            alert('Share function called for post: ' + postId); // Test if function runs
-            
-            const shareBtn = document.getElementById(`share-btn-${postId}`);
-            
-            if (!shareBtn) {
-                alert('Button not found!');
-                return;
-            }
-            
-            alert('Button found, about to change text');
-            const originalText = shareBtn.innerHTML;
-            
-            // Show loading state
-            shareBtn.innerHTML = '🔗 Copying...';
-            shareBtn.disabled = true;
-            shareBtn.style.opacity = '0.7';
+        function sharePost(postId, buttonElement) {
+            const shareBtn = buttonElement;
+            const originalText = '🔗 Share';
             
             const url = `${window.location.origin}/dcf_member_home.html#post-${postId}`;
             
-            // Simple timeout instead of clipboard API for testing
-            setTimeout(() => {
+            navigator.clipboard.writeText(url).then(() => {
+                // Success state
                 shareBtn.innerHTML = '✅ Copied!';
                 shareBtn.style.color = '#28a745';
+                showMessage('Post link copied to clipboard!', 'success');
                 
+                // Reset after 2 seconds
                 setTimeout(() => {
                     shareBtn.innerHTML = originalText;
                     shareBtn.disabled = false;
-                    shareBtn.style.opacity = '1';
                     shareBtn.style.color = '';
                 }, 2000);
-            }, 1000);
+                
+            }).catch((error) => {
+                console.error('Clipboard error:', error);
+                // Error state
+                shareBtn.innerHTML = '❌ Failed';
+                shareBtn.style.color = '#dc3545';
+                showMessage('Failed to copy link', 'error');
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    shareBtn.innerHTML = originalText;
+                    shareBtn.disabled = false;
+                    shareBtn.style.color = '';
+                }, 2000);
+            });
         }
 
         // Open post in modal
