@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Experience Test - DCF Hungary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: white;
+            overflow: hidden;
+        }
+
+        .test-container {
+            padding: 20px;
+            background: #111;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .test-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .sample-post {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .sample-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .sample-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .sample-image:hover {
+            transform: scale(1.05);
+        }
+
+        /* Immersive Photo Experience */
+        .photo-experience {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .photo-experience.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .photo-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .dynamic-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(20px) brightness(0.3);
+            transform: scale(1.1);
+            transition: all 0.8s ease;
+        }
+
+        .main-photo {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            z-index: 2;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform: scale(0.9);
+        }
+
+        .photo-experience.active .main-photo {
+            transform: scale(1);
+        }
+
+        .photo-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .photo-nav:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .photo-nav.prev {
+            left: 30px;
+        }
+
+        .photo-nav.next {
+            right: 30px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .photo-counter {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 3;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .floating-comments {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            backdrop-filter: blur(20px);
+            padding: 40px 30px 30px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 3;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        .floating-comments.visible {
+            transform: translateY(0);
+        }
+
+        .toggle-comments {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 12px 24px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 4;
+            font-weight: 600;
+        }
+
+        .toggle-comments:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .comment-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .comment-text {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            z-index: 3;
+        }
+
+        .photo-info {
+            position: absolute;
+            top: 90px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 3;
+        }
+
+        .photo-author {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .photo-time {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .like-button {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 4;
+        }
+
+        .like-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .like-button.liked {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .gesture-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .sample-collage {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 5px;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            margin: 15px 0;
+        }
+
+        .sample-collage img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sample-collage .main-image {
+            grid-row: 1 / 3;
+        }
+
+        .sample-collage .side-images {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .sample-collage .side-images img {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 style="color: white; margin-bottom: 30px; text-align: center;">DCF Photo Experience Test</h1>
+        
+        <button class="test-button" onclick="openPhotoExperience(['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200', 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200', 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200', 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200'])">
+            Open 4-Photo Experience
+        </button>
+
+        <button class="test-button" onclick="openPhotoExperience(['https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1200', 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200'])">
+            Open 2-Photo Experience
+        </button>
+
+        <div class="sample-post">
+            <h3 style="color: white; margin-bottom: 15px;">Sample Post with Collage</h3>
+            <p style="color: #ccc; margin-bottom: 15px;">Check out these amazing landscapes from our recent expedition!</p>
+            
+            <div class="sample-collage" onclick="openPhotoExperience(['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200', 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200', 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200'])">
+                <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600" alt="Main landscape" class="main-image">
+                <div class="side-images">
+                    <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300" alt="Mountain view">
+                    <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300" alt="Forest path">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-top: 15px; color: #999;">
+                <span>❤️ 24 likes</span>
+                <span>💬 8 comments</span>
+                <span>🔗 Share</span>
+            </div>
+        </div>
+
+        <p style="color: #888; text-align: center; margin-top: 30px;">
+            Click any button or image to experience the immersive photo viewer<br>
+            Features: Dynamic backgrounds, smooth navigation, floating comments, gesture controls
+        </p>
+    </div>
+
+    <!-- Immersive Photo Experience -->
+    <div class="photo-experience" id="photoExperience">
+        <div class="dynamic-background" id="dynamicBg"></div>
+        
+        <div class="photo-container">
+            <img class="main-photo" id="mainPhoto" alt="Main photo">
+            
+            <button class="photo-nav prev" id="prevBtn" onclick="previousPhoto()">‹</button>
+            <button class="photo-nav next" id="nextBtn" onclick="nextPhoto()">›</button>
+            
+            <button class="close-btn" onclick="closePhotoExperience()">×</button>
+            
+            <div class="photo-counter" id="photoCounter">1 / 4</div>
+            
+            <div class="photo-info">
+                <div class="photo-author">Dr. Sarah Johnson</div>
+                <div class="photo-time">2 hours ago</div>
+            </div>
+            
+            <button class="like-button" id="likeBtn" onclick="toggleLike()">♡</button>
+            
+            <button class="toggle-comments" onclick="toggleComments()">
+                💬 View Comments (5)
+            </button>
+            
+            <div class="gesture-hint">Swipe or use arrow keys to navigate</div>
+        </div>
+        
+        <div class="floating-comments" id="floatingComments">
+            <div class="comment-item">
+                <div class="comment-author">Dr. Michael Chen</div>
+                <div class="comment-text">Absolutely breathtaking! The composition in the first shot is phenomenal.</div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-author">Elena Rodriguez</div>
+                <div class="comment-text">This reminds me of our ethics retreat in the Alps. Nature really puts technology in perspective.</div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-author">Prof. James Wilson</div>
+                <div class="comment-text">Perfect example of how AI can help us appreciate natural beauty without replacing the human experience.</div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-author">Anna Kowalski</div>
+                <div class="comment-text">The way light plays across the landscape in photo 3 is just magical ✨</div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-author">David Park</div>
+                <div class="comment-text">These would make excellent case studies for our environmental AI project!</div>
+            </div>
+        </div>
+        
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <script>
+        let currentPhotos = [];
+        let currentIndex = 0;
+        let commentsVisible = false;
+        let liked = false;
+
+        function openPhotoExperience(photos) {
+            currentPhotos = photos;
+            currentIndex = 0;
+            
+            const experience = document.getElementById('photoExperience');
+            const mainPhoto = document.getElementById('mainPhoto');
+            const dynamicBg = document.getElementById('dynamicBg');
+            const counter = document.getElementById('photoCounter');
+            const progressBar = document.getElementById('progressBar');
+            
+            // Set initial photo
+            mainPhoto.src = photos[0];
+            dynamicBg.style.backgroundImage = `url(${photos[0]})`;
+            counter.textContent = `1 / ${photos.length}`;
+            progressBar.style.width = `${(1 / photos.length) * 100}%`;
+            
+            // Show experience
+            experience.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Update navigation visibility
+            updateNavigation();
+        }
+
+        function closePhotoExperience() {
+            const experience = document.getElementById('photoExperience');
+            experience.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Reset comments
+            const comments = document.getElementById('floatingComments');
+            comments.classList.remove('visible');
+            commentsVisible = false;
+        }
+
+        function nextPhoto() {
+            if (currentIndex < currentPhotos.length - 1) {
+                currentIndex++;
+                updatePhoto();
+            }
+        }
+
+        function previousPhoto() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updatePhoto();
+            }
+        }
+
+        function updatePhoto() {
+            const mainPhoto = document.getElementById('mainPhoto');
+            const dynamicBg = document.getElementById('dynamicBg');
+            const counter = document.getElementById('photoCounter');
+            const progressBar = document.getElementById('progressBar');
+            
+            // Smooth transition
+            mainPhoto.style.opacity = '0';
+            
+            setTimeout(() => {
+                mainPhoto.src = currentPhotos[currentIndex];
+                dynamicBg.style.backgroundImage = `url(${currentPhotos[currentIndex]})`;
+                counter.textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
+                progressBar.style.width = `${((currentIndex + 1) / currentPhotos.length) * 100}%`;
+                
+                mainPhoto.style.opacity = '1';
+            }, 200);
+            
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            prevBtn.style.opacity = currentIndex > 0 ? '1' : '0.3';
+            nextBtn.style.opacity = currentIndex < currentPhotos.length - 1 ? '1' : '0.3';
+        }
+
+        function toggleComments() {
+            const comments = document.getElementById('floatingComments');
+            commentsVisible = !commentsVisible;
+            
+            if (commentsVisible) {
+                comments.classList.add('visible');
+            } else {
+                comments.classList.remove('visible');
+            }
+        }
+
+        function toggleLike() {
+            const likeBtn = document.getElementById('likeBtn');
+            liked = !liked;
+            
+            if (liked) {
+                likeBtn.textContent = '♥';
+                likeBtn.classList.add('liked');
+            } else {
+                likeBtn.textContent = '♡';
+                likeBtn.classList.remove('liked');
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('photoExperience').classList.contains('active')) {
+                if (e.key === 'ArrowRight') nextPhoto();
+                if (e.key === 'ArrowLeft') previousPhoto();
+                if (e.key === 'Escape') closePhotoExperience();
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    toggleComments();
+                }
+            }
+        });
+
+        // Touch/Swipe support
+        let startX = 0;
+        let startY = 0;
+
+        document.getElementById('photoExperience').addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.getElementById('photoExperience').addEventListener('touchend', function(e) {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+            
+            // Horizontal swipe (minimum 50px)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                if (deltaX > 0) {
+                    previousPhoto();
+                } else {
+                    nextPhoto();
+                }
+            }
+            
+            // Vertical swipe for comments
+            if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50) {
+                if (deltaY < 0) {
+                    // Swipe up - show comments
+                    if (!commentsVisible) toggleComments();
+                } else {
+                    // Swipe down - hide comments
+                    if (commentsVisible) toggleComments();
+                }
+            }
+        });
+
+        // Click outside to close
+        document.getElementById('photoExperience').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePhotoExperience();
+            }
+        });
+    </script>
+</body>
+</html>
