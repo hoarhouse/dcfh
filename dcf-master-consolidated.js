@@ -168,11 +168,11 @@ async function updateUserDropdownInfo() {
     if (avatarElement) {
         if (avatarUrl) {
             console.log('Setting avatar image for top right');
-            // Show profile picture
+            // Show profile picture  
+            avatarElement.style.background = '';  // Remove gradient FIRST
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
             avatarElement.style.backgroundSize = 'cover';
             avatarElement.style.backgroundPosition = 'center';
-            avatarElement.style.background = '';  // Remove gradient
             avatarElement.style.boxShadow = '0 0 10px #00ff00';  // Keep green glow
             avatarElement.textContent = '';  // Remove initials
         } else {
