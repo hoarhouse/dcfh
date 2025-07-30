@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Feed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .create-post {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .post-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .post-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .upload-section {
+            margin: 1rem 0;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .upload-btn {
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+
+        .share-post-btn {
+            padding: 0.75rem 2rem;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .share-post-btn:hover {
+            background: darkred;
+        }
+
+        .media-preview {
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .media-item {
+            position: relative;
+            display: inline-block;
+            margin: 0.5rem;
+        }
+
+        .media-item img,
+        .media-item video {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .progress-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: red;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .feed {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .post {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .post-author {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .post-content {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .post-media {
+            margin-bottom: 1rem;
+        }
+
+        .post-media img,
+        .post-media video {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .action-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .share-btn {
+            background: red !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .share-btn:hover {
+            background: darkred !important;
+        }
+
+        .comments-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .comment {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            background: #666;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .comment-content {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 8px;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .comment-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .comment-input-section {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .comment-submit {
+            padding: 0.75rem 1.5rem;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Post Feed</h1>
+        
+        <div class="create-post">
+            <textarea class="post-input" id="postInput" placeholder="What's on your mind?"></textarea>
+            
+            <div class="upload-section">
+                <label class="upload-btn">
+                    📷 Upload Images
+                    <input type="file" accept="image/*" multiple onchange="handleImageUpload(event)" style="display: none;">
+                </label>
+                <label class="upload-btn">
+                    🎥 Upload Video
+                    <input type="file" accept="video/*" onchange="handleVideoUpload(event)" style="display: none;">
+                </label>
+                <button class="share-post-btn" onclick="createPost()">I'M FIRED</button>
+            </div>
+            
+            <div class="media-preview" id="mediaPreview"></div>
+        </div>
+
+        <div class="feed" id="postsContainer">
+            <!-- Posts will appear here -->
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div class="progress-modal" id="progressModal">
+        <div class="progress-content">
+            <h3>Uploading Media...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressText">0%</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let posts = [];
+        let postIdCounter = 1;
+
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            selectedFiles = selectedFiles.concat(files);
+            showMediaPreview();
+        }
+
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFiles = [file];
+                showMediaPreview();
+            }
+        }
+
+        function showMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            
+            if (selectedFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            preview.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (file.type.startsWith('image/')) {
+                        mediaItem.innerHTML = `
+                            <img src="${e.target.result}">
+                            <button class="remove-btn" onclick="removeFile(${index})">×</button>
+                        `;
+                    } else {
+                        mediaItem.innerHTML = `
+                            <video src="${e.target.result}" controls></video>
+                            <button class="remove-btn" onclick="removeFile(${index})">×</button>
+                        `;
+                    }
+                };
+                reader.readAsDataURL(file);
+                
+                preview.appendChild(mediaItem);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            showMediaPreview();
+        }
+
+        async function createPost() {
+            const content = document.getElementById('postInput').value.trim();
+            
+            if (!content && selectedFiles.length === 0) {
+                alert('Please write something or add media!');
+                return;
+            }
+
+            // Show progress modal if uploading files
+            if (selectedFiles.length > 0) {
+                document.getElementById('progressModal').style.display = 'flex';
+                await simulateUpload();
+                document.getElementById('progressModal').style.display = 'none';
+            }
+
+            // Create post object
+            const post = {
+                id: postIdCounter++,
+                content: content,
+                author: 'You',
+                time: 'Just now',
+                media: [],
+                likes: 0,
+                comments: []
+            };
+
+            // Process media files
+            selectedFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    post.media.push({
+                        type: file.type.startsWith('image/') ? 'image' : 'video',
+                        src: e.target.result
+                    });
+                    
+                    if (post.media.length === selectedFiles.length) {
+                        posts.unshift(post);
+                        displayPosts();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            if (selectedFiles.length === 0) {
+                posts.unshift(post);
+                displayPosts();
+            }
+
+            // Clear form
+            document.getElementById('postInput').value = '';
+            selectedFiles = [];
+            showMediaPreview();
+        }
+
+        async function simulateUpload() {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            for (let i = 0; i <= 100; i += 10) {
+                progressFill.style.width = i + '%';
+                progressText.textContent = i + '%';
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        function displayPosts() {
+            const container = document.getElementById('postsContainer');
+            
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">No posts yet. Create your first post!</p>';
+                return;
+            }
+
+            container.innerHTML = posts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        <div class="post-avatar">${post.author[0]}</div>
+                        <div>
+                            <div class="post-author">${post.author}</div>
+                            <div class="post-time">${post.time}</div>
+                        </div>
+                    </div>
+                    
+                    ${post.content ? `<div class="post-content">${post.content}</div>` : ''}
+                    
+                    ${post.media.length > 0 ? `
+                        <div class="post-media">
+                            ${post.media.map(media => 
+                                media.type === 'image' 
+                                    ? `<img src="${media.src}" alt="Post image">`
+                                    : `<video src="${media.src}" controls></video>`
+                            ).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="post-actions">
+                        <button class="action-btn" onclick="toggleLike(${post.id})">
+                            👍 <span id="like-count-${post.id}">${post.likes}</span> likes
+                        </button>
+                        <button class="action-btn" onclick="toggleComments(${post.id})">
+                            💬 <span id="comment-count-${post.id}">${post.comments.length}</span> comments
+                        </button>
+                        <button class="action-btn share-btn" onclick="sharePost(${post.id}, this)">
+                            I'M FIRED
+                        </button>
+                    </div>
+                    
+                    <div class="comments-section hidden" id="comments-${post.id}">
+                        <div id="comments-list-${post.id}">
+                            ${post.comments.map(comment => `
+                                <div class="comment">
+                                    <div class="comment-avatar">${comment.author[0]}</div>
+                                    <div class="comment-content">
+                                        <div class="comment-author">${comment.author}</div>
+                                        <div class="comment-text">${comment.text}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="comment-input-section">
+                            <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="Write a comment...">
+                            <button class="comment-submit" onclick="addComment(${post.id})">Post</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleLike(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                post.likes = post.likes > 0 ? 0 : 1;
+                document.getElementById(`like-count-${postId}`).textContent = post.likes;
+            }
+        }
+
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            commentsSection.classList.toggle('hidden');
+        }
+
+        async function sharePost(postId, buttonElement) {
+            const shareBtn = buttonElement;
+            const originalText = shareBtn.innerHTML;
+            
+            // Transform button into progress bar
+            shareBtn.style.cssText = `
+                width: 120px;
+                height: 32px;
+                background: #f0f0f0;
+                border: 2px solid #ccc;
+                border-radius: 16px;
+                position: relative;
+                overflow: hidden;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            shareBtn.innerHTML = `
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    height: 100%;
+                    background: red;
+                    width: 0%;
+                    transition: width 0.1s ease;
+                    border-radius: 14px;
+                " id="shareProgress-${postId}"></div>
+                <span style="
+                    position: relative;
+                    color: #333;
+                    font-weight: bold;
+                    z-index: 10;
+                    font-size: 0.8rem;
+                " id="shareText-${postId}">0%</span>
+            `;
+            
+            shareBtn.disabled = true;
+
+            // Animate progress bar
+            const progressBar = document.getElementById(`shareProgress-${postId}`);
+            const progressText = document.getElementById(`shareText-${postId}`);
+            
+            for (let i = 0; i <= 100; i += 10) {
+                progressBar.style.width = i + '%';
+                progressText.textContent = i + '%';
+                
+                if (i >= 50) {
+                    progressText.style.color = 'white';
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Success state
+            progressText.textContent = '✅ Shared!';
+            progressText.style.color = 'white';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                shareBtn.style.cssText = 'background: red; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold;';
+                shareBtn.innerHTML = originalText;
+                shareBtn.disabled = false;
+            }, 2000);
+        }
+
+        function addComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const commentText = input.value.trim();
+            
+            if (!commentText) return;
+            
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                post.comments.push({
+                    author: 'You',
+                    text: commentText
+                });
+                
+                input.value = '';
+                displayPosts();
+            }
+        }
+
+        // Initialize with empty feed
+        displayPosts();
+    </script>
+</body>
+</html>
