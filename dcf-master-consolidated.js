@@ -189,10 +189,10 @@ async function updateUserDropdownInfo() {
         if (avatarUrl) {
             console.log('Setting avatar image for dropdown');
             // Show profile picture
+            dropdownAvatarElement.style.background = '';  // Remove gradient FIRST
             dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
             dropdownAvatarElement.style.backgroundSize = 'cover';
             dropdownAvatarElement.style.backgroundPosition = 'center';
-            dropdownAvatarElement.style.background = '';  // Remove gradient
             dropdownAvatarElement.textContent = '';  // Remove initials
         } else {
             console.log('Setting initials for dropdown');
