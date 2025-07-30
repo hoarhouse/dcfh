@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Projects - DCF Hungary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .debug-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .debug-output {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>DCF Projects Debug Console</h1>
+        
+        <div class="debug-section">
+            <div class="debug-title">1. Supabase Connection Test</div>
+            <div id="connectionStatus" class="status info">Testing connection...</div>
+            <div class="debug-output" id="connectionOutput"></div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-title">2. Raw Database Query</div>
+            <div id="queryStatus" class="status info">Running query...</div>
+            <div class="debug-output" id="queryOutput"></div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-title">3. Projects Data Structure</div>
+            <div id="dataStatus" class="status info">Analyzing data...</div>
+            <div class="debug-output" id="dataOutput"></div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-title">4. HTML Generation Test</div>
+            <div id="htmlStatus" class="status info">Generating HTML...</div>
+            <div class="debug-output" id="htmlOutput"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+
+        async function runDebugTests() {
+            // Test 1: Connection
+            try {
+                const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                document.getElementById('connectionStatus').className = 'status success';
+                document.getElementById('connectionStatus').textContent = 'Supabase client created successfully';
+                document.getElementById('connectionOutput').textContent = 'Client URL: ' + supabaseUrl + '\nClient created: ' + (!!supabase);
+
+                // Test 2: Raw Query
+                try {
+                    const { data: projects, error } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        document.getElementById('queryStatus').className = 'status error';
+                        document.getElementById('queryStatus').textContent = 'Query failed';
+                        document.getElementById('queryOutput').textContent = 'Error: ' + JSON.stringify(error, null, 2);
+                        return;
+                    }
+
+                    document.getElementById('queryStatus').className = 'status success';
+                    document.getElementById('queryStatus').textContent = `Query successful - Found ${projects.length} projects`;
+                    document.getElementById('queryOutput').textContent = 'Raw data:\n' + JSON.stringify(projects, null, 2);
+
+                    // Test 3: Data Structure Analysis
+                    if (projects.length > 0) {
+                        const firstProject = projects[0];
+                        const requiredFields = ['title', 'description', 'category', 'location', 'author_name', 'status'];
+                        const missingFields = requiredFields.filter(field => !(field in firstProject));
+                        
+                        if (missingFields.length > 0) {
+                            document.getElementById('dataStatus').className = 'status error';
+                            document.getElementById('dataStatus').textContent = 'Missing required fields';
+                            document.getElementById('dataOutput').textContent = 'Missing fields: ' + missingFields.join(', ') + '\n\nAvailable fields: ' + Object.keys(firstProject).join(', ');
+                        } else {
+                            document.getElementById('dataStatus').className = 'status success';
+                            document.getElementById('dataStatus').textContent = 'All required fields present';
+                            document.getElementById('dataOutput').textContent = 'Sample project structure:\n' + JSON.stringify(firstProject, null, 2);
+                        }
+
+                        // Test 4: HTML Generation
+                        try {
+                            const htmlSample = generateProjectHTML(firstProject);
+                            document.getElementById('htmlStatus').className = 'status success';
+                            document.getElementById('htmlStatus').textContent = 'HTML generation successful';
+                            document.getElementById('htmlOutput').textContent = htmlSample;
+                        } catch (htmlError) {
+                            document.getElementById('htmlStatus').className = 'status error';
+                            document.getElementById('htmlStatus').textContent = 'HTML generation failed';
+                            document.getElementById('htmlOutput').textContent = 'Error: ' + htmlError.message;
+                        }
+                    } else {
+                        document.getElementById('dataStatus').className = 'status info';
+                        document.getElementById('dataStatus').textContent = 'No projects found in database';
+                        document.getElementById('dataOutput').textContent = 'The projects table appears to be empty.';
+                    }
+
+                } catch (queryError) {
+                    document.getElementById('queryStatus').className = 'status error';
+                    document.getElementById('queryStatus').textContent = 'Query exception';
+                    document.getElementById('queryOutput').textContent = 'Exception: ' + queryError.message + '\nStack: ' + queryError.stack;
+                }
+
+            } catch (connectionError) {
+                document.getElementById('connectionStatus').className = 'status error';
+                document.getElementById('connectionStatus').textContent = 'Connection failed';
+                document.getElementById('connectionOutput').textContent = 'Error: ' + connectionError.message;
+            }
+        }
+
+        function generateProjectHTML(project) {
+            function generateInitials(name) {
+                if (!name) return 'U';
+                const parts = name.split(' ');
+                if (parts.length >= 2) {
+                    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                }
+                return name.substring(0, 2).toUpperCase();
+            }
+
+            return `
+                <div class="project-card" data-category="${project.category}">
+                    <div class="project-header">
+                        <div style="display: flex; align-items: center;">
+                            <div class="project-icon">📋</div>
+                            <div class="project-info">
+                                <h3 class="project-title">${project.title}</h3>
+                                <p class="project-meta">Led by ${project.author_name} • ${project.location}</p>
+                            </div>
+                        </div>
+                        <span class="status-badge status-${project.status}">${project.status}</span>
+                    </div>
+                    <p class="project-description">${project.description}</p>
+                    <div class="project-tags">
+                        ${project.skills ? JSON.parse(project.skills).map(skill => \`<span class="tag">\${skill}</span>\`).join('') : ''}
+                    </div>
+                    <div class="project-footer">
+                        <div class="project-members">
+                            <div class="member-avatars">
+                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                            </div>
+                            <span class="member-count">1 member</span>
+                        </div>
+                        <button class="btn btn-primary btn-small">Join Project</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', runDebugTests);
+    </script>
+</body>
+</html>
