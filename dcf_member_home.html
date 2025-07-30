@@ -1549,7 +1549,7 @@
                         <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
                             💬 <span id="comment-count-${post.id}">0</span> comments
                         </button>
-                        <button class="post-action" onclick="event.stopPropagation(); sharePost('${post.id}', this)">
+                        <button class="post-action" id="share-btn-${post.id}" onclick="event.stopPropagation(); sharePost('${post.id}')">
                             🔗 Share
                         </button>
                         ${post.author_email === (localStorage.getItem('dcf_user_email') || 'sarah.johnson@dcfhungary.org') ? `
@@ -1942,14 +1942,17 @@
         }
 
         // Share post
-        function sharePost(postId, buttonElement) {
-            if (!buttonElement) {
-                console.error('Button element not found');
+        function sharePost(postId) {
+            const shareBtn = document.getElementById(`share-btn-${postId}`);
+            
+            if (!shareBtn) {
+                console.error('Share button not found for post:', postId);
+                showMessage('Failed to copy link', 'error');
                 return;
             }
             
-            const shareBtn = buttonElement;
             const originalText = shareBtn.innerHTML;
+            console.log('Starting share process for post:', postId);
             
             // Show loading state
             shareBtn.innerHTML = '🔗 Copying...';
@@ -1958,8 +1961,10 @@
             shareBtn.style.cursor = 'not-allowed';
             
             const url = `${window.location.origin}/dcf_member_home.html#post-${postId}`;
+            console.log('Copying URL:', url);
             
             navigator.clipboard.writeText(url).then(() => {
+                console.log('Clipboard write successful');
                 // Success state
                 shareBtn.innerHTML = '✅ Copied!';
                 shareBtn.style.color = '#28a745';
