@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Share Button</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .post-box {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .post-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        .upload-section {
+            margin: 1rem 0;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .upload-btn {
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .share-post-btn {
+            padding: 0.75rem 1.5rem;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .test-post {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+        }
+
+        .post-content {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 1rem;
+            border-top: 1px solid #ddd;
+            padding-top: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .like-btn {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .comment-btn {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .share-btn {
+            background: red;
+            color: white;
+            font-weight: bold;
+        }
+
+        .share-btn:hover {
+            background: darkred;
+        }
+
+        .progress-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .progress-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: red;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .media-preview {
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .media-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .remove-btn {
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TEST SHARE BUTTON - RED AND WORKING</h1>
+        
+        <div class="post-box">
+            <h3>Create a Test Post</h3>
+            <textarea class="post-input" id="postInput" placeholder="Write something to test..."></textarea>
+            
+            <div class="upload-section">
+                <label class="upload-btn">
+                    📷 Add Photos
+                    <input type="file" accept="image/*" multiple onchange="handleFileUpload(event)" style="display: none;">
+                </label>
+                <button class="share-post-btn" onclick="sharePost()">🔗 SHARE POST</button>
+            </div>
+            
+            <div class="media-preview" id="mediaPreview">
+                <div id="mediaContainer"></div>
+            </div>
+        </div>
+
+        <div id="postsContainer">
+            <!-- Test posts will appear here -->
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div class="progress-modal" id="progressModal">
+        <div class="progress-content">
+            <h3>Uploading Photos...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressText">0%</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let postCounter = 1;
+
+        function handleFileUpload(event) {
+            selectedFiles = Array.from(event.target.files);
+            showMediaPreview();
+        }
+
+        function showMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            const container = document.getElementById('mediaContainer');
+            
+            if (selectedFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            container.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'display: inline-block; margin: 0.5rem; position: relative;';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    div.innerHTML = `
+                        <img src="${e.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 8px; object-fit: cover;">
+                        <button class="remove-btn" onclick="removeFile(${index})">×</button>
+                    `;
+                };
+                reader.readAsDataURL(file);
+                
+                container.appendChild(div);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            showMediaPreview();
+        }
+
+        async function sharePost() {
+            const content = document.getElementById('postInput').value.trim();
+            const button = document.querySelector('.share-post-btn');
+            
+            if (!content && selectedFiles.length === 0) {
+                alert('Please write something or add photos!');
+                return;
+            }
+
+            // TURN BUTTON INTO PROGRESS BAR
+            const originalText = button.innerHTML;
+            const originalStyle = button.style.cssText;
+            
+            // Transform button into progress bar
+            button.style.cssText = `
+                width: 200px;
+                height: 40px;
+                background: #f0f0f0;
+                border: 2px solid #ccc;
+                border-radius: 20px;
+                position: relative;
+                overflow: hidden;
+                padding: 0;
+            `;
+            
+            button.innerHTML = `
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    height: 100%;
+                    background: red;
+                    width: 0%;
+                    transition: width 0.3s ease;
+                    border-radius: 18px;
+                " id="buttonProgress"></div>
+                <span style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    color: #333;
+                    font-weight: bold;
+                    z-index: 10;
+                " id="buttonText">0%</span>
+            `;
+            
+            button.disabled = true;
+
+            // Animate progress bar
+            const progressBar = document.getElementById('buttonProgress');
+            const progressText = document.getElementById('buttonText');
+            
+            for (let i = 0; i <= 100; i += 5) {
+                progressBar.style.width = i + '%';
+                progressText.textContent = i + '%';
+                
+                if (i >= 50) {
+                    progressText.style.color = 'white';
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Success state
+            progressText.textContent = '✅ Shared!';
+            progressText.style.color = 'white';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                button.style.cssText = originalStyle;
+                button.innerHTML = originalText;
+                button.disabled = false;
+                
+                // Clear form
+                document.getElementById('postInput').value = '';
+                selectedFiles = [];
+                showMediaPreview();
+            }, 2000);
+        }
+
+        async function simulateUpload() {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            for (let i = 0; i <= 100; i += 10) {
+                progressFill.style.width = i + '%';
+                progressText.textContent = i + '%';
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        function testShareButton(button) {
+            // SHARE BUTTON TEST - TURNS RED TO GREEN WITH PROGRESS
+            const originalText = button.innerHTML;
+            
+            // Step 1: Red background, "Sharing..." text
+            button.style.background = 'red';
+            button.style.color = 'white';
+            button.innerHTML = '🔗 Sharing...';
+            button.disabled = true;
+            
+            // Step 2: Simulate sharing process
+            setTimeout(() => {
+                button.style.background = 'green';
+                button.innerHTML = '✅ Shared!';
+                
+                // Step 3: Reset after 2 seconds
+                setTimeout(() => {
+                    button.style.background = 'red';
+                    button.style.color = 'white';
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
