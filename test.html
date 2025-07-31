@@ -443,21 +443,24 @@
             line-height: 1.2;
         }
 
-        .file-upload {
+        .image-upload-box, .file-upload-box {
             border: 2px dashed #e5e5e5;
             border-radius: 8px;
             padding: 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            display: block !important;
+            visibility: visible !important;
         }
 
-        .file-upload:hover {
+        .image-upload-box:hover, .file-upload-box:hover {
             border-color: #333;
             background: #f8f9fa;
         }
 
-        .file-upload.dragover {
+        .image-upload-box.dragover, .file-upload-box.dragover {
             border-color: #333;
             background: #f8f9fa;
         }
@@ -900,6 +903,30 @@
                             <input type="checkbox" id="skill_management" name="skills" value="management">
                             <label for="skill_management">Project Management</label>
                         </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_fundraising" name="skills" value="fundraising">
+                            <label for="skill_fundraising">Fundraising & Finance</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_marketing" name="skills" value="marketing">
+                            <label for="skill_marketing">Marketing & Outreach</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_data" name="skills" value="data">
+                            <label for="skill_data">Data Analysis</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_education" name="skills" value="education">
+                            <label for="skill_education">Education & Training</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_consulting" name="skills" value="consulting">
+                            <label for="skill_consulting">Consulting & Advisory</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skill_volunteer" name="skills" value="volunteer">
+                            <label for="skill_volunteer">General Volunteer</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -970,8 +997,13 @@
                     <p id="previewResources">Resources will appear here...</p>
                 </div>
 
+                <div class="preview-section" id="previewImagesSection" style="display: none;">
+                    <h4>Project Images <a href="#" class="edit-link" onclick="goToStep(3)">Edit</a></h4>
+                    <div id="previewImages"></div>
+                </div>
+
                 <div class="preview-section" id="previewFilesSection" style="display: none;">
-                    <h4>Attached Files <a href="#" class="edit-link" onclick="goToStep(3)">Edit</a></h4>
+                    <h4>Project Files <a href="#" class="edit-link" onclick="goToStep(3)">Edit</a></h4>
                     <div id="previewFiles"></div>
                 </div>
             </div>
@@ -1007,6 +1039,7 @@
         const totalSteps = 4;
         let projectData = {};
         let uploadedFiles = [];
+        let uploadedImages = [];
         let isDropdownOpen = false;
 
         function nextStep() {
@@ -1060,6 +1093,11 @@
             document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'block';
             document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'block';
             document.getElementById('submitBtn').style.display = step === totalSteps ? 'block' : 'none';
+            
+            // Re-initialize checkboxes when showing any step
+            setTimeout(() => {
+                initializeCheckboxes();
+            }, 50);
         }
 
         function validateCurrentStep() {
@@ -1119,6 +1157,7 @@
                 projectData.resources = document.getElementById('relatedResources').value.trim();
                 projectData.contactInfo = document.getElementById('contactInfo').value.trim();
                 projectData.files = uploadedFiles;
+                projectData.images = uploadedImages;
             }
         }
 
@@ -1168,6 +1207,22 @@
                 document.getElementById('previewResources').textContent = projectData.resources;
             } else {
                 resourcesSection.style.display = 'none';
+            }
+            
+            // Update images
+            const imagesSection = document.getElementById('previewImagesSection');
+            const imagesContainer = document.getElementById('previewImages');
+            if (projectData.images && projectData.images.length > 0) {
+                imagesSection.style.display = 'block';
+                imagesContainer.innerHTML = '';
+                projectData.images.forEach(image => {
+                    const imageElement = document.createElement('p');
+                    imageElement.style.margin = '0.25rem 0';
+                    imageElement.innerHTML = `📸 ${image.name} <span style="color: #666; font-size: 0.9rem;">(${image.size})</span>`;
+                    imagesContainer.appendChild(imageElement);
+                });
+            } else {
+                imagesSection.style.display = 'none';
             }
             
             // Update files
@@ -1230,80 +1285,163 @@
             }, 2000);
         }
 
-        // File upload handling
-        document.getElementById('projectFiles').addEventListener('change', function(e) {
-            handleFileUpload(e.target.files);
-        });
+        // File upload handling - COMPLETELY REWRITTEN
+        function initializeUploads() {
+            // Images upload
+            const imageInput = document.getElementById('projectImages');
+            const imageArea = document.getElementById('imageUploadArea');
+            const imageProgress = document.getElementById('imageUploadProgress');
+            const imageProgressFill = document.getElementById('imageUploadProgressFill');
+            const imageStatus = document.getElementById('imageUploadStatus');
+            const imageContainer = document.getElementById('uploadedImages');
 
-        // Drag and drop
-        const fileUpload = document.querySelector('.file-upload');
-        fileUpload.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.classList.add('dragover');
-        });
+            // Files upload  
+            const fileInput = document.getElementById('projectFiles');
+            const fileArea = document.getElementById('fileUploadArea');
+            const fileProgress = document.getElementById('fileUploadProgress');
+            const fileProgressFill = document.getElementById('fileUploadProgressFill');
+            const fileStatus = document.getElementById('fileUploadStatus');
+            const fileContainer = document.getElementById('uploadedFiles');
 
-        fileUpload.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
-        });
+            if (imageInput) {
+                imageInput.addEventListener('change', function(e) {
+                    handleUpload(e.target.files, 'images', imageProgress, imageProgressFill, imageStatus, imageContainer);
+                });
+            }
 
-        fileUpload.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
-            handleFileUpload(e.dataTransfer.files);
-        });
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    handleUpload(e.target.files, 'files', fileProgress, fileProgressFill, fileStatus, fileContainer);
+                });
+            }
 
-        function handleFileUpload(files) {
-            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            // Drag and drop for images
+            if (imageArea) {
+                imageArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+                imageArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+                imageArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    handleUpload(e.dataTransfer.files, 'images', imageProgress, imageProgressFill, imageStatus, imageContainer);
+                });
+            }
+
+            // Drag and drop for files
+            if (fileArea) {
+                fileArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+                fileArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+                fileArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    handleUpload(e.dataTransfer.files, 'files', fileProgress, fileProgressFill, fileStatus, fileContainer);
+                });
+            }
+        }
+
+        function handleUpload(files, type, progressBar, progressFill, status, container) {
+            const targetArray = type === 'images' ? uploadedImages : uploadedFiles;
             
-            Array.from(files).forEach(file => {
+            Array.from(files).forEach((file, index) => {
+                // Validate file type
+                if (type === 'images') {
+                    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+                        alert(`${file.name} is not a valid image or video file`);
+                        return;
+                    }
+                }
+                
                 if (file.size <= 10 * 1024 * 1024) {
-                    const fileObj = {
-                        name: file.name,
-                        size: formatFileSize(file.size),
-                        data: file
-                    };
+                    // Show progress
+                    progressBar.style.display = 'block';
+                    status.style.display = 'block';
+                    status.textContent = `Uploading ${file.name}...`;
                     
-                    uploadedFiles.push(fileObj);
-                    
-                    const fileElement = document.createElement('div');
-                    fileElement.className = 'uploaded-file';
-                    fileElement.innerHTML = `
-                        <div class="file-info">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${formatFileSize(file.size)}</div>
-                        </div>
-                        <button class="remove-file" onclick="removeFile(${uploadedFiles.length - 1})">Remove</button>
-                    `;
-                    
-                    uploadedFilesContainer.appendChild(fileElement);
+                    // Simulate upload progress
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 30;
+                        if (progress >= 100) {
+                            progress = 100;
+                            clearInterval(interval);
+                            
+                            // Upload complete
+                            const fileObj = {
+                                name: file.name,
+                                size: formatFileSize(file.size),
+                                data: file
+                            };
+                            
+                            targetArray.push(fileObj);
+                            
+                            const fileElement = document.createElement('div');
+                            fileElement.className = 'uploaded-file';
+                            fileElement.innerHTML = `
+                                <div class="file-info">
+                                    <div class="file-name">${file.name}</div>
+                                    <div class="file-size">${formatFileSize(file.size)}</div>
+                                </div>
+                                <button class="remove-file" onclick="removeUploadedFile(${targetArray.length - 1}, '${type}')">Remove</button>
+                            `;
+                            
+                            container.appendChild(fileElement);
+                            
+                            status.textContent = `✓ ${file.name} uploaded successfully`;
+                            status.className = 'upload-status success';
+                            
+                            // Hide progress after delay
+                            setTimeout(() => {
+                                progressBar.style.display = 'none';
+                                status.style.display = 'none';
+                            }, 2000);
+                        }
+                        progressFill.style.width = Math.min(progress, 100) + '%';
+                    }, 100);
                 } else {
                     alert(`File ${file.name} is too large (max 10MB)`);
                 }
             });
         }
 
-        function removeFile(index) {
-            uploadedFiles.splice(index, 1);
-            updateUploadedFilesDisplay();
+        function removeUploadedFile(index, type) {
+            if (type === 'images') {
+                uploadedImages.splice(index, 1);
+                refreshUploadDisplay('uploadedImages', uploadedImages, 'images');
+            } else {
+                uploadedFiles.splice(index, 1);
+                refreshUploadDisplay('uploadedFiles', uploadedFiles, 'files');
+            }
         }
 
-        function updateUploadedFilesDisplay() {
-            const container = document.getElementById('uploadedFiles');
-            container.innerHTML = '';
-            
-            uploadedFiles.forEach((file, index) => {
-                const fileElement = document.createElement('div');
-                fileElement.className = 'uploaded-file';
-                fileElement.innerHTML = `
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${file.size}</div>
-                    </div>
-                    <button class="remove-file" onclick="removeFile(${index})">Remove</button>
-                `;
-                container.appendChild(fileElement);
-            });
+        function refreshUploadDisplay(containerId, fileArray, type) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '';
+                
+                fileArray.forEach((file, index) => {
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'uploaded-file';
+                    fileElement.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${file.size}</div>
+                        </div>
+                        <button class="remove-file" onclick="removeUploadedFile(${index}, '${type}')">Remove</button>
+                    `;
+                    container.appendChild(fileElement);
+                });
+            }
         }
 
         function formatFileSize(bytes) {
@@ -1403,6 +1541,9 @@
 
             // Initialize checkbox handling
             initializeCheckboxes();
+            
+            // Initialize upload functionality
+            initializeUploads();
 
             // Close dropdown on escape key
             document.addEventListener('keydown', function(e) {
@@ -1415,6 +1556,14 @@
         });
 
         function initializeCheckboxes() {
+            // Remove any existing event listeners to prevent duplicates
+            document.querySelectorAll('.checkbox-item').forEach(item => {
+                // Create a new element to remove all event listeners
+                const newItem = item.cloneNode(true);
+                item.parentNode.replaceChild(newItem, item);
+            });
+            
+            // Add fresh event listeners
             document.querySelectorAll('.checkbox-item').forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
