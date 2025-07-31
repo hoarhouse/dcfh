@@ -1344,33 +1344,54 @@
             return categoryLabels[category] || category;
         }
 
-        function submitProject() {
+        async function submitProject() {
             saveCurrentStepData();
             
             // Show loading
             document.getElementById('loadingOverlay').style.display = 'flex';
             
-            // Generate project ID and metadata
-            projectData.id = 'project_' + Date.now();
-            projectData.creator = localStorage.getItem('dcf_user_name') || 'Current User';
-            projectData.createdAt = new Date().toISOString();
-            projectData.status = 'recruiting';
-            projectData.members = [projectData.creator];
-            projectData.memberCount = 1;
-            
-            // Save to localStorage
-            const existingProjects = JSON.parse(localStorage.getItem('dcf_user_projects') || '[]');
-            existingProjects.push(projectData);
-            localStorage.setItem('dcf_user_projects', JSON.stringify(existingProjects));
-            
-            console.log('Project created:', projectData);
-            
-            // Simulate API call
-           setTimeout(() => {
+            try {
+                // Initialize Supabase if not already done
+                if (!window.projectSupabase) {
+                    const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                    window.projectSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                }
+                
+                // Prepare data for database
+                const dbData = {
+                    title: projectData.title,
+                    description: projectData.description,
+                    category: projectData.category,
+                    location: projectData.location,
+                    funding: projectData.funding || 'no_funding',
+                    skills: projectData.skills ? projectData.skills.join(', ') : '',
+                    external_links: projectData.resources || '',
+                    notes: projectData.additionalNotes || '',
+                    author_email: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org',
+                    author_name: localStorage.getItem('dcf_user_name') || 'DCF Member',
+                    status: 'recruiting'
+                };
+                
+                // Save to Supabase
+                const { data, error } = await window.projectSupabase
+                    .from('projects')
+                    .insert([dbData])
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log('Project saved to database:', data);
+                
+                // Hide loading and redirect
                 document.getElementById('loadingOverlay').style.display = 'none';
-                // Remove the alert and just redirect
                 window.location.href = 'dcf_projects_home.html';
-            }, 2000);
+                
+            } catch (error) {
+                console.error('Error saving project:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert('Failed to create project. Please try again.');
+            }
         }
 
         // File upload handling - COMPLETELY REWRITTEN
