@@ -1381,7 +1381,39 @@
                 
                 if (error) throw error;
                 
+                const projectId = data[0].id;
                 console.log('Project saved to database:', data);
+                
+                // Save files if any exist
+                if (projectData.images && projectData.images.length > 0) {
+                    const imageRecords = projectData.images.map(image => ({
+                        project_id: projectId,
+                        file_name: image.name,
+                        file_type: image.data.type,
+                        file_size: image.data.size
+                    }));
+                    
+                    const { error: imageError } = await window.projectSupabase
+                        .from('project_files')
+                        .insert(imageRecords);
+                    
+                    if (imageError) console.error('Error saving images:', imageError);
+                }
+                
+                if (projectData.files && projectData.files.length > 0) {
+                    const fileRecords = projectData.files.map(file => ({
+                        project_id: projectId,
+                        file_name: file.name,
+                        file_type: file.data.type,
+                        file_size: file.data.size
+                    }));
+                    
+                    const { error: fileError } = await window.projectSupabase
+                        .from('project_files')
+                        .insert(fileRecords);
+                    
+                    if (fileError) console.error('Error saving files:', fileError);
+                }
                 
                 // Hide loading and redirect
                 document.getElementById('loadingOverlay').style.display = 'none';
