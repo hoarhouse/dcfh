@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Project - DCF Hungary</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+       .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            color: #000;
+        }
+
+        .logout-btn {
+            color: #dc3545 !important;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+            color: #c82333 !important;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .project-subtitle {
+            color: #666;
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-nav {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .nav-item:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .nav-item.active {
+            background: #000;
+            color: white;
+        }
+
+        .nav-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 600px;
+        }
+
+        .content-section {
+            display: none;
+            padding: 2rem;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .section-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e5e5;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .task-checkbox.completed {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-title.completed {
+            text-decoration: line-through;
+            color: #666;
+        }
+
+        .task-meta {
+            color: #666;
+            font-size: 0.8rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .team-member {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .team-member:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .member-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .member-role {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .member-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-leader {
+            background: #000;
+            color: white;
+        }
+
+        .role-member {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .role-contributor {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e5e5;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background: #f8f9fa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .danger-zone {
+            background: #fff5f5;
+            border: 2px solid #fed7d7;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .danger-zone h3 {
+            color: #c53030;
+            margin-bottom: 1rem;
+        }
+
+        .danger-zone p {
+            color: #742a2a;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 1.5rem;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: #f8f9fa;
+            color: #666;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid #e5e5e5;
+        }
+
+        .tag.primary {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .main-content {
+                order: 1;
+            }
+
+            .sidebar-nav {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                gap: 0.5rem;
+            }
+
+            .nav-item {
+                white-space: nowrap;
+                margin-bottom: 0;
+                margin-right: 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .task-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .team-member {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <!-- Navigation populated by master JS -->
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName">DCF Member</div>
+                                <div class="dropdown-email" id="dropdownUserEmail">member@dcfhungary.org</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <!-- Navigation will be dynamically generated by master JS -->
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <a href="dcf_projects_home.html" class="back-link">← Back to Projects</a>
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title" id="manageProjectTitle">Loading Project...</h1>
+                <p class="project-subtitle">Project Management Dashboard</p>
+            </div>
+            <div class="header-actions">
+                <a href="#" class="btn btn-secondary" id="viewProjectBtn">📄 View Project</a>
+                <button class="btn btn-primary" onclick="saveAllChanges()">💾 Save Changes</button>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="sidebar">
+                <div class="sidebar-nav">
+                    <div class="nav-item active" onclick="showSection('overview')">
+                        <div class="nav-icon">📊</div>
+                        <span>Overview</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('tasks')">
+                        <div class="nav-icon">✅</div>
+                        <span>Tasks</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('team')">
+                        <div class="nav-icon">👥</div>
+                        <span>Team</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('resources')">
+                        <div class="nav-icon">📚</div>
+                        <span>Resources</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('activity')">
+                        <div class="nav-icon">📈</div>
+                        <span>Activity</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('settings')">
+                        <div class="nav-icon">⚙️</div>
+                        <span>Settings</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <!-- Overview Section -->
+                <div class="content-section active" id="overview">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Project Overview</h2>
+                            <p class="section-description">Monitor your project's progress and key metrics</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button>
+                    </div>
+
+                    <div class="stats-grid" id="projectStats">
+                        <!-- Project statistics will be loaded dynamically -->
+                    </div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1rem;">Project Progress</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 36%;"></div>
+                        </div>
+                        <div class="progress-text">36% Complete (4 of 11 tasks)</div>
+                    </div>
+
+                    <div>
+                        <h3 style="margin-bottom: 1rem;">Recent Tasks</h3>
+                        <div class="task-list" id="recentTasksList">
+                            <!-- Recent tasks will be loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="content-section" id="tasks">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Task Management</h2>
+                            <p class="section-description">Create, assign, and track project tasks</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openTaskModal()">+ Add New Task</button>
+                    </div>
+
+                    <div class="task-list" id="allTasksList">
+    <!-- All tasks will be loaded dynamically -->
+</div>
+
+                <!-- Team Section -->
+                <div class="content-section" id="team">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Team Management</h2>
+                            <p class="section-description">Manage team members and their roles</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Member</button>
+                    </div>
+
+                    <div class="team-list" id="teamList">
+                        <!-- Team members will be loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Resources Section -->
+                <div class="content-section" id="resources">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Project Resources</h2>
+                            <p class="section-description">Manage documents, files, and reference materials</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openUploadModal()">+ Upload Resource</button>
+                    </div>
+
+                    <div class="empty-state">
+                        <h3>No Resources Yet</h3>
+                        <p>Upload documents, research papers, and other resources to help your team collaborate effectively.</p>
+                        <button class="btn btn-primary" onclick="openUploadModal()">Upload First Resource</button>
+                    </div>
+                </div>
+
+                <!-- Activity Section -->
+                <div class="content-section" id="activity">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Project Activity</h2>
+                            <p class="section-description">Track recent project activities and updates</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-feed">
+                        <div class="empty-state">
+                            <h3>No Activity Yet</h3>
+                            <p>Project activity will appear here as team members complete tasks and make updates.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="content-section" id="settings">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Project Settings</h2>
+                            <p class="section-description">Configure project details and preferences</p>
+                        </div>
+                    </div>
+
+                    <form id="projectSettingsForm">
+                        <div class="form-group">
+                            <label class="form-label" for="projectTitle">Project Title</label>
+<input type="text" id="projectTitle" class="form-input" value="" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="projectDescription">Description</label>
+<textarea id="projectDescription" class="form-textarea" required></textarea>                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="projectCategory">Category</label>
+                                <select id="projectCategory" class="form-select" required>
+                                    <option value="ai-ethics">AI Ethics</option>
+                                    <option value="research">Research</option>
+                                    <option value="education">Education</option>
+                                    <option value="policy">Policy</option>
+                                    <option value="technology">Technology</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="projectStatus">Status</label>
+                                <select id="projectStatus" class="form-select" required>
+                                    <option value="active">Active</option>
+                                    <option value="planning">Planning</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="paused">Paused</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="projectTags">Tags (comma-separated)</label>
+                            <input type="text" id="projectTags" class="form-input" value="">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="projectDeadline">Target Completion</label>
+                                <input type="date" id="projectDeadline" class="form-input" value="">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="projectVisibility">Visibility</label>
+                                <select id="projectVisibility" class="form-select">
+                                    <option value="public">Public</option>
+                                    <option value="members">DCF Members Only</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
+                    </form>
+
+                    <div class="danger-zone">
+                        <h3>Danger Zone</h3>
+                        <p>Once you delete this project, there is no going back. All tasks, discussions, and resources will be permanently deleted.</p>
+                        <button class="btn btn-danger" onclick="deleteProject()">Delete Project</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Task</h2>
+                <button class="close-btn" onclick="closeModal('taskModal')">&times;</button>
+            </div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label class="form-label" for="taskTitle">Task Title</label>
+                    <input type="text" id="taskTitle" class="form-input" placeholder="Enter task title" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="taskDescription">Description</label>
+                    <textarea id="taskDescription" class="form-textarea" placeholder="Describe the task..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="taskAssignee">Assign To</label>
+                        <select id="taskAssignee" class="form-select" required>
+                            <option value="">Select team member</option>
+                            <option value="self">Assign to myself</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="taskPriority">Priority</label>
+                        <select id="taskPriority" class="form-select" required>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="taskDueDate">Due Date</label>
+                    <input type="date" id="taskDueDate" class="form-input" required>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invite Modal -->
+    <div class="modal" id="inviteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Invite Team Member</h2>
+                <button class="close-btn" onclick="closeModal('inviteModal')">&times;</button>
+            </div>
+            <form id="inviteForm">
+                <div class="form-group">
+                    <label class="form-label" for="inviteEmail">Email Address</label>
+                    <input type="email" id="inviteEmail" class="form-input" placeholder="Enter email address" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="inviteRole">Role</label>
+                    <select id="inviteRole" class="form-select" required>
+                        <option value="member">Member</option>
+                        <option value="contributor">Contributor</option>
+                        <option value="observer">Observer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="inviteMessage">Personal Message (optional)</label>
+                    <textarea id="inviteMessage" class="form-textarea" placeholder="Add a personal message to the invitation..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('inviteModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Section navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to clicked nav item
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Reload tasks when Tasks section is shown
+            if (sectionId === 'tasks') {
+                const projectId = getProjectIdFromUrl();
+                if (projectId) {
+                    loadAllTasks(projectId);
+                }
+            }
+            
+            // Load team members when Team section is shown
+            if (sectionId === 'team' && window.currentProject) {
+                loadTeamMembers(window.currentProject);
+            }
+        }
+
+        // Task management
+        function toggleTask(checkbox) {
+            const taskItem = checkbox.closest('.task-item');
+            const taskTitle = taskItem.querySelector('.task-title');
+            
+            if (checkbox.classList.contains('completed')) {
+                checkbox.classList.remove('completed');
+                checkbox.textContent = '□';
+                taskTitle.classList.remove('completed');
+            } else {
+                checkbox.classList.add('completed');
+                checkbox.textContent = '✓';
+                taskTitle.classList.add('completed');
+            }
+            
+            updateProgressBar();
+        }
+
+        function updateProgressBar() {
+            const totalTasks = document.querySelectorAll('.task-item').length;
+            const completedTasks = document.querySelectorAll('.task-checkbox.completed').length;
+            const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            
+            if (progressFill) progressFill.style.width = percentage + '%';
+            if (progressText) progressText.textContent = `${percentage}% Complete (${completedTasks} of ${totalTasks} tasks)`;
+            
+            // Skip stat updates since we're loading them dynamically now
+        }
+
+        // Modal functions
+        function openTaskModal() {
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function openInviteModal() {
+            document.getElementById('inviteModal').classList.add('active');
+        }
+
+        function openUploadModal() {
+            alert('File upload functionality would be implemented here.');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            
+            // Reset edit state if closing task modal
+            if (modalId === 'taskModal') {
+                const form = document.getElementById('taskForm');
+                delete form.dataset.editingTaskId;
+                document.querySelector('#taskModal .modal-title').textContent = 'Add New Task';
+                document.querySelector('#taskModal button[type="submit"]').textContent = 'Create Task';
+                form.reset();
+            }
+        }
+
+                // Form submissions
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const projectId = getProjectIdFromUrl();
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            const editingTaskId = this.dataset.editingTaskId;
+            
+            const taskData = {
+                title: document.getElementById('taskTitle').value.trim(),
+                description: document.getElementById('taskDescription').value.trim() || null,
+                assigned_to: document.getElementById('taskAssignee').value || null,
+                priority: document.getElementById('taskPriority').value,
+                due_date: document.getElementById('taskDueDate').value || null
+            };
+            
+            try {
+                if (editingTaskId) {
+                    // UPDATE existing task
+                    const { error } = await supabase
+                        .from('project_tasks')
+                        .update(taskData)
+                        .eq('id', editingTaskId);
+                    
+                    if (error) throw error;
+                    console.log('Task updated successfully');
+                } else {
+                    // CREATE new task
+                    taskData.project_id = projectId;
+                    taskData.status = 'pending';
+                    taskData.created_by = currentUserEmail;
+                    
+                    const { data, error } = await supabase
+                        .from('project_tasks')
+                        .insert([taskData])
+                        .select();
+                    
+                    if (error) throw error;
+                    console.log('Task created successfully:', data);
+                }
+                
+                // Reset form and modal
+                closeModal('taskModal');
+                this.reset();
+                delete this.dataset.editingTaskId;
+                document.querySelector('#taskModal .modal-title').textContent = 'Add New Task';
+                document.querySelector('#taskModal button[type="submit"]').textContent = 'Create Task';
+                
+                // Reload tasks
+                loadRecentTasks(projectId);
+                loadAllTasks(projectId);
+                
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task. Please try again.');
+            }
+        });
+
+        document.getElementById('inviteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                email: document.getElementById('inviteEmail').value,
+                role: document.getElementById('inviteRole').value,
+                message: document.getElementById('inviteMessage').value
+            };
+            
+            console.log('Invitation sent:', formData);
+            alert('Invitation sent successfully!');
+            closeModal('inviteModal');
+            this.reset();
+        });
+
+        document.getElementById('projectSettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Project settings saved successfully!');
+        });
+
+        // Save all changes
+        function saveAllChanges() {
+            alert('All changes saved successfully!');
+        }
+
+        // Delete project
+        function deleteProject() {
+            if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                if (confirm('This will permanently delete all project data. Type "DELETE" to confirm.')) {
+                    alert('Project deletion would be processed here.');
+                }
+            }
+        }
+
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal(this.id);
+                }
+            });
+        });
+
+        // Initialize Supabase
+        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Get project ID from URL
+        function getProjectIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load project data
+        async function loadProjectData() {
+            const projectId = getProjectIdFromUrl();
+            
+            if (!projectId) {
+                alert('No project ID found. Redirecting to projects page.');
+                window.location.href = 'dcf_projects_home.html';
+                return;
+            }
+
+            try {
+                const { data: project, error } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('id', projectId)
+                    .single();
+
+                if (error || !project) {
+                    alert('Project not found. Redirecting to projects page.');
+                    window.location.href = 'dcf_projects_home.html';
+                    return;
+                }
+
+                // Update page title and navigation
+                document.getElementById('manageProjectTitle').textContent = project.title;
+                document.title = `Manage ${project.title} - DCF Hungary`;
+                
+                // Update View Project button link
+                document.getElementById('viewProjectBtn').href = `dcf_project_detail.html?id=${projectId}`;
+                
+                // Load project settings form with real data
+                loadProjectSettings(project);
+                
+                // Load project statistics
+                loadProjectStats(project);
+                
+                // Load recent tasks
+                loadRecentTasks(project.id);
+                
+                // Load all tasks
+                loadAllTasks(project.id);
+                
+            } catch (error) {
+                console.error('Error loading project:', error);
+                alert('Error loading project data.');
+            }
+        }
+
+        // Load project settings into form
+        function loadProjectSettings(project) {
+            document.getElementById('projectTitle').value = project.title || '';
+            document.getElementById('projectDescription').value = project.description || '';
+            document.getElementById('projectCategory').value = project.category || '';
+            document.getElementById('projectStatus').value = project.status || 'active';
+            document.getElementById('projectTags').value = project.skills || '';
+            document.getElementById('projectVisibility').value = 'public'; // Default since not in table
+            
+            // Store project data for later use
+            window.currentProject = project;
+        }
+
+        // Generate initials from name
+        function generateInitials(name) {
+            if (!name) return 'PM';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Load team members
+        async function loadTeamMembers(project) {
+            const teamList = document.getElementById('teamList');
+            const authorInitials = generateInitials(project.author_name);
+            
+            try {
+                // Get team members from database
+                const { data: members, error } = await supabase
+                    .from('project_members')
+                    .select('*')
+                    .eq('project_id', project.id)
+                    .order('joined_at', { ascending: true });
+
+                if (error) throw error;
+
+                let teamHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Owner</div>
+                        </div>
+                        <div class="role-badge role-leader">Owner</div>
+                        <div class="member-actions">
+                            <button class="btn btn-secondary btn-small">Profile</button>
+                        </div>
+                    </div>
+                `;
+
+                // Add team members from database
+                if (members && members.length > 0) {
+                    members.forEach(member => {
+                        const memberInitials = generateInitials(member.user_name);
+                        teamHTML += `
+                            <div class="team-member">
+                                <div class="member-avatar">${memberInitials}</div>
+                                <div class="member-info">
+                                    <div class="member-name">${member.user_name || member.user_email}</div>
+                                    <div class="member-role">${member.role || 'Member'}</div>
+                                </div>
+                                <div class="role-badge role-member">${member.role || 'Member'}</div>
+                                <div class="member-actions">
+                                    <button class="btn btn-secondary btn-small">Profile</button>
+                                    <button class="btn btn-danger btn-small" onclick="removeMember('${member.id}')">Remove</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // Show empty state if no team members
+                    teamHTML += `
+                        <div class="empty-state" style="padding: 2rem; text-align: center;">
+                            <h3>No Team Members Yet</h3>
+                            <p>Invite collaborators to join your project team.</p>
+                            <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Team Member</button>
+                        </div>
+                    `;
+                }
+
+                teamList.innerHTML = teamHTML;
+
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                teamList.innerHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Owner</div>
+                        </div>
+                        <div class="role-badge role-leader">Owner</div>
+                    </div>
+                    <div class="empty-state" style="padding: 2rem; text-align: center;">
+                        <h3>No Team Members Yet</h3>
+                        <p>Invite collaborators to join your project team.</p>
+                        <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Team Member</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Load project statistics
+        async function loadProjectStats(project) {
+            const projectId = project.id;
+            
+            // Get file count
+            let fileCount = 0;
+            try {
+                const { data: files } = await supabase
+                    .from('project_files')
+                    .select('id')
+                    .eq('project_id', projectId);
+                fileCount = files ? files.length : 0;
+            } catch (error) {
+                console.log('Error loading file count:', error);
+            }
+            
+            // Calculate days active
+            const createdDate = new Date(project.created_at);
+            const today = new Date();
+            const daysActive = Math.ceil((today - createdDate) / (1000 * 60 * 60 * 24));
+            
+            // Update stats display
+            const statsContainer = document.getElementById('projectStats');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-number">${fileCount}</div>
+                    <div class="stat-label">Project Files</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">Team Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-number">${daysActive}</div>
+                    <div class="stat-label">Days Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-number">${project.status || 'active'}</div>
+                    <div class="stat-label">Status</div>
+                </div>
+            `;
+        }
+
+        // Load recent tasks
+        async function loadRecentTasks(projectId) {
+            try {
+                const { data: tasks, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                const tasksList = document.getElementById('recentTasksList');
+                
+                if (error || !tasks || tasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Tasks Yet</h3>
+                            <p>Create your first task to start tracking project progress.</p>
+                            <button class="btn btn-primary" onclick="openTaskModal()">Add First Task</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                tasksList.innerHTML = tasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTaskStatus('${task.id}')">
+                            ${task.status === 'completed' ? '✓' : '□'}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-title ${task.status === 'completed' ? 'completed' : ''}">${task.title}</div>
+                            <div class="task-meta">
+                                <span>Due: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</span>
+                                <span>Assigned to: ${task.assigned_to || 'Unassigned'}</span>
+                                <span>Priority: ${task.priority || 'Medium'}</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editTask('${task.id}')">Edit</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteTask('${task.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('recentTasksList').innerHTML = '<div>Error loading tasks</div>';
+            }
+        }
+
+        // Load all tasks (for Tasks tab)
+        async function loadAllTasks(projectId) {
+            try {
+                const { data: tasks, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false });
+
+                const tasksList = document.getElementById('allTasksList');
+                
+                if (error || !tasks || tasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Tasks Yet</h3>
+                            <p>Create tasks to organize and track your project work.</p>
+                            <button class="btn btn-primary" onclick="openTaskModal()">Create First Task</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                tasksList.innerHTML = tasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTaskStatus('${task.id}')">
+                            ${task.status === 'completed' ? '✓' : '□'}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-title ${task.status === 'completed' ? 'completed' : ''}">${task.title}</div>
+                            <div class="task-meta">
+                                <span>Due: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</span>
+                                <span>Assigned to: ${task.assigned_to || 'Unassigned'}</span>
+                                <span>Priority: ${task.priority || 'Medium'}</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editTask('${task.id}')">Edit</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteTask('${task.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading all tasks:', error);
+                document.getElementById('allTasksList').innerHTML = '<div>Error loading tasks</div>';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressBar();
+            loadProjectData();
+            
+            // Force master JS initialization
+            setTimeout(() => {
+                if (window.loadPageAvatars) {
+                    window.loadPageAvatars();
+                }
+                if (window.updateUserDropdownInfo) {
+                    window.updateUserDropdownInfo();
+                }
+            }, 100);
+        });
+
+        // Edit task functionality - FIXED
+        async function editTask(taskId) {
+            try {
+                // Get task data from database
+                const { data: task, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Populate the form with existing data
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description || '';
+                document.getElementById('taskAssignee').value = task.assigned_to || '';
+                document.getElementById('taskPriority').value = task.priority || 'medium';
+                document.getElementById('taskDueDate').value = task.due_date || '';
+                
+                // Change modal title and button text
+                document.querySelector('#taskModal .modal-title').textContent = 'Edit Task';
+                document.querySelector('#taskModal button[type="submit"]').textContent = 'Update Task';
+                
+                // Store the task ID for updating
+                document.getElementById('taskForm').dataset.editingTaskId = taskId;
+                
+                // Open the modal
+                document.getElementById('taskModal').classList.add('active');
+                
+            } catch (error) {
+                console.error('Error loading task for editing:', error);
+                alert('Error loading task data. Please try again.');
+            }
+        }
+
+        // Delete task functionality
+        function deleteTask(taskId) {
+            showConfirmDialog('Delete Task', 'Are you sure you want to delete this task? This action cannot be undone.', async () => {
+                try {
+                    const { error } = await supabase
+                        .from('project_tasks')
+                        .delete()
+                        .eq('id', taskId);
+                    
+                    if (error) throw error;
+                    
+                    console.log('Task deleted successfully');
+                    
+                    // Reload tasks
+                    const projectId = getProjectIdFromUrl();
+                    loadRecentTasks(projectId);
+                    loadAllTasks(projectId);
+                    
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                    alert('Error deleting task. Please try again.');
+                }
+            });
+        }
+
+        // Toggle task completion - FIXED
+        async function toggleTaskStatus(taskId) {
+            try {
+                // Get current task status from database
+                const { data: task, error: fetchError } = await supabase
+                    .from('project_tasks')
+                    .select('status')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+                
+                const { error } = await supabase
+                    .from('project_tasks')
+                    .update({ status: newStatus })
+                    .eq('id', taskId);
+                
+                if (error) throw error;
+                
+                // Reload tasks to reflect changes
+                const projectId = getProjectIdFromUrl();
+                loadRecentTasks(projectId);
+                loadAllTasks(projectId);
+                
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        }
+
+        // User menu functionality handled by master JS
+        // Custom confirmation dialog
+        let confirmCallback = null;
+        
+        function showConfirmDialog(title, message, callback) {
+            // Create modal if it doesn't exist
+            if (!document.getElementById('confirmModal')) {
+                const modalHTML = `
+                    <div class="modal" id="confirmModal">
+                        <div class="modal-content" style="max-width: 400px;">
+                            <div class="modal-header">
+                                <h2 class="modal-title" id="confirmTitle">Confirm Action</h2>
+                            </div>
+                            <div style="padding: 0 0 1.5rem 0;">
+                                <p id="confirmMessage" style="color: #666; line-height: 1.6; margin: 0;"></p>
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                                <button type="button" class="btn btn-danger" onclick="executeConfirmedAction()">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+            
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+        
+        function executeConfirmedAction() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirmModal();
+        }
+        // Remove team member functionality
+        async function removeMember(memberId) {
+            showConfirmDialog('Remove Team Member', 'Are you sure you want to remove this team member from the project?', async () => {
+                try {
+                    const { error } = await supabase
+                        .from('project_members')
+                        .delete()
+                        .eq('id', memberId);
+                    
+                    if (error) throw error;
+                    
+                    console.log('Team member removed successfully');
+                    
+                    // Reload team members
+                    const projectId = getProjectIdFromUrl();
+                    const { data: project } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .eq('id', projectId)
+                        .single();
+                    
+                    if (project) {
+                        loadTeamMembers(project);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error removing team member:', error);
+                    alert('Error removing team member. Please try again.');
+                }
+            });
+        }
+    </script>
+<script src="dcf-master-consolidated.js"></script>
+</body>
+</html>
