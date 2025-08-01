@@ -1331,50 +1331,61 @@
             alert('File upload functionality would be implemented here.');
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // Form submissions
+                // Form submissions
         document.getElementById('taskForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const projectId = getProjectIdFromUrl();
             const currentUserEmail = localStorage.getItem('dcf_user_email');
-            const currentUserName = localStorage.getItem('dcf_user_name');
+            const editingTaskId = this.dataset.editingTaskId;
             
             const taskData = {
-                project_id: projectId, // This should already be a UUID string
                 title: document.getElementById('taskTitle').value.trim(),
                 description: document.getElementById('taskDescription').value.trim() || null,
                 assigned_to: document.getElementById('taskAssignee').value || null,
                 priority: document.getElementById('taskPriority').value,
-                due_date: document.getElementById('taskDueDate').value || null,
-                status: 'pending',
-                created_by: currentUserEmail
+                due_date: document.getElementById('taskDueDate').value || null
             };
             
-            console.log('About to insert task:', taskData);
-            
             try {
-                const { data, error } = await supabase
-                    .from('project_tasks')
-                    .insert([taskData])
-                    .select();
+                if (editingTaskId) {
+                    // UPDATE existing task
+                    const { error } = await supabase
+                        .from('project_tasks')
+                        .update(taskData)
+                        .eq('id', editingTaskId);
+                    
+                    if (error) throw error;
+                    console.log('Task updated successfully');
+                } else {
+                    // CREATE new task
+                    taskData.project_id = projectId;
+                    taskData.status = 'pending';
+                    taskData.created_by = currentUserEmail;
+                    
+                    const { data, error } = await supabase
+                        .from('project_tasks')
+                        .insert([taskData])
+                        .select();
+                    
+                    if (error) throw error;
+                    console.log('Task created successfully:', data);
+                }
                 
-                if (error) throw error;
-                
-                console.log('Task created successfully:', data);
+                // Reset form and modal
                 closeModal('taskModal');
                 this.reset();
+                delete this.dataset.editingTaskId;
+                document.querySelector('#taskModal .modal-title').textContent = 'Add New Task';
+                document.querySelector('#taskModal button[type="submit"]').textContent = 'Create Task';
                 
-                // Reload tasks to show the new one
+                // Reload tasks
                 loadRecentTasks(projectId);
                 loadAllTasks(projectId);
                 
             } catch (error) {
-                console.error('Error creating task:', error);
-                alert('Error creating task. Please try again.');
+                console.error('Error saving task:', error);
+                alert('Error saving task. Please try again.');
             }
         });
 
@@ -1508,7 +1519,7 @@
             const teamList = document.getElementById('teamList');
             const authorInitials = generateInitials(project.author_name);
             
-            teamList.innerHTML = `
+            te3amList.innerHTML = `
                 <div class="team-member">
                     <div class="member-avatar">${authorInitials}</div>
                     <div class="member-info">
@@ -1595,7 +1606,7 @@
 
                 tasksList.innerHTML = tasks.map(task => `
                     <div class="task-item">
-                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTask(this, '${task.id}')">
+                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTaskStatus('${task.id}')">
                             ${task.status === 'completed' ? '✓' : '□'}
                         </div>
                         <div class="task-content">
@@ -1642,7 +1653,7 @@
 
                 tasksList.innerHTML = tasks.map(task => `
                     <div class="task-item">
-                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTask(this, '${task.id}')">
+                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTaskStatus('${task.id}')">
                             ${task.status === 'completed' ? '✓' : '□'}
                         </div>
                         <div class="task-content">
@@ -1682,9 +1693,39 @@
             }, 100);
         });
 
-        // Edit task functionality
-        function editTask(taskId) {
-            alert(`Edit task functionality coming soon! Task ID: ${taskId}`);
+        // Edit task functionality - FIXED
+        async function editTask(taskId) {
+            try {
+                // Get task data from database
+                const { data: task, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Populate the form with existing data
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description || '';
+                document.getElementById('taskAssignee').value = task.assigned_to || '';
+                document.getElementById('taskPriority').value = task.priority || 'medium';
+                document.getElementById('taskDueDate').value = task.due_date || '';
+                
+                // Change modal title and button text
+                document.querySelector('#taskModal .modal-title').textContent = 'Edit Task';
+                document.querySelector('#taskModal button[type="submit"]').textContent = 'Update Task';
+                
+                // Store the task ID for updating
+                document.getElementById('taskForm').dataset.editingTaskId = taskId;
+                
+                // Open the modal
+                document.getElementById('taskModal').classList.add('active');
+                
+            } catch (error) {
+                console.error('Error loading task for editing:', error);
+                alert('Error loading task data. Please try again.');
+            }
         }
 
         // Delete task functionality
@@ -1712,12 +1753,20 @@
             }
         }
 
-        // Toggle task completion
-        async function toggleTask(element, taskId) {
-            const isCompleted = element.classList.contains('completed');
-            const newStatus = isCompleted ? 'pending' : 'completed';
-            
+        // Toggle task completion - FIXED
+        async function toggleTaskStatus(taskId) {
             try {
+                // Get current task status from database
+                const { data: task, error: fetchError } = await supabase
+                    .from('project_tasks')
+                    .select('status')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+                
                 const { error } = await supabase
                     .from('project_tasks')
                     .update({ status: newStatus })
