@@ -2038,6 +2038,39 @@
             a.click();
             document.body.removeChild(a);
         }
+        // Load project activity
+        async function loadProjectActivity(projectId) {
+            try {
+                const { data: activities, error } = await supabase
+                    .from('project_activities')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                const activityFeed = document.getElementById('activityFeed');
+                
+                if (error || !activities || activities.length === 0) {
+                    activityFeed.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Activity Yet</h3>
+                            <p>Project activity will appear here as team members complete tasks and make updates.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                activityFeed.innerHTML = activities.map(activity => {
+                    const timeAgo = getTimeAgo(activity.created_at);
+                    const activityIcons = {
+                        'task_created': '✅',
+                        'task_completed': '🎉',
+                        'task_updated': '📝',
+                        'file_uploaded': '📁',
+                        'member_joined': '👥',
+                        'project_updated': '⚙️'
+                    };
+                    const icon = activityIcons[activity.activity_type] || '
     </script>
 <script src="dcf-master-consolidated.js"></script>
 </body>
