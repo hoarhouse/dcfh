@@ -1250,6 +1250,11 @@
             if (sectionId === 'team' && window.currentProject) {
                 loadTeamMembers(window.currentProject);
             }
+            
+            // Load project files when Resources section is shown
+            if (sectionId === 'resources' && window.currentProject) {
+                loadProjectFiles(window.currentProject.id);
+            }
         }
 
         // Task management
@@ -1901,6 +1906,64 @@
                     alert('Error removing team member. Please try again.');
                 }
             });
+        }
+        // Load project files for Resources tab
+        async function loadProjectFiles(projectId) {
+            const resourcesContainer = document.querySelector('#resources .empty-state').parentElement;
+            
+            try {
+                const { data: files, error } = await supabase
+                    .from('project_files')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false });
+
+                if (error || !files || files.length === 0) {
+                    resourcesContainer.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Resources Yet</h3>
+                            <p>Upload documents, research papers, and other resources to help your team collaborate effectively.</p>
+                            <button class="btn btn-primary" onclick="openUploadModal()">Upload First Resource</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const filesList = files.map(file => {
+                    const extension = file.file_name.split('.').pop().toLowerCase();
+                    const icons = {
+                        'pdf': '📄', 'doc': '📝', 'docx': '📝', 'ppt': '📊', 'pptx': '📊',
+                        'xls': '📈', 'xlsx': '📈', 'txt': '📃', 'zip': '🗜️', 'rar': '🗜️',
+                        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+                        'mp4': '🎥', 'avi': '🎥', 'mov': '🎥'
+                    };
+                    const icon = icons[extension] || '📎';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e5e5e5;">
+                            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 8px; margin-right: 1rem; font-size: 1.5rem;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${file.file_name}</div>
+                                <div style="color: #666; font-size: 0.9rem;">
+                                    Uploaded ${new Date(file.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-small">📥 Download</button>
+                        </div>
+                    `;
+                }).join('');
+
+                resourcesContainer.innerHTML = filesList;
+
+            } catch (error) {
+                console.error('Error loading project files:', error);
+                resourcesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Error Loading Files</h3>
+                        <p>There was an error loading project files. Please try again.</p>
+                    </div>
+                `;
+            }
         }
     </script>
 <script src="dcf-master-consolidated.js"></script>
