@@ -1339,6 +1339,37 @@
         return name.substring(0, 2).toUpperCase();
     }
 
+    // Update sidebar stats with real data
+    async function updateStats() {
+        try {
+            // Get total projects count
+            const { data: allProjects, error: totalError } = await supabase
+                .from('projects')
+                .select('id, status, author_email');
+            
+            if (totalError) throw totalError;
+            
+            const totalProjects = allProjects.length;
+            
+            // Get current user's projects
+            const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
+            const myProjects = allProjects.filter(project => project.author_email === currentUserEmail);
+            
+            // Get active projects
+            const activeProjects = allProjects.filter(project => project.status === 'active' || project.status === 'recruiting');
+            
+            // Update the DOM
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers[0].textContent = totalProjects; // Total Projects
+            statNumbers[1].textContent = myProjects.length; // My Projects  
+            statNumbers[2].textContent = '0'; // Following (no table for this yet)
+            statNumbers[3].textContent = activeProjects.length; // Active
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }
+
     // Tab switching
     function switchTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -1354,6 +1385,7 @@
     // Load projects when page loads
     document.addEventListener('DOMContentLoaded', function() {
         loadProjects();
+        updateStats();
     });
 </script>
        <script src="dcf-master-consolidated.js"></script>
