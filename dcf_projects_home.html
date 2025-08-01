@@ -1240,226 +1240,83 @@
     </div>
 
     <script>
-        // Tab switching
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
+    // Initialize Supabase
+    const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Category filtering
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                const category = this.dataset.category;
-                const projects = document.querySelectorAll('.project-card');
-                
-                projects.forEach(project => {
-                    if (category === 'all' || project.dataset.category === category) {
-                        project.style.display = 'block';
-                    } else {
-                        project.style.display = 'none';
-                    }
-                });
-            });
-        });
+    // Simple project loading - back to basics
+    async function loadProjects() {
+        const container = document.getElementById('projectsContainer');
+        
+        try {
+            const { data: projects, error } = await supabase
+                .from('projects')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        // Search functionality
-        document.querySelector('.search-input').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const projects = document.querySelectorAll('.project-card');
-            
-            projects.forEach(project => {
-                const title = project.querySelector('.project-title').textContent.toLowerCase();
-                const description = project.querySelector('.project-description').textContent.toLowerCase();
-                
-                if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                    project.style.display = 'block';
-                } else {
-                    project.style.display = 'none';
-                }
-            });
-        });
+            if (error) throw error;
 
-        // Modal functions
-        function openCreateModal() {
-            document.getElementById('createModal').classList.add('active');
-        }
-
-        function closeCreateModal() {
-            document.getElementById('createModal').classList.remove('active');
-        }
-
-        // Form submission
-        document.getElementById('createForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                title: document.getElementById('projectTitle').value,
-                description: document.getElementById('projectDescription').value,
-                category: document.getElementById('projectCategory').value,
-                location: document.getElementById('projectLocation').value,
-                skills: Array.from(document.querySelectorAll('input[name="skills"]:checked')).map(cb => cb.value),
-                goals: document.getElementById('projectGoals').value
-            };
-            
-            console.log('New project:', formData);
-            alert('Project created successfully!');
-            closeCreateModal();
-            this.reset();
-        });
-
-        // Close modal when clicking outside
-        document.getElementById('createModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeCreateModal();
-            }
-        });
-
-        // Join/Leave project functionality
-        document.querySelectorAll('.project-card .btn-small').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                if (this.textContent.includes('Join')) {
-                    this.textContent = 'Following';
-                    this.classList.remove('btn-primary');
-                    this.classList.add('btn-secondary');
-                } else if (this.textContent.includes('Following')) {
-                    this.textContent = 'Join Project';
-                    this.classList.remove('btn-secondary');
-                    this.classList.add('btn-primary');
-                }
-            });
-        });
-
-        // Initialize Supabase
-        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        // Load projects from database
-        async function loadProjects() {
-            const container = document.getElementById('projectsContainer');
-            const loading = document.getElementById('loadingProjects');
-            
-            try {
-                const { data: projects, error } = await supabase
-                    .from('projects')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                loading.style.display = 'none';
-
-                if (projects.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No Projects Yet</h3>
-                            <p>Be the first to create a project!</p>
-                            <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create First Project</button>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Get file counts for all projects
-                const projectsWithFiles = await Promise.all(projects.map(async (project) => {
-                    try {
-                        const { data: files } = await supabase
-                            .from('project_files')
-                            .select('file_name')
-                            .eq('project_id', project.id);
-
-                        const fileArray = files || [];
-                        const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-                        
-                        const images = fileArray.filter(file => {
-                            const ext = file.file_name.split('.').pop().toLowerCase();
-                            return imageTypes.includes(ext);
-                        });
-                        
-                        const otherFiles = fileArray.filter(file => {
-                            const ext = file.file_name.split('.').pop().toLowerCase();
-                            return !imageTypes.includes(ext);
-                        });
-
-                        return {
-                            ...project,
-                            fileCount: otherFiles.length,
-                            imageCount: images.length,
-                            totalFiles: fileArray.length
-                        };
-                    } catch (error) {
-                        console.error('Error processing files for project:', project.id, error);
-                        return { ...project, fileCount: 0, imageCount: 0, totalFiles: 0 };
-                    }
-                }));
-
-                container.innerHTML = projectsWithFiles.map(project => `
-                    <div class="project-card" data-category="${project.category}" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'" style="cursor: pointer;">
-                        <div class="project-header">
-                            <div style="display: flex; align-items: center;">
-                                <div class="project-icon">📋</div>
-                                <div class="project-info">
-                                    <h3 class="project-title">${project.title}</h3>
-                                    <p class="project-meta">Led by ${project.author_name} • ${project.location}</p>
-                                </div>
+            container.innerHTML = projects.map(project => `
+                <div class="project-card" data-category="${project.category}" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'" style="cursor: pointer;">
+                    <div class="project-header">
+                        <div style="display: flex; align-items: center;">
+                            <div class="project-icon">📋</div>
+                            <div class="project-info">
+                                <h3 class="project-title">${project.title}</h3>
+                                <p class="project-meta">Led by ${project.author_name} • ${project.location}</p>
                             </div>
-                            <span class="status-badge status-${project.status}">${project.status}</span>
                         </div>
-                        <p class="project-description">${project.description}</p>
-                        <div class="project-tags">
-                            ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
-                        </div>
-                        ${project.totalFiles > 0 ? `
-                        <div class="project-files" style="margin: 1rem 0; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem; color: #666;">
-                            ${project.imageCount > 0 ? `📸 ${project.imageCount} image${project.imageCount > 1 ? 's' : ''}` : ''}
-                            ${project.imageCount > 0 && project.fileCount > 0 ? ' • ' : ''}
-                            ${project.fileCount > 0 ? `📎 ${project.fileCount} file${project.fileCount > 1 ? 's' : ''}` : ''}
-                        </div>
-                        ` : ''}
-                        <div class="project-footer">
-                            <div class="project-members">
-                                <div class="member-avatars">
-                                    <div class="member-avatar">${generateInitials(project.author_name)}</div>
-                                </div>
-                                <span class="member-count">1 member</span>
-                            </div>
-                            <button class="btn btn-primary btn-small">Join Project</button>
-                        </div>
+                        <span class="status-badge status-${project.status}">${project.status}</span>
                     </div>
-                `).join('');
+                    <p class="project-description">${project.description}</p>
+                    <div class="project-tags">
+                        ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
+                    </div>
+                    <div class="project-footer">
+                        <div class="project-members">
+                            <div class="member-avatars">
+                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                            </div>
+                            <span class="member-count">1 member</span>
+                        </div>
+                        <button class="btn btn-primary btn-small">Join Project</button>
+                    </div>
+                </div>
+            `).join('');
 
-            } catch (error) {
-                console.error('Error loading projects:', error);
-                loading.textContent = 'Failed to load projects';
-                container.innerHTML = '<div class="error">Failed to load projects. Please refresh the page.</div>';
-            }
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            container.innerHTML = '<div>Error loading projects</div>';
         }
+    }
 
-        function generateInitials(name) {
-            if (!name) return 'U';
-            const parts = name.split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            }
-            return name.substring(0, 2).toUpperCase();
+    function generateInitials(name) {
+        if (!name) return 'U';
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
         }
+        return name.substring(0, 2).toUpperCase();
+    }
 
-        // Load projects when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadProjects();
+    // Tab switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
         });
-    </script>
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Load projects when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProjects();
+    });
+</script>
        <script src="dcf-master-consolidated.js"></script>
 </body>
 </html>
