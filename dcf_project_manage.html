@@ -982,27 +982,8 @@
                         <button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button>
                     </div>
 
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon">✅</div>
-                            <div class="stat-number">4</div>
-                            <div class="stat-label">Tasks Completed</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">⏳</div>
-                            <div class="stat-number">7</div>
-                            <div class="stat-label">Tasks Remaining</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">👥</div>
-                            <div class="stat-number">6</div>
-                            <div class="stat-label">Team Members</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">📅</div>
-                            <div class="stat-number">45</div>
-                            <div class="stat-label">Days Active</div>
-                        </div>
+                    <div class="stats-grid" id="projectStats">
+                        <!-- Project statistics will be loaded dynamically -->
                     </div>
 
                     <div style="margin-bottom: 2rem;">
@@ -1162,83 +1143,8 @@
                         <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Member</button>
                     </div>
 
-                    <div class="team-list">
-                        <div class="team-member">
-                            <div class="member-avatar">SJ</div>
-                            <div class="member-info">
-                                <div class="member-name">Dr. Sarah Johnson</div>
-                                <div class="member-role">AI Ethics Researcher • Project Leader</div>
-                            </div>
-                            <div class="role-badge role-leader">Leader</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                            </div>
-                        </div>
-
-                        <div class="team-member">
-                            <div class="member-avatar">MA</div>
-                            <div class="member-info">
-                                <div class="member-name">Dr. Mary Aiken</div>
-                                <div class="member-role">Cyberpsychologist • Privacy Expert</div>
-                            </div>
-                            <div class="role-badge role-member">Member</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                                <button class="btn btn-danger btn-small">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="team-member">
-                            <div class="member-avatar">AK</div>
-                            <div class="member-info">
-                                <div class="member-name">Dr. Antal Kuthy</div>
-                                <div class="member-role">AI Technology Expert • Technical Advisor</div>
-                            </div>
-                            <div class="role-badge role-member">Member</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                                <button class="btn btn-danger btn-small">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="team-member">
-                            <div class="member-avatar">MT</div>
-                            <div class="member-info">
-                                <div class="member-name">Fr. Michael Torres</div>
-                                <div class="member-role">Theologian • Ethics Consultant</div>
-                            </div>
-                            <div class="role-badge role-contributor">Contributor</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                                <button class="btn btn-danger btn-small">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="team-member">
-                            <div class="member-avatar">SP</div>
-                            <div class="member-info">
-                                <div class="member-name">Sourabh Pagaria</div>
-                                <div class="member-role">Healthcare Technology Leader</div>
-                            </div>
-                            <div class="role-badge role-contributor">Contributor</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                                <button class="btn btn-danger btn-small">Remove</button>
-                            </div>
-                        </div>
-
-                        <div class="team-member">
-                            <div class="member-avatar">GS</div>
-                            <div class="member-info">
-                                <div class="member-name">Greg Sim</div>
-                                <div class="member-role">Cybersecurity Expert • Security Advisor</div>
-                            </div>
-                            <div class="role-badge role-contributor">Contributor</div>
-                            <div class="member-actions">
-                                <button class="btn btn-secondary btn-small">Profile</button>
-                                <button class="btn btn-danger btn-small">Remove</button>
-                            </div>
-                        </div>
+                    <div class="team-list" id="teamList">
+                        <!-- Team members will be loaded dynamically -->
                     </div>
                 </div>
 
@@ -1643,6 +1549,9 @@
                 // Load project settings form with real data
                 loadProjectSettings(project);
                 
+                // Load project statistics
+                loadProjectStats(project);
+                
             } catch (error) {
                 console.error('Error loading project:', error);
                 alert('Error loading project data.');
@@ -1657,6 +1566,86 @@
             document.getElementById('projectStatus').value = project.status || 'active';
             document.getElementById('projectTags').value = project.skills || '';
             document.getElementById('projectVisibility').value = 'public'; // Default since not in table
+            
+            // Load team members (just the project author for now)
+            loadTeamMembers(project);
+        }
+
+        // Generate initials from name
+        function generateInitials(name) {
+            if (!name) return 'PM';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Load team members
+        function loadTeamMembers(project) {
+            const teamList = document.getElementById('teamList');
+            const authorInitials = generateInitials(project.author_name);
+            
+            teamList.innerHTML = `
+                <div class="team-member">
+                    <div class="member-avatar">${authorInitials}</div>
+                    <div class="member-info">
+                        <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                        <div class="member-role">Project Owner</div>
+                    </div>
+                    <div class="role-badge role-leader">Owner</div>
+                    <div class="member-actions">
+                        <button class="btn btn-secondary btn-small">Profile</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load project statistics
+        async function loadProjectStats(project) {
+            const projectId = project.id;
+            
+            // Get file count
+            let fileCount = 0;
+            try {
+                const { data: files } = await supabase
+                    .from('project_files')
+                    .select('id')
+                    .eq('project_id', projectId);
+                fileCount = files ? files.length : 0;
+            } catch (error) {
+                console.log('Error loading file count:', error);
+            }
+            
+            // Calculate days active
+            const createdDate = new Date(project.created_at);
+            const today = new Date();
+            const daysActive = Math.ceil((today - createdDate) / (1000 * 60 * 60 * 24));
+            
+            // Update stats display
+            const statsContainer = document.getElementById('projectStats');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-number">${fileCount}</div>
+                    <div class="stat-label">Project Files</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">Team Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-number">${daysActive}</div>
+                    <div class="stat-label">Days Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-number">${project.status || 'active'}</div>
+                    <div class="stat-label">Status</div>
+                </div>
+            `;
         }
 
         // Initialize
