@@ -1625,7 +1625,7 @@ async function submitProjectFixed() {
             status: 'recruiting'
         };
         
-        // Save to Supabase
+        // Save project to database first
         const { data, error } = await window.projectSupabase
             .from('projects')
             .insert([dbData])
@@ -1636,50 +1636,77 @@ async function submitProjectFixed() {
         const projectId = data[0].id;
         console.log('Project saved to database:', data);
         
-        // Save files
+        // Upload and save images
         if (projectData.images && projectData.images.length > 0) {
-            console.log('Saving images to database:', projectData.images);
-            const imageRecords = projectData.images.map(image => ({
-                project_id: projectId,
-                file_name: image.name,
-                file_path: 'images/' + image.name,
-                file_size: image.data ? image.data.size : 0,
-                uploaded_by: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org'
-            }));
+            console.log('Uploading images to storage...');
             
-            const { error: imageError } = await window.projectSupabase
-                .from('project_files')
-                .insert(imageRecords);
-            
-            if (imageError) {
-                console.error('Error saving images:', imageError);
-            } else {
-                console.log('Images saved successfully');
+            for (const image of projectData.images) {
+                try {
+                    // Create unique filename
+                    const timestamp = Date.now();
+                    const uniqueFileName = `${projectId}_${timestamp}_${image.name}`;
+                    const filePath = `images/${uniqueFileName}`;
+                    
+                    // Upload to Supabase Storage
+                    const { data: uploadData, error: uploadError } = await window.projectSupabase.storage
+                        .from('project-files')
+                        .upload(filePath, image.data);
+                    
+                    if (uploadError) {
+                        console.error('Upload error:', uploadError);
+                        continue;
+                    }
+                    
+                    // Save to database
+                    await window.projectSupabase
+                        .from('project_files')
+                        .insert([{
+                            project_id: projectId,
+                            file_name: image.name,
+                            file_path: uploadData.path,
+                            file_size: image.data.size,
+                            uploaded_by: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org'
+                        }]);
+                    
+                } catch (fileError) {
+                    console.error('Error processing file:', fileError);
+                }
             }
         }
 
+        // Upload other files
         if (projectData.files && projectData.files.length > 0) {
-            console.log('Saving files to database:', projectData.files);
-            const fileRecords = projectData.files.map(file => ({
-                project_id: projectId,
-                file_name: file.name,
-                file_path: 'files/' + file.name,
-                file_size: file.data ? file.data.size : 0,
-                uploaded_by: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org'
-            }));
-            
-            const { error: fileError } = await window.projectSupabase
-                .from('project_files')
-                .insert(fileRecords);
-            
-            if (fileError) {
-                console.error('Error saving files:', fileError);
-            } else {
-                console.log('Files saved successfully');
+            for (const file of projectData.files) {
+                try {
+                    const timestamp = Date.now();
+                    const uniqueFileName = `${projectId}_${timestamp}_${file.name}`;
+                    const filePath = `files/${uniqueFileName}`;
+                    
+                    const { data: uploadData, error: uploadError } = await window.projectSupabase.storage
+                        .from('project-files')
+                        .upload(filePath, file.data);
+                    
+                    if (uploadError) {
+                        console.error('Upload error:', uploadError);
+                        continue;
+                    }
+                    
+                    await window.projectSupabase
+                        .from('project_files')
+                        .insert([{
+                            project_id: projectId,
+                            file_name: file.name,
+                            file_path: uploadData.path,
+                            file_size: file.data.size,
+                            uploaded_by: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org'
+                        }]);
+                    
+                } catch (fileError) {
+                    console.error('Error processing file:', fileError);
+                }
             }
         }
         
-        // Hide loading and redirect
         document.getElementById('loadingOverlay').style.display = 'none';
         window.location.href = 'dcf_projects_home.html';
         
