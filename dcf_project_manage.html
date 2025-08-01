@@ -996,46 +996,8 @@
 
                     <div>
                         <h3 style="margin-bottom: 1rem;">Recent Tasks</h3>
-                        <div class="task-list">
-                            <div class="task-item">
-                                <div class="task-checkbox completed">✓</div>
-                                <div class="task-content">
-                                    <div class="task-title completed">Research existing AI ethics frameworks</div>
-                                    <div class="task-meta">
-                                        <span>Due: Mar 15, 2025</span>
-                                        <span>Assigned to: Dr. Sarah Johnson</span>
-                                    </div>
-                                </div>
-                                <div class="task-actions">
-                                    <button class="btn btn-secondary btn-small">Edit</button>
-                                </div>
-                            </div>
-                            <div class="task-item">
-                                <div class="task-checkbox">□</div>
-                                <div class="task-content">
-                                    <div class="task-title">Draft patient privacy guidelines</div>
-                                    <div class="task-meta">
-                                        <span>Due: Mar 20, 2025</span>
-                                        <span>Assigned to: Dr. Mary Aiken</span>
-                                    </div>
-                                </div>
-                                <div class="task-actions">
-                                    <button class="btn btn-secondary btn-small">Edit</button>
-                                </div>
-                            </div>
-                            <div class="task-item">
-                                <div class="task-checkbox">□</div>
-                                <div class="task-content">
-                                    <div class="task-title">Create algorithmic transparency checklist</div>
-                                    <div class="task-meta">
-                                        <span>Due: Mar 25, 2025</span>
-                                        <span>Assigned to: Dr. Antal Kuthy</span>
-                                    </div>
-                                </div>
-                                <div class="task-actions">
-                                    <button class="btn btn-secondary btn-small">Edit</button>
-                                </div>
-                            </div>
+                        <div class="task-list" id="recentTasksList">
+                            <!-- Recent tasks will be loaded dynamically -->
                         </div>
                     </div>
                 </div>
@@ -1553,6 +1515,9 @@
                 // Load project statistics
                 loadProjectStats(project);
                 
+                // Load recent tasks
+                loadRecentTasks(project.id);
+                
             } catch (error) {
                 console.error('Error loading project:', error);
                 alert('Error loading project data.');
@@ -1647,6 +1612,54 @@
                     <div class="stat-label">Status</div>
                 </div>
             `;
+        }
+
+        // Load recent tasks
+        async function loadRecentTasks(projectId) {
+            try {
+                const { data: tasks, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                const tasksList = document.getElementById('recentTasksList');
+                
+                if (error || !tasks || tasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Tasks Yet</h3>
+                            <p>Create your first task to start tracking project progress.</p>
+                            <button class="btn btn-primary" onclick="openTaskModal()">Add First Task</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                tasksList.innerHTML = tasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" onclick="toggleTask(this, '${task.id}')">
+                            ${task.status === 'completed' ? '✓' : '□'}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-title ${task.status === 'completed' ? 'completed' : ''}">${task.title}</div>
+                            <div class="task-meta">
+                                <span>Due: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</span>
+                                <span>Assigned to: ${task.assigned_to || 'Unassigned'}</span>
+                                <span>Priority: ${task.priority || 'Medium'}</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editTask('${task.id}')">Edit</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('recentTasksList').innerHTML = '<div>Error loading tasks</div>';
+            }
         }
 
         // Initialize
