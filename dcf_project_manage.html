@@ -1599,9 +1599,65 @@
             });
         });
 
+        // Get project ID from URL
+        function getProjectIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load project data
+        async function loadProjectData() {
+            const projectId = getProjectIdFromUrl();
+            
+            if (!projectId) {
+                alert('No project ID found. Redirecting to projects page.');
+                window.location.href = 'dcf_projects_home.html';
+                return;
+            }
+
+            try {
+                const { data: project, error } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('id', projectId)
+                    .single();
+
+                if (error || !project) {
+                    alert('Project not found. Redirecting to projects page.');
+                    window.location.href = 'dcf_projects_home.html';
+                    return;
+                }
+
+                // Update page title and navigation
+                document.getElementById('manageProjectTitle').textContent = project.title;
+                document.title = `Manage ${project.title} - DCF Hungary`;
+                
+                // Update View Project button link
+                document.getElementById('viewProjectBtn').href = `dcf_project_detail.html?id=${projectId}`;
+                
+                // Load project settings form with real data
+                loadProjectSettings(project);
+                
+            } catch (error) {
+                console.error('Error loading project:', error);
+                alert('Error loading project data.');
+            }
+        }
+
+        // Load project settings into form
+        function loadProjectSettings(project) {
+            document.getElementById('projectTitle').value = project.title || '';
+            document.getElementById('projectDescription').value = project.description || '';
+            document.getElementById('projectCategory').value = project.category || '';
+            document.getElementById('projectStatus').value = project.status || 'active';
+            document.getElementById('projectTags').value = project.skills || '';
+            document.getElementById('projectVisibility').value = 'public'; // Default since not in table
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateProgressBar();
+            loadProjectData();
             
             // Force master JS initialization
             setTimeout(() => {
