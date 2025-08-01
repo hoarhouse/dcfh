@@ -1110,7 +1110,7 @@
                     fileStatElement.textContent = files.length;
                 }
 
-                // Display files with icons
+                // Display files with thumbnails and view functionality
                 filesContainer.innerHTML = files.map(file => {
                     const extension = file.file_name.split('.').pop().toLowerCase();
                     const icons = {
@@ -1127,14 +1127,20 @@
                     
                     return `
                         <div style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e5e5e5;">
-                            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 8px; margin-right: 1rem; font-size: 1.5rem;">${icon}</div>
+                            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 8px; margin-right: 1rem; font-size: 1.5rem; overflow: hidden;">
+                                ${['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension) ? 
+                                    `<img src="https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${file.file_path || file.file_name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none'; this.nextSibling.style.display='flex';">
+                                     <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 1.5rem;">${icon}</div>` : 
+                                    icon}
+                            </div>
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${file.file_name}</div>
                                 <div style="color: #666; font-size: 0.9rem;">
                                     ${formatFileSize(file.file_size || 0)} • Uploaded by ${file.uploaded_by || 'Unknown'} on ${formatDate(file.uploaded_at)}
                                 </div>
                             </div>
-                            <button class="btn btn-secondary btn-sm" onclick="downloadFile('${file.file_name}')">📥 Download</button>
+                            <button class="btn btn-primary btn-small" onclick="viewFile('${file.file_name}', '${file.file_path || file.file_name}')">👁️ View</button>
+                            <button class="btn btn-secondary btn-small" onclick="downloadFile('${file.file_name}', '${file.file_path || file.file_name}')">📥 Download</button>
                         </div>
                     `;
                 }).join('');
@@ -1159,9 +1165,78 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Download file placeholder
-        function downloadFile(fileName) {
-            alert(`Download functionality for ${fileName} will be implemented soon.`);
+        // File viewer and download functions
+        function viewFile(fileName, filePath) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+            const videoTypes = ['mp4', 'avi', 'mov', 'webm'];
+            const pdfTypes = ['pdf'];
+            const textTypes = ['txt', 'md', 'csv', 'json', 'xml', 'log'];
+            const docTypes = ['doc', 'docx', 'rtf'];
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.cssText = 'display: flex; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; position: fixed; top: 0; left: 0; right: 0; bottom: 0;';
+            
+            let content = '';
+            
+            if (imageTypes.includes(extension)) {
+                content = `
+                    <div style="max-width: 90vw; max-height: 90vh; position: relative; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${filePath || fileName}" alt="${fileName}" style="max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                        <button onclick="this.closest('.modal').remove()" style="position: absolute; top: -40px; right: 0; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px;">×</button>
+                    </div>
+                `;
+            } else if (videoTypes.includes(extension)) {
+                content = `
+                    <div style="max-width: 90vw; max-height: 90vh; position: relative;">
+                        <video controls style="max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                            <source src="https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${filePath || fileName}" type="video/${extension}">
+                        </video>
+                        <button onclick="this.closest('.modal').remove()" style="position: absolute; top: -40px; right: 0; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px;">×</button>
+                    </div>
+                `;
+            } else if (pdfTypes.includes(extension)) {
+                content = `
+                    <div style="max-width: 90vw; max-height: 90vh; position: relative;">
+                        <iframe src="https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${filePath || fileName}" style="width: 100%; height: 90vh; border: none; border-radius: 8px;"></iframe>
+                        <button onclick="this.closest('.modal').remove()" style="position: absolute; top: -40px; right: 0; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px;">×</button>
+                    </div>
+                `;
+            } else {
+                content = `
+                    <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">📎</div>
+                        <h3 style="margin-bottom: 1rem;">${fileName}</h3>
+                        <p style="color: #666; margin-bottom: 2rem;">This file type cannot be previewed in the browser.</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <button onclick="this.closest('.modal').remove()" class="btn btn-secondary">Close</button>
+                            <button onclick="downloadFile('${fileName}', '${filePath}')" class="btn btn-primary">📥 Download</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            modal.innerHTML = content;
+            document.body.appendChild(modal);
+            
+            // Close on click outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function downloadFile(fileName, filePath) {
+            const url = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${filePath || fileName}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         
