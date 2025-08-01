@@ -1380,6 +1380,96 @@
         });
         document.getElementById(tabName).classList.add('active');
         event.target.classList.add('active');
+        
+        // Load dynamic content for My Projects and Following tabs
+        if (tabName === 'my') {
+            loadMyProjects();
+        } else if (tabName === 'following') {
+            loadFollowingProjects();
+        }
+    }
+
+    // Load user's projects
+    async function loadMyProjects() {
+        const container = document.querySelector('#my .projects-grid') || createMyProjectsContainer();
+        const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
+        
+        try {
+            const { data: projects, error } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('author_email', currentUserEmail)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Projects Yet</h3>
+                        <p>You haven't created any projects yet.</p>
+                        <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create Your First Project</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = projects.map(project => `
+                <div class="my-project-card">
+                    <div class="my-project-header">
+                        <div>
+                            <h3 class="project-title">${project.title}</h3>
+                            <p class="project-meta">Leading • Created ${formatDate(project.created_at)} • 1 member</p>
+                        </div>
+                        <div class="my-project-actions">
+                            <button class="btn btn-secondary btn-small">📊 Analytics</button>
+                            <button class="btn btn-secondary btn-small">⚙️ Settings</button>
+                            <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'">📝 Manage</button>
+                        </div>
+                    </div>
+                    <p class="project-description">${project.description}</p>
+                    <div class="project-tags">
+                        ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
+                    </div>
+                    <div class="project-footer">
+                        <div class="project-members">
+                            <div class="member-avatars">
+                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                            </div>
+                            <span class="member-count">1 member</span>
+                        </div>
+                        <span class="status-badge status-${project.status}">${project.status}</span>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading my projects:', error);
+            container.innerHTML = '<div>Error loading your projects</div>';
+        }
+    }
+
+    function createMyProjectsContainer() {
+        const myTab = document.getElementById('my');
+        const existingContainer = myTab.querySelector('.projects-grid');
+        if (existingContainer) return existingContainer;
+        
+        const container = document.createElement('div');
+        container.className = 'projects-grid';
+        myTab.appendChild(container);
+        return container;
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) return 'yesterday';
+        if (diffDays < 30) return `${diffDays} days ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
     }
 
     // Load projects when page loads
