@@ -1315,12 +1315,8 @@
             };
             
             console.log('New project:', formData);
-            
-            // Here you would typically send to backend
             alert('Project created successfully!');
             closeCreateModal();
-            
-            // Reset form
             this.reset();
         });
 
@@ -1346,12 +1342,9 @@
                     this.classList.add('btn-primary');
                 }
             });
-   });
+        });
 
-        
-
-       
-    // Initialize Supabase
+        // Initialize Supabase
         const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -1382,52 +1375,23 @@
                     return;
                 }
 
-                // Load projects from database
-        async function loadProjects() {
-            const container = document.getElementById('projectsContainer');
-            const loading = document.getElementById('loadingProjects');
-            
-            try {
-                // Get projects with file counts
-                const { data: projects, error } = await supabase
-                    .from('projects')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                loading.style.display = 'none';
-
-                if (projects.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No Projects Yet</h3>
-                            <p>Be the first to create a project!</p>
-                            <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create First Project</button>
-                        </div>
-                    `;
-                    return;
-                }
-
                 // Get file counts for all projects
                 const projectsWithFiles = await Promise.all(projects.map(async (project) => {
                     try {
-                        const { data: files, error: filesError } = await supabase
+                        const { data: files } = await supabase
                             .from('project_files')
-                            .select('file_name, file_type')
+                            .select('file_name')
                             .eq('project_id', project.id);
 
-                        if (filesError) {
-                            console.error('Error loading files for project:', project.id, filesError);
-                            return { ...project, fileCount: 0, imageCount: 0, fileTypes: [] };
-                        }
-
+                        const fileArray = files || [];
                         const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-                        const images = files.filter(file => {
+                        
+                        const images = fileArray.filter(file => {
                             const ext = file.file_name.split('.').pop().toLowerCase();
                             return imageTypes.includes(ext);
                         });
-                        const otherFiles = files.filter(file => {
+                        
+                        const otherFiles = fileArray.filter(file => {
                             const ext = file.file_name.split('.').pop().toLowerCase();
                             return !imageTypes.includes(ext);
                         });
@@ -1436,7 +1400,7 @@
                             ...project,
                             fileCount: otherFiles.length,
                             imageCount: images.length,
-                            totalFiles: files.length
+                            totalFiles: fileArray.length
                         };
                     } catch (error) {
                         console.error('Error processing files for project:', project.id, error);
@@ -1482,12 +1446,7 @@
             } catch (error) {
                 console.error('Error loading projects:', error);
                 loading.textContent = 'Failed to load projects';
-            }
-        }
-
-            } catch (error) {
-                console.error('Error loading projects:', error);
-                loading.textContent = 'Failed to load projects';
+                container.innerHTML = '<div class="error">Failed to load projects. Please refresh the page.</div>';
             }
         }
 
@@ -1504,7 +1463,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadProjects();
         });
-       
     </script>
        <script src="dcf-master-consolidated.js"></script>
 </body>
