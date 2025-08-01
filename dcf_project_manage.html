@@ -1488,23 +1488,84 @@
         }
 
         // Load team members
-        function loadTeamMembers(project) {
+        async function loadTeamMembers(project) {
             const teamList = document.getElementById('teamList');
             const authorInitials = generateInitials(project.author_name);
             
-teamList.innerHTML = `
-                <div class="team-member">
-                    <div class="member-avatar">${authorInitials}</div>
-                    <div class="member-info">
-                        <div class="member-name">${project.author_name || 'Project Creator'}</div>
-                        <div class="member-role">Project Owner</div>
+            try {
+                // Get team members from database
+                const { data: members, error } = await supabase
+                    .from('project_members')
+                    .select('*')
+                    .eq('project_id', project.id)
+                    .order('joined_at', { ascending: true });
+
+                if (error) throw error;
+
+                let teamHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Owner</div>
+                        </div>
+                        <div class="role-badge role-leader">Owner</div>
+                        <div class="member-actions">
+                            <button class="btn btn-secondary btn-small">Profile</button>
+                        </div>
                     </div>
-                    <div class="role-badge role-leader">Owner</div>
-                    <div class="member-actions">
-                        <button class="btn btn-secondary btn-small">Profile</button>
+                `;
+
+                // Add team members from database
+                if (members && members.length > 0) {
+                    members.forEach(member => {
+                        const memberInitials = generateInitials(member.user_name);
+                        teamHTML += `
+                            <div class="team-member">
+                                <div class="member-avatar">${memberInitials}</div>
+                                <div class="member-info">
+                                    <div class="member-name">${member.user_name || member.user_email}</div>
+                                    <div class="member-role">${member.role || 'Member'}</div>
+                                </div>
+                                <div class="role-badge role-member">${member.role || 'Member'}</div>
+                                <div class="member-actions">
+                                    <button class="btn btn-secondary btn-small">Profile</button>
+                                    <button class="btn btn-danger btn-small" onclick="removeMember('${member.id}')">Remove</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // Show empty state if no team members
+                    teamHTML += `
+                        <div class="empty-state" style="padding: 2rem; text-align: center;">
+                            <h3>No Team Members Yet</h3>
+                            <p>Invite collaborators to join your project team.</p>
+                            <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Team Member</button>
+                        </div>
+                    `;
+                }
+
+                teamList.innerHTML = teamHTML;
+
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                teamList.innerHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Owner</div>
+                        </div>
+                        <div class="role-badge role-leader">Owner</div>
                     </div>
-                </div>
-            `;
+                    <div class="empty-state" style="padding: 2rem; text-align: center;">
+                        <h3>No Team Members Yet</h3>
+                        <p>Invite collaborators to join your project team.</p>
+                        <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Team Member</button>
+                    </div>
+                `;
+            }
         }
 
         // Load project statistics
@@ -1800,6 +1861,37 @@ teamList.innerHTML = `
                 confirmCallback();
             }
             closeConfirmModal();
+        }
+        // Remove team member functionality
+        async function removeMember(memberId) {
+            showConfirmDialog('Remove Team Member', 'Are you sure you want to remove this team member from the project?', async () => {
+                try {
+                    const { error } = await supabase
+                        .from('project_members')
+                        .delete()
+                        .eq('id', memberId);
+                    
+                    if (error) throw error;
+                    
+                    console.log('Team member removed successfully');
+                    
+                    // Reload team members
+                    const projectId = getProjectIdFromUrl();
+                    const { data: project } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .eq('id', projectId)
+                        .single();
+                    
+                    if (project) {
+                        loadTeamMembers(project);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error removing team member:', error);
+                    alert('Error removing team member. Please try again.');
+                }
+            });
         }
     </script>
 <script src="dcf-master-consolidated.js"></script>
