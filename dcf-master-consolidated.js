@@ -550,6 +550,12 @@ const quickActionsConfig = {
         { icon: '💬', text: 'Discussion Board', action: 'dcf_discussion_board.html', type: 'secondary' },
         { icon: '🔍', text: 'Advanced Search', action: 'javascript:advancedSearch()', type: 'secondary' }
     ],
+    'dcf_project_detail.html': [
+        { icon: '🤝', text: 'Join Project', action: 'javascript:joinProject()', type: 'primary' },
+        { icon: '⭐', text: 'Follow Project', action: 'javascript:toggleFollow()', type: 'secondary' },
+        { icon: '🌍', text: 'All Projects', action: 'dcf_projects_home.html', type: 'secondary' },
+        { icon: '📁', text: 'My Projects', action: 'dcf_projects.html', type: 'secondary' }
+    ],
     'default': [
         { icon: '🏠', text: 'Dashboard', action: 'dcf_member_home.html', type: 'secondary' },
         { icon: '🚀', text: 'Create Project', action: 'dcf_create_project.html', type: 'primary' },
@@ -594,8 +600,11 @@ function getCurrentPageType() {
     const path = window.location.pathname.toLowerCase();
     const filename = path.split('/').pop();
     
-    if (filename.includes('projects_home') || filename.includes('project_detail')) {
+    if (filename.includes('projects_home')) {
         return 'projects';
+    }
+    if (filename.includes('project_detail')) {
+        return 'project_detail';
     }
     if (filename.includes('create_project')) {
         return 'create_project';
