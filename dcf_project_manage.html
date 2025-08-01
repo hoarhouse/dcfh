@@ -1336,21 +1336,45 @@
         }
 
         // Form submissions
-        document.getElementById('taskForm').addEventListener('submit', function(e) {
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const formData = {
+            const projectId = getProjectIdFromUrl();
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            const currentUserName = localStorage.getItem('dcf_user_name');
+            
+            const taskData = {
+                project_id: projectId,
                 title: document.getElementById('taskTitle').value,
-                description: document.getElementById('taskDescription').value,
-                assignee: document.getElementById('taskAssignee').value,
+                description: document.getElementById('taskDescription').value || null,
+                assigned_to: document.getElementById('taskAssignee').value || null,
                 priority: document.getElementById('taskPriority').value,
-                dueDate: document.getElementById('taskDueDate').value
+                due_date: document.getElementById('taskDueDate').value || null,
+                status: 'pending',
+                created_by: currentUserEmail
             };
             
-            console.log('New task:', formData);
-            alert('Task created successfully!');
-            closeModal('taskModal');
-            this.reset();
+            try {
+                const { data, error } = await supabase
+                    .from('project_tasks')
+                    .insert([taskData])
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log('Task created:', data);
+                alert('Task created successfully!');
+                closeModal('taskModal');
+                this.reset();
+                
+                // Reload tasks to show the new one
+                loadRecentTasks(projectId);
+                loadAllTasks(projectId);
+                
+            } catch (error) {
+                console.error('Error creating task:', error);
+                alert('Error creating task. Please try again.');
+            }
         });
 
         document.getElementById('inviteForm').addEventListener('submit', function(e) {
