@@ -1071,11 +1071,16 @@
         let uploadedImages = [];
         // Note: isDropdownOpen is handled by dcf-master-consolidated.js
 
+        // Initialize Supabase client immediately
+const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+window.projectSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         // Make functions globally accessible
         window.nextStep = nextStep;
         window.previousStep = previousStep;
         window.goToStep = goToStep;
-        window.submitProject = submitProject;
+window.submitProject = submitProjectFixed;
         window.removeUploadedFile = removeUploadedFile;
 
          function nextStep() {
@@ -1344,87 +1349,10 @@ projectData.images = uploadedImages || [];
             return categoryLabels[category] || category;
         }
 
-        async function submitProject() {
-            saveCurrentStepData();
-            
-            // Show loading
-            document.getElementById('loadingOverlay').style.display = 'flex';
-            
-            try {
-                // Initialize Supabase if not already done
-                if (!window.projectSupabase) {
-                    const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-                    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-                    window.projectSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                }
+        
                 
-                // Prepare data for database
-                const dbData = {
-                    title: projectData.title,
-                    description: projectData.description,
-                    category: projectData.category,
-                    location: projectData.location,
-                    funding: projectData.funding || 'no_funding',
-                    skills: projectData.skills ? projectData.skills.join(', ') : '',
-                    external_links: projectData.resources || '',
-                    notes: projectData.additionalNotes || '',
-                    author_email: localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org',
-                    author_name: localStorage.getItem('dcf_user_name') || 'DCF Member',
-                    status: 'recruiting'
-                };
-                
-                // Save to Supabase
-                const { data, error } = await window.projectSupabase
-                    .from('projects')
-                    .insert([dbData])
-                    .select();
-                
-                if (error) throw error;
-                
-                const projectId = data[0].id;
-                console.log('Project saved to database:', data);
-                
-                // Save files if any exist
-                if (projectData.images && projectData.images.length > 0) {
-                    const imageRecords = projectData.images.map(image => ({
-                        project_id: projectId,
-                        file_name: image.name,
-                        file_type: image.data.type,
-                        file_size: image.data.size
-                    }));
-                    
-                    const { error: imageError } = await window.projectSupabase
-                        .from('project_files')
-                        .insert(imageRecords);
-                    
-                    if (imageError) console.error('Error saving images:', imageError);
-                }
-                
-                if (projectData.files && projectData.files.length > 0) {
-                    const fileRecords = projectData.files.map(file => ({
-                        project_id: projectId,
-                        file_name: file.name,
-                        file_type: file.data.type,
-                        file_size: file.data.size
-                    }));
-                    
-                    const { error: fileError } = await window.projectSupabase
-                        .from('project_files')
-                        .insert(fileRecords);
-                    
-                    if (fileError) console.error('Error saving files:', fileError);
-                }
-                
-                // Hide loading and redirect
-                document.getElementById('loadingOverlay').style.display = 'none';
-                window.location.href = 'dcf_projects_home.html';
-                
-            } catch (error) {
-                console.error('Error saving project:', error);
-                document.getElementById('loadingOverlay').style.display = 'none';
-                alert('Failed to create project. Please try again.');
-            }
-        }
+               
+           
 
         // File upload handling - COMPLETELY REWRITTEN
         function initializeUploads() {
@@ -1674,7 +1602,7 @@ projectData.images = uploadedImages || [];
                 });
             });
         }
-        // FIXED FILE SAVING FUNCTION - ADD THIS ANYWHERE IN THE SCRIPT SECTION
+        // COMPLETE FIXED FILE SAVING FUNCTION
 async function submitProjectFixed() {
     saveCurrentStepData();
     
@@ -1682,13 +1610,6 @@ async function submitProjectFixed() {
     document.getElementById('loadingOverlay').style.display = 'flex';
     
     try {
-        // Initialize Supabase if not already done
-        if (!window.projectSupabase) {
-            const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-            window.projectSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        }
-        
         // Prepare data for database
         const dbData = {
             title: projectData.title,
@@ -1715,7 +1636,7 @@ async function submitProjectFixed() {
         const projectId = data[0].id;
         console.log('Project saved to database:', data);
         
-        // Save files - FIXED VERSION
+        // Save files
         if (projectData.images && projectData.images.length > 0) {
             console.log('Saving images to database:', projectData.images);
             const imageRecords = projectData.images.map(image => ({
