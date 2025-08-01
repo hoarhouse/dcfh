@@ -1382,7 +1382,69 @@
                     return;
                 }
 
-                container.innerHTML = projects.map(project => `
+                // Load projects from database
+        async function loadProjects() {
+            const container = document.getElementById('projectsContainer');
+            const loading = document.getElementById('loadingProjects');
+            
+            try {
+                // Get projects with file counts
+                const { data: projects, error } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                loading.style.display = 'none';
+
+                if (projects.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Projects Yet</h3>
+                            <p>Be the first to create a project!</p>
+                            <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create First Project</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Get file counts for all projects
+                const projectsWithFiles = await Promise.all(projects.map(async (project) => {
+                    try {
+                        const { data: files, error: filesError } = await supabase
+                            .from('project_files')
+                            .select('file_name, file_type')
+                            .eq('project_id', project.id);
+
+                        if (filesError) {
+                            console.error('Error loading files for project:', project.id, filesError);
+                            return { ...project, fileCount: 0, imageCount: 0, fileTypes: [] };
+                        }
+
+                        const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+                        const images = files.filter(file => {
+                            const ext = file.file_name.split('.').pop().toLowerCase();
+                            return imageTypes.includes(ext);
+                        });
+                        const otherFiles = files.filter(file => {
+                            const ext = file.file_name.split('.').pop().toLowerCase();
+                            return !imageTypes.includes(ext);
+                        });
+
+                        return {
+                            ...project,
+                            fileCount: otherFiles.length,
+                            imageCount: images.length,
+                            totalFiles: files.length
+                        };
+                    } catch (error) {
+                        console.error('Error processing files for project:', project.id, error);
+                        return { ...project, fileCount: 0, imageCount: 0, totalFiles: 0 };
+                    }
+                }));
+
+                container.innerHTML = projectsWithFiles.map(project => `
                     <div class="project-card" data-category="${project.category}" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'" style="cursor: pointer;">
                         <div class="project-header">
                             <div style="display: flex; align-items: center;">
@@ -1397,8 +1459,14 @@
                         <p class="project-description">${project.description}</p>
                         <div class="project-tags">
                             ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
-
                         </div>
+                        ${project.totalFiles > 0 ? `
+                        <div class="project-files" style="margin: 1rem 0; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem; color: #666;">
+                            ${project.imageCount > 0 ? `📸 ${project.imageCount} image${project.imageCount > 1 ? 's' : ''}` : ''}
+                            ${project.imageCount > 0 && project.fileCount > 0 ? ' • ' : ''}
+                            ${project.fileCount > 0 ? `📎 ${project.fileCount} file${project.fileCount > 1 ? 's' : ''}` : ''}
+                        </div>
+                        ` : ''}
                         <div class="project-footer">
                             <div class="project-members">
                                 <div class="member-avatars">
@@ -1410,6 +1478,12 @@
                         </div>
                     </div>
                 `).join('');
+
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                loading.textContent = 'Failed to load projects';
+            }
+        }
 
             } catch (error) {
                 console.error('Error loading projects:', error);
