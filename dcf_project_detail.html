@@ -695,12 +695,8 @@
                 <div class="logo-icon"></div>
                 Domus Communis Foundation
             </a>
-            <ul class="nav-menu">
-                <li><a href="dcf_member_home.html">Home</a></li>
-                <li><a href="dcf_members_directory.html">Members</a></li>
-                <li><a href="dcf_projects_home.html" class="active">Projects</a></li>
-                <li><a href="dcf_events_calendar.html">Events</a></li>
-                <li><a href="dcf_resources_library.html">Resources</a></li>
+             <ul class="nav-menu" id="navMenu">
+                <!-- Navigation populated by master JS -->
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
@@ -709,8 +705,8 @@
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
                             <div class="dropdown-info">
-                                <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
-                                <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                                <div class="dropdown-name" id="dropdownUserName">DCF Member</div>
+                                <div class="dropdown-email" id="dropdownUserEmail">member@dcfhungary.org</div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
@@ -891,8 +887,10 @@
                             <h2>Project Files</h2>
                             <button class="btn btn-primary">📁 Upload File</button>
                         </div>
-                        <div style="text-align: center; padding: 3rem; color: #666;">
-                            <p>No files have been uploaded for this project yet.</p>
+                        <div id="filesContainer">
+                            <div id="filesLoading" style="text-align: center; padding: 3rem; color: #666;">
+                                Loading files...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -969,6 +967,7 @@
                 }
 
                 displayProject(project);
+                loadProjectFiles(projectId);
                 
             } catch (error) {
                 console.error('Error loading project:', error);
@@ -1057,7 +1056,90 @@
                 </div>
             `;
         }
+ // Load project files
+        async function loadProjectFiles(projectId) {
+            try {
+                const { data: files, error } = await supabase
+                    .from('project_files')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false });
 
+                const filesContainer = document.getElementById('filesContainer');
+                const filesLoading = document.getElementById('filesLoading');
+                
+                if (filesLoading) filesLoading.style.display = 'none';
+
+                if (error || !files || files.length === 0) {
+                    filesContainer.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #666;">
+                            <p>No files have been uploaded for this project yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Update file count in stats
+                const fileStatElement = document.querySelector('.stat-card .stat-number');
+                if (fileStatElement && fileStatElement.textContent === '0') {
+                    fileStatElement.textContent = files.length;
+                }
+
+                // Display files with icons
+                filesContainer.innerHTML = files.map(file => {
+                    const extension = file.file_name.split('.').pop().toLowerCase();
+                    const icons = {
+                        'pdf': '📄',
+                        'doc': '📝', 'docx': '📝',
+                        'ppt': '📊', 'pptx': '📊',
+                        'xls': '📈', 'xlsx': '📈',
+                        'txt': '📃',
+                        'zip': '🗜️', 'rar': '🗜️',
+                        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+                        'mp4': '🎥', 'avi': '🎥', 'mov': '🎥'
+                    };
+                    const icon = icons[extension] || '📎';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e5e5e5;">
+                            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 8px; margin-right: 1rem; font-size: 1.5rem;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${file.file_name}</div>
+                                <div style="color: #666; font-size: 0.9rem;">
+                                    ${formatFileSize(file.file_size || 0)} • Uploaded ${formatDate(file.created_at)}
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="downloadFile('${file.file_name}')">📥 Download</button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading files:', error);
+                const filesContainer = document.getElementById('filesContainer');
+                filesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #dc3545;">
+                        <p>Error loading files. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Format file size helper
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Download file placeholder
+        function downloadFile(fileName) {
+            alert(`Download functionality for ${fileName} will be implemented soon.`);
+        }
+
+        
         // Show error state
         function showError() {
             document.getElementById('loadingState').style.display = 'none';
