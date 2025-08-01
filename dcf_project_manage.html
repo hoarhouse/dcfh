@@ -1744,8 +1744,8 @@ teamList.innerHTML = `
         }
 
         // Delete task functionality
-        async function deleteTask(taskId) {
-            if (confirm('Are you sure you want to delete this task?')) {
+        function deleteTask(taskId) {
+            showConfirmDialog('Delete Task', 'Are you sure you want to delete this task? This action cannot be undone.', async () => {
                 try {
                     const { error } = await supabase
                         .from('project_tasks')
@@ -1765,7 +1765,7 @@ teamList.innerHTML = `
                     console.error('Error deleting task:', error);
                     alert('Error deleting task. Please try again.');
                 }
-            }
+            });
         }
 
         // Toggle task completion - FIXED
@@ -1800,6 +1800,48 @@ teamList.innerHTML = `
         }
 
         // User menu functionality handled by master JS
+        // Custom confirmation dialog
+        let confirmCallback = null;
+        
+        function showConfirmDialog(title, message, callback) {
+            // Create modal if it doesn't exist
+            if (!document.getElementById('confirmModal')) {
+                const modalHTML = `
+                    <div class="modal" id="confirmModal">
+                        <div class="modal-content" style="max-width: 400px;">
+                            <div class="modal-header">
+                                <h2 class="modal-title" id="confirmTitle">Confirm Action</h2>
+                            </div>
+                            <div style="padding: 0 0 1.5rem 0;">
+                                <p id="confirmMessage" style="color: #666; line-height: 1.6; margin: 0;"></p>
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                                <button type="button" class="btn btn-danger" onclick="executeConfirmedAction()">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+            
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+        
+        function executeConfirmedAction() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirmModal();
+        }
     </script>
 <script src="dcf-master-consolidated.js"></script>
 </body>
