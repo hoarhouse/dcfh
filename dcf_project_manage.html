@@ -1393,14 +1393,43 @@
             this.reset();
         });
 
-        document.getElementById('projectSettingsForm').addEventListener('submit', function(e) {
+        document.getElementById('projectSettingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Project settings saved successfully!');
+            
+            const projectId = getProjectIdFromUrl();
+            const updatedData = {
+                title: document.getElementById('projectTitle').value.trim(),
+                description: document.getElementById('projectDescription').value.trim(),
+                category: document.getElementById('projectCategory').value,
+                status: document.getElementById('projectStatus').value,
+                skills: document.getElementById('projectTags').value.trim()
+            };
+            
+            try {
+                const { error } = await supabase
+                    .from('projects')
+                    .update(updatedData)
+                    .eq('id', projectId);
+                
+                if (error) throw error;
+                
+                console.log('Project settings updated successfully');
+                alert('Project settings saved successfully!');
+                
+                // Update the project title in the header
+                document.getElementById('manageProjectTitle').textContent = updatedData.title;
+                document.title = `Manage ${updatedData.title} - DCF Hungary`;
+                
+            } catch (error) {
+                console.error('Error saving project settings:', error);
+                alert('Error saving project settings. Please try again.');
+            }
         });
 
         // Save all changes
         function saveAllChanges() {
-            alert('All changes saved successfully!');
+            // Trigger the settings form submission
+            document.getElementById('projectSettingsForm').dispatchEvent(new Event('submit'));
         }
 
         // Delete project
