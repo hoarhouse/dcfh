@@ -155,7 +155,7 @@ async function loadPageAvatars() {
    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName === 'undefined' || userName.toString() === 'undefined') {
         console.log('Found invalid userName, fetching from database...');
         
-        if (!masterSupabase) {
+        if (!window.masterSupabase) {
             initializeSupabase();
             await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -223,7 +223,7 @@ async function loadPageAvatars() {
     if (emailElement) emailElement.textContent = userEmail;
     
     // Force initialize Supabase
-    if (!masterSupabase) {
+    if (!window.masterSupabase) {
         initializeSupabase();
         await new Promise(resolve => setTimeout(resolve, 500)); // Wait longer
     }
@@ -233,7 +233,7 @@ async function loadPageAvatars() {
     try {
         if (masterSupabase && window.supabase) {
             console.log('Attempting to load avatar for page load:', userEmail);
-            const { data, error } = await masterSupabase
+            const { data, error } = await window.masterSupabase
                 .from('user_profiles')
                 .select('avatar_url')
                 .eq('email', userEmail)
@@ -1009,13 +1009,13 @@ async function validateUsername(username) {
     }
     
     // Check availability
-    if (!masterSupabase) {
+   if (!window.masterSupabase) {
         initializeSupabase();
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     try {
-        const { data, error } = await masterSupabase
+        const { data, error } = await window.masterSupabase
             .from('user_profiles')
             .select('username')
             .eq('username', username.toLowerCase())
