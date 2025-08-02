@@ -1018,7 +1018,7 @@ async function validateUsername(username) {
         const { data, error } = await masterSupabase
             .from('user_profiles')
             .select('username')
-            .ilike('username', username.toLowerCase())
+            .eq('username', username.toLowerCase())
             .single();
         
         if (data) {
