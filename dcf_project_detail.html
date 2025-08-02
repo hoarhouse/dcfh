@@ -863,10 +863,11 @@
                     <div class="tab-content" id="tasks">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h2>Project Tasks</h2>
-                            <button class="btn btn-primary">+ Add Task</button>
                         </div>
-                        <div style="text-align: center; padding: 3rem; color: #666;">
-                            <p>No tasks have been created for this project yet.</p>
+                        <div id="tasksContainer">
+                            <div id="tasksLoading" style="text-align: center; padding: 3rem; color: #666;">
+                                Loading tasks...
+                            </div>
                         </div>
                     </div>
 
@@ -968,6 +969,7 @@
 
                 displayProject(project);
                 loadProjectFiles(projectId);
+                loadProjectTasks(projectId);
                 
             } catch (error) {
                 console.error('Error loading project:', error);
@@ -1079,10 +1081,56 @@
                 </div>
             `;
             
-                        // Manage button handled above
+            // Manage button handled above
         }
- // Load project files
-        async function loadProjectFiles(projectId) {
+
+        // Load project tasks
+        async function loadProjectTasks(projectId) {
+            try {
+                const { data: tasks, error } = await supabase
+                    .from('project_tasks')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false });
+
+                const tasksContainer = document.getElementById('tasksContainer');
+                const tasksLoading = document.getElementById('tasksLoading');
+                
+                if (tasksLoading) tasksLoading.style.display = 'none';
+
+                if (error || !tasks || tasks.length === 0) {
+                    tasksContainer.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #666;">
+                            <p>No tasks have been created for this project yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Update task count in stats
+                const taskStatElements = document.querySelectorAll('.stat-card .stat-number');
+                if (taskStatElements[1] && taskStatElements[1].textContent === '0') {
+                    taskStatElements[1].textContent = tasks.length;
+                }
+
+                // Display tasks
+                tasksContainer.innerHTML = tasks.map(task => `
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 1rem; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#333'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e5e5e5'; this.style.background='white'">
+                        <div style="width: 20px; height: 20px; border: 2px solid #e5e5e5; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; ${task.status === 'completed' ? 'background: #28a745; border-color: #28a745; color: white;' : ''}" onclick="toggleTaskStatus('${task.id}')">
+                            ${task.status === 'completed' ? '✓' : ''}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem; ${task.status === 'completed' ? 'text-decoration: line-through; color: #666;' : ''}">${task.title}</div>
+                            <div style="color: #666; font-size: 0.8rem; display: flex; gap: 1rem;">
+                                <span>Due: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</span>
+                                <span>Assigned to: ${task.assigned_to || 'Unassigned'}</span>
+                                <span>Priority: ${task.priority || 'Medium'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
             try {
                 const { data: files, error } = await supabase
                     .from('project_files')
@@ -1248,6 +1296,55 @@
             document.getElementById('errorState').style.display = 'block';
         }
 
+        // Toggle task completion status
+        async function toggleTaskStatus(taskId) {
+            try {
+                // Get current task status from database
+                const { data: task, error: fetchError } = await supabase
+                    .from('project_tasks')
+                    .select('status, title')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+                
+                const { error } = await supabase
+                    .from('project_tasks')
+                    .update({ status: newStatus })
+                    .eq('id', taskId);
+                
+                if (error) throw error;
+                
+                // Log activity
+                const projectId = getProjectIdFromUrl();
+                const currentUser = localStorage.getItem('dcf_user_name') || 'User';
+                const currentEmail = localStorage.getItem('dcf_user_email') || 'user@dcfhungary.org';
+                
+                const activityType = newStatus === 'completed' ? 'task_completed' : 'task_updated';
+                const activityDescription = newStatus === 'completed' 
+                    ? `Completed task: ${task.title}`
+                    : `Reopened task: ${task.title}`;
+                
+                await supabase
+                    .from('project_activity')
+                    .insert([{
+                        project_id: projectId,
+                        user_email: currentEmail,
+                        user_name: currentUser,
+                        action_type: activityType,
+                        action_description: activityDescription
+                    }]);
+                
+                // Reload tasks to reflect changes
+                loadProjectTasks(projectId);
+                
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        }
+
         // Tab switching functionality
         function switchTab(tabName) {
             // Hide all tab contents
@@ -1266,11 +1363,13 @@
             // Add active class to clicked tab button
             event.target.classList.add('active');
             
-            // Load files when Files tab is clicked
-            if (tabName === 'files') {
-                const projectId = getProjectIdFromUrl();
-                if (projectId) {
+            // Load content when tabs are clicked
+            const projectId = getProjectIdFromUrl();
+            if (projectId) {
+                if (tabName === 'files') {
                     loadProjectFiles(projectId);
+                } else if (tabName === 'tasks') {
+                    loadProjectTasks(projectId);
                 }
             }
         }
