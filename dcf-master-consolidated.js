@@ -60,14 +60,16 @@ function handleDocumentClick(event) {
     }
 }
 
-if (!error && profile) {
-                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
-                    userUsername = profile.username;
-                    localStorage.setItem('dcf_user_name', userName);
-                    if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
-                    console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
-                }
-    // If userName is missing, try to fetch from database first
+// COMPLETELY FIXED FUNCTION - This handles all undefined cases properly
+async function updateUserDropdownInfo() {
+    // Get user data with multiple fallbacks
+    let userName = localStorage.getItem('dcf_user_name');
+    let userEmail = localStorage.getItem('dcf_user_email');
+    const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+    
+    console.log('updateUserDropdownInfo called with:', { userName, userEmail });
+    
+    // Handle cases where localStorage returns literal "undefined" string
     if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
         console.log('updateUserDropdownInfo: userName missing, fetching from database...');
         
@@ -80,13 +82,15 @@ if (!error && profile) {
             try {
                 const { data: profile, error } = await masterSupabase
                     .from('user_profiles')
-                    .select('name, first_name, last_name')
+                    .select('name, first_name, last_name, username')
                     .eq('email', userEmail)
                     .single();
                 
                 if (!error && profile) {
                     userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    const userUsername = profile.username;
                     localStorage.setItem('dcf_user_name', userName);
+                    if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
                     console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
                 }
             } catch (error) {
@@ -94,13 +98,13 @@ if (!error && profile) {
             }
         }
         
-        // Final fallback - NO Sarah Johnson
+        // Final fallback
         if (!userName || userName === 'null' || userName === 'undefined') {
             userName = userEmail ? userEmail.split('@')[0].replace(/[._]/g, ' ') : 'DCF Member';
         }
     }
 
-    // Final fallback for email - NO hardcoded sarah.johnson email
+    // Final fallback for email
     if (!userEmail || userEmail === 'null' || userEmail === 'undefined') {
         userEmail = 'member@dcfhungary.org';
     }
@@ -118,94 +122,25 @@ if (!error && profile) {
     }
 
     const initials = generateInitials(userName);
-    // Be more specific - find the avatar in the top navigation
     const avatarElement = document.querySelector('.user-menu .user-avatar') || document.getElementById('userAvatar');
-    
-    console.log('Found avatar element:', avatarElement);
-    console.log('Current avatar content:', avatarElement ? avatarElement.textContent : 'none');
-    console.log('Current avatar background:', avatarElement ? avatarElement.style.background : 'none');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    // Initialize Supabase and wait longer for it to be ready
-    if (!masterSupabase) {
-        initializeSupabase();
-        // Wait longer and retry until Supabase is available
-        let retries = 0;
-        while (!masterSupabase && retries < 10) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            retries++;
-        }
-    }
-
-    // Try to load profile picture from database
-    let avatarUrl = null;
-    try {
-        if (masterSupabase && window.supabase) {
-            console.log('Attempting to load avatar for:', userEmail);
-            const { data, error } = await masterSupabase
-                .from('user_profiles')
-                .select('avatar_url')
-                .eq('email', userEmail)
-                .single();
-            
-            if (error) {
-                console.log('Database error:', error);
-            }
-            
-            if (data && data.avatar_url) {
-                avatarUrl = data.avatar_url;
-                console.log('Found avatar URL:', avatarUrl);
-            } else {
-                console.log('No avatar URL found in database');
-            }
-        } else {
-            console.log('Supabase not available');
-        }
-    } catch (error) {
-        console.log('Could not load avatar from database:', error);
-    }
-
-    // Update both avatars (top right and dropdown)
+    // Set initials first as fallback
     if (avatarElement) {
-        if (avatarUrl) {
-            console.log('Setting avatar image for top right');
-            // Show profile picture  
-            avatarElement.style.background = '';  // Remove gradient FIRST
-            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            avatarElement.style.backgroundSize = 'cover';
-            avatarElement.style.backgroundPosition = 'center';
-            avatarElement.style.boxShadow = '0 0 10px #00ff00';  // Keep green glow
-            avatarElement.textContent = '';  // Remove initials
-        } else {
-            console.log('Setting initials for top right');
-            // Show initials with green styling
-            avatarElement.textContent = initials;
-            avatarElement.style.backgroundImage = '';
-            avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-            avatarElement.style.boxShadow = '0 0 10px #00ff00';
-        }
+        avatarElement.textContent = initials;
+        avatarElement.style.backgroundImage = '';
+        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        avatarElement.style.boxShadow = '0 0 10px #00ff00';
     }
     
     if (dropdownAvatarElement) {
-        if (avatarUrl) {
-            console.log('Setting avatar image for dropdown');
-            // Show profile picture
-            dropdownAvatarElement.style.background = '';  // Remove gradient FIRST
-            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            dropdownAvatarElement.style.backgroundSize = 'cover';
-            dropdownAvatarElement.style.backgroundPosition = 'center';
-            dropdownAvatarElement.textContent = '';  // Remove initials
-        } else {
-            console.log('Setting initials for dropdown');
-            // Show initials with green styling
-            dropdownAvatarElement.textContent = initials;
-            dropdownAvatarElement.style.backgroundImage = '';
-            dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-        }
+        dropdownAvatarElement.textContent = initials;
+        dropdownAvatarElement.style.backgroundImage = '';
+        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
     }
+}
 
-
-// COMPLETELY FIXED FUNCTION - This handles all undefined cases properly
+// COMPLETELY FIXED FUNCTION - This handles all undefined cases properly  
 async function loadPageAvatars() {
     console.log('Loading page avatars...');
     
