@@ -73,7 +73,7 @@ if (!error && profile) {
         
         if (!masterSupabase) {
             initializeSupabase();
-            await new Promise(resolve => setTimeout(resolve, 200));
+            setTimeout(() => {}, 200);
         }
         
         if (masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
