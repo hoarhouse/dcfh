@@ -895,28 +895,10 @@ function handlePublicPageAuth() {
             }
             
             // Set initial avatar properly with our fixed function
-            setTimeout(() => {
-                const userName = localStorage.getItem('dcf_user_name') || 'DCF Member';
-                const initials = generateInitials(userName);
-                const avatarElement = document.getElementById('userAvatar');
-                const dropdownAvatar = document.querySelector('.dropdown-avatar');
-                
-                if (avatarElement) {
-                    avatarElement.textContent = initials;
-                    avatarElement.style.backgroundImage = '';
-                    avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-                    avatarElement.style.boxShadow = '0 0 10px #00ff00';
-                }
-                
-                if (dropdownAvatar) {
-                    dropdownAvatar.textContent = initials;
-                    dropdownAvatar.style.backgroundImage = '';
-                    dropdownAvatar.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-                }
-                
-                updateUserDropdownInfo(); // This will try to load avatar from database
+            setTimeout(async () => {
+                await loadPageAvatars(); // Use the full avatar loading function
                 addNavigationItems(); // Add menu items and logout
-            }, 10);
+            }, 100);
         }
     }
 }
