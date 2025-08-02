@@ -78,9 +78,9 @@ async function updateUserDropdownInfo() {
             setTimeout(() => {}, 200);
         }
         
-        if (masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
+        if (window.masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
             try {
-                const { data: profile, error } = await masterSupabase
+                const { data: profile, error } = await window.masterSupabase
                     .from('user_profiles')
                     .select('name, first_name, last_name, username')
                     .eq('email', userEmail)
@@ -160,9 +160,9 @@ async function loadPageAvatars() {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        if (masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
+        if (window.masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
             try {
-                const { data: profile, error } = await masterSupabase
+                const { data: profile, error } = await window.masterSupabase
                     .from('user_profiles')
                     .select('name, first_name, last_name')
                     .eq('email', userEmail)
@@ -231,7 +231,7 @@ async function loadPageAvatars() {
     // Try to load profile picture
     let avatarUrl = null;
     try {
-        if (masterSupabase && window.supabase) {
+        if (window.masterSupabase && window.supabase) {
             console.log('Attempting to load avatar for page load:', userEmail);
             const { data, error } = await window.masterSupabase
                 .from('user_profiles')
@@ -1019,7 +1019,7 @@ async function validateUsername(username) {
             .from('user_profiles')
             .select('username')
             .eq('username', username.toLowerCase())
-            .single();
+            .maybeSingle();
         
         if (data) {
             return { valid: false, message: 'Username is already taken' };
