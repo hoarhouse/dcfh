@@ -1031,10 +1031,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (pageType === 'member') {
         // ONLY redirect if it's actually a member page AND user not logged in
-        if (!isLoggedIn) {
-            window.location.href = 'dcf_login_page.html';
-            return;
-        }
+        // TEMP DISABLED - if (!isLoggedIn) {
+        //     window.location.href = 'dcf_login_page.html';
+        //     return;
+        // }
         // Load avatar on page load - FIXED VERSION
         setTimeout(async () => {
             await loadPageAvatars();
