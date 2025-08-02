@@ -635,6 +635,9 @@
                 <div class="form-group">
                     <label class="form-label" for="email">Email Address *</label>
                     <input type="email" id="email" name="email" class="form-input" placeholder="your.email@example.com" required>
+                    <div id="emailValidation" style="margin-top: 0.5rem; font-size: 0.9rem; display: none;">
+                        <span id="emailMessage"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="username">Username *</label>
@@ -1044,6 +1047,18 @@
             checkPasswordStrength(e.target.value);
         });
 
+        // Email validation
+        document.getElementById('email').addEventListener('input', async function(e) {
+            const email = e.target.value;
+            
+            if (email.includes('@') && email.includes('.')) {
+                const validation = await validateEmail(email);
+                showEmailValidation(validation);
+            } else {
+                hideEmailValidation();
+            }
+        });
+
         // Username validation
         document.getElementById('username').addEventListener('input', async function(e) {
             const username = e.target.value;
@@ -1400,6 +1415,56 @@
                 submitBtn.textContent = 'Join Community';
                 submitBtn.disabled = false;
             }
+        }
+
+        // Email validation functions
+        async function validateEmail(email) {
+            // Check format first
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return { valid: false, message: 'Please enter a valid email address' };
+            }
+            
+            // Check if email is already registered
+            const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('email')
+                    .eq('email', email.toLowerCase())
+                    .single();
+                
+                if (data) {
+                    return { valid: false, message: 'This email is already registered. Try signing in instead.' };
+                }
+                
+                return { valid: true, message: 'Email is available' };
+            } catch (error) {
+                return { valid: true, message: 'Email is available' };
+            }
+        }
+
+        function showEmailValidation(validation) {
+            const validationDiv = document.getElementById('emailValidation');
+            const messageSpan = document.getElementById('emailMessage');
+            
+            validationDiv.style.display = 'block';
+            
+            if (validation.valid) {
+                messageSpan.textContent = '✓ ' + validation.message;
+                messageSpan.style.color = '#28a745';
+            } else {
+                messageSpan.textContent = '✗ ' + validation.message;
+                messageSpan.style.color = '#dc3545';
+            }
+        }
+
+        function hideEmailValidation() {
+            const validationDiv = document.getElementById('emailValidation');
+            validationDiv.style.display = 'none';
         }
 
         // Initialize
