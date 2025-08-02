@@ -60,12 +60,13 @@ function handleDocumentClick(event) {
     }
 }
 
-async function updateUserDropdownInfo() {
-    // Get user data - NO hardcoded fallbacks to Sarah Johnson
-    let userName = localStorage.getItem('dcf_user_name');
-    let userEmail = localStorage.getItem('dcf_user_email');
-    const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
-
+if (!error && profile) {
+                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    userUsername = profile.username;
+                    localStorage.setItem('dcf_user_name', userName);
+                    if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
+                    console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
+                }
     // If userName is missing, try to fetch from database first
     if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
         console.log('updateUserDropdownInfo: userName missing, fetching from database...');
@@ -202,7 +203,7 @@ async function updateUserDropdownInfo() {
             dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
         }
     }
-}
+
 
 // COMPLETELY FIXED FUNCTION - This handles all undefined cases properly
 async function loadPageAvatars() {
@@ -1077,3 +1078,52 @@ window.focusSearchResources = focusSearchResources;
 window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
+// =============================================================================
+// 9. USERNAME VALIDATION FUNCTIONS
+// =============================================================================
+async function validateUsername(username) {
+    // Check format
+    if (!username || username.length < 3 || username.length > 30) {
+        return { valid: false, message: 'Username must be 3-30 characters long' };
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return { valid: false, message: 'Username can only contain letters, numbers, and underscores' };
+    }
+    
+    // Check availability
+    if (!masterSupabase) {
+        initializeSupabase();
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    try {
+        const { data, error } = await masterSupabase
+            .from('user_profiles')
+            .select('username')
+            .eq('username', username.toLowerCase())
+            .single();
+        
+        if (data) {
+            return { valid: false, message: 'Username is already taken' };
+        }
+        
+        return { valid: true, message: 'Username is available' };
+    } catch (error) {
+        return { valid: true, message: 'Username is available' };
+    }
+}
+
+function generateSuggestedUsername(email, name) {
+    if (email) {
+        return email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+    if (name) {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20);
+    }
+    return 'user_' + Math.random().toString(36).substring(2, 8);
+}
+
+// Make functions available globally
+window.validateUsername = validateUsername;
+window.generateSuggestedUsername = generateSuggestedUsername;
