@@ -2,7 +2,7 @@
 // Combines: universal-navbar.js + universal-quick-actions.js + quickactions.js + footer functionality
 
 // Supabase configuration for avatar loading
-let masterSupabase = null;
+window.masterSupabase = null;
 function initializeSupabase() {
     if (window.supabase && !masterSupabase) {
         const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
