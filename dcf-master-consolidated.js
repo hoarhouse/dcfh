@@ -7,7 +7,7 @@ function initializeSupabase() {
     if (window.supabase && !masterSupabase) {
         const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-        masterSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.masterSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     }
 }
 
@@ -73,7 +73,7 @@ async function updateUserDropdownInfo() {
     if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
         console.log('updateUserDropdownInfo: userName missing, fetching from database...');
         
-        if (!masterSupabase) {
+        if (!window.masterSupabase) {
             initializeSupabase();
             setTimeout(() => {}, 200);
         }
