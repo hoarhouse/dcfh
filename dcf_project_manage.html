@@ -2100,7 +2100,8 @@
         }
         // Load project files for Resources tab
         async function loadProjectFiles(projectId) {
-            const resourcesContainer = document.querySelector('#resources .empty-state').parentElement;
+            const resourcesContainer = document.querySelector('#resources');
+            const emptyState = resourcesContainer.querySelector('.empty-state');
             
             try {
                 const { data: files, error } = await supabase
@@ -2110,14 +2111,16 @@
                     .order('uploaded_at', { ascending: false });
 
                 if (error || !files || files.length === 0) {
-                    resourcesContainer.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No Resources Yet</h3>
-                            <p>Upload documents, research papers, and other resources to help your team collaborate effectively.</p>
-                            <button class="btn btn-primary" onclick="openUploadModal()">Upload First Resource</button>
-                        </div>
-                    `;
+                    // Show empty state if no files
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                    }
                     return;
+                }
+
+                // Hide empty state if files exist
+                if (emptyState) {
+                    emptyState.style.display = 'none';
                 }
 
                 const filesList = files.map(file => {
