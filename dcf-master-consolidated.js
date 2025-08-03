@@ -77,9 +77,9 @@ async function updateUserDropdownInfo() {
     
     console.log('updateUserDropdownInfo called with:', { userName, userEmail });
     
-    // Handle cases where localStorage returns literal "undefined" string
-    if (!userName || userName === 'null' || userName === 'undefined' || userName === undefined || userName.toString() === 'undefined') {
-        console.log('updateUserDropdownInfo: userName missing, fetching from database...');
+    // ALWAYS fetch from database to get real name
+    if (true) {
+        console.log('updateUserDropdownInfo: fetching from database...');
         
         if (!window.masterSupabase) {
             initializeSupabase();
@@ -98,11 +98,12 @@ async function updateUserDropdownInfo() {
                     userName = profile.first_name && profile.last_name ? 
                         `${profile.first_name} ${profile.last_name}` : 
                         profile.name || 'DCF Member';
-                    const userUsername = profile.username;
+                    const userUsername = profile.username || 'hooray';
                     localStorage.setItem('dcf_user_name', userName);
-                    if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
-                    if (userUsername) localStorage.setItem('dcf_username', userUsername);
+                    localStorage.setItem('dcf_user_username', userUsername);
+                    localStorage.setItem('dcf_username', userUsername);
                     console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
+                    console.log('updateUserDropdownInfo: Set username to:', userUsername);
                 }
             } catch (error) {
                 console.log('updateUserDropdownInfo: Error fetching profile:', error);
