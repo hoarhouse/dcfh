@@ -138,14 +138,14 @@ async function updateUserDropdownInfo() {
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
     // Set initials first as fallback
-    if (avatarElement && !avatarElement.style.backgroundImage) {
+    if (avatarElement) {
         avatarElement.textContent = initials;
         avatarElement.style.backgroundImage = '';
         avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
         avatarElement.style.boxShadow = '0 0 10px #00ff00';
     }
     
-    if (dropdownAvatarElement && !dropdownAvatarElement.style.backgroundImage) {
+    if (dropdownAvatarElement) {
         dropdownAvatarElement.textContent = initials;
         dropdownAvatarElement.style.backgroundImage = '';
         dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
