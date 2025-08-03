@@ -6,6 +6,7 @@ window.masterSupabase = null;
 function initializeSupabase() {
     console.log('initializeSupabase called from:', new Error().stack);
     console.log('Current Supabase instances:', { masterSupabase: !!window.masterSupabase, supabaseClient: !!window.supabaseClient });
+    console.log('window.supabase exists:', !!window.supabase);
     
     if (window.supabase && !window.masterSupabase) {
         // Check if there's already a global Supabase client we can reuse
