@@ -137,23 +137,59 @@ async function updateUserDropdownInfo() {
     const avatarElement = document.querySelector('.user-menu .user-avatar') || document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
-    // Set initials first as fallback
-    if (avatarElement) {
-        avatarElement.textContent = initials;
-        avatarElement.style.backgroundImage = '';
-        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
-        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+    // Load profile picture and set fallback
+    await loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, initials);
+}
+
+async function loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, initials) {
+    // Try to load profile picture first
+    let avatarUrl = null;
+    try {
+        if (window.masterSupabase) {
+            const { data } = await window.masterSupabase
+                .from('user_profiles')
+                .select('avatar_url')
+                .eq('email', userEmail)
+                .single();
+            avatarUrl = data?.avatar_url;
+        }
+    } catch (error) {
+        console.log('Avatar load error:', error);
     }
-    
-    if (dropdownAvatarElement) {
-        dropdownAvatarElement.textContent = initials;
-        dropdownAvatarElement.style.backgroundImage = '';
-        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+
+    // Apply avatar or initials
+    if (avatarUrl) {
+        // Use profile picture
+        if (avatarElement) {
+            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
+            avatarElement.style.background = '';
+            avatarElement.textContent = '';
+        }
+        if (dropdownAvatarElement) {
+            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.style.backgroundPosition = 'center';
+            dropdownAvatarElement.style.background = '';
+            dropdownAvatarElement.textContent = '';
+        }
+    } else {
+        // Use initials fallback
+        if (avatarElement) {
+            avatarElement.textContent = initials;
+            avatarElement.style.backgroundImage = '';
+            avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        }
+        if (dropdownAvatarElement) {
+            dropdownAvatarElement.textContent = initials;
+            dropdownAvatarElement.style.backgroundImage = '';
+            dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+        }
     }
 }
 
-// COMPLETELY FIXED FUNCTION - This handles all undefined cases properly  
-async function loadPageAvatars() {
+// COMPLETELY FIXED FUNCTION - This handles all
     console.log('Loading page avatars...');
     
     // Get user data with multiple fallbacks
@@ -291,9 +327,7 @@ async function loadPageAvatars() {
             dropdownAvatarElement.style.backgroundPosition = 'center';
             dropdownAvatarElement.textContent = '';
         }
-    }
-    // If no avatar URL found, keep the initials that were already set
-}
+   }
 
 // COMPLETELY FIXED FUNCTION - This was the main source of "undefined"
 function generateInitials(name) {
