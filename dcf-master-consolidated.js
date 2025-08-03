@@ -218,10 +218,12 @@ async function loadPageAvatars() {
                 
                 if (!error && profile) {
                     userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
-                    const userUsername = profile.username;
+                    const userUsername = profile.username || 'hooray';
                     localStorage.setItem('dcf_user_name', userName);
-                    if (userUsername) localStorage.setItem('dcf_username', userUsername);
+                    localStorage.setItem('dcf_user_username', userUsername);
+                    localStorage.setItem('dcf_username', userUsername);
                     console.log('Fetched userName from database:', userName);
+                    console.log('Set username to:', userUsername);
                 }
             } catch (error) {
                 console.log('Error fetching profile:', error);
@@ -269,7 +271,8 @@ async function loadPageAvatars() {
     // Update user info in dropdown
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-    if (nameElement) nameElement.textContent = userName;
+    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'hooray';
+    if (nameElement) nameElement.textContent = displayUsername;
     if (emailElement) emailElement.textContent = userEmail;
     
     // Force initialize Supabase
