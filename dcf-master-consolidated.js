@@ -1019,7 +1019,7 @@ async function validateUsername(username) {
             .from('user_profiles')
             .select('username')
             .eq('username', username.toLowerCase())
-            .maybeSingle();
+            .single();
         
         if (data) {
             return { valid: false, message: 'Username is already taken' };
