@@ -190,6 +190,7 @@ async function loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, i
 }
 
 // COMPLETELY FIXED FUNCTION - This handles all
+async function loadPageAvatars() {
     console.log('Loading page avatars...');
     
     // Get user data with multiple fallbacks
@@ -328,6 +329,7 @@ async function loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, i
             dropdownAvatarElement.textContent = '';
         }
    }
+}
 
 // COMPLETELY FIXED FUNCTION - This was the main source of "undefined"
 function generateInitials(name) {
@@ -941,7 +943,7 @@ function handlePublicPageAuth() {
             
             // Set initial avatar properly with our fixed function
             setTimeout(async () => {
-                await loadPageAvatars(); // Use the full avatar loading function
+                loadPageAvatars(); // Use the full avatar loading function
                 addNavigationItems(); // Add menu items and logout
             }, 100);
         }
