@@ -329,7 +329,6 @@ function generateInitials(name) {
     console.log('generateInitials falling back to default DM for name:', name);
     return 'DM';
 }
-}
 
 function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
