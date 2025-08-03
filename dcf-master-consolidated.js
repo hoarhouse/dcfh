@@ -300,14 +300,14 @@ function generateInitials(name) {
     // Handle all possible undefined/null/empty cases
     if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string' || name.trim() === '') {
         console.log('generateInitials received invalid name:', name, 'returning default DM');
-        return 'DM'; // DCF Member - NO reference to Sarah Johnson
+        return 'DM';
     }
     
     // Clean the name and handle titles including Rabbi
     const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.|Rabbi)\s+/i, '');
     
     if (!cleanName || cleanName.trim() === '') {
-        console.log('generateInitials cleaned name is empty, returning default SJ');
+        console.log('generateInitials cleaned name is empty, returning default DM');
         return 'DM';
     }
     
@@ -319,18 +319,16 @@ function generateInitials(name) {
         const initials = (firstInitial + lastInitial).toUpperCase();
         console.log('generateInitials created initials:', initials, 'from name:', name);
         return initials;
-    } else if (parts.length === 1 && parts[0].length >= 2) {
-        const initials = parts[0].substring(0, 2).toUpperCase();
+    } else if (parts.length === 1) {
+        // For single names, use first letter + M as default
+        const initials = (parts[0][0] + 'M').toUpperCase();
         console.log('generateInitials created initials from single name:', initials, 'from name:', name);
-        return initials;
-    } else if (parts.length === 1 && parts[0].length === 1) {
-        const initials = (parts[0][0] + 'M').toUpperCase(); // Default second initial
-        console.log('generateInitials created initials from single character:', initials, 'from name:', name);
         return initials;
     }
     
-    console.log('generateInitials falling back to default SJ for name:', name);
+    console.log('generateInitials falling back to default DM for name:', name);
     return 'DM';
+}
 }
 
 function addNavigationItems() {
