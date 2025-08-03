@@ -5,9 +5,16 @@
 window.masterSupabase = null;
 function initializeSupabase() {
     if (window.supabase && !window.masterSupabase) {
+        // Check if there's already a global Supabase client we can reuse
+        if (window.supabaseClient) {
+            window.masterSupabase = window.supabaseClient;
+            return;
+        }
+        
         const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
         window.masterSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.supabaseClient = window.masterSupabase; // Store as global reference
     }
 }
 
@@ -91,6 +98,7 @@ async function updateUserDropdownInfo() {
                     const userUsername = profile.username;
                     localStorage.setItem('dcf_user_name', userName);
                     if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
+                    if (userUsername) localStorage.setItem('dcf_username', userUsername);
                     console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
                 }
             } catch (error) {
@@ -170,7 +178,9 @@ async function loadPageAvatars() {
                 
                 if (!error && profile) {
                     userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    const userUsername = profile.username;
                     localStorage.setItem('dcf_user_name', userName);
+                    if (userUsername) localStorage.setItem('dcf_username', userUsername);
                     console.log('Fetched userName from database:', userName);
                 }
             } catch (error) {
