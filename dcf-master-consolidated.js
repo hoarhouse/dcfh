@@ -278,7 +278,7 @@ async function loadPageAvatars() {
         avatarElement.style.backgroundImage = `url(${avatarUrl})`;
         avatarElement.style.backgroundSize = 'cover';
         avatarElement.style.backgroundPosition = 'center';
-        avatarElement.style.boxShadow = '0 0 10px #00ff00';
+        avatarElement.style.boxShadow = '';
         avatarElement.textContent = '';
         
         // Update dropdown avatar too
