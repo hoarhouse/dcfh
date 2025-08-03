@@ -45,7 +45,6 @@ function openUserMenu() {
     
     dropdown.classList.add('active');
     isDropdownOpen = true;
-    updateUserDropdownInfo(); // ADD THIS BACK TO REFRESH DATA
     addNavigationItems(); // Always add navigation items for logged-in users
     
     setTimeout(() => {
