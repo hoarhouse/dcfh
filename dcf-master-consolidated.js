@@ -336,35 +336,34 @@ function generateInitials(name) {
     
     // Handle all possible undefined/null/empty cases
     if (!name || name === 'undefined' || name === 'null' || typeof name !== 'string' || name.trim() === '') {
-        console.log('generateInitials received invalid name:', name, 'returning default DM');
-        return 'DM';
+        console.log('generateInitials received invalid name:', name, 'returning default CH');
+        return 'CH';
     }
     
-    // Clean the name and handle titles including Rabbi
+    // Clean the name and handle titles
     const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.|Rabbi)\s+/i, '');
     
     if (!cleanName || cleanName.trim() === '') {
-        console.log('generateInitials cleaned name is empty, returning default DM');
-        return 'DM';
+        console.log('generateInitials cleaned name is empty, returning default CH');
+        return 'CH';
     }
     
     const parts = cleanName.trim().split(' ').filter(part => part.length > 0);
     
     if (parts.length >= 2) {
-        const firstInitial = parts[0][0] || 'D';
-        const lastInitial = parts[parts.length - 1][0] || 'M';
+        const firstInitial = parts[0][0] || 'C';
+        const lastInitial = parts[parts.length - 1][0] || 'H';
         const initials = (firstInitial + lastInitial).toUpperCase();
         console.log('generateInitials created initials:', initials, 'from name:', name);
         return initials;
     } else if (parts.length === 1) {
-        // For single names, use first letter + M as default
-        const initials = (parts[0][0] + 'M').toUpperCase();
+        const initials = (parts[0][0] + 'H').toUpperCase();
         console.log('generateInitials created initials from single name:', initials, 'from name:', name);
         return initials;
     }
     
-    console.log('generateInitials falling back to default DM for name:', name);
-    return 'DM';
+    console.log('generateInitials falling back to default CH for name:', name);
+    return 'CH';
 }
 
 function addNavigationItems() {
