@@ -125,7 +125,9 @@ async function updateUserDropdownInfo() {
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
 
-    if (nameElement) nameElement.textContent = userName;
+    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'hooray';
+    if (nameElement) nameElement.textContent = displayUsername;
+    console.log('Set dropdown name to:', displayUsername);
     if (emailElement) {
         if (authProvider === 'github') {
             emailElement.textContent = `${userEmail} (GitHub)`;
@@ -150,8 +152,43 @@ async function updateUserDropdownInfo() {
         dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
     }
 
-    // Load profile picture and set fallback
-    await loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, initials);
+    // Try to load profile picture
+    let avatarUrl = null;
+    try {
+        if (window.masterSupabase) {
+            const { data } = await window.masterSupabase
+                .from('user_profiles')
+                .select('avatar_url')
+                .eq('email', userEmail)
+                .single();
+            avatarUrl = data?.avatar_url;
+            console.log('Public page avatar URL:', avatarUrl);
+        }
+    } catch (error) {
+        console.log('Public page avatar load error:', error);
+    }
+
+    // Apply avatar or keep initials
+    if (avatarUrl) {
+        console.log('Applying profile picture:', avatarUrl);
+        // Use profile picture
+        if (avatarElement) {
+            avatarElement.style.background = '';
+            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
+            avatarElement.textContent = '';
+        }
+        if (dropdownAvatarElement) {
+            dropdownAvatarElement.style.background = '';
+            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.style.backgroundPosition = 'center';
+            dropdownAvatarElement.textContent = '';
+        }
+    } else {
+        console.log('No profile picture found, keeping initials');
+    }
 }
 
 async function loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, initials) {
