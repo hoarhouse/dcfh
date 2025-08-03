@@ -91,12 +91,14 @@ async function updateUserDropdownInfo() {
             try {
                 const { data: profile, error } = await window.masterSupabase
                     .from('user_profiles')
-                    .select('name, first_name, last_name, username')
+                    .select('name, first_name, last_name, username, avatar_url')
                     .eq('email', userEmail)
                     .single();
                 
                 if (!error && profile) {
-                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    userName = profile.first_name && profile.last_name ? 
+                        `${profile.first_name} ${profile.last_name}` : 
+                        profile.name || 'DCF Member';
                     const userUsername = profile.username;
                     localStorage.setItem('dcf_user_name', userName);
                     if (userUsername) localStorage.setItem('dcf_user_username', userUsername);
