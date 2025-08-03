@@ -137,6 +137,18 @@ async function updateUserDropdownInfo() {
     const avatarElement = document.querySelector('.user-menu .user-avatar') || document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
 
+    // Set initials first as fallback
+    if (avatarElement) {
+        avatarElement.textContent = initials;
+        avatarElement.style.backgroundImage = '';
+        avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+    }
+    if (dropdownAvatarElement) {
+        dropdownAvatarElement.textContent = initials;
+        dropdownAvatarElement.style.backgroundImage = '';
+        dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+    }
+
     // Load profile picture and set fallback
     await loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, initials);
 }
