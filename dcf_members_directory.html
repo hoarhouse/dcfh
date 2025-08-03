@@ -827,12 +827,7 @@
                 <div class="logo-icon"></div>
                 Domus Communis Foundation
             </a>
-            <ul class="nav-menu">
-                <li><a href="dcf_member_home.html">Home</a></li>
-                <li><a href="dcf_members_directory.html" class="active">Members</a></li>
-                <li><a href="dcf_projects_home.html">Projects</a></li>
-                <li><a href="dcf_events_calendar.html">Events</a></li>
-                <li><a href="dcf_resources_library.html">Resources</a></li>
+            <ul class="nav-menu" id="navMenu">
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
@@ -840,11 +835,10 @@
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
                             <div class="dropdown-info">
-                                <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
-                                <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                                <div class="dropdown-name" id="dropdownUserName">DCF Member</div>
+                                <div class="dropdown-email" id="dropdownUserEmail">member@dcfhungary.org</div>
                             </div>
                         </div>
-                        <div class="dropdown-divider"></div>
                     </div>
                 </div>
             </div>
@@ -964,7 +958,7 @@
                         <div class="member-header">
                             <div class="member-avatar">SJ</div>
                             <div class="member-info">
-                                <div class="member-name">Dr. Sarah Johnson <small style="color: #666;">@sarah_johnson</small></div>
+                                <div class="member-name">@sarah_johnson</div>
                                 <div class="member-title">AI Ethics Researcher</div>
                                 <div class="member-location">📍 Stanford, CA</div>
                             </div>
@@ -1426,11 +1420,115 @@
             }
         });
 
+        // Load members from database
+        async function loadMembersFromDatabase() {
+            try {
+                // Show loading
+                document.getElementById('loadingSpinner').style.display = 'flex';
+                document.getElementById('membersGrid').style.display = 'none';
+                document.getElementById('membersList').style.display = 'none';
+
+                // Initialize Supabase if needed
+                if (!window.masterSupabase) {
+                    window.initializeSupabase();
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+                // Fetch users from database
+                const { data: users, error } = await window.masterSupabase
+                    .from('user_profiles')
+                    .select('username, name, title, organization, location, bio, expertise, skills_offered, avatar_url')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Clear existing members
+                document.getElementById('membersGrid').innerHTML = '';
+                document.getElementById('membersList').innerHTML = '';
+
+                // Generate member cards
+                users.forEach(user => {
+                    createMemberCard(user);
+                    createMemberListItem(user);
+                });
+
+                // Hide loading and show results
+                document.getElementById('loadingSpinner').style.display = 'none';
+                switchView('grid');
+
+            } catch (error) {
+                console.error('Error loading members:', error);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                alert('Failed to load members. Please refresh the page.');
+            }
+        }
+
+        function createMemberCard(user) {
+            const initials = user.username ? user.username.substring(0, 2).toUpperCase() : 'DC';
+            const gridHtml = `
+                <div class="member-card">
+                    <div class="member-status"></div>
+                    <div class="member-header">
+                        <div class="member-avatar">${initials}</div>
+                        <div class="member-info">
+                            <div class="member-name">@${user.username || 'username'}</div>
+                            <div class="member-title">${user.title || 'DCF Member'}</div>
+                            <div class="member-location">📍 ${user.location || 'Global'}</div>
+                        </div>
+                    </div>
+                    <div class="member-bio">${user.bio || 'Member of the DCF Hungary community.'}</div>
+                    <div class="member-tags">
+                        ${user.expertise ? user.expertise.split(',').slice(0, 3).map(skill => 
+                            `<span class="member-tag">${skill.trim()}</span>`
+                        ).join('') : '<span class="member-tag">Member</span>'}
+                    </div>
+                    <div class="member-footer">
+                        <div class="member-stats">
+                            <span>0 Projects</span>
+                            <span>0 Connections</span>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn btn-secondary btn-small">💬 Message</button>
+                            <button class="btn btn-primary btn-small">🤝 Connect</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('membersGrid').insertAdjacentHTML('beforeend', gridHtml);
+        }
+
+        function createMemberListItem(user) {
+            const initials = user.username ? user.username.substring(0, 2).toUpperCase() : 'DC';
+            const listHtml = `
+                <div class="member-list-item">
+                    <div class="member-list-avatar">${initials}</div>
+                    <div class="member-list-info">
+                        <div class="member-list-name">@${user.username || 'username'}</div>
+                        <div class="member-list-title">${user.title || 'DCF Member'} • ${user.location || 'Global'}</div>
+                    </div>
+                    <div class="member-list-stats">
+                        <span>0 Projects</span>
+                        <span>0 Connections</span>
+                    </div>
+                    <div class="member-list-actions">
+                        <button class="btn btn-secondary btn-small">💬 Message</button>
+                        <button class="btn btn-primary btn-small">🤝 Connect</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('membersList').insertAdjacentHTML('beforeend', listHtml);
+        }
+
+        // Load members when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadMembersFromDatabase, 1000);
+        });
+
         // Member card click to view profile
-        document.querySelectorAll('.member-card, .member-list-item').forEach(member => {
-            member.addEventListener('click', function() {
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.member-card, .member-list-item')) {
                 alert('Member profile view would be implemented here.');
-            });
+            }
         });
 
         // Pagination functionality
