@@ -957,7 +957,7 @@ function handlePublicPageAuth() {
             
             // Set initial avatar properly with our fixed function
             setTimeout(async () => {
-                loadPageAvatars(); // Use the full avatar loading function
+                await updateUserDropdownInfo(); // This will load the profile picture
                 addNavigationItems(); // Add menu items and logout
             }, 100);
         }
