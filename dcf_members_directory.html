@@ -1392,33 +1392,71 @@
             });
         });
 
-        // Connect/Message functionality
-        document.querySelectorAll('.member-card, .member-list-item').forEach(member => {
-            const connectBtn = member.querySelector('.btn-primary');
-            const messageBtn = member.querySelector('.btn-secondary');
+        // Connect/Message functionality will be handled by event delegation
+        async function handleConnectClick(button, targetUserId) {
+            try {
+                const currentUserId = await getCurrentUserId();
+                if (!currentUserId) {
+                    alert('Please log in to connect with members.');
+                    return;
+                }
 
-            if (connectBtn) {
-                connectBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (this.textContent.includes('Connect')) {
-                        this.textContent = '✓ Connected';
-                        this.classList.remove('btn-primary');
-                        this.classList.add('btn-secondary');
-                    } else {
-                        this.textContent = '🤝 Connect';
-                        this.classList.remove('btn-secondary');
-                        this.classList.add('btn-primary');
+                // Check current connection status
+                const { data: existingConnection } = await window.masterSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`and(requester_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
+                    .single();
+
+                if (existingConnection) {
+                    if (existingConnection.status === 'pending') {
+                        alert('Connection request already pending.');
+                        return;
+                    } else if (existingConnection.status === 'accepted') {
+                        alert('You are already connected with this member.');
+                        return;
                     }
-                });
-            }
+                }
 
-            if (messageBtn) {
-                messageBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    alert('Messaging functionality would be implemented here.');
-                });
+                // Send connection request
+                const { error } = await window.masterSupabase
+                    .from('connections')
+                    .insert([{
+                        requester_id: currentUserId,
+                        recipient_id: targetUserId,
+                        status: 'pending'
+                    }]);
+
+                if (error) throw error;
+
+                // Update button state
+                button.textContent = '⏳ Pending';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-secondary');
+                button.disabled = true;
+
+                alert('Connection request sent!');
+
+            } catch (error) {
+                console.error('Error sending connection request:', error);
+                alert('Failed to send connection request. Please try again.');
             }
-        });
+        }
+
+        async function getCurrentUserId() {
+            try {
+                const currentUserEmail = localStorage.getItem('dcf_user_email');
+                const { data: user } = await window.masterSupabase
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('email', currentUserEmail)
+                    .single();
+                return user?.id;
+            } catch (error) {
+                console.error('Error getting current user ID:', error);
+                return null;
+            }
+        }
 
         // Load members from database
         async function loadMembersFromDatabase() {
@@ -1469,9 +1507,22 @@
         }
 
         async function getUserStats(userId) {
-            // For now return 0s since we don't have project/connection tables yet
-            // TODO: Replace with real queries when tables exist
-            return { projects: 0, connections: 0 };
+            try {
+                // Count accepted connections (both directions)
+                const { data: connections, error } = await window.masterSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`requester_id.eq.${userId},recipient_id.eq.${userId}`)
+                    .eq('status', 'accepted');
+                
+                const connectionCount = connections ? connections.length : 0;
+                
+                // TODO: Replace with real project count when project tables exist
+                return { projects: 0, connections: connectionCount };
+            } catch (error) {
+                console.error('Error fetching user stats:', error);
+                return { projects: 0, connections: 0 };
+            }
         }
 
         function createMemberCard(user, stats = { projects: 0, connections: 0 }) {
@@ -1480,7 +1531,7 @@
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">` : 
                 initials;
             const gridHtml = `
-                <div class="member-card">
+                <div class="member-card" data-user-id="${user.id}">
                     <div class="member-status"></div>
                     <div class="member-header">
                         <div class="member-avatar">${avatarHtml}</div>
@@ -1502,8 +1553,8 @@
                             <span>${stats.connections} Connections</span>
                         </div>
                         <div class="member-actions">
-                            <button class="btn btn-secondary btn-small">💬 Message</button>
-                            <button class="btn btn-primary btn-small">🤝 Connect</button>
+                            <button class="btn btn-secondary btn-small message-btn">💬 Message</button>
+                            <button class="btn btn-primary btn-small connect-btn" data-user-id="${user.id}">🤝 Connect</button>
                         </div>
                     </div>
                 </div>
@@ -1517,7 +1568,7 @@
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">` : 
                 initials;
             const listHtml = `
-                <div class="member-list-item">
+                <div class="member-list-item" data-user-id="${user.id}">
                     <div class="member-list-avatar">${avatarHtml}</div>
                     <div class="member-list-info">
                         <div class="member-list-name">@${user.username || 'username'}</div>
@@ -1528,8 +1579,8 @@
                         <span>${stats.connections} Connections</span>
                     </div>
                     <div class="member-list-actions">
-                        <button class="btn btn-secondary btn-small">💬 Message</button>
-                        <button class="btn btn-primary btn-small">🤝 Connect</button>
+                        <button class="btn btn-secondary btn-small message-btn">💬 Message</button>
+                        <button class="btn btn-primary btn-small connect-btn" data-user-id="${user.id}">🤝 Connect</button>
                     </div>
                 </div>
             `;
@@ -1541,9 +1592,17 @@
             setTimeout(loadMembersFromDatabase, 1000);
         });
 
-        // Member card click to view profile
+        // Event delegation for dynamic buttons
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.member-card, .member-list-item')) {
+            if (e.target.closest('.connect-btn')) {
+                e.stopPropagation();
+                const button = e.target.closest('.connect-btn');
+                const userId = button.dataset.userId;
+                handleConnectClick(button, userId);
+            } else if (e.target.closest('.message-btn')) {
+                e.stopPropagation();
+                alert('Messaging functionality would be implemented here.');
+            } else if (e.target.closest('.member-card, .member-list-item')) {
                 alert('Member profile view would be implemented here.');
             }
         });
