@@ -1440,7 +1440,7 @@
                 // Fetch users from database (excluding current user)
                 const { data: users, error } = await window.masterSupabase
                     .from('user_profiles')
-                    .select('username, name, title, organization, location, bio, expertise, skills_offered, avatar_url')
+                    .select('id, username, name, title, organization, location, bio, expertise, skills_offered, avatar_url')
                     .neq('email', currentUserEmail)
                     .order('created_at', { ascending: false });
 
@@ -1450,11 +1450,12 @@
                 document.getElementById('membersGrid').innerHTML = '';
                 document.getElementById('membersList').innerHTML = '';
 
-                // Generate member cards
-                users.forEach(user => {
-                    createMemberCard(user);
-                    createMemberListItem(user);
-                });
+                // Generate member cards with stats
+                for (const user of users) {
+                    const stats = await getUserStats(user.id);
+                    createMemberCard(user, stats);
+                    createMemberListItem(user, stats);
+                }
 
                 // Hide loading and show results
                 document.getElementById('loadingSpinner').style.display = 'none';
@@ -1467,7 +1468,13 @@
             }
         }
 
-        function createMemberCard(user) {
+        async function getUserStats(userId) {
+            // For now return 0s since we don't have project/connection tables yet
+            // TODO: Replace with real queries when tables exist
+            return { projects: 0, connections: 0 };
+        }
+
+        function createMemberCard(user, stats = { projects: 0, connections: 0 }) {
             const initials = user.username ? user.username.substring(0, 2).toUpperCase() : 'DC';
             const avatarHtml = user.avatar_url ? 
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">` : 
@@ -1491,8 +1498,8 @@
                     </div>
                     <div class="member-footer">
                         <div class="member-stats">
-                            <span>0 Projects</span>
-                            <span>0 Connections</span>
+                            <span>${stats.projects} Projects</span>
+                            <span>${stats.connections} Connections</span>
                         </div>
                         <div class="member-actions">
                             <button class="btn btn-secondary btn-small">💬 Message</button>
@@ -1504,7 +1511,7 @@
             document.getElementById('membersGrid').insertAdjacentHTML('beforeend', gridHtml);
         }
 
-        function createMemberListItem(user) {
+        function createMemberListItem(user, stats = { projects: 0, connections: 0 }) {
             const initials = user.username ? user.username.substring(0, 2).toUpperCase() : 'DC';
             const avatarHtml = user.avatar_url ? 
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">` : 
@@ -1517,8 +1524,8 @@
                         <div class="member-list-title">${user.title || 'DCF Member'} • ${user.location || 'Global'}</div>
                     </div>
                     <div class="member-list-stats">
-                        <span>0 Projects</span>
-                        <span>0 Connections</span>
+                        <span>${stats.projects} Projects</span>
+                        <span>${stats.connections} Connections</span>
                     </div>
                     <div class="member-list-actions">
                         <button class="btn btn-secondary btn-small">💬 Message</button>
