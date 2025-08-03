@@ -472,18 +472,67 @@ function addNavigationItems() {
 
 function handleLogout() {
     closeUserMenu();
-    
-    if (confirm('Are you sure you want to sign out?')) {
-        localStorage.removeItem('dcf_github_session');
-        localStorage.removeItem('dcf_user_logged_in');
-        localStorage.removeItem('dcf_user_name');
-        localStorage.removeItem('dcf_user_email');
-        localStorage.removeItem('dcf_auth_provider');
-        localStorage.removeItem('dcf_remember_login');
-        sessionStorage.clear();
+    showLogoutModal();
+}
+
+function showLogoutModal() {
+    // Create modal if it doesn't exist
+    if (!document.getElementById('logoutModal')) {
+        const modalHTML = `
+            <div class="modal" id="logoutModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Sign Out</h2>
+                    </div>
+                    <p style="margin-bottom: 2rem; color: #666;">Are you sure you want to sign out of your DCF Hungary account?</p>
+                    <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeLogoutModal()">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmLogout()">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
         
-        window.location.href = 'dcf_login_page.html';
+        // Add modal styles if not already present
+        if (!document.querySelector('#logoutModalCSS')) {
+            const style = document.createElement('style');
+            style.id = 'logoutModalCSS';
+            style.textContent = `
+                .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
+                .modal.active { display: flex; }
+                .modal-content { background: white; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%; }
+                .modal-header { margin-bottom: 1.5rem; }
+                .modal-title { font-size: 1.3rem; font-weight: 600; color: #333; }
+                .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block; font-weight: 600; }
+                .btn-primary { background: #000; color: white; }
+                .btn-primary:hover { background: #333; }
+                .btn-secondary { background: transparent; color: #666; border: 2px solid #e5e5e5; }
+                .btn-secondary:hover { color: #333; border-color: #333; }
+            `;
+            document.head.appendChild(style);
+        }
     }
+    
+    document.getElementById('logoutModal').classList.add('active');
+}
+
+function closeLogoutModal() {
+    const modal = document.getElementById('logoutModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function confirmLogout() {
+    localStorage.removeItem('dcf_github_session');
+    localStorage.removeItem('dcf_user_logged_in');
+    localStorage.removeItem('dcf_user_name');
+    localStorage.removeItem('dcf_user_email');
+    localStorage.removeItem('dcf_auth_provider');
+    localStorage.removeItem('dcf_remember_login');
+    sessionStorage.clear();
+    window.location.href = 'dcf_login_page.html';
 }
 
 // =============================================================================
