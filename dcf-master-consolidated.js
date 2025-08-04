@@ -269,13 +269,13 @@ async function loadPageAvatars() {
             try {
                 const { data: profile, error } = await window.masterSupabase
                     .from('user_profiles')
-                    .select('name, first_name, last_name')
+                    .select('name, first_name, last_name, username')
                     .eq('email', userEmail)
                     .single();
                 
                 if (!error && profile) {
-                    userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
-                    const userUsername = profile.username || userName.split(' ')[0].toLowerCase();
+                    userName = profile.username || profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
+                    const userUsername = profile.username || 'DCF Member';
                     localStorage.setItem('dcf_user_name', userName);
                     localStorage.setItem('dcf_user_username', userUsername);
                     localStorage.setItem('dcf_username', userUsername);
