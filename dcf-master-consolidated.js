@@ -99,7 +99,7 @@ async function updateUserDropdownInfo() {
                     userName = profile.first_name && profile.last_name ? 
                         `${profile.first_name} ${profile.last_name}` : 
                         profile.name || 'DCF Member';
-                    const userUsername = profile.username || 'hooray';
+                    const userUsername = profile.username || userName.split(' ')[0].toLowerCase();
                     localStorage.setItem('dcf_user_name', userName);
                     localStorage.setItem('dcf_user_username', userUsername);
                     localStorage.setItem('dcf_username', userUsername);
@@ -125,7 +125,7 @@ async function updateUserDropdownInfo() {
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
 
-    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'hooray';
+    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || userName.split(' ')[0].toLowerCase();
     if (nameElement) nameElement.textContent = displayUsername;
     console.log('Set dropdown name to:', displayUsername);
     if (emailElement) {
@@ -269,7 +269,7 @@ async function loadPageAvatars() {
                 
                 if (!error && profile) {
                     userName = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'DCF Member';
-                    const userUsername = profile.username || 'hooray';
+                    const userUsername = profile.username || userName.split(' ')[0].toLowerCase();
                     localStorage.setItem('dcf_user_name', userName);
                     localStorage.setItem('dcf_user_username', userUsername);
                     localStorage.setItem('dcf_username', userUsername);
@@ -322,7 +322,7 @@ async function loadPageAvatars() {
     // Update user info in dropdown
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'hooray';
+    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || userName.split(' ')[0].toLowerCase();
     if (nameElement) nameElement.textContent = displayUsername;
     if (emailElement) emailElement.textContent = userEmail;
     
@@ -529,6 +529,8 @@ function confirmLogout() {
     localStorage.removeItem('dcf_user_logged_in');
     localStorage.removeItem('dcf_user_name');
     localStorage.removeItem('dcf_user_email');
+    localStorage.removeItem('dcf_user_username');
+    localStorage.removeItem('dcf_username');
     localStorage.removeItem('dcf_auth_provider');
     localStorage.removeItem('dcf_remember_login');
     sessionStorage.clear();
@@ -1143,6 +1145,8 @@ window.focusSearchResources = focusSearchResources;
 window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
 // =============================================================================
 // 9. USERNAME VALIDATION FUNCTIONS
 // =============================================================================
