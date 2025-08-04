@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Registration - DCF Hungary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+       .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            color: #000;
+        }
+
+        .logout-btn {
+            color: #dc3545 !important;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+            color: #c82333 !important;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .registration-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .registration-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .registration-subtitle {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .event-quick-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .event-quick-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .registration-status {
+            background: #e8f5e8;
+            color: #2d7d2d;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .registration-status.full {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .registration-status.closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 2rem;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .registration-form {
+            padding: 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .section-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-input.error {
+            border-color: #dc3545;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-help {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .form-error {
+            font-size: 0.8rem;
+            color: #dc3545;
+            margin-top: 0.25rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .radio-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .radio-item label {
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .dietary-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .accessibility-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .accessibility-section h4 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .terms-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-top: 0.25rem;
+        }
+
+        .terms-text {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .terms-text a {
+            color: #333;
+            text-decoration: underline;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+
+        .registration-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .event-summary {
+            margin-bottom: 1.5rem;
+        }
+
+        .event-summary-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .event-summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-summary-icon {
+            width: 36px;
+            height: 36px;
+            background: #f8f9fa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .event-summary-content {
+            flex: 1;
+        }
+
+        .event-summary-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .event-summary-value {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .registration-progress {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e5e5;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #000, #333);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .attendee-benefits {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .attendee-benefits li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .attendee-benefits li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .contact-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info a {
+            color: #333;
+            text-decoration: underline;
+        }
+
+        .speakers-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .speaker-mini {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .speaker-mini-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .speaker-mini-info {
+            flex: 1;
+        }
+
+        .speaker-mini-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .speaker-mini-title {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .validation-summary {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .validation-summary h4 {
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+
+        .validation-summary ul {
+            list-style: none;
+            color: #856404;
+        }
+
+        .validation-summary li {
+            margin-bottom: 0.25rem;
+        }
+
+        .validation-summary li::before {
+            content: "⚠️ ";
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #155724;
+        }
+
+        .success-message h4 {
+            margin-bottom: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .confirmation-content {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .confirmation-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+
+        .confirmation-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .confirmation-text {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .confirmation-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 1;
+            }
+
+            .main-content {
+                order: 2;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-group {
+                flex-direction: column;
+            }
+
+            .dietary-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .registration-form {
+                padding: 1.5rem;
+            }
+
+            .registration-header {
+                padding: 1.5rem;
+            }
+
+            .registration-title {
+                font-size: 1.5rem;
+            }
+
+            .event-quick-info {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .registration-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+<script src="universal-navbar.js"></script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation
+            </a>
+            <ul class="nav-menu">
+                <li><a href="dcf_member_home.html">Home</a></li>
+                <li><a href="dcf_members_directory.html">Members</a></li>
+                <li><a href="dcf_projects_home.html">Projects</a></li>
+                <li><a href="dcf_events_calendar.html" class="active">Events</a></li>
+                <li><a href="dcf_resources_library.html">Resources</a></li>
+            </ul>
+            <div class="user-menu">
+    <div class="user-dropdown">
+        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>        <div class="dropdown-menu" id="userDropdown">
+            <div class="dropdown-header">
+                <div class="dropdown-avatar"></div>
+                <div class="dropdown-info">
+                    <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
+                    <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="dcf_member_profile.html" class="dropdown-item">
+                <span class="dropdown-icon">👤</span>
+                View Profile
+            </a>
+            <a href="dcf_settings.html" class="dropdown-item">
+                <span class="dropdown-icon">⚙️</span>
+                Settings
+            </a>
+            <a href="dcf_contact.html" class="dropdown-item">
+                <span class="dropdown-icon">💬</span>
+                Help & Support
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item logout-btn" onclick="localStorage.clear(); sessionStorage.clear(); window.location.href='dcf_login_page.html'; return false;">
+                <span class="dropdown-icon">🚪</span>
+                LOGOUT
+            </button>
+        </div>
+    </div>
+</div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <a href="dcf_event_details.html" class="back-link">← Back to Event Details</a>
+
+        <div class="registration-header">
+            <h1 class="registration-title">Register for Workshop</h1>
+            <p class="registration-subtitle">AI Ethics Workshop: Implementing Catholic Social Teaching</p>
+            <div class="event-quick-info">
+                <span>📅 Wednesday, July 16, 2025</span>
+                <span>⏰ 2:00 PM - 4:00 PM EST</span>
+                <span>📍 Virtual/Online</span>
+                <span>🎯 Workshop</span>
+            </div>
+            <div class="registration-status">
+                ✅ Registration Open • 15 spots remaining
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="main-content">
+                <form id="registrationForm" class="registration-form">
+                    <!-- Personal Information Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">Personal Information</h2>
+                        <p class="section-description">We'll use this information to personalize your event experience</p>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="firstName">First Name</label>
+                                <input type="text" id="firstName" class="form-input" placeholder="Enter your first name" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="lastName">Last Name</label>
+                                <input type="text" id="lastName" class="form-input" placeholder="Enter your last name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="email">Email Address</label>
+                                <input type="email" id="email" class="form-input" placeholder="your.email@example.com" required>
+                                <div class="form-help">We'll send event updates and access information to this email</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="phone">Phone Number</label>
+                                <input type="tel" id="phone" class="form-input" placeholder="+1 (555) 123-4567">
+                                <div class="form-help">Optional: For urgent event notifications</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="organization">Organization</label>
+                                <input type="text" id="organization" class="form-input" placeholder="Your company, university, or institution">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="jobTitle">Job Title/Role</label>
+                                <input type="text" id="jobTitle" class="form-input" placeholder="e.g., AI Researcher, Software Engineer">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="location">Location</label>
+                            <input type="text" id="location" class="form-input" placeholder="City, Country">
+                            <div class="form-help">Helps us understand our global community</div>
+                        </div>
+                    </div>
+
+                    <!-- Professional Background Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">Professional Background</h2>
+                        <p class="section-description">Help us tailor the workshop content to your experience level</p>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="aiExperience">AI/ML Experience Level</label>
+                                <select id="aiExperience" class="form-select">
+                                    <option value="">Select your experience level</option>
+                                    <option value="beginner">Beginner (0-1 years)</option>
+                                    <option value="intermediate">Intermediate (2-5 years)</option>
+                                    <option value="advanced">Advanced (5+ years)</option>
+                                    <option value="expert">Expert (10+ years)</option>
+                                    <option value="none">No technical background</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="industryFocus">Industry Focus</label>
+                                <select id="industryFocus" class="form-select">
+                                    <option value="">Select your industry</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="education">Education</option>
+                                    <option value="finance">Finance</option>
+                                    <option value="government">Government</option>
+                                    <option value="nonprofit">Non-profit</option>
+                                    <option value="research">Research/Academia</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Areas of Interest</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-ethics" name="interests" value="ethics">
+                                    <label for="interest-ethics">AI Ethics & Governance</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-development" name="interests" value="development">
+                                    <label for="interest-development">AI Development</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-policy" name="interests" value="policy">
+                                    <label for="interest-policy">Policy & Regulation</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-education" name="interests" value="education">
+                                    <label for="interest-education">Education & Training</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-research" name="interests" value="research">
+                                    <label for="interest-research">Research & Academia</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="interest-implementation" name="interests" value="implementation">
+                                    <label for="interest-implementation">Implementation & Practice</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="expectations">What do you hope to learn from this workshop?</label>
+                            <textarea id="expectations" class="form-textarea" placeholder="Share your learning goals and what you hope to gain from this experience..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Event Preferences Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">Event Preferences</h2>
+                        <p class="section-description">Help us provide the best possible experience for you</p>
+
+                        <div class="form-group">
+                            <label class="form-label">How did you hear about this event?</label>
+                            <div class="radio-group">
+                                <div class="radio-item">
+                                    <input type="radio" id="source-email" name="hearAbout" value="email">
+                                    <label for="source-email">DCF Newsletter/Email</label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" id="source-website" name="hearAbout" value="website">
+                                    <label for="source-website">DCF Website</label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" id="source-social" name="hearAbout" value="social">
+                                    <label for="source-social">Social Media</label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" id="source-colleague" name="hearAbout" value="colleague">
+                                    <label for="source-colleague">Colleague/Friend</label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" id="source-other" name="hearAbout" value="other">
+                                    <label for="source-other">Other</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Networking Preferences</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="network-directory" name="networking" value="directory">
+                                    <label for="network-directory">Include me in the attendee directory</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="network-messages" name="networking" value="messages">
+                                    <label for="network-messages">Allow other attendees to message me</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="network-follow-up" name="networking" value="follow-up">
+                                    <label for="network-follow-up">Send me follow-up networking opportunities</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="questions">Questions or Comments</label>
+                            <textarea id="questions" class="form-textarea" placeholder="Any questions about the event or topics you'd like to see covered?"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Communication & Accessibility Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">Communication & Accessibility</h2>
+                        <p class="section-description">Help us ensure this event is accessible and welcoming for everyone</p>
+
+                        <div class="form-group">
+                            <label class="form-label">Communication Preferences</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="comm-updates" name="communication" value="updates">
+                                    <label for="comm-updates">Send me event updates and reminders</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="comm-materials" name="communication" value="materials">
+                                    <label for="comm-materials">Send me workshop materials in advance</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="comm-recording" name="communication" value="recording">
+                                    <label for="comm-recording">Send me the recording after the event</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="comm-newsletter" name="communication" value="newsletter">
+                                    <label for="comm-newsletter">Subscribe me to the DCF newsletter</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accessibility-section">
+                            <h4>Accessibility Requirements</h4>
+                            <div class="form-group">
+                                <label class="form-label" for="accessibility">Do you have any accessibility needs?</label>
+                                <textarea id="accessibility" class="form-textarea" placeholder="Please describe any accommodations you need for this virtual event (e.g., closed captions, screen reader compatibility, etc.)"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="timezone">Your Timezone</label>
+                                <select id="timezone" class="form-select">
+                                    <option value="">Select your timezone</option>
+                                    <option value="EST">Eastern Time (EST)</option>
+                                    <option value="CET">Central European Time (CET)</option>
+                                    <option value="GMT">Greenwich Mean Time (GMT)</option>
+                                    <option value="PST">Pacific Time (PST)</option>
+                                    <option value="JST">Japan Standard Time (JST)</option>
+                                    <option value="IST">India Standard Time (IST)</option>
+                                    <option value="CST">Central Standard Time (CST)</option>
+                                    <option value="MST">Mountain Standard Time (MST)</option>
+                                </select>
+                                <div class="form-help">Helps us send you reminders at the right time</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="language">Preferred Language</label>
+                                <select id="language" class="form-select">
+                                    <option value="en">English</option>
+                                    <option value="hu">Hungarian</option>
+                                    <option value="es">Spanish</option>
+                                    <option value="fr">French</option>
+                                    <option value="de">German</option>
+                                    <option value="it">Italian</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Conditions -->
+                    <div class="form-section">
+                        <div class="terms-section">
+                            <div class="terms-checkbox">
+                                <input type="checkbox" id="termsConditions" name="terms" value="terms" required>
+                                <div class="terms-text">
+                                    <label for="termsConditions">I agree to the <a href="#" onclick="showTerms()">Terms and Conditions</a> and <a href="#" onclick="showPrivacy()">Privacy Policy</a>. I understand that this event will be recorded and may be used for educational purposes.</label>
+                                </div>
+                            </div>
+                            <div class="terms-checkbox">
+                                <input type="checkbox" id="codeOfConduct" name="terms" value="conduct" required>
+                                <div class="terms-text">
+                                    <label for="codeOfConduct">I agree to abide by the <a href="#" onclick="showCodeOfConduct()">DCF Code of Conduct</a> and maintain a respectful, inclusive environment for all participants.</label>
+                                </div>
+                            </div>
+                            <div class="terms-checkbox">
+                                <input type="checkbox" id="dataConsent" name="terms" value="data">
+                                <div class="terms-text">
+                                    <label for="dataConsent">I consent to DCF storing and processing my personal data for event-related communications and to improve future events. You can update your preferences at any time.</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Registration Actions -->
+                    <div class="registration-actions">
+                        <div>
+                            <button type="button" class="btn btn-secondary" onclick="saveDraft()">💾 Save as Draft</button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary" onclick="cancelRegistration()">Cancel</button>
+                            <button type="submit" class="btn btn-primary btn-large" id="submitBtn">🎫 Complete Registration</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="sidebar">
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Event Summary</h3>
+                    <div class="event-summary">
+                        <div class="event-summary-item">
+                            <div class="event-summary-icon">📅</div>
+                            <div class="event-summary-content">
+                                <div class="event-summary-label">Date</div>
+                                <div class="event-summary-value">July 16, 2025</div>
+                            </div>
+                        </div>
+                        <div class="event-summary-item">
+                            <div class="event-summary-icon">⏰</div>
+                            <div class="event-summary-content">
+                                <div class="event-summary-label">Time</div>
+                                <div class="event-summary-value">2:00 PM - 4:00 PM EST</div>
+                            </div>
+                        </div>
+                        <div class="event-summary-item">
+                            <div class="event-summary-icon">📍</div>
+                            <div class="event-summary-content">
+                                <div class="event-summary-label">Location</div>
+                                <div class="event-summary-value">Virtual/Online</div>
+                            </div>
+                        </div>
+                        <div class="event-summary-item">
+                            <div class="event-summary-icon">💰</div>
+                            <div class="event-summary-content">
+                                <div class="event-summary-label">Cost</div>
+                                <div class="event-summary-value">Free for DCF Members</div>
+                            </div>
+                        </div>
+                        <div class="event-summary-item">
+                            <div class="event-summary-icon">🌐</div>
+                            <div class="event-summary-content">
+                                <div class="event-summary-label">Language</div>
+                                <div class="event-summary-value">English</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Registration Progress</h3>
+                    <div class="registration-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%;"></div>
+                        </div>
+                        <div class="progress-text">35 of 50 spots filled</div>
+                    </div>
+                    <p style="color: #666; font-size: 0.9rem; text-align: center;">
+                        Register soon! Only 15 spots remaining.
+                    </p>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">What's Included</h3>
+                    <ul class="attendee-benefits">
+                        <li>Interactive workshop session with expert facilitators</li>
+                        <li>Comprehensive AI ethics toolkit and resources</li>
+                        <li>Catholic Social Teaching reference guide</li>
+                        <li>Access to workshop recording for 30 days</li>
+                        <li>Networking opportunities with global community</li>
+                        <li>Certificate of completion</li>
+                        <li>Follow-up resources and community access</li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Featured Speakers</h3>
+                    <div class="speakers-preview">
+                        <div class="speaker-mini">
+                            <div class="speaker-mini-avatar">SJ</div>
+                            <div class="speaker-mini-info">
+                                <div class="speaker-mini-name">Dr. Sarah Johnson</div>
+                                <div class="speaker-mini-title">AI Ethics Researcher</div>
+                            </div>
+                        </div>
+                        <div class="speaker-mini">
+                            <div class="speaker-mini-avatar">MT</div>
+                            <div class="speaker-mini-info">
+                                <div class="speaker-mini-name">Fr. Michael Torres</div>
+                                <div class="speaker-mini-title">Theologian & Ethics Consultant</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Need Help?</h3>
+                    <div class="contact-info">
+                        <h4>Event Support</h4>
+                        <p>Questions about registration or technical issues?</p>
+                        <p>📧 <a href="mailto:events@dcf-hungary.org">events@dcf-hungary.org</a></p>
+                        <p>📞 <a href="tel:+36-1-234-5678">+36-1-234-5678</a></p>
+                        <p>💬 <a href="#" onclick="openChat()">Live Chat Support</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="confirmation-content">
+                <div class="confirmation-icon">🎉</div>
+                <h2 class="confirmation-title">Registration Successful!</h2>
+                <p class="confirmation-text">
+                    Thank you for registering for the AI Ethics Workshop. You'll receive a confirmation email shortly with event details, access instructions, and preparatory materials.
+                </p>
+                <div class="confirmation-actions">
+                    <button class="btn btn-primary" onclick="closeModal('successModal')">Great!</button>
+                    <button class="btn btn-secondary" onclick="addToCalendar()">📅 Add to Calendar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form validation
+        function validateForm() {
+            const errors = [];
+            
+            // Required fields
+            const requiredFields = [
+                { id: 'firstName', name: 'First Name' },
+                { id: 'lastName', name: 'Last Name' },
+                { id: 'email', name: 'Email Address' },
+                { id: 'termsConditions', name: 'Terms and Conditions acceptance' },
+                { id: 'codeOfConduct', name: 'Code of Conduct acceptance' }
+            ];
+            
+            requiredFields.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (field.id === 'termsConditions' || field.id === 'codeOfConduct') {
+                    if (!element.checked) {
+                        errors.push(`${field.name} is required`);
+                        element.classList.add('error');
+                    } else {
+                        element.classList.remove('error');
+                    }
+                } else {
+                    if (!element.value.trim()) {
+                        errors.push(`${field.name} is required`);
+                        element.classList.add('error');
+                    } else {
+                        element.classList.remove('error');
+                    }
+                }
+            });
+            
+            // Email validation
+            const email = document.getElementById('email').value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                errors.push('Please enter a valid email address');
+                document.getElementById('email').classList.add('error');
+            }
+            
+            return errors;
+        }
+
+        function showValidationErrors(errors) {
+            const existingSummary = document.querySelector('.validation-summary');
+            if (existingSummary) {
+                existingSummary.remove();
+            }
+            
+            const summary = document.createElement('div');
+            summary.className = 'validation-summary';
+            summary.innerHTML = `
+                <h4>Please fix the following errors:</h4>
+                <ul>
+                    ${errors.map(error => `<li>${error}</li>`).join('')}
+                </ul>
+            `;
+            
+            document.querySelector('.registration-form').insertBefore(summary, document.querySelector('.form-section'));
+            summary.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Form submission
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const errors = validateForm();
+            if (errors.length > 0) {
+                showValidationErrors(errors);
+                return;
+            }
+            
+            // Remove any existing error messages
+            const existingSummary = document.querySelector('.validation-summary');
+            if (existingSummary) {
+                existingSummary.remove();
+            }
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const registrationData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                organization: document.getElementById('organization').value,
+                jobTitle: document.getElementById('jobTitle').value,
+                location: document.getElementById('location').value,
+                aiExperience: document.getElementById('aiExperience').value,
+                industryFocus: document.getElementById('industryFocus').value,
+                interests: Array.from(document.querySelectorAll('input[name="interests"]:checked')).map(cb => cb.value),
+                expectations: document.getElementById('expectations').value,
+                hearAbout: document.querySelector('input[name="hearAbout"]:checked')?.value,
+                networking: Array.from(document.querySelectorAll('input[name="networking"]:checked')).map(cb => cb.value),
+                communication: Array.from(document.querySelectorAll('input[name="communication"]:checked')).map(cb => cb.value),
+                questions: document.getElementById('questions').value,
+                accessibility: document.getElementById('accessibility').value,
+                timezone: document.getElementById('timezone').value,
+                language: document.getElementById('language').value,
+                terms: Array.from(document.querySelectorAll('input[name="terms"]:checked')).map(cb => cb.value)
+            };
+            
+            console.log('Registration data:', registrationData);
+            
+            // Show success modal
+            document.getElementById('successModal').classList.add('active');
+            
+            // Update registration count
+            setTimeout(() => {
+                const progressFill = document.querySelector('.progress-fill');
+                const progressText = document.querySelector('.progress-text');
+                progressFill.style.width = '78%';
+                progressText.textContent = '36 of 50 spots filled';
+                
+                const statusElement = document.querySelector('.registration-status');
+                statusElement.textContent = '✅ Registration Open • 14 spots remaining';
+            }, 2000);
+        });
+
+        // Modal functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Other functions
+        function saveDraft() {
+            alert('Registration saved as draft!');
+        }
+
+        function cancelRegistration() {
+            if (confirm('Are you sure you want to cancel your registration? All entered information will be lost.')) {
+                window.location.href = 'dcf_event_details.html';
+            }
+        }
+
+        function addToCalendar() {
+            const eventDetails = {
+                title: 'AI Ethics Workshop: Implementing Catholic Social Teaching',
+                start: '2025-07-16T14:00:00',
+                end: '2025-07-16T16:00:00',
+                description: 'Interactive workshop exploring practical ways to integrate Catholic Social Teaching principles into AI development workflows.',
+                location: 'Virtual/Online'
+            };
+            
+            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start.replace(/[-:]/g, '')}/${eventDetails.end.replace(/[-:]/g, '')}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}`;
+            
+            window.open(calendarUrl, '_blank');
+        }
+
+        function showTerms() {
+            alert('Terms and Conditions would be displayed here.');
+        }
+
+        function showPrivacy() {
+            alert('Privacy Policy would be displayed here.');
+        }
+
+        function showCodeOfConduct() {
+            alert('Code of Conduct would be displayed here.');
+        }
+
+        function openChat() {
+            alert('Live chat support would open here.');
+        }
+
+        // Real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.hasAttribute('required') && !this.value.trim()) {
+                        this.classList.add('error');
+                    } else {
+                        this.classList.remove('error');
+                    }
+                });
+                
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('error') && this.value.trim()) {
+                        this.classList.remove('error');
+                    }
+                });
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('successModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal('successModal');
+            }
+   });
+
+        // User menu functionality
+        let isDropdownOpen = false;
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            if (isDropdownOpen) {
+                closeUserMenu();
+            } else {
+                openUserMenu();
+            }
+        }
+
+        function openUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            dropdown.classList.add('active');
+            overlay.classList.add('active');
+            isDropdownOpen = true;
+            
+            // updateUserDropdownInfo(); - removed, handled by master JS
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = document.querySelector('.dropdown-overlay');
+            
+            dropdown.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            isDropdownOpen = false;
+        }
+
+        function getOrCreateOverlay() {
+            let overlay = document.querySelector('.dropdown-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'dropdown-overlay';
+                overlay.onclick = closeUserMenu;
+                document.body.appendChild(overlay);
+            }
+            return overlay;
+        }
+
+        // updateUserDropdownInfo function removed - handled by master JS
+
+        function generateInitials(name) {
+            if (!name) return 'SJ';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                localStorage.removeItem('dcf_github_session');
+                localStorage.removeItem('dcf_user_logged_in');
+                localStorage.removeItem('dcf_user_name');
+                localStorage.removeItem('dcf_user_email');
+                localStorage.removeItem('dcf_auth_provider');
+                localStorage.removeItem('dcf_remember_login');
+
+                sessionStorage.clear();
+
+                alert('You have been signed out successfully.');
+                window.location.href = 'dcf_login_page.html';
+            }
+        }
+
+        // Initialize user menu on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // updateUserDropdownInfo(); - removed, handled by master JS
+
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+            if (isLoggedIn !== 'true') {
+                // DISABLED: alert('Please log in to access member pages.');
+                window.location.href = 'dcf_login_page.html';
+            }
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isDropdownOpen) {
+                    closeUserMenu();
+                }
+            });
+        });
+    </script>
+<script src="universal-dropdown.js"></script>
+
+</body>
+</html>
