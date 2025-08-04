@@ -96,9 +96,9 @@ async function updateUserDropdownInfo() {
                     .single();
                 
                 if (!error && profile) {
-                    userName = profile.first_name && profile.last_name ? 
+                    userName = profile.username || (profile.first_name && profile.last_name ? 
                         `${profile.first_name} ${profile.last_name}` : 
-                        profile.name || 'DCF Member';
+                        profile.name) || 'DCF Member';
                     const userUsername = profile.username || userName.split(' ')[0].toLowerCase();
                     localStorage.setItem('dcf_user_name', userName);
                     localStorage.setItem('dcf_user_username', userUsername);
