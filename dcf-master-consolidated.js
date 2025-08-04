@@ -125,9 +125,8 @@ async function updateUserDropdownInfo() {
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
 
-    const displayUsername = profile?.username ? profile.username : (localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'member');
-    if (nameElement) nameElement.textContent = displayUsername;
-    console.log('Set dropdown name to:', displayUsername);
+    // Don't set dropdown here - wait for database fetch below
+    console.log('Waiting for database fetch to set dropdown...');
     if (emailElement) {
         if (authProvider === 'github') {
             emailElement.textContent = `${userEmail} (GitHub)`;
@@ -322,8 +321,7 @@ async function loadPageAvatars() {
     // Update user info in dropdown
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-    const displayUsername = profile?.username ? profile.username : (localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'member');
-    if (nameElement) nameElement.textContent = displayUsername;
+    // Don't set dropdown here - wait for database fetch below
     if (emailElement) emailElement.textContent = userEmail;
     
     // Force initialize Supabase
