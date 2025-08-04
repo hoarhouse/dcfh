@@ -125,7 +125,7 @@ async function updateUserDropdownInfo() {
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
 
-    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || userName.split(' ')[0].toLowerCase();
+    const displayUsername = profile?.username ? profile.username : (localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'member');
     if (nameElement) nameElement.textContent = displayUsername;
     console.log('Set dropdown name to:', displayUsername);
     if (emailElement) {
@@ -322,7 +322,7 @@ async function loadPageAvatars() {
     // Update user info in dropdown
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
-    const displayUsername = localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || userName.split(' ')[0].toLowerCase();
+    const displayUsername = profile?.username ? profile.username : (localStorage.getItem('dcf_username') || localStorage.getItem('dcf_user_username') || 'member');
     if (nameElement) nameElement.textContent = displayUsername;
     if (emailElement) emailElement.textContent = userEmail;
     
