@@ -105,6 +105,13 @@ async function updateUserDropdownInfo() {
                     localStorage.setItem('dcf_username', userUsername);
                     console.log('updateUserDropdownInfo: Fetched userName from database:', userName);
                     console.log('updateUserDropdownInfo: Set username to:', userUsername);
+                    
+                    // NOW set the dropdown with fresh database username
+                    const nameElement = document.getElementById('dropdownUserName');
+                    if (nameElement) {
+                        nameElement.textContent = userUsername;
+                        console.log('Set dropdown to fresh username:', userUsername);
+                    }
                 }
             } catch (error) {
                 console.log('updateUserDropdownInfo: Error fetching profile:', error);
@@ -274,6 +281,13 @@ async function loadPageAvatars() {
                     localStorage.setItem('dcf_username', userUsername);
                     console.log('Fetched userName from database:', userName);
                     console.log('Set username to:', userUsername);
+                    
+                    // NOW set the dropdown with fresh database username
+                    const nameElement = document.getElementById('dropdownUserName');
+                    if (nameElement) {
+                        nameElement.textContent = userUsername;
+                        console.log('loadPageAvatars: Set dropdown to fresh username:', userUsername);
+                    }
                 }
             } catch (error) {
                 console.log('Error fetching profile:', error);
