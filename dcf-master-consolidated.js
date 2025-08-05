@@ -1100,6 +1100,14 @@ function handlePublicPageAuth() {
             setTimeout(async () => {
                 await updateUserDropdownInfo(); // This will load the profile picture
                 addNavigationItems(); // Add menu items and logout
+                
+                // Fix notification bell click handler on public pages
+                setTimeout(() => {
+                    const bell = document.querySelector('.notification-bell');
+                    if (bell) {
+                        bell.addEventListener('click', toggleNotificationDropdown);
+                    }
+                }, 100);
             }, 100);
         }
     }
