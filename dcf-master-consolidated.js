@@ -1064,7 +1064,8 @@ function getPageType() {
     if (filename.includes('dcf_member') || filename.includes('dcf_projects') ||
         filename.includes('dcf_events') || filename.includes('dcf_resources') ||
         filename.includes('dcf_admin') || filename.includes('dcf_personal') ||
-        filename.includes('dcf_account_settings') || filename.includes('dcf_project')) {
+        filename.includes('dcf_account_settings') || filename.includes('dcf_project') ||
+        filename.includes('dcf_notifications')) {
         return 'member';
     }
     
