@@ -1223,6 +1223,14 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeNotificationSound();
             updateNotificationBadge();
             
+            // CRITICAL: Re-attach all click handlers after everything loads
+            setTimeout(() => {
+                const bells = document.querySelectorAll('.notification-bell');
+                bells.forEach(bell => {
+                    bell.addEventListener('click', toggleNotificationDropdown);
+                });
+            }, 100);
+            
             // Update badge every 30 seconds
             setInterval(updateNotificationBadge, 30000);
         }, 1000);
