@@ -1084,8 +1084,7 @@ function handlePublicPageAuth() {
                     .notification-item.unread::before { content: ''; position: absolute; top: 1rem; right: 1.5rem; width: 6px; height: 6px; background: #000; border-radius: 50%; }
                     .notification-item-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
                     .notification-item-icon { font-size: 1rem; flex-shrink: 0; }
-                    .notification-item-content { flex: 1; min-width: 0; }
-                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 0.25rem; }
+                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; flex: 1; }
                     .notification-item-time { font-size: 0.8rem; color: #666; }
                     .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.4; }
                     .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #e5e5e5; background: #f8f9fa; }
@@ -1158,8 +1157,7 @@ function addNotificationBellToMemberPages() {
                     .notification-item.unread::before { content: ''; position: absolute; top: 1rem; right: 1.5rem; width: 6px; height: 6px; background: #000; border-radius: 50%; }
                     .notification-item-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
                     .notification-item-icon { font-size: 1rem; flex-shrink: 0; }
-                    .notification-item-content { flex: 1; min-width: 0; }
-                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 0.25rem; }
+                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; flex: 1; }
                     .notification-item-time { font-size: 0.8rem; color: #666; }
                     .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.4; }
                     .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #e5e5e5; background: #f8f9fa; }
@@ -1441,10 +1439,8 @@ async function loadRecentNotifications() {
                  onclick="handleDropdownNotificationClick('${notification.id}', '${notification.type}')">
                 <div class="notification-item-header">
                     <span class="notification-item-icon">${getNotificationIconDropdown(notification.type)}</span>
-                    <div class="notification-item-content">
-                        <div class="notification-item-title">${notification.title}</div>
-                        <div class="notification-item-time">${formatTimeShort(notification.created_at)}</div>
-                    </div>
+                    <span class="notification-item-title">${notification.title}</span>
+                    <span class="notification-item-time">${formatTimeShort(notification.created_at)}</span>
                 </div>
                 <div class="notification-item-message">${notification.message}</div>
             </div>
