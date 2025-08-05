@@ -1070,32 +1070,29 @@ function handlePublicPageAuth() {
                     @keyframes ring { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
                     .notification-icon { font-size: 1.2rem; display: block; }
                     .notification-badge { position: absolute; top: -2px; right: -2px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; min-width: 20px; }
-                    .notification-dropdown { position: absolute; top: calc(100% + 12px); right: 0; background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.06); border: 1px solid rgba(0, 0, 0, 0.05); width: 380px; max-height: 480px; opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10000; overflow: hidden; display: none; backdrop-filter: blur(10px); }
-                    .notification-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); display: block; }
-                    .notification-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-                    .notification-dropdown-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: white; letter-spacing: -0.5px; }
-                    .view-all-link { color: rgba(255, 255, 255, 0.9); text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 20px; background: rgba(255, 255, 255, 0.15); transition: all 0.2s ease; }
-                    .view-all-link:hover { background: rgba(255, 255, 255, 0.25); color: white; text-decoration: none; }
-                    .notification-dropdown-content { max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #e0e0e0 transparent; }
-                    .notification-dropdown-content::-webkit-scrollbar { width: 4px; }
-                    .notification-dropdown-content::-webkit-scrollbar-track { background: transparent; }
-                    .notification-dropdown-content::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 2px; }
-                    .notification-item { padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(0, 0, 0, 0.06); cursor: pointer; transition: all 0.2s ease; position: relative; }
+                    .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid #e5e5e5; width: 350px; max-height: 400px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 10000; overflow: hidden; display: none; }
+                    .notification-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); display: block; }
+                    .notification-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e5e5; background: #000; }
+                    .notification-dropdown-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: white; }
+                    .view-all-link { color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500; opacity: 0.8; transition: opacity 0.2s ease; }
+                    .view-all-link:hover { opacity: 1; text-decoration: underline; }
+                    .notification-dropdown-content { max-height: 300px; overflow-y: auto; }
+                    .notification-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s ease; }
                     .notification-item:last-child { border-bottom: none; }
-                    .notification-item:hover { background: rgba(103, 126, 234, 0.04); }
-                    .notification-item.unread { background: linear-gradient(90deg, rgba(103, 126, 234, 0.08) 0%, rgba(103, 126, 234, 0.02) 100%); border-left: 3px solid #667eea; }
-                    .notification-item.unread::before { content: ''; position: absolute; top: 1.25rem; right: 1.5rem; width: 8px; height: 8px; background: #667eea; border-radius: 50%; }
+                    .notification-item:hover { background: #f8f9fa; }
+                    .notification-item.unread { background: #f8f9fa; border-left: 3px solid #000; }
+                    .notification-item.unread::before { content: ''; position: absolute; top: 1rem; right: 1.5rem; width: 6px; height: 6px; background: #000; border-radius: 50%; }
                     .notification-item-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
-                    .notification-item-icon { font-size: 1.1rem; margin-top: 0.1rem; flex-shrink: 0; }
+                    .notification-item-icon { font-size: 1rem; flex-shrink: 0; }
                     .notification-item-content { flex: 1; min-width: 0; }
-                    .notification-item-title { font-weight: 600; font-size: 0.95rem; color: #2d3748; margin-bottom: 0.25rem; line-height: 1.3; }
-                    .notification-item-time { font-size: 0.8rem; color: #718096; font-weight: 500; }
-                    .notification-item-message { font-size: 0.88rem; color: #4a5568; line-height: 1.4; margin-top: 0.25rem; }
-                    .notification-dropdown-footer { padding: 1rem 1.5rem; background: rgba(0, 0, 0, 0.02); border-top: 1px solid rgba(0, 0, 0, 0.06); }
-                    .mark-all-read-btn { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; }
-                    .mark-all-read-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(103, 126, 234, 0.3); }
-                    .notification-loading { padding: 3rem 2rem; text-align: center; color: #718096; font-size: 0.9rem; }
-                    .notification-empty { padding: 3rem 2rem; text-align: center; color: #718096; font-size: 0.9rem; }
+                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 0.25rem; }
+                    .notification-item-time { font-size: 0.8rem; color: #666; }
+                    .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.4; }
+                    .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #e5e5e5; background: #f8f9fa; }
+                    .mark-all-read-btn { width: 100%; padding: 0.5rem; background: #000; color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
+                    .mark-all-read-btn:hover { background: #333; }
+                    .notification-loading { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
+                    .notification-empty { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
                 `;
                 document.head.appendChild(style);
             }
