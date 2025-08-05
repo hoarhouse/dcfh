@@ -720,16 +720,54 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             try {
                 document.getElementById('loadingState').style.display = 'block';
                 
-                const { data, error } = await supabase
+                // Get current user ID
+                const { data: userData } = await supabase
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('email', currentUser.email)
+                    .single();
+                
+                if (!userData) throw new Error('User not found');
+                
+                // Load regular notifications
+                const { data: regularNotifications, error: notifError } = await supabase
                     .from('notifications')
                     .select('*')
                     .eq('recipient_email', currentUser.email)
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                    .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (notifError) throw notifError;
 
-                notifications = data || [];
+                // Load connection requests
+                const { data: connectionRequests, error: connError } = await supabase
+                    .from('connections')
+                    .select(`
+                        id, 
+                        created_at, 
+                        status,
+                        requester:user_profiles!connections_requester_id_fkey(username, name)
+                    `)
+                    .eq('recipient_id', userData.id)
+                    .eq('status', 'pending');
+
+                if (connError) throw connError;
+
+                // Convert connection requests to notification format
+                const connectionNotifications = (connectionRequests || []).map(req => ({
+                    id: `connection_${req.id}`,
+                    type: 'connection_request',
+                    title: 'New Connection Request',
+                    message: `@${req.requester.username || req.requester.name} wants to connect with you`,
+                    created_at: req.created_at,
+                    is_read: false,
+                    related_type: 'connection',
+                    related_id: req.id
+                }));
+
+                // Combine and sort all notifications
+                notifications = [...(regularNotifications || []), ...connectionNotifications]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
                 displayNotifications();
                 updateStats();
                 updateFilterCounts();
@@ -779,6 +817,14 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                                     Mark as Read
                                 </button>
                             ` : ''}
+                            ${notification.type === 'connection_request' ? `
+                                <button class="notification-action primary" onclick="event.stopPropagation(); acceptConnection('${notification.related_id}')">
+                                    Accept
+                                </button>
+                                <button class="notification-action" onclick="event.stopPropagation(); rejectConnection('${notification.related_id}')">
+                                    Decline
+                                </button>
+                            ` : ''}
                             ${notification.related_type === 'post' ? `
                                 <button class="notification-action" onclick="event.stopPropagation(); viewPost('${notification.related_id}')">
                                     View Post
@@ -802,7 +848,8 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 'event_reminder': '📅',
                 'member_join': '👤',
                 'resource_shared': '📚',
-                'system_update': '⚙️'
+                'system_update': '⚙️',
+                'connection_request': '🤝'
             };
             return icons[type] || '🔔';
         }
@@ -1029,6 +1076,48 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                     <button class="btn btn-primary" onclick="loadNotifications()">Try Again</button>
                 </div>
             `;
+        }
+
+        async function acceptConnection(connectionId) {
+            try {
+                const { error } = await supabase
+                    .from('connections')
+                    .update({ status: 'accepted' })
+                    .eq('id', connectionId);
+
+                if (error) throw error;
+                
+                // Remove from notifications
+                notifications = notifications.filter(n => n.related_id !== connectionId);
+                displayNotifications();
+                updateStats();
+                
+                showSuccess('Connection request accepted!');
+            } catch (error) {
+                console.error('Error accepting connection:', error);
+                showError('Failed to accept connection request.');
+            }
+        }
+
+        async function rejectConnection(connectionId) {
+            try {
+                const { error } = await supabase
+                    .from('connections')
+                    .update({ status: 'rejected' })
+                    .eq('id', connectionId);
+
+                if (error) throw error;
+                
+                // Remove from notifications
+                notifications = notifications.filter(n => n.related_id !== connectionId);
+                displayNotifications();
+                updateStats();
+                
+                showSuccess('Connection request declined.');
+            } catch (error) {
+                console.error('Error rejecting connection:', error);
+                showError('Failed to reject connection request.');
+            }
         }
     </script>
 </body>
