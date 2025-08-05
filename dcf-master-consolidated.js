@@ -1012,9 +1012,21 @@ function handlePublicPageAuth() {
             // User IS logged in - CREATE basic dropdown structure with notification bell
             navActions.innerHTML = `
                 <div class="user-menu">
-                    <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
+                    <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
                         <span class="notification-icon">🔔</span>
                         <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="notification-dropdown-header">
+                                <h3>Notifications</h3>
+                                <a href="dcf_notifications.html" class="view-all-link">View All</a>
+                            </div>
+                            <div class="notification-dropdown-content" id="notificationDropdownContent">
+                                <div class="notification-loading">Loading...</div>
+                            </div>
+                            <div class="notification-dropdown-footer">
+                                <button onclick="markAllNotificationsAsRead()" class="mark-all-read-btn">Mark All Read</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="user-dropdown">
                         <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">DM</div>
@@ -1073,9 +1085,21 @@ function addNotificationBellToMemberPages() {
         if (!existingBell) {
             // Add notification bell before the user dropdown
             const bellHTML = `
-                <div class="notification-bell" onclick="window.location.href='dcf_notifications.html'">
+                <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
                     <span class="notification-icon">🔔</span>
                     <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-dropdown-header">
+                            <h3>Notifications</h3>
+                            <a href="dcf_notifications.html" class="view-all-link">View All</a>
+                        </div>
+                        <div class="notification-dropdown-content" id="notificationDropdownContent">
+                            <div class="notification-loading">Loading...</div>
+                        </div>
+                        <div class="notification-dropdown-footer">
+                            <button onclick="markAllNotificationsAsRead()" class="mark-all-read-btn">Mark All Read</button>
+                        </div>
+                    </div>
                 </div>
             `;
             userMenu.insertAdjacentHTML('afterbegin', bellHTML);
@@ -1087,8 +1111,30 @@ function addNotificationBellToMemberPages() {
                 style.textContent = `
                     .notification-bell { position: relative; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.3s ease; margin-right: 1rem; }
                     .notification-bell:hover { background-color: #f0f0f0; }
+                    .notification-bell.ringing { animation: ring 0.5s ease-in-out; }
+                    @keyframes ring { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
                     .notification-icon { font-size: 1.2rem; display: block; }
                     .notification-badge { position: absolute; top: -2px; right: -2px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; min-width: 20px; }
+                    .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); border: 1px solid #e5e5e5; width: 350px; max-height: 400px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 1000; overflow: hidden; }
+                    .notification-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
+                    .notification-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; background: #f8f9fa; }
+                    .notification-dropdown-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: #333; }
+                    .view-all-link { color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+                    .view-all-link:hover { text-decoration: underline; }
+                    .notification-dropdown-content { max-height: 300px; overflow-y: auto; }
+                    .notification-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s ease; }
+                    .notification-item:hover { background-color: #f8f9fa; }
+                    .notification-item.unread { background-color: #fffbf0; border-left: 3px solid #007bff; }
+                    .notification-item-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+                    .notification-item-icon { font-size: 1rem; }
+                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; flex: 1; }
+                    .notification-item-time { font-size: 0.8rem; color: #666; }
+                    .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.3; margin-left: 1.5rem; }
+                    .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #f0f0f0; background: #f8f9fa; }
+                    .mark-all-read-btn { width: 100%; padding: 0.5rem; background: #000; color: white; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.2s ease; }
+                    .mark-all-read-btn:hover { background: #333; }
+                    .notification-loading { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
+                    .notification-empty { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
                 `;
                 document.head.appendChild(style);
             }
@@ -1139,6 +1185,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // ALSO handle member pages that have existing .user-menu
     if (pageType === 'member' && isLoggedIn) {
         addNotificationBellToMemberPages();
+        
+        // Initialize notification system
+        setTimeout(() => {
+            initializeNotificationSound();
+            updateNotificationBadge();
+            
+            // Update badge every 30 seconds
+            setInterval(updateNotificationBadge, 30000);
+        }, 1000);
     }
 });
 
@@ -1208,3 +1263,294 @@ function generateSuggestedUsername(email, name) {
 // Make functions available globally
 window.validateUsername = validateUsername;
 window.generateSuggestedUsername = generateSuggestedUsername;
+
+// =============================================================================
+// 10. NOTIFICATION SYSTEM
+// =============================================================================
+// Notification System
+let notificationSound = null;
+let lastNotificationCount = 0;
+let notificationDropdownOpen = false;
+
+// Initialize notification sound
+function initializeNotificationSound() {
+    if (!notificationSound) {
+        // Create audio context for bell sound
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+            
+            notificationSound = {
+                context: audioContext,
+                play: function() {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                }
+            };
+        } catch (error) {
+            console.log('Audio context not supported');
+        }
+    }
+}
+
+function toggleNotificationDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('notificationDropdown');
+    
+    if (notificationDropdownOpen) {
+        closeNotificationDropdown();
+    } else {
+        openNotificationDropdown();
+    }
+}
+
+function openNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.add('active');
+    notificationDropdownOpen = true;
+    
+    // Load recent notifications
+    loadRecentNotifications();
+    
+    // Close dropdown when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', closeNotificationDropdownOutside);
+    }, 100);
+}
+
+function closeNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.remove('active');
+    notificationDropdownOpen = false;
+    document.removeEventListener('click', closeNotificationDropdownOutside);
+}
+
+function closeNotificationDropdownOutside(event) {
+    const dropdown = document.getElementById('notificationDropdown');
+    const bell = document.querySelector('.notification-bell');
+    
+    if (!dropdown.contains(event.target) && !bell.contains(event.target)) {
+        closeNotificationDropdown();
+    }
+}
+
+async function loadRecentNotifications() {
+    try {
+        const content = document.getElementById('notificationDropdownContent');
+        content.innerHTML = '<div class="notification-loading">Loading...</div>';
+        
+        const currentUserEmail = localStorage.getItem('dcf_user_email');
+        if (!currentUserEmail) return;
+        
+        // Get current user ID
+        const { data: userData } = await window.masterSupabase
+            .from('user_profiles')
+            .select('id')
+            .eq('email', currentUserEmail)
+            .single();
+        
+        if (!userData) throw new Error('User not found');
+        
+        // Load regular notifications (recent 5)
+        const { data: regularNotifications } = await window.masterSupabase
+            .from('notifications')
+            .select('*')
+            .eq('recipient_email', currentUserEmail)
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+        // Load connection requests
+        const { data: connectionRequests } = await window.masterSupabase
+            .from('connections')
+            .select(`
+                id, 
+                created_at, 
+                status,
+                requester:user_profiles!connections_requester_id_fkey(username, name)
+            `)
+            .eq('recipient_id', userData.id)
+            .eq('status', 'pending')
+            .limit(2);
+
+        // Convert connection requests to notification format
+        const connectionNotifications = (connectionRequests || []).map(req => ({
+            id: `connection_${req.id}`,
+            type: 'connection_request',
+            title: 'Connection Request',
+            message: `@${req.requester.username || req.requester.name} wants to connect`,
+            created_at: req.created_at,
+            is_read: false
+        }));
+
+        // Combine notifications
+        const allNotifications = [...(regularNotifications || []), ...connectionNotifications]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 5);
+
+        if (allNotifications.length === 0) {
+            content.innerHTML = '<div class="notification-empty">No recent notifications</div>';
+            return;
+        }
+
+        content.innerHTML = allNotifications.map(notification => `
+            <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
+                 onclick="handleDropdownNotificationClick('${notification.id}', '${notification.type}')">
+                <div class="notification-item-header">
+                    <span class="notification-item-icon">${getNotificationIconDropdown(notification.type)}</span>
+                    <span class="notification-item-title">${notification.title}</span>
+                    <span class="notification-item-time">${formatTimeShort(notification.created_at)}</span>
+                </div>
+                <div class="notification-item-message">${notification.message}</div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        document.getElementById('notificationDropdownContent').innerHTML = 
+            '<div class="notification-empty">Failed to load notifications</div>';
+    }
+}
+
+function getNotificationIconDropdown(type) {
+    const icons = {
+        'post_like': '❤️',
+        'post_comment': '💬',
+        'post_mention': '@',
+        'project_update': '📁',
+        'event_reminder': '📅',
+        'member_join': '👤',
+        'resource_shared': '📚',
+        'system_update': '⚙️',
+        'connection_request': '🤝'
+    };
+    return icons[type] || '🔔';
+}
+
+function formatTimeShort(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d`;
+}
+
+function handleDropdownNotificationClick(notificationId, type) {
+    closeNotificationDropdown();
+    
+    if (type === 'connection_request') {
+        window.location.href = 'dcf_notifications.html';
+    } else {
+        window.location.href = 'dcf_notifications.html';
+    }
+}
+
+async function markAllNotificationsAsRead() {
+    try {
+        const currentUserEmail = localStorage.getItem('dcf_user_email');
+        if (!currentUserEmail) return;
+        
+        await window.masterSupabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('recipient_email', currentUserEmail)
+            .eq('is_read', false);
+            
+        // Refresh the dropdown
+        loadRecentNotifications();
+        updateNotificationBadge();
+        
+    } catch (error) {
+        console.error('Error marking notifications as read:', error);
+    }
+}
+
+async function updateNotificationBadge() {
+    try {
+        const currentUserEmail = localStorage.getItem('dcf_user_email');
+        if (!currentUserEmail) return;
+        
+        // Get current user ID
+        const { data: userData } = await window.masterSupabase
+            .from('user_profiles')
+            .select('id')
+            .eq('email', currentUserEmail)
+            .single();
+        
+        if (!userData) return;
+        
+        // Count unread notifications
+        const { data: unreadNotifications } = await window.masterSupabase
+            .from('notifications')
+            .select('id')
+            .eq('recipient_email', currentUserEmail)
+            .eq('is_read', false);
+            
+        // Count pending connection requests
+        const { data: pendingConnections } = await window.masterSupabase
+            .from('connections')
+            .select('id')
+            .eq('recipient_id', userData.id)
+            .eq('status', 'pending');
+            
+        const totalUnread = (unreadNotifications?.length || 0) + (pendingConnections?.length || 0);
+        const badge = document.getElementById('notificationBadge');
+        
+        if (totalUnread > 0) {
+            badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+            badge.style.display = 'flex';
+            
+            // Play bell sound if count increased
+            if (totalUnread > lastNotificationCount) {
+                playNotificationSound();
+                triggerBellRing();
+            }
+        } else {
+            badge.style.display = 'none';
+        }
+        
+        lastNotificationCount = totalUnread;
+        
+    } catch (error) {
+        console.error('Error updating notification badge:', error);
+    }
+}
+
+function playNotificationSound() {
+    initializeNotificationSound();
+    if (notificationSound && notificationSound.context.state === 'running') {
+        notificationSound.play();
+    }
+}
+
+function triggerBellRing() {
+    const bell = document.querySelector('.notification-bell');
+    if (bell) {
+        bell.classList.add('ringing');
+        setTimeout(() => {
+            bell.classList.remove('ringing');
+        }, 500);
+    }
+}
+
+// Make notification functions available globally
+window.toggleNotificationDropdown = toggleNotificationDropdown;
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
