@@ -1107,67 +1107,69 @@ function handlePublicPageAuth() {
 
 function addNotificationBellToMemberPages() {
     const userMenu = document.querySelector('.user-menu');
-    if (userMenu && !userMenu.querySelector('.notification-bell')) {
-        // Check if it already has notification bell
+    if (userMenu) {
+        // REMOVE any existing notification bell first
         const existingBell = userMenu.querySelector('.notification-bell');
-        if (!existingBell) {
-            // Add notification bell before the user dropdown
-            const bellHTML = `
-                <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
-                    <span class="notification-icon">🔔</span>
-                    <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
-                    <div class="notification-dropdown" id="notificationDropdown">
-                        <div class="notification-dropdown-header">
-                            <h3>Notifications</h3>
-                            <a href="dcf_notifications.html" class="view-all-link">View All</a>
-                        </div>
-                        <div class="notification-dropdown-content" id="notificationDropdownContent">
-                            <div class="notification-loading">Loading...</div>
-                        </div>
-                        <div class="notification-dropdown-footer">
-                            <button onclick="markAllNotificationsAsRead()" class="mark-all-read-btn">Mark All Read</button>
-                        </div>
+        if (existingBell) {
+            existingBell.remove();
+        }
+        
+        // Add the correct notification bell
+        const bellHTML = `
+            <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
+                <span class="notification-icon">🔔</span>
+                <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                    <div class="notification-dropdown-header">
+                        <h3>Notifications</h3>
+                        <a href="dcf_notifications.html" class="view-all-link">View All</a>
+                    </div>
+                    <div class="notification-dropdown-content" id="notificationDropdownContent">
+                        <div class="notification-loading">Loading...</div>
+                    </div>
+                    <div class="notification-dropdown-footer">
+                        <button onclick="markAllNotificationsAsRead()" class="mark-all-read-btn">Mark All Read</button>
                     </div>
                 </div>
+            </div>
+        `;
+        userMenu.insertAdjacentHTML('afterbegin', bellHTML);
+        
+        // Add CSS for notification bell if not already added
+        if (!document.querySelector('#memberPageBellCSS')) {
+            const style = document.createElement('style');
+            style.id = 'memberPageBellCSS';
+            style.textContent = `
+                .notification-bell { position: relative; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.3s ease; margin-right: 1rem; }
+                .notification-bell:hover { background-color: #f0f0f0; }
+                .notification-bell.ringing { animation: ring 0.5s ease-in-out; }
+                @keyframes ring { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+                .notification-icon { font-size: 1.2rem; display: block; }
+                .notification-badge { position: absolute; top: -2px; right: -2px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; min-width: 20px; }
+                .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid #e5e5e5; width: 350px; max-height: 400px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 10000; overflow: hidden; display: none; }
+                .notification-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); display: block; }
+                .notification-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e5e5; background: #000; }
+                .notification-dropdown-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: white; }
+                .view-all-link { color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500; opacity: 0.8; transition: opacity 0.2s ease; }
+                .view-all-link:hover { opacity: 1; text-decoration: underline; }
+                .notification-dropdown-content { max-height: 300px; overflow-y: auto; }
+                .notification-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s ease; }
+                .notification-item:last-child { border-bottom: none; }
+                .notification-item:hover { background: #f8f9fa; }
+                .notification-item.unread { background: #f8f9fa; border-left: 3px solid #000; }
+                .notification-item.unread::before { content: ''; position: absolute; top: 1rem; right: 1.5rem; width: 6px; height: 6px; background: #000; border-radius: 50%; }
+                .notification-item-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
+                .notification-item-icon { font-size: 1rem; flex-shrink: 0; }
+                .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; flex: 1; }
+                .notification-item-time { font-size: 0.8rem; color: #666; }
+                .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.4; }
+                .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #e5e5e5; background: #f8f9fa; }
+                .mark-all-read-btn { width: 100%; padding: 0.5rem; background: #000; color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
+                .mark-all-read-btn:hover { background: #333; }
+                .notification-loading { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
+                .notification-empty { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
             `;
-            userMenu.insertAdjacentHTML('afterbegin', bellHTML);
-            
-            // Add CSS for notification bell if not already added
-            if (!document.querySelector('#memberPageBellCSS')) {
-                const style = document.createElement('style');
-                style.id = 'memberPageBellCSS';
-                style.textContent = `
-                    .notification-bell { position: relative; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.3s ease; margin-right: 1rem; }
-                    .notification-bell:hover { background-color: #f0f0f0; }
-                    .notification-bell.ringing { animation: ring 0.5s ease-in-out; }
-                    @keyframes ring { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
-                    .notification-icon { font-size: 1.2rem; display: block; }
-                    .notification-badge { position: absolute; top: -2px; right: -2px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; min-width: 20px; }
-                    .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid #e5e5e5; width: 350px; max-height: 400px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 10000; overflow: hidden; display: none; }
-                    .notification-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); display: block; }
-                    .notification-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e5e5; background: #000; }
-                    .notification-dropdown-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: white; }
-                    .view-all-link { color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500; opacity: 0.8; transition: opacity 0.2s ease; }
-                    .view-all-link:hover { opacity: 1; text-decoration: underline; }
-                    .notification-dropdown-content { max-height: 300px; overflow-y: auto; }
-                    .notification-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s ease; }
-                    .notification-item:last-child { border-bottom: none; }
-                    .notification-item:hover { background: #f8f9fa; }
-                    .notification-item.unread { background: #f8f9fa; border-left: 3px solid #000; }
-                    .notification-item.unread::before { content: ''; position: absolute; top: 1rem; right: 1.5rem; width: 6px; height: 6px; background: #000; border-radius: 50%; }
-                    .notification-item-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
-                    .notification-item-icon { font-size: 1rem; flex-shrink: 0; }
-                    .notification-item-title { font-weight: 600; font-size: 0.9rem; color: #333; flex: 1; }
-                    .notification-item-time { font-size: 0.8rem; color: #666; }
-                    .notification-item-message { font-size: 0.85rem; color: #666; line-height: 1.4; }
-                    .notification-dropdown-footer { padding: 0.75rem 1.5rem; border-top: 1px solid #e5e5e5; background: #f8f9fa; }
-                    .mark-all-read-btn { width: 100%; padding: 0.5rem; background: #000; color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
-                    .mark-all-read-btn:hover { background: #333; }
-                    .notification-loading { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
-                    .notification-empty { padding: 2rem; text-align: center; color: #666; font-size: 0.9rem; }
-                `;
-                document.head.appendChild(style);
-            }
+            document.head.appendChild(style);
         }
     }
 }
@@ -1351,18 +1353,9 @@ function toggleNotificationDropdown(event) {
 }
 
 function openNotificationDropdown() {
-    console.log('openNotificationDropdown called');
     const dropdown = document.getElementById('notificationDropdown');
-    console.log('Dropdown element in open:', dropdown);
-    
-    if (!dropdown) {
-        console.error('No dropdown element found!');
-        return;
-    }
-    
     dropdown.classList.add('active');
     notificationDropdownOpen = true;
-    console.log('Dropdown should now be visible');
     
     // Load recent notifications
     loadRecentNotifications();
