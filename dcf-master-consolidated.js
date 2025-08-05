@@ -1015,7 +1015,7 @@ function handlePublicPageAuth() {
                     <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
                         <span class="notification-icon">🔔</span>
                         <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
-                        <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
                             <div class="notification-dropdown-header">
                                 <h3>Notifications</h3>
                                 <a href="dcf_notifications.html" class="view-all-link">View All</a>
