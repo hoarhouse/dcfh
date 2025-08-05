@@ -1336,20 +1336,33 @@ function initializeNotificationSound() {
 }
 
 function toggleNotificationDropdown(event) {
+    console.log('toggleNotificationDropdown called');
     event.stopPropagation();
     const dropdown = document.getElementById('notificationDropdown');
+    console.log('Dropdown element found:', dropdown);
     
     if (notificationDropdownOpen) {
+        console.log('Closing dropdown');
         closeNotificationDropdown();
     } else {
+        console.log('Opening dropdown');
         openNotificationDropdown();
     }
 }
 
 function openNotificationDropdown() {
+    console.log('openNotificationDropdown called');
     const dropdown = document.getElementById('notificationDropdown');
+    console.log('Dropdown element in open:', dropdown);
+    
+    if (!dropdown) {
+        console.error('No dropdown element found!');
+        return;
+    }
+    
     dropdown.classList.add('active');
     notificationDropdownOpen = true;
+    console.log('Dropdown should now be visible');
     
     // Load recent notifications
     loadRecentNotifications();
