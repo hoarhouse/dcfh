@@ -1384,6 +1384,11 @@ async function loadRecentNotifications() {
         const currentUserEmail = localStorage.getItem('dcf_user_email');
         if (!currentUserEmail) return;
         
+        if (!window.masterSupabase) {
+            initializeSupabase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Get current user ID
         const { data: userData } = await window.masterSupabase
             .from('user_profiles')
