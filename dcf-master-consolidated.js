@@ -1519,6 +1519,11 @@ async function updateNotificationBadge() {
         if (!currentUserEmail) return;
         
         // Get current user ID
+        if (!window.masterSupabase) {
+            initializeSupabase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         const { data: userData } = await window.masterSupabase
             .from('user_profiles')
             .select('id')
