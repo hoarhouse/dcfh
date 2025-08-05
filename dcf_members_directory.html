@@ -1212,6 +1212,32 @@
 
                 if (error) throw error;
 
+                // Get current user info for notification
+                const currentUserEmail = localStorage.getItem('dcf_user_email');
+                const currentUserName = localStorage.getItem('dcf_user_name') || localStorage.getItem('dcf_username');
+
+                // Get recipient email
+                const { data: recipientData } = await window.masterSupabase
+                    .from('user_profiles')
+                    .select('email')
+                    .eq('id', targetUserId)
+                    .single();
+
+                // Create notification for recipient
+                if (recipientData) {
+                    await window.masterSupabase
+                        .from('notifications')
+                        .insert([{
+                            recipient_email: recipientData.email,
+                            type: 'connection_request',
+                            title: 'New Connection Request',
+                            message: `@${currentUserName} wants to connect with you`,
+                            is_read: false,
+                            related_type: 'connection',
+                            related_id: null
+                        }]);
+                }
+
                 // Update button state
                 button.textContent = '⏳ Pending';
                 button.classList.remove('btn-primary');
