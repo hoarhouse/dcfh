@@ -1297,12 +1297,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
        // Initialize notification system
         setTimeout(() => {
-            updateNotificationBadge();
+            // updateNotificationBadge(); // Function not defined - commented out
             
             // Notification bell uses inline onclick - no addEventListener conflicts
             
-            // Update badge every 30 seconds
-            setInterval(updateNotificationBadge, 30000);
+            // Update badge every 30 seconds if function exists
+            // setInterval(updateNotificationBadge, 30000); // Function not defined - commented out
         }, 1000);
     }
 });
