@@ -1202,13 +1202,15 @@
                 }
 
                 // Send connection request
-                const { error } = await window.masterSupabase
+                const { data: connectionData, error } = await window.masterSupabase
                     .from('connections')
                     .insert([{
                         requester_id: currentUserId,
                         recipient_id: targetUserId,
                         status: 'pending'
-                    }]);
+                    }])
+                    .select()
+                    .single();
 
                 if (error) throw error;
 
@@ -1238,9 +1240,11 @@
                                 message: `@${currentUserName} wants to connect with you`,
                                 is_read: false,
                                 related_type: 'connection',
-                                related_id: null
+                                related_id: connectionData.id
                             }]);
-                        console.log('Notification result:', notificationResult);
+                            console.log('Connection data:', connectionData);
+                            console.log('Notification result:', notificationResult); 
+                            console.log('Notification result:', notificationResult);
                         if (notificationResult.error) {
                             console.error('Notification error:', notificationResult.error);
                         }
