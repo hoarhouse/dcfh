@@ -86,7 +86,7 @@ function initializeSupabase() {
         // Check if there's already a global Supabase client we can reuse
         if (window.supabaseClient) {
             console.log('Reusing existing supabaseClient');
-            window.masterSupabase = window.supabaseClient;
+            window.masterSupabase = window.authSupabase;
             return;
         }
         
