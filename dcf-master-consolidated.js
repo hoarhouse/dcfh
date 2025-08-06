@@ -1283,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const pageType = getPageType();
     
     // Wait for auth to initialize properly
-    await dcfAuth.initializeAuth();
+    await initializeAuth();
     
     // NOW populate navigation with correct auth state
     populateTopNavigation();
