@@ -159,12 +159,20 @@ async function signOutUser() {
  * Redirect if not logged in (replaces localStorage checks)
  */
 async function requireAuth() {
-    const isLoggedIn = await initializeAuth();
-    if (!isLoggedIn) {
+    try {
+        // Check current session
+        const { data: { session } } = await window.authSupabase.auth.getSession();
+        if (session?.user) {
+            return true; // User is logged in
+        }
+        
+        // Not logged in - redirect
         window.location.href = 'dcf_login_page.html';
         return false;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        return true; // Allow access on error to prevent lockout
     }
-    return true;
 }
 
 /**
