@@ -251,16 +251,14 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     }
 });
 
-// Don't auto-initialize on login page
-if (!window.location.pathname.includes('login')) {
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeAuth().then(isLoggedIn => {
-            if (isLoggedIn) {
-                updateUserInterface();
-            }
-        });
+// Initialize auth on ALL pages including login
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAuth().then(isLoggedIn => {
+        if (isLoggedIn) {
+            updateUserInterface();
+        }
     });
-}
+});
 
 // Export functions for global use
 window.dcfAuth = {
