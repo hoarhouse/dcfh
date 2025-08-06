@@ -362,8 +362,7 @@ async function loadPageAvatars() {
         console.log('Found invalid userName, fetching from database...');
         
         if (!window.masterSupabase) {
-            initializeSupabase();
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await waitForAuthSupabase();
         }
         
         if (window.masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
