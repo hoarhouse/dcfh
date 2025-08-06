@@ -1,8 +1,8 @@
 // supabase-auth.js - Master Authentication Utilities
 // Replaces all localStorage-based authentication with proper Supabase Auth
 
-// Initialize Supabase (same credentials as your existing setup)
-window.authSupabase = window.supabase.createClient(
+// Use existing Supabase instance to avoid conflicts
+window.authSupabase = window.masterSupabase || window.supabase.createClient(
     'https://atzommnkkwzgbktuzjti.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
 );
