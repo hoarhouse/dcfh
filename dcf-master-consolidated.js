@@ -158,8 +158,7 @@ async function updateUserDropdownInfo() {
         console.log('updateUserDropdownInfo: fetching from database...');
         
         if (!window.masterSupabase) {
-            initializeSupabase();
-            setTimeout(() => {}, 200);
+            window.masterSupabase = window.authSupabase;
         }
         
         if (window.masterSupabase && userEmail && userEmail !== 'null' && userEmail !== 'undefined') {
