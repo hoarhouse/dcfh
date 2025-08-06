@@ -873,17 +873,27 @@
 
                 if (connError) throw connError;
 
-                // Convert connection requests to notification format
-                const connectionNotifications = (connectionRequests || []).map(req => ({
-                    id: `connection_${req.id}`,
-                    type: 'connection_request',
-                    title: 'New Connection Request',
-                    message: `@${req.requester.username || req.requester.name} wants to connect with you`,
-                    created_at: req.created_at,
-                    is_read: false,
-                    related_type: 'connection',
-                    related_id: req.id
-                }));
+            
+                    // Get existing connection notification IDs to avoid duplicates  
+                const existingConnectionIds = (regularNotifications || [])
+                    .filter(n => n.type === 'connection_request' && n.related_id)
+                    .map(n => n.related_id.toString());
+
+               
+
+                // Convert connection requests to notification format (only if not already in notifications)
+                const connectionNotifications = (connectionRequests || [])
+                    .filter(req => !existingConnectionIds.includes(req.id.toString()))
+                    .map(req => ({
+                        id: `connection_${req.id}`,
+                        type: 'connection_request',
+                        title: 'New Connection Request',
+                        message: `@${req.requester.username || req.requester.name} wants to connect with you`,
+                        created_at: req.created_at,
+                        is_read: false,
+                        related_type: 'connection',
+                        related_id: req.id
+                    }));
 
                 // Combine and sort all notifications
                 notifications = [...(regularNotifications || []), ...connectionNotifications]
