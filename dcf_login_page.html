@@ -493,11 +493,36 @@
     </div>
 
     <script>
-        // Use the auth system's Supabase client
-const supabase = window.authSupabase;
+        // Wait for auth system to be ready, then get Supabase client
+let supabase = null;
+
+// Wait for supabase-auth.js to initialize
+function waitForAuth() {
+    return new Promise((resolve) => {
+        const checkAuth = () => {
+            if (window.authSupabase) {
+                supabase = window.authSupabase;
+                resolve();
+            } else {
+                setTimeout(checkAuth, 50);
+            }
+        };
+        checkAuth();
+    });
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    await waitForAuth();
+    console.log('Auth system ready for login');
+});
 
         // Handle form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            // Make sure auth is ready
+            if (!supabase) {
+                await waitForAuth();
+            }
             e.preventDefault();
             
             const email = document.getElementById('email').value;
