@@ -350,12 +350,12 @@ async function loadUserAvatar(avatarElement, dropdownAvatarElement, userEmail, i
 async function loadPageAvatars() {
     console.log('Loading page avatars...');
     
-    // Get user data with multiple fallbacks
-    let userName = localStorage.getItem('dcf_user_name');
-    let userEmail = localStorage.getItem('dcf_user_email');
+    // Get user data from auth system instead of localStorage
+    let userName = dcfAuth.getUserName();
+    let userEmail = dcfAuth.getUserEmail();
     
-    console.log('Raw userName from localStorage:', userName);
-    console.log('Raw userEmail from localStorage:', userEmail);
+    console.log('Raw userName from auth system:', userName);
+    console.log('Raw userEmail from auth system:', userEmail);
     
     // ALWAYS fetch from database to get real name
     if (true) {
@@ -1098,7 +1098,7 @@ function getPageType() {
 }
 
 function handlePublicPageAuth() {
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    const isLoggedIn = dcfAuth.isUserLoggedIn();
     const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
     
     if (navActions) {
