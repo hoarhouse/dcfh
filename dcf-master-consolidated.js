@@ -4,6 +4,22 @@
 // Supabase configuration for avatar loading
 window.masterSupabase = null;
 
+// Wait for supabase-auth.js to be ready
+function waitForAuthSupabase() {
+    return new Promise((resolve) => {
+        const checkAuth = () => {
+            if (window.authSupabase) {
+                window.masterSupabase = window.authSupabase;
+                console.log('SUCCESS: Connected masterSupabase to authSupabase');
+                resolve();
+            } else {
+                setTimeout(checkAuth, 50);
+            }
+        };
+        checkAuth();
+    });
+}
+
 // Connect to auth system when it's ready
 document.addEventListener('DOMContentLoaded', function() {
     // Wait for supabase-auth.js to initialize
