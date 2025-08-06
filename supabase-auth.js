@@ -29,7 +29,7 @@ async function initializeAuth() {
 
         if (session?.user) {
             // User is logged in, get their profile
-            const profile = await getUserProfile(session.user.id);
+            const profile = await getUserProfile(session.user.id, session.user.email);
             if (profile) {
                 window.dcfUser = {
                     isLoggedIn: true,
@@ -231,7 +231,7 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
             session: null
         };
     } else if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await getUserProfile(session.user.id);
+        const profile = await getUserProfile(session.user.id, session.user.email);
         if (profile) {
             window.dcfUser = {
                 isLoggedIn: true,
