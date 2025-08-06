@@ -440,8 +440,7 @@ async function loadPageAvatars() {
     
     // Force initialize Supabase
     if (!window.masterSupabase) {
-        window.masterSupabase = window.authSupabase;
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait longer
+        await waitForAuthSupabase();
     }
     
     // Try to load profile picture
