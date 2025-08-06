@@ -414,7 +414,7 @@ async function loadPageAvatars() {
     
     // Force initialize Supabase
     if (!window.masterSupabase) {
-        initializeSupabase();
+        window.masterSupabase = window.authSupabase;
         await new Promise(resolve => setTimeout(resolve, 500)); // Wait longer
     }
     
