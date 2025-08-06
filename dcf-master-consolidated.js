@@ -655,7 +655,7 @@ function populateTopNavigation() {
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
     if (!navMenu) return;
     
-    const isLoggedIn = dcfAuth.isUserLoggedIn();
+    const isLoggedIn = window.dcfUser ? window.dcfUser.isLoggedIn : false;
     const currentPage = window.location.pathname.split('/').pop();
     
     // Clear existing nav items
@@ -1098,7 +1098,7 @@ function getPageType() {
 }
 
 function handlePublicPageAuth() {
-    const isLoggedIn = dcfAuth.isUserLoggedIn();
+    const isLoggedIn = window.dcfUser ? window.dcfUser.isLoggedIn : false;
     const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
     
     if (navActions) {
