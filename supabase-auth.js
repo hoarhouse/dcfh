@@ -232,14 +232,16 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     }
 });
 
-// Auto-initialize when script loads
-document.addEventListener('DOMContentLoaded', function() {
-    initializeAuth().then(isLoggedIn => {
-        if (isLoggedIn) {
-            updateUserInterface();
-        }
+// Don't auto-initialize on login page
+if (!window.location.pathname.includes('login')) {
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeAuth().then(isLoggedIn => {
+            if (isLoggedIn) {
+                updateUserInterface();
+            }
+        });
     });
-});
+}
 
 // Export functions for global use
 window.dcfAuth = {
