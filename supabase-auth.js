@@ -234,14 +234,20 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
         };
     } else if (event === 'SIGNED_IN' && session?.user) {
         const profile = await getUserProfile(session.user.id, session.user.email);
-        if (profile) {
-            window.dcfUser = {
-                isLoggedIn: true,
-                profile: profile,
-                session: session
-            };
-            updateUserInterface();
-        }
+        console.log('Profile found:', profile);
+        
+        // ALWAYS set dcfUser even if no profile found
+        window.dcfUser = {
+            isLoggedIn: true,
+            profile: profile || {
+                email: session.user.email,
+                name: session.user.user_metadata?.full_name || session.user.email,
+                username: 'hooray'
+            },
+            session: session
+        };
+        console.log('Updated dcfUser:', window.dcfUser);
+        updateUserInterface();
     }
 });
 
