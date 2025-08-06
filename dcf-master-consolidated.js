@@ -173,9 +173,9 @@ function handleDocumentClick(event) {
 
 // COMPLETELY FIXED FUNCTION - This handles all undefined cases properly
 async function updateUserDropdownInfo() {
-    // Get user data with multiple fallbacks
-    let userName = localStorage.getItem('dcf_user_name');
-    let userEmail = localStorage.getItem('dcf_user_email');
+    // Get user data from auth system instead of localStorage
+    let userName = dcfAuth.getUserName();
+    let userEmail = dcfAuth.getUserEmail();
     const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
     
     console.log('updateUserDropdownInfo called with:', { userName, userEmail });
@@ -655,7 +655,7 @@ function populateTopNavigation() {
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
     if (!navMenu) return;
     
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    const isLoggedIn = dcfAuth.isUserLoggedIn();
     const currentPage = window.location.pathname.split('/').pop();
     
     // Clear existing nav items
