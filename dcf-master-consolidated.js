@@ -174,8 +174,8 @@ function handleDocumentClick(event) {
 // COMPLETELY FIXED FUNCTION - This handles all undefined cases properly
 async function updateUserDropdownInfo() {
     // Get user data from auth system instead of localStorage
-    let userName = dcfAuth.getUserName();
-    let userEmail = dcfAuth.getUserEmail();
+    let userName = getCurrentUser()?.name || null;
+    let userEmail = getCurrentUser()?.email || null;
     const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
     
     console.log('updateUserDropdownInfo called with:', { userName, userEmail });
@@ -351,8 +351,8 @@ async function loadPageAvatars() {
     console.log('Loading page avatars...');
     
     // Get user data from auth system instead of localStorage
-    let userName = dcfAuth.getUserName();
-    let userEmail = dcfAuth.getUserEmail();
+    let userName = getCurrentUser()?.name || null;
+    let userEmail = getCurrentUser()?.email || null;
     
     console.log('Raw userName from auth system:', userName);
     console.log('Raw userEmail from auth system:', userEmail);
@@ -1311,6 +1311,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      } else {
         // Public pages - no redirects, just UI
         handlePublicPageAuth();
+        const isLoggedIn = window.dcfUser ? window.dcfUser.isLoggedIn : false;
         if (isLoggedIn) {
             setTimeout(async () => {
                 await updateUserDropdownInfo();
