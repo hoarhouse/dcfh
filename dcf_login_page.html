@@ -426,13 +426,7 @@
                 <p class="login-subtitle">Sign in to continue your work advancing ethical AI</p>
             </div>
 
-            <div class="demo-credentials">
-                <div class="demo-title">Demo Access</div>
-                <div class="demo-creds">
-                    Email: sarah.johnson@dcfhungary.org<br>
-                    Password: demo123
-                </div>
-            </div>
+            
 
             <div class="error-message" id="errorMessage">
                 Invalid email or password. Please try again.
@@ -442,19 +436,7 @@
                 Login successful! Redirecting...
             </div>
 
-            <!-- Social Login Options -->
-            <div class="social-login">
-                <button class="social-btn" onclick="socialLogin('google')">
-                    <span>🔍</span>
-                    Continue with Google
-                </button>
-                <button class="social-btn" onclick="socialLogin('microsoft')">
-                    <span>🪟</span>
-                    Continue with Microsoft
-                </button>
-            </div>
-
-            <div class="divider">or</div>
+            
 
             <form id="loginForm">
                 <div class="form-group">
@@ -538,43 +520,33 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 let loginSuccess = false;
                 let userData = null;
                 
-                // First try demo credentials
-                if (email === 'sarah.johnson@dcfhungary.org' && password === 'demo123') {
+                // Try Supabase Auth
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    throw new Error(error.message);
+                }
+                
+                if (data.user) {
                     loginSuccess = true;
+                    
+                    // Get user profile data from your database
+                    const { data: profileData, error: profileError } = await supabase
+                        .from('user_profiles')
+                        .select('name, first_name, last_name, username')
+                        .eq('id', data.user.id)
+                        .single();
+                    
                     userData = {
-                        name: 'Dr. Sarah Johnson',
-                        email: email,
-                        authProvider: 'demo'
+                        name: profileData?.name || profileData?.first_name + ' ' + (profileData?.last_name || '') || data.user.email,
+                        username: profileData?.username,
+                        email: data.user.email,
+                        authProvider: 'supabase',
+                        userId: data.user.id
                     };
-                } else {
-                    // Try Supabase Auth
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (error) {
-                        throw new Error(error.message);
-                    }
-                    
-                    if (data.user) {
-                        loginSuccess = true;
-                        
-                        // Get user profile data from your database
-                        const { data: profileData, error: profileError } = await supabase
-                            .from('user_profiles')
-                            .select('name, first_name, last_name, username')
-                            .eq('id', data.user.id)
-                            .single();
-                        
-                        userData = {
-                            name: profileData?.name || profileData?.first_name + ' ' + (profileData?.last_name || '') || data.user.email,
-                            username: profileData?.username,
-                            email: data.user.email,
-                            authProvider: 'supabase',
-                            userId: data.user.id
-                        };
-                    }
                 }
                 
                 if (loginSuccess) {
