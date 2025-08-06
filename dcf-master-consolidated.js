@@ -4,6 +4,17 @@
 // Supabase configuration for avatar loading
 window.masterSupabase = null;
 
+// Connect to auth system when it's ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for supabase-auth.js to initialize
+    setTimeout(() => {
+        if (window.authSupabase) {
+            window.masterSupabase = window.authSupabase;
+            console.log('Connected masterSupabase to authSupabase');
+        }
+    }, 100);
+});
+
 // =============================================================================
 // NOTIFICATION SYSTEM - MUST BE AT TOP FOR IMMEDIATE AVAILABILITY
 // =============================================================================
