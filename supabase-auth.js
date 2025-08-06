@@ -57,13 +57,28 @@ async function initializeAuth() {
 /**
  * Get user profile from database
  */
-async function getUserProfile(userId) {
+async function getUserProfile(userId, userEmail) {
     try {
-        const { data, error } = await window.authSupabase
+        // Try by ID first, then by email
+        let { data, error } = await window.authSupabase
             .from('user_profiles')
             .select('*')
             .eq('id', userId)
             .single();
+            
+        if (error && userEmail) {
+            // Try by email instead
+            const { data: emailData, error: emailError } = await window.authSupabase
+                .from('user_profiles')
+                .select('*')
+                .eq('email', userEmail)
+                .single();
+            
+            if (!emailError) {
+                data = emailData;
+                error = null;
+            }
+        }
             
         if (error) {
             console.error('Profile fetch error:', error);
