@@ -1279,11 +1279,13 @@ function addNotificationBellToMemberPages() {
 // =============================================================================
 // 7. MAIN INITIALIZATION - EVERYTHING HAPPENS HERE
 // =============================================================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const pageType = getPageType();
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
     
-    // Initialize top navigation for all pages
+    // Wait for auth to initialize properly
+    await dcfAuth.initializeAuth();
+    
+    // NOW populate navigation with correct auth state
     populateTopNavigation();
     
     // Initialize footer for all pages
