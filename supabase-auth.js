@@ -227,13 +227,63 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session);
 if (event === 'SIGNED_IN' && session?.user?.email) {
     console.log('Calling updateUserInfo with session data');
-    setTimeout(() => {
-        if (window.updateUserInfoWithSession) {
-            updateUserInfoWithSession(session.user.email);
-        } else {
-            console.log('updateUserInfoWithSession not ready yet');
+    updateUserInfoWithSession(session.user.email);
+}
+
+// Function to update user info with session data
+async function updateUserInfoWithSession(userEmail) {
+    console.log('updateUserInfoWithSession called with:', userEmail);
+    
+    let userName = userEmail.split('@')[0];
+    let avatarUrl = null;
+    
+    try {
+        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=name,username,avatar_url`, {
+            headers: {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks`
+            }
+        });
+        const profiles = await response.json();
+        
+        if (profiles[0]) {
+            userName = profiles[0].username || profiles[0].name || userEmail.split('@')[0];
+            avatarUrl = profiles[0].avatar_url;
         }
-    }, 1000);
+    } catch (error) {
+        console.log('Profile fetch error:', error);
+    }
+    
+    const nameElement = document.getElementById('dropdownUserName');
+    const emailElement = document.getElementById('dropdownUserEmail');
+    const avatarElement = document.getElementById('userAvatar');
+    const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+    
+    if (nameElement) nameElement.textContent = userName;
+    if (emailElement) emailElement.textContent = userEmail;
+    
+    const initials = generateInitials(userName);
+    
+    if (avatarElement) {
+        if (avatarUrl) {
+            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.textContent = '';
+        } else {
+            avatarElement.textContent = initials;
+        }
+        avatarElement.setAttribute('onclick', 'toggleUserMenu()');
+    }
+    
+    if (dropdownAvatarElement) {
+        if (avatarUrl) {
+            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.textContent = '';
+        } else {
+            dropdownAvatarElement.textContent = initials;
+        }
+    }
 }
     
     if (event === 'SIGNED_OUT' || !session) {
