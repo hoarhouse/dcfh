@@ -768,6 +768,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Wait a moment for other scripts to load
     setTimeout(async () => {
+        console.log('setTimeout fired, starting init');
         await connectToAuth();
         
         // Populate navigation if needed
