@@ -815,4 +815,4 @@ window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 window.validateUsername = validateUsername;
-window.generateSuggestedUsername = generateSuggestedUsername;
+window.generateSuggestedUsername = generateSuggestedUsername
