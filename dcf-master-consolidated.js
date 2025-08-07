@@ -1285,7 +1285,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Wait for auth to initialize properly
     await initializeAuth();
     
-    // Navigation handling removed - let pages use their own nav
+    // Only populate navigation if nav menu is empty (expects JS population)
+    const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
+    if (navMenu && navMenu.children.length === 0) {
+        populateTopNavigation();
+    }
     
     // Initialize footer for all pages
     setTimeout(initializeFooter, 50);
