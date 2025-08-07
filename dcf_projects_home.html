@@ -1473,28 +1473,31 @@
         `;
     }
 
-    // Load projects when page loads - wait for masterSupabase
+    // Load projects when page loads - wait for masterSupabase AND authentication
     document.addEventListener('DOMContentLoaded', function() {
-        // Debug what's available
-        console.log('window.masterSupabase:', window.masterSupabase);
-        console.log('window.supabase:', window.supabase);
-        
-        // Wait for masterSupabase to be available
-        const waitForSupabase = setInterval(() => {
-            console.log('Checking for masterSupabase...', window.masterSupabase);
-            if (window.masterSupabase) {
-                clearInterval(waitForSupabase);
-                console.log('Found masterSupabase, loading projects...');
-                loadProjects();
-                updateStats();
+        // Wait for both masterSupabase and authentication
+        const waitForAuth = setInterval(() => {
+            if (window.masterSupabase && window.masterSupabase.auth) {
+                window.masterSupabase.auth.getSession().then(({ data: { session } }) => {
+                    if (session) {
+                        clearInterval(waitForAuth);
+                        console.log('Auth confirmed, loading projects...');
+                        loadProjects();
+                        updateStats();
+                    }
+                });
             }
         }, 100);
         
-        // Fallback timeout after 5 seconds
+        // Fallback timeout after 10 seconds
         setTimeout(() => {
-            clearInterval(waitForSupabase);
-            console.log('Timeout reached, masterSupabase never appeared');
-        }, 5000);
+            clearInterval(waitForAuth);
+            console.log('Timeout reached, forcing load anyway');
+            if (window.masterSupabase) {
+                loadProjects();
+                updateStats();
+            }
+        }, 10000);
     });
 </script>       
 </body>
