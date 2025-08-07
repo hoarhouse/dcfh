@@ -816,3 +816,8 @@ window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 window.validateUsername = validateUsername;
 window.generateSuggestedUsername = generateSuggestedUsername
+// Force navigation load after everything
+setTimeout(() => {
+    console.log('Loading navigation...');
+    populateTopNavigation();
+}, 2000);
