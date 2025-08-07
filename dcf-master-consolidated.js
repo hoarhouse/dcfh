@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('DEBUG: About to start setTimeout');
         setTimeout(async () => {
             console.log('DEBUG: setTimeout fired, starting init');
-            await connectToAuth();
+            console.log('DEBUG: skipping connectToAuth');
             console.log('DEBUG: connectToAuth completed');
         
         // Populate navigation if needed
