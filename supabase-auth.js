@@ -227,7 +227,13 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session);
 if (event === 'SIGNED_IN' && session?.user?.email) {
     console.log('Calling updateUserInfo with session data');
-    updateUserInfoWithSession(session.user.email);
+    setTimeout(() => {
+        if (window.updateUserInfoWithSession) {
+            updateUserInfoWithSession(session.user.email);
+        } else {
+            console.log('updateUserInfoWithSession not ready yet');
+        }
+    }, 1000);
 }
     
     if (event === 'SIGNED_OUT' || !session) {
