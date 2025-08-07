@@ -5,8 +5,8 @@
 // 1. GLOBAL VARIABLES - DECLARED ONCE ONLY
 // =============================================================================
 window.masterSupabase = null;
-let isDropdownOpen = false;
-let notificationDropdownOpen = false;
+window.isDropdownOpen = false;
+window.notificationDropdownOpen = false;
 
 // =============================================================================
 // 2. SUPABASE CONNECTION
