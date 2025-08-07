@@ -333,11 +333,21 @@ function getPageType() {
 
 function handlePublicPageAuth() {
     // Check if user is logged in via Supabase session
-    let isLoggedIn = false;
     if (window.masterSupabase) {
         window.masterSupabase.auth.getSession().then(({ data: { session } }) => {
-            isLoggedIn = !!session?.user;
-            updateNavForAuthState(isLoggedIn);
+            const isLoggedIn = !!session?.user;
+            
+            // Only modify nav if user is NOT logged in
+            if (!isLoggedIn) {
+                updateNavForAuthState(false);
+            } else {
+                // User is logged in - make sure avatar is clickable
+                const avatar = document.getElementById('userAvatar');
+                if (avatar && !avatar.onclick) {
+                    avatar.setAttribute('onclick', 'toggleUserMenu()');
+                    avatar.style.cursor = 'pointer';
+                }
+            }
         });
     } else {
         updateNavForAuthState(false);
