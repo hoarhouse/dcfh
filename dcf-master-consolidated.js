@@ -771,7 +771,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         await connectToAuth();
         
         // Populate navigation if needed
+        console.log('About to call populateTopNavigation');
         populateTopNavigation();
+        console.log('populateTopNavigation called');
         
         // Update user info for all pages
         await updateUserInfo();
