@@ -76,9 +76,11 @@ function handleDocumentClick(event) {
 async function updateUserInfo() {
     console.log('updateUserInfo called');
     
-    // Connect to Supabase
-    if (!window.masterSupabase) {
-        await connectToAuth();
+    // Use authSupabase directly - skip the broken connection
+    const supabase = window.authSupabase;
+    if (!supabase) {
+        console.log('No Supabase available');
+        return;
     }
     
     if (!window.masterSupabase) {

@@ -225,6 +225,10 @@ function generateInitials(name) {
  */
 window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session);
+if (event === 'SIGNED_IN' && session?.user?.email) {
+    console.log('Calling updateUserInfo with session data');
+    updateUserInfoWithSession(session.user.email);
+}
     
     if (event === 'SIGNED_OUT' || !session) {
         window.dcfUser = {
