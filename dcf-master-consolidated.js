@@ -754,23 +754,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Populate navigation if needed
         populateTopNavigation();
         
-        // Update user info
+        // Update user info for all pages
         await updateUserInfo();
+        
+        // Handle page-specific logic
+        const pageType = getPageType();
+        if (pageType === 'public') {
+            handlePublicPageAuth();
+        } else {
+            // Add notification bell to member pages
+            addNotificationBellToMemberPages();
+        }
         
         // Initialize quick actions
         initializeQuickActions();
         
         // Initialize footer
         setTimeout(initializeFooter, 50);
-        
-        // Add notification bell to member pages
-        addNotificationBellToMemberPages();
-        
-        // Handle public page auth if needed
-        const pageType = getPageType();
-        if (pageType === 'public') {
-            handlePublicPageAuth();
-        }
         
         console.log('Master JS initialization complete');
     }, 500);
