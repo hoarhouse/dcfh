@@ -1285,8 +1285,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Wait for auth to initialize properly
     await initializeAuth();
     
-    // NOW populate navigation with correct auth state
-    populateTopNavigation();
+    // Navigation handling removed - let pages use their own nav
     
     // Initialize footer for all pages
     setTimeout(initializeFooter, 50);
