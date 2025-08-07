@@ -763,24 +763,31 @@ function addNotificationBellToMemberPages() {
 // =============================================================================
 // 9. MAIN INITIALIZATION
 // =============================================================================
+console.log('SCRIPT LOADING: dcf-master-consolidated.js loaded');
+
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Master JS initializing...');
+    console.log('DEBUG: DOMContentLoaded fired');
+    console.log('DEBUG: Master JS initializing...');
     
     // Wait a moment for other scripts to load
     setTimeout(async () => {
-        console.log('setTimeout fired, starting init');
+        console.log('DEBUG: setTimeout fired, starting init');
         await connectToAuth();
         
         // Populate navigation if needed
-        console.log('About to call populateTopNavigation');
+        console.log('DEBUG: About to call populateTopNavigation');
+        console.log('DEBUG: navMenu element:', document.getElementById('navMenu'));
+        console.log('DEBUG: nav-menu element:', document.querySelector('.nav-menu'));
         populateTopNavigation();
-        console.log('populateTopNavigation called');
+        console.log('DEBUG: populateTopNavigation called');
+        console.log('DEBUG: navMenu innerHTML after populate:', document.getElementById('navMenu')?.innerHTML);
         
         // Update user info for all pages
         await updateUserInfo();
         
         // Handle page-specific logic
         const pageType = getPageType();
+        console.log('DEBUG: pageType:', pageType);
         if (pageType === 'public') {
             handlePublicPageAuth();
         } else {
@@ -794,9 +801,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize footer
         setTimeout(initializeFooter, 50);
         
-        console.log('Master JS initialization complete');
+        console.log('DEBUG: Master JS initialization complete');
     }, 500);
 });
+
+// Also try immediate execution in case DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    console.log('DEBUG: Document still loading, waiting for DOMContentLoaded');
+} else {
+    console.log('DEBUG: Document already loaded, running immediately');
+    setTimeout(() => {
+        console.log('DEBUG: Immediate execution timeout fired');
+        populateTopNavigation();
+        console.log('DEBUG: Immediate populateTopNavigation called');
+    }, 100);
+}
 
 // =============================================================================
 // 11. GLOBAL EXPORTS
