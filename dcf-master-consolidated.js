@@ -770,9 +770,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('DEBUG: Master JS initializing...');
     
     // Wait a moment for other scripts to load
-    setTimeout(async () => {
-        console.log('DEBUG: setTimeout fired, starting init');
-        await connectToAuth();
+    try {
+        console.log('DEBUG: About to start setTimeout');
+        setTimeout(async () => {
+            console.log('DEBUG: setTimeout fired, starting init');
+            await connectToAuth();
         
         // Populate navigation if needed
         console.log('DEBUG: About to call populateTopNavigation');
@@ -802,7 +804,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(initializeFooter, 50);
         
         console.log('DEBUG: Master JS initialization complete');
-    }, 500);
+        }, 500);
+    } catch (error) {
+        console.error('DEBUG: Error in DOMContentLoaded:', error);
+    }
 });
 
 // Also try immediate execution in case DOMContentLoaded already fired
@@ -837,4 +842,4 @@ window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 window.validateUsername = validateUsername;
-window.generateSuggestedUsername = generateSuggestedUsername
+window.generateSuggestedUsername = generateSuggestedUsername;
