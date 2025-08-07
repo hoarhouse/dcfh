@@ -691,7 +691,7 @@ async function loadRecentNotifications() {
                 <div class="notification-item-message">Your notification system is working!</div>
             </div>
         `;
-    }, 500);
+    }, 0);
 }
 
 function addNotificationBellToMemberPages() {
