@@ -775,6 +775,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(async () => {
             console.log('DEBUG: setTimeout fired, starting init');
             await connectToAuth();
+            console.log('DEBUG: connectToAuth completed');
         
         // Populate navigation if needed
         console.log('DEBUG: About to call populateTopNavigation');
