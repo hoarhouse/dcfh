@@ -15,6 +15,13 @@ async function connectToAuth() {
     if (window.authSupabase) {
         window.masterSupabase = window.authSupabase;
         console.log('Connected to auth Supabase');
+        console.log('Connected, testing auth immediately...');
+        try {
+            const testSession = await window.masterSupabase.auth.getUser();
+            console.log('Auth test result:', testSession);
+        } catch (e) {
+            console.log('Auth test failed:', e);
+        }
         return true;
     }
     return false;
