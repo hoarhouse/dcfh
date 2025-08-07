@@ -233,7 +233,7 @@ function populateTopNavigation() {
     if (!navMenu) return;
     
     // Only populate if empty
-    if (navMenu.children.length > 0) return;
+    navMenu.innerHTML = '';
     
     const currentPage = window.location.pathname.split('/').pop();
     
