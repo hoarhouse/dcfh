@@ -773,8 +773,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Populate navigation if needed
         populateTopNavigation();
         
-        // User info handled by supabase-auth.js now
-        console.log('User info will be updated by auth state change');
+        // Update user info for all pages
+        await updateUserInfo();
         
         // Handle page-specific logic
         const pageType = getPageType();
