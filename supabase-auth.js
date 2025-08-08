@@ -226,66 +226,6 @@ function generateInitials(name) {
  */
 window.authSupabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session);
-if (event === 'SIGNED_IN' && session?.user?.email) {
-    console.log('Calling updateUserInfo with session data');
-    updateUserInfoWithSession(session.user.email);
-}
-
-// Function to update user info with session data
-async function updateUserInfoWithSession(userEmail) {
-    console.log('updateUserInfoWithSession called with:', userEmail);
-    
-    let userName = userEmail.split('@')[0];
-    let avatarUrl = null;
-    
-    try {
-        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=name,username,avatar_url`, {
-            headers: {
-                'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-            }
-        });
-        const profiles = await response.json();
-        
-        if (profiles[0]) {
-            userName = profiles[0].username || profiles[0].name || userEmail.split('@')[0];
-            avatarUrl = profiles[0].avatar_url;
-        }
-    } catch (error) {
-        console.log('Profile fetch error:', error);
-    }
-    
-    const nameElement = document.getElementById('dropdownUserName');
-    const emailElement = document.getElementById('dropdownUserEmail');
-    const avatarElement = document.getElementById('userAvatar');
-    const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
-    
-    if (nameElement) nameElement.textContent = userName;
-    if (emailElement) emailElement.textContent = userEmail;
-    
-    const initials = generateInitials(userName);
-    
-    if (avatarElement) {
-        if (avatarUrl) {
-            avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            avatarElement.style.backgroundSize = 'cover';
-            avatarElement.textContent = '';
-        } else {
-            avatarElement.textContent = initials;
-        }
-        avatarElement.setAttribute('onclick', 'toggleUserMenu()');
-    }
-    
-    if (dropdownAvatarElement) {
-        if (avatarUrl) {
-            dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            dropdownAvatarElement.style.backgroundSize = 'cover';
-            dropdownAvatarElement.textContent = '';
-        } else {
-            dropdownAvatarElement.textContent = initials;
-        }
-    }
-}
     
     if (event === 'SIGNED_OUT' || !session) {
         window.dcfUser = {
@@ -301,9 +241,10 @@ async function updateUserInfoWithSession(userEmail) {
         window.dcfUser = {
             isLoggedIn: true,
             profile: profile || {
+                id: session.user.id,
                 email: session.user.email,
                 name: session.user.user_metadata?.full_name || session.user.email,
-                username: 'hooray'
+                username: session.user.email.split('@')[0]
             },
             session: session
         };
