@@ -82,19 +82,6 @@ async function getUserProfile(userId, userEmail) {
         return null;
     }
 }
-    
-            
-        if (error) {
-            console.error('Profile fetch error:', error);
-            return null;
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Get profile error:', error);
-        return null;
-    }
-}
 
 /**
  * Check if user is logged in (replaces localStorage checks)
