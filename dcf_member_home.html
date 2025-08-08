@@ -1509,20 +1509,29 @@ mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
                     document.body.removeChild(progressContainer);
                 }
 
-                // Insert post and get the actual data back
-                const { data: insertedPost, error: insertError } = await supabase
-                    .from('posts')
-                    .insert({
-                        content: content || null,
-                        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-                        media_type: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
-                        author_email: currentUserEmail,
-                        author_name: currentUserName
-                    })
-                    .select()
-                    .single();
+               // Insert post and get the actual data back
+const insertResponse = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/posts', {
+    method: 'POST',
+    headers: {
+        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    },
+    body: JSON.stringify({
+        content: content || null,
+        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+        media_type: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
+        author_email: currentUserEmail,
+        author_name: currentUserName
+    })
+});
 
-                if (insertError) throw insertError;
+if (!insertResponse.ok) throw new Error('Failed to create post');
+
+const insertedPostArray = await insertResponse.json();
+const insertedPost = insertedPostArray[0];
+
 
                 // Add the real post to top of posts array and refresh display
                 posts.unshift(insertedPost);
