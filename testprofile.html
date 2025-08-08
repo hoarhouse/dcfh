@@ -1480,9 +1480,9 @@
             const timestamp = Date.now();
             const fileName = `${type}_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${fileExt}`;
             
-            // Use FormData for direct upload since Supabase client is broken
+            // Use the exact working format from dcf_member_home.html
             const formData = new FormData();
-            formData.append('', file);
+            formData.append('file', file);
             
             const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
                 method: 'POST',
@@ -1494,10 +1494,12 @@
             });
             
             if (!uploadResponse.ok) {
-                throw new Error(`Upload failed: ${uploadResponse.status}`);
+                const errorText = await uploadResponse.text();
+                throw new Error(`Upload failed: ${errorText}`);
             }
             
-            return `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+            const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+            return publicUrl;
         }
 
         // Utility functions
