@@ -1275,36 +1275,30 @@
         // Posts loading handled by auth initialization above
 
         // Load posts from database
-        async function loadPosts() {
-            console.log('DEBUG: loadPosts() function called');
-            try {
-                document.getElementById('loadingState').style.display = 'block';
-                
-                const session = await window.authSupabase.auth.getSession();
-                const token = session.data.session?.access_token;
-                
-                const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/posts?select=*&order=created_at.desc', {
-                    headers: {
-                       'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                    }
-                });
-                const posts_data = await response.json();
+async function loadPosts() {
+    console.log('DEBUG: loadPosts() function called');
+    try {
+        document.getElementById('loadingState').style.display = 'block';
+        
+        const { data: posts_data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-                if (!response.ok) throw new Error('Database error');
+        if (error) throw error;
 
-                posts = posts_data || [];
-                displayPosts();
-                
-                const loadingElement = document.getElementById('loadingState');
-                if (loadingElement) loadingElement.style.display = 'none';
-            } catch (error) {
-                console.error('Error loading posts:', error);
-                const loadingElement = document.getElementById('loadingState');
-                if (loadingElement) loadingElement.style.display = 'none';
-                showMessage('Failed to load posts', 'error');
-            }
-        }
+        posts = posts_data || [];
+        displayPosts();
+        
+        const loadingElement = document.getElementById('loadingState');
+        if (loadingElement) loadingElement.style.display = 'none';
+    } catch (error) {
+        console.error('Error loading posts:', error);
+        const loadingElement = document.getElementById('loadingState');
+        if (loadingElement) loadingElement.style.display = 'none';
+        showMessage('Failed to load posts', 'error');
+    }
+}
 
         // Display posts in the feed
         function displayPosts() {
