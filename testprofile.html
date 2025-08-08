@@ -1115,7 +1115,10 @@
         // Load user profile from database
         async function loadUserProfile() {
             try {
-                const currentUser = window.dcfAuth?.getCurrentUser();
+                // Wait for auth to be ready
+                await window.dcfAuth.initializeAuth();
+                
+                const currentUser = window.dcfAuth.getCurrentUser();
                 if (!currentUser?.email) {
                     console.log('⚠️ No current user found');
                     return;
@@ -1123,29 +1126,32 @@
 
                 console.log('📡 Loading profile for:', currentUser.email);
                 
-                const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${currentUser.email}&select=*`, {
-                    headers: {
-                        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                    }
-                });
+                // Use Supabase client instead of raw fetch
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', currentUser.email);
                 
-                const data = await response.json();
+                if (error) {
+                    console.error('❌ Profile fetch error:', error);
+                    return;
+                }
+
                 console.log('✅ Profile data loaded:', data);
 
                 if (data && data.length > 0) {
                     currentProfile = data[0];
                     populateProfile(currentProfile);
                 } else {
-                    // Create default profile
+                    // Create default profile using current user data
                     currentProfile = {
                         email: currentUser.email,
                         name: currentUser.name || 'Your Name',
                         first_name: currentUser.first_name || '',
                         last_name: currentUser.last_name || '',
-                        role: 'Your Role',
-                        organization: 'Your Organization',
-                        location: 'Your Location',
+                        role: currentUser.role || 'Your Role',
+                        organization: currentUser.organization || 'Your Organization',
+                        location: currentUser.location || 'Your Location',
                         bio: 'Tell the world about yourself...',
                         expertise: 'Add your interests',
                         skills_offered: 'Add your skills'
