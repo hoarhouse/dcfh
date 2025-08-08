@@ -618,7 +618,176 @@ function initializeFooter() {
 }
 
 // =============================================================================
-// 9. NOTIFICATION FUNCTIONS
+// 9. IMAGE OPTIMIZATION & LAZY LOADING SYSTEM
+// =============================================================================
+
+// Lazy loading observer
+let imageObserver = null;
+
+function initImageOptimization() {
+    // Initialize lazy loading for all images
+    initLazyLoading();
+    
+    // Optimize existing images
+    optimizeExistingImages();
+    
+    // Set up avatar optimization
+    optimizeAvatars();
+    
+    console.log('Image optimization initialized');
+}
+
+function initLazyLoading() {
+    // Create intersection observer for lazy loading
+    if ('IntersectionObserver' in window) {
+        imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    loadImage(img);
+                    imageObserver.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '50px' // Start loading 50px before image enters viewport
+        });
+        
+        // Apply to all images with data-src
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            imageObserver.observe(img);
+        });
+    }
+}
+
+function loadImage(img) {
+    const src = img.dataset.src;
+    if (!src) return;
+    
+    // Show loading placeholder
+    img.style.filter = 'blur(5px)';
+    img.style.opacity = '0.5';
+    
+    // Create new image to preload
+    const imageLoader = new Image();
+    imageLoader.onload = () => {
+        img.src = src;
+        img.style.filter = '';
+        img.style.opacity = '';
+        img.classList.add('loaded');
+    };
+    imageLoader.onerror = () => {
+        img.src = getPlaceholderImage();
+        img.classList.add('error');
+    };
+    imageLoader.src = src;
+}
+
+function getPlaceholderImage() {
+    // Generate placeholder SVG
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='100%25' height='100%25' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23666'%3EImage Loading...%3C/text%3E%3C/svg%3E`;
+}
+
+function optimizeExistingImages() {
+    // Convert existing images to lazy loading
+    document.querySelectorAll('img:not([data-src])').forEach(img => {
+        if (img.src && !img.complete) {
+            const src = img.src;
+            img.dataset.src = src;
+            img.src = getPlaceholderImage();
+            if (imageObserver) imageObserver.observe(img);
+        }
+    });
+}
+
+function optimizeAvatars() {
+    // Optimize user avatars specifically
+    document.querySelectorAll('.user-avatar, .member-avatar, .dropdown-avatar').forEach(avatar => {
+        if (avatar.style.backgroundImage) {
+            const url = avatar.style.backgroundImage.slice(5, -2); // Remove url(" ")
+            if (url && url.startsWith('http')) {
+                // Convert to optimized Supabase Storage URL if needed
+                const optimizedUrl = getOptimizedImageUrl(url);
+                avatar.style.backgroundImage = `url(${optimizedUrl})`;
+            }
+        }
+    });
+}
+
+function getOptimizedImageUrl(originalUrl, width = 300, height = 300) {
+    // If it's already a Supabase Storage URL, add transformation parameters
+    if (originalUrl.includes('supabase.co/storage')) {
+        return `${originalUrl}?width=${width}&height=${height}&resize=cover&format=webp`;
+    }
+    
+    // For external URLs, return as-is (could implement external optimization service)
+    return originalUrl;
+}
+
+function addImageOptimizationCSS() {
+    if (document.getElementById('imageOptimizationCSS')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'imageOptimizationCSS';
+    style.textContent = `
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .progressive-image-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .image-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        img.loaded {
+            transition: all 0.3s ease;
+        }
+        
+        img.error {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+        
+        /* Optimize avatar loading */
+        .user-avatar, .member-avatar, .dropdown-avatar {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        /* Post image optimization */
+        .post-image, .project-image, .event-image {
+            transition: opacity 0.3s ease, filter 0.3s ease;
+        }
+        
+        .post-image[data-src] {
+            background: #f8f9fa;
+            opacity: 0.7;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Re-run when new content is dynamically loaded
+function reinitializeImageOptimization() {
+    initLazyLoading();
+    optimizeExistingImages();
+    optimizeAvatars();
+}
+
+// =============================================================================
+// 10. NOTIFICATION FUNCTIONS
 // =============================================================================
 function toggleNotificationDropdown(event) {
     if (event) event.stopPropagation();
@@ -883,6 +1052,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize footer
         setTimeout(initializeFooter, 50);
         
+        // Initialize image optimization
+        addImageOptimizationCSS();
+        setTimeout(initImageOptimization, 100);
+        
         console.log('DEBUG: Master JS initialization complete');
         }, 500);
     } catch (error) {
@@ -923,3 +1096,6 @@ window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 window.validateUsername = validateUsername;
 window.generateSuggestedUsername = generateSuggestedUsername;
+window.initImageOptimization = initImageOptimization;
+window.reinitializeImageOptimization = reinitializeImageOptimization;
+window.getOptimizedImageUrl = getOptimizedImageUrl;
