@@ -1479,11 +1479,25 @@ async function loadPosts() {
                             document.getElementById('progressText').textContent = progressPercent + '%';
                         }
                         
-                        // Skip file upload for now - just use placeholder
-const uploadData = { path: fileName };
-const uploadError = null;
+                        // Upload file using direct API call
+const formData = new FormData();
+formData.append('file', file);
 
-const publicUrl = `https://via.placeholder.com/400x300/cccccc/666666?text=Photo+${i+1}`;
+const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
+    method: 'POST',
+    headers: {
+        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+    },
+    body: formData
+});
+
+if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Upload failed: ${errorText}`);
+}
+
+const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
 
 mediaUrls.push(publicUrl);
 mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
