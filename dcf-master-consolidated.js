@@ -680,18 +680,104 @@ async function loadRecentNotifications() {
     if (!content) return;
     content.innerHTML = '<div class="notification-loading">Loading...</div>';
     
-    setTimeout(() => {
-        content.innerHTML = `
-            <div class="notification-item">
-                <div class="notification-item-header">
-                    <span class="notification-item-icon">🎉</span>
-                    <span class="notification-item-title">Welcome</span>
-                    <span class="notification-item-time">now</span>
+    try {
+        // Get current user
+        if (!window.masterSupabase) {
+            await connectToAuth();
+        }
+        
+        const { data: { session } } = await window.masterSupabase.auth.getSession();
+        if (!session?.user) {
+            content.innerHTML = '<div class="notification-loading">Please log in to view notifications</div>';
+            return;
+        }
+        
+        // Fetch recent notifications for the user
+        const { data: notifications, error } = await window.masterSupabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        
+        if (error) {
+            console.error('Error loading notifications:', error);
+            content.innerHTML = '<div class="notification-loading">Error loading notifications</div>';
+            return;
+        }
+        
+        // Display notifications
+        if (!notifications || notifications.length === 0) {
+            content.innerHTML = `
+                <div class="notification-item">
+                    <div class="notification-item-header">
+                        <span class="notification-item-icon">📬</span>
+                        <span class="notification-item-title">No notifications</span>
+                        <span class="notification-item-time">-</span>
+                    </div>
+                    <div class="notification-item-message">You're all caught up!</div>
                 </div>
-                <div class="notification-item-message">Your notification system is working!</div>
-            </div>
-        `;
-    }, 0);
+            `;
+            return;
+        }
+        
+        // Generate notification HTML
+        const notificationHTML = notifications.map(notification => {
+            const timeAgo = getTimeAgo(notification.created_at);
+            const icon = getNotificationIcon(notification.type);
+            
+            return `
+                <div class="notification-item" onclick="handleNotificationClick('${notification.id}')">
+                    <div class="notification-item-header">
+                        <span class="notification-item-icon">${icon}</span>
+                        <span class="notification-item-title">${notification.title}</span>
+                        <span class="notification-item-time">${timeAgo}</span>
+                    </div>
+                    <div class="notification-item-message">${notification.message}</div>
+                </div>
+            `;
+        }).join('');
+        
+        content.innerHTML = notificationHTML;
+        
+    } catch (error) {
+        console.error('Error in loadRecentNotifications:', error);
+        content.innerHTML = '<div class="notification-loading">Error loading notifications</div>';
+    }
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'project': '📁',
+        'event': '📅',
+        'message': '💬',
+        'connection': '🤝',
+        'system': '⚙️',
+        'achievement': '🏆',
+        'reminder': '⏰'
+    };
+    return icons[type] || '🔔';
+}
+
+function getTimeAgo(dateString) {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return past.toLocaleDateString();
+}
+
+function handleNotificationClick(notificationId) {
+    console.log('Clicked notification:', notificationId);
+    // Mark as read and potentially navigate somewhere
+    closeNotificationDropdown();
 }
 
 function addNotificationBellToMemberPages() {
