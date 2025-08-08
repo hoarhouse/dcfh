@@ -963,109 +963,10 @@
                         <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">+ Create New Project</button>
                     </div>
 
-                    <div class="my-project-card">
-                        <div class="my-project-header">
-                            <div>
-                                <h3 class="project-title">AI Ethics Curriculum for Catholic Schools</h3>
-                                <p class="project-meta">Leading • Created 2 months ago • 12 members</p>
-                            </div>
-                            <div class="my-project-actions">
-                                <button class="btn btn-secondary btn-small">📊 Analytics</button>
-                                <button class="btn btn-secondary btn-small">⚙️ Settings</button>
-                                <button class="btn btn-primary btn-small">📝 Manage</button>
-                            </div>
-                        </div>
-                        <p class="project-description">
-                            Creating comprehensive K-12 curriculum materials that teach AI ethics grounded in Catholic Social Teaching, with practical exercises and case studies.
-                        </p>
-                        <div class="project-tags">
-                            <span class="tag">Education</span>
-                            <span class="tag">Curriculum</span>
-                            <span class="tag">K-12</span>
-                            <span class="tag">AI Ethics</span>
-                        </div>
-                        <div class="project-footer">
-                            <div class="project-members">
-                                <div class="member-avatars">
-                                    <div class="member-avatar">SJ</div>
-                                    <div class="member-avatar">MA</div>
-                                    <div class="member-avatar">RW</div>
-                                    <div class="member-avatar">+9</div>
-                                </div>
-                                <span class="member-count">12 members</span>
-                            </div>
-                            <span class="status-badge status-active">Active</span>
-                        </div>
-                    </div>
-
-                    <div class="my-project-card">
-                        <div class="my-project-header">
-                            <div>
-                                <h3 class="project-title">Vatican AI Ethics Guidelines</h3>
-                                <p class="project-meta">Contributing • Joined 4 months ago • 28 members</p>
-                            </div>
-                            <div class="my-project-actions">
-                                <button class="btn btn-secondary btn-small">📊 View Progress</button>
-                                <button class="btn btn-secondary btn-small">💬 Discussions</button>
-                                <button class="btn btn-primary btn-small">🔔 Leave Project</button>
-                            </div>
-                        </div>
-                        <p class="project-description">
-                            Developing comprehensive AI ethics guidelines for Catholic institutions worldwide, based on Catholic Social Teaching principles and human dignity.
-                        </p>
-                        <div class="project-tags">
-                            <span class="tag">AI Ethics</span>
-                            <span class="tag">Catholic Social Teaching</span>
-                            <span class="tag">Policy</span>
-                            <span class="tag">Global</span>
-                        </div>
-                        <div class="project-footer">
-                            <div class="project-members">
-                                <div class="member-avatars">
-                                    <div class="member-avatar">AP</div>
-                                    <div class="member-avatar">SJ</div>
-                                    <div class="member-avatar">AK</div>
-                                    <div class="member-avatar">+25</div>
-                                </div>
-                                <span class="member-count">28 members</span>
-                            </div>
-                            <span class="status-badge status-active">Active</span>
-                        </div>
-                    </div>
-
-                    <div class="my-project-card">
-                        <div class="my-project-header">
-                            <div>
-                                <h3 class="project-title">Digital Humanitarianism Platform</h3>
-                                <p class="project-meta">Advising • Joined 1 month ago • 15 members</p>
-                            </div>
-                            <div class="my-project-actions">
-                                <button class="btn btn-secondary btn-small">📊 View Progress</button>
-                                <button class="btn btn-secondary btn-small">💬 Discussions</button>
-                                <button class="btn btn-primary btn-small">🔔 Leave Project</button>
-                            </div>
-                        </div>
-                        <p class="project-description">
-                            Building technology solutions for humanitarian organizations to better serve vulnerable populations while ensuring data privacy and dignity.
-                        </p>
-                        <div class="project-tags">
-                            <span class="tag">Humanitarian</span>
-                            <span class="tag">Technology</span>
-                            <span class="tag">Privacy</span>
-                            <span class="tag">Africa</span>
-                        </div>
-                        <div class="project-footer">
-                            <div class="project-members">
-                                <div class="member-avatars">
-                                    <div class="member-avatar">MW</div>
-                                    <div class="member-avatar">SP</div>
-                                    <div class="member-avatar">+13</div>
-                                </div>
-                                <span class="member-count">15 members</span>
-                            </div>
-                            <span class="status-badge status-planning">Planning</span>
-                        </div>
-                    </div>
+                    
+                        <div id="myProjectsContainer">
+    <!-- Real user projects will be loaded here -->
+</div>
                 </div>
 
                 <!-- Following Tab -->
@@ -1447,6 +1348,91 @@
     }
 
     // Load projects when page loads - simplified
+    // Load real user projects for My Projects tab
+    async function loadMyProjectsReal() {
+        const container = document.getElementById('myProjectsContainer');
+        const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
+        
+        if (!currentUserEmail) {
+            container.innerHTML = '<div class="empty-state"><h3>Please log in to view your projects</h3></div>';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?author_email=eq.${currentUserEmail}&order=created_at.desc`, {
+                headers: {
+                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                }
+            });
+            
+            const projects = await response.json();
+            
+            if (!projects || projects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Projects Yet</h3>
+                        <p>You haven't created any projects yet.</p>
+                        <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create Your First Project</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = projects.map(project => `
+                <div class="my-project-card">
+                    <div class="my-project-header">
+                        <div>
+                            <h3 class="project-title">${project.title}</h3>
+                            <p class="project-meta">Leading • Created ${formatDate(project.created_at)} • 1 member</p>
+                        </div>
+                        <div class="my-project-actions">
+                            <button class="btn btn-secondary btn-small">📊 Analytics</button>
+                            <button class="btn btn-secondary btn-small">⚙️ Settings</button>
+                            <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'">📝 Manage</button>
+                        </div>
+                    </div>
+                    <p class="project-description">${project.description}</p>
+                    <div class="project-tags">
+                        ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
+                    </div>
+                    <div class="project-footer">
+                        <div class="project-members">
+                            <div class="member-avatars">
+                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                            </div>
+                            <span class="member-count">1 member</span>
+                        </div>
+                        <span class="status-badge status-${project.status}">${project.status}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('Error loading my projects:', error);
+            container.innerHTML = '<div>Error loading your projects</div>';
+        }
+    }
+
+    // Update tab switching to load real data
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+        
+        // Load real data for My Projects tab
+        if (tabName === 'my') {
+            loadMyProjectsReal();
+        } else if (tabName === 'following') {
+            loadFollowingProjects();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Loading projects immediately...');
         setTimeout(() => {
