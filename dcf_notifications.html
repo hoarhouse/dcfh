@@ -839,16 +839,7 @@
                 const loadingState = document.getElementById('loadingState');
                 if (loadingState) loadingState.style.display = 'block';
                 
-                // Get current user ID
-                const { data: userData } = await supabase
-                    .from('user_profiles')
-                    .select('id')
-                    .eq('email', currentUser.email)
-                    .single();
-                
-                if (!userData) throw new Error('User not found');
-                
-                // Load regular notifications
+                // Load regular notifications directly
                 const { data: regularNotifications, error: notifError } = await supabase
                     .from('notifications')
                     .select('*')
@@ -857,19 +848,29 @@
 
                 if (notifError) throw notifError;
 
-                // Load connection requests
-                const { data: connectionRequests, error: connError } = await supabase
-                    .from('connections')
-                    .select(`
-                        id, 
-                        created_at, 
-                        status,
-                        requester:user_profiles!connections_requester_id_fkey(username, name)
-                    `)
-                    .eq('recipient_id', userData.id)
-                    .eq('status', 'pending');
+                // Get current user ID for connection requests
+                const { data: userData } = await supabase
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('email', currentUser.email)
+                    .single();
 
-                if (connError) throw connError;
+                let connectionRequests = [];
+                if (userData) {
+                    // Load connection requests
+                    const { data: connData, error: connError } = await supabase
+                        .from('connections')
+                        .select(`
+                            id, 
+                            created_at, 
+                            status,
+                            requester:user_profiles!connections_requester_id_fkey(username, name)
+                        `)
+                        .eq('recipient_id', userData.id)
+                        .eq('status', 'pending');
+
+                    if (!connError) connectionRequests = connData || [];
+                }
 
             
                     // Get existing connection notification IDs to avoid duplicates  
