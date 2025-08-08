@@ -1141,20 +1141,24 @@
         // Load user profile from database
         async function loadUserProfile() {
             try {
-                // Get current session first
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log('Profile page session check:', session);
-                if (!session?.user) {
-                    console.log('No session found, using master JS session');
+                // Use the auth system instead of direct session
+                if (!window.dcfUser?.isLoggedIn) {
+                    console.log('User not logged in via dcfUser');
                     return;
                 }
-                const userEmail = session.user.email;
-                console.log('Using email from session:', userEmail);
+
+                const currentUser = window.dcfAuth.getCurrentUser();
+                if (!currentUser?.email) {
+                    console.log('No current user found');
+                    return;
+                }
+
+                console.log('Loading profile for:', currentUser.email);
                 
                 const { data, error } = await supabase
                     .from('user_profiles')
                     .select('*')
-                    .eq('email', userEmail)
+                    .eq('email', currentUser.email)
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
@@ -1163,6 +1167,13 @@
 
                 if (data) {
                     populateProfileData(data);
+                } else {
+                    // Create basic profile display from auth data
+                    populateProfileData({
+                        name: currentUser.name,
+                        email: currentUser.email,
+                        username: currentUser.username
+                    });
                 }
             } catch (error) {
                 console.error('Error loading profile:', error);
