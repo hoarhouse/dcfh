@@ -62,26 +62,27 @@ async function initializeAuth() {
  */
 async function getUserProfile(userId, userEmail) {
     try {
-        // Try by ID first, then by email
-        let { data, error } = await window.authSupabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-            
-        if (error && userEmail) {
-            // Try by email instead
-            const { data: emailData, error: emailError } = await window.authSupabase
-                .from('user_profiles')
-                .select('*')
-                .eq('email', userEmail)
-                .single();
-            
-            if (!emailError) {
-                data = emailData;
-                error = null;
+        // Use direct fetch since Supabase client is broken
+        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=*`, {
+            headers: {
+                'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
             }
+        });
+        
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            return data[0];
         }
+        
+        return null;
+    } catch (error) {
+        console.error('Get profile error:', error);
+        return null;
+    }
+}
+    
             
         if (error) {
             console.error('Profile fetch error:', error);
