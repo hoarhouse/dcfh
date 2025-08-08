@@ -193,7 +193,7 @@ function addNavigationItems() {
         { href: 'dcf_projects.html', icon: '📋', text: 'My Projects' },
         { href: 'dcf_events_calendar.html', icon: '📅', text: 'My Events' },
         { href: 'dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
-        { href: 'dcf_account_settings.html', icon: '⚙️', text: 'Settings' }
+
     ];
 
     const navSection = document.createElement('div');
