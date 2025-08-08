@@ -1379,17 +1379,25 @@
                 
                 // Update database
                 const userEmail = window.dcfAuth.getCurrentUser()?.email;
-                const { error } = await supabase
-                    .from('user_profiles')
-                    .update({
+                // Use fetch instead of broken supabase client
+                const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.' + userEmail, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         name: fullName,
                         first_name: firstName,
                         last_name: lastName,
-                        title: subtitle,
+                        role: subtitle,
                         location: location,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('email', userEmail);
+                });
+                
+                if (!response.ok) throw new Error('Update failed');
 
                 if (error) throw error;
 
