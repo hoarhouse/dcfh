@@ -1172,10 +1172,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('DEBUG: initializeAuth exists:', typeof initializeAuth);
     console.log('DEBUG: Current dcfUser state:', window.dcfUser);
     
-    // Try to initialize auth
+    // Try to initialize auth with timeout
     console.log('DEBUG: Calling initializeAuth...');
-    const authResult = await initializeAuth();
-    console.log('DEBUG: initializeAuth result:', authResult);
+    try {
+        const authResult = await Promise.race([
+            initializeAuth(),
+            new Promise(resolve => setTimeout(() => resolve('timeout'), 5000))
+        ]);
+        console.log('DEBUG: initializeAuth result:', authResult);
+    } catch (error) {
+        console.log('DEBUG: initializeAuth error:', error);
+    }
     console.log('DEBUG: dcfUser after init:', window.dcfUser);
     console.log('DEBUG: getCurrentUser result:', getCurrentUser());
     
