@@ -1116,27 +1116,29 @@
          // Initialize profile editing based on ownership
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Profile page DOMContentLoaded fired');
-            console.log('Master JS functions available:', typeof window.toggleUserMenu, typeof window.populateTopNavigation);
+            
+            // Wait for auth system to be ready
+            let attempts = 0;
+            while ((!window.dcfUser?.isLoggedIn || !window.dcfAuth) && attempts < 30) {
+                console.log('Waiting for auth system... attempt', attempts);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
+            }
+            
+            console.log('Auth system ready. dcfUser:', window.dcfUser);
+            
             supabase = await getSupabaseInstance();
             console.log('Profile page got supabase instance:', !!supabase);
-            console.log('Is it the same as master?', supabase === window.masterSupabase);
             
             // Set the master supabase so dropdown works
             window.masterSupabase = supabase;
-            console.log('Set masterSupabase for dropdown');
             
             // Ensure is-own-profile class is added immediately
             document.body.classList.add('is-own-profile');
-            
-            if (isOwnProfile) {
-                console.log('Own profile - edit controls should be visible');
-            }
 
             // Load user profile data
             await loadUserProfile();
-
-            // Skip login check - auth handled by master JS
-        });
+        });;
 
         // Load user profile from database
         async function loadUserProfile() {
