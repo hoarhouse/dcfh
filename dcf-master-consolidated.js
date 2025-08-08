@@ -696,7 +696,7 @@ async function loadRecentNotifications() {
         const { data: notifications, error } = await window.masterSupabase
             .from('notifications')
             .select('*')
-            .eq('user_id', session.user.id)
+            .eq('recipient_email', session.user.email)
             .order('created_at', { ascending: false })
             .limit(5);
         
