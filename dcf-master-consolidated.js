@@ -616,7 +616,6 @@ function initializeFooter() {
 
     document.body.insertAdjacentHTML('beforeend', footerHTML);
 }
-}
 
 // =============================================================================
 // 9. NOTIFICATION FUNCTIONS
