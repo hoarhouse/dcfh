@@ -1117,28 +1117,34 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Profile page DOMContentLoaded fired');
             
-            // Wait for auth system to be ready
-            let attempts = 0;
-            while ((!window.dcfUser?.isLoggedIn || !window.dcfAuth) && attempts < 30) {
-                console.log('Waiting for auth system... attempt', attempts);
-                await new Promise(resolve => setTimeout(resolve, 200));
-                attempts++;
+            supabase = await getSupabaseInstance();
+            
+            // Force check localStorage for auth data
+            const authData = localStorage.getItem('sb-atzommnkkwzgbktuzjti-auth-token');
+            if (authData) {
+                try {
+                    const parsed = JSON.parse(authData);
+                    if (parsed.user) {
+                        window.dcfUser = {
+                            isLoggedIn: true,
+                            profile: {
+                                id: parsed.user.id,
+                                email: parsed.user.email,
+                                name: parsed.user.user_metadata.full_name || parsed.user.email,
+                                username: parsed.user.email.split('@')[0]
+                            },
+                            session: parsed
+                        };
+                        console.log('Set dcfUser from localStorage:', window.dcfUser);
+                    }
+                } catch (e) {
+                    console.error('Error parsing auth data:', e);
+                }
             }
             
-            console.log('Auth system ready. dcfUser:', window.dcfUser);
-            
-            supabase = await getSupabaseInstance();
-            console.log('Profile page got supabase instance:', !!supabase);
-            
-            // Set the master supabase so dropdown works
-            window.masterSupabase = supabase;
-            
-            // Ensure is-own-profile class is added immediately
             document.body.classList.add('is-own-profile');
-
-            // Load user profile data
             await loadUserProfile();
-        });;
+        });
 
         // Load user profile from database
         async function loadUserProfile() {
