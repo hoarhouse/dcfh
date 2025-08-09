@@ -1150,33 +1150,86 @@
             }
         }
 
-        function submitEvent() {
+        async function submitEvent() {
             if (validateCurrentStep()) {
                 saveCurrentStepData();
                 
                 // Show loading
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 
-                // Generate event ID and metadata
-                eventData.id = 'event_' + Date.now();
-                eventData.creator = localStorage.getItem('dcf_user_name') || 'Current User';
-                eventData.createdAt = new Date().toISOString();
-                eventData.status = 'active';
-                eventData.attendees = [];
-                
-                // Save to localStorage
-                const existingEvents = JSON.parse(localStorage.getItem('dcf_user_events') || '[]');
-                existingEvents.push(eventData);
-                localStorage.setItem('dcf_user_events', JSON.stringify(existingEvents));
-                
-                console.log('Event created:', eventData);
-                
-                // Simulate API call
-                setTimeout(() => {
+                try {
+                    // Upload images first if any
+                    let imageUrls = [];
+                    if (uploadedPhotos.length > 0) {
+                        imageUrls = await uploadEventImages();
+                    }
+                    
+                    // Prepare event data for Supabase
+                    const supabaseEventData = {
+                        title: eventData.title,
+                        description: eventData.description,
+                        category: eventData.category,
+                        event_type: eventData.type,
+                        visibility: eventData.visibility,
+                        event_date: eventData.date,
+                        start_time: eventData.startTime,
+                        end_time: eventData.endTime,
+                        timezone: eventData.timezone,
+                        location: eventData.physicalAddress || null,
+                        meeting_link: eventData.meetingLink || null,
+                        additional_instructions: eventData.additionalInstructions || null,
+                        max_attendees: eventData.maxAttendees ? parseInt(eventData.maxAttendees) : null,
+                        requires_registration: eventData.requiresRegistration,
+                        target_audience: eventData.targetAudience || null,
+                        topics: eventData.topics || [],
+                        additional_resources: eventData.additionalResources || null,
+                        organizer_notes: eventData.organizerNotes || null,
+                        contact_email: eventData.contactEmail || null,
+                        organizer_id: null, // Will be set when we have user authentication
+                        status: 'active',
+                        featured: false
+                    };
+                    
+                    // Insert into Supabase
+                    const { data, error } = await window.supabaseClient
+                        .from('events')
+                        .insert([supabaseEventData])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    console.log('Event created successfully:', data[0]);
+                    
+                    // Also save to localStorage as backup
+                    const localEventData = {
+                        ...eventData,
+                        id: data[0].id,
+                        createdAt: data[0].created_at,
+                        supabaseId: data[0].id
+                    };
+                    const existingEvents = JSON.parse(localStorage.getItem('dcf_user_events') || '[]');
+                    existingEvents.push(localEventData);
+                    localStorage.setItem('dcf_user_events', JSON.stringify(existingEvents));
+                    
                     document.getElementById('loadingOverlay').style.display = 'none';
                     alert('Event created successfully!');
                     window.location.href = 'dcf_events_calendar.html';
-                }, 2000);
+                    
+                } catch (error) {
+                    console.error('Error creating event:', error);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
+                    let errorMessage = 'Error creating event. Please try again.';
+                    if (error.message.includes('duplicate')) {
+                        errorMessage = 'An event with this title already exists.';
+                    } else if (error.message.includes('network')) {
+                        errorMessage = 'Network error. Please check your connection.';
+                    } else if (error.message) {
+                        errorMessage = 'Error: ' + error.message;
+                    }
+                    
+                    alert(errorMessage);
+                }
             }
         }
 
@@ -1264,11 +1317,43 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        async function uploadEventImages() {
+            const imageUrls = [];
+            
+            for (let i = 0; i < uploadedPhotos.length; i++) {
+                const file = uploadedPhotos[i].data;
+                const fileName = `event_${Date.now()}_${i}_${file.name}`;
+                
+                try {
+                    const { data, error } = await window.supabaseClient.storage
+                        .from('media')
+                        .upload(`events/${fileName}`, file);
+                    
+                    if (error) throw error;
+                    
+                    // Get public URL
+                    const { data: urlData } = window.supabaseClient.storage
+                        .from('media')
+                        .getPublicUrl(`events/${fileName}`);
+                    
+                    imageUrls.push(urlData.publicUrl);
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    // Continue with other images even if one fails
+                }
+            }
+            
+            return imageUrls;
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-
-            
-        
+            // Check if Supabase is ready
+            if (!window.supabaseClient) {
+                console.error('Supabase client not available');
+                alert('Database connection not available. Please refresh the page.');
+                return;
+            }
 
             // Set default date to tomorrow
             const tomorrow = new Date();
@@ -1283,8 +1368,6 @@
             
             // Initialize location fields
             updateLocationFields();
-
-           
 
             console.log('Create Event page loaded successfully');
         });
