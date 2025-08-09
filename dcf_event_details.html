@@ -1486,8 +1486,8 @@
         async function submitRegistration(e) {
             e.preventDefault();
             
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+            if (!isLoggedIn) {
                 showRegistrationError('Please log in to register for events');
                 return;
             }
@@ -1501,7 +1501,7 @@
 
                 const formData = {
                     event_id: currentEvent.id,
-                    user_id: user.id,
+                    user_id: null, // We don't have user UUID, using email instead
                     attendee_name: document.getElementById('attendeeName').value.trim(),
                     attendee_email: document.getElementById('attendeeEmail').value.trim(),
                     organization: document.getElementById('attendeeOrganization').value.trim(),
@@ -1602,6 +1602,8 @@
         }
 
         function redirectToLogin() {
+            // Store current page URL to return after login
+            localStorage.setItem('dcf_redirect_after_login', window.location.href);
             window.location.href = 'dcf_login_page.html';
         }
 
