@@ -1080,6 +1080,7 @@
                 Domus Communis Foundation
             </a>
             <ul class="nav-menu" id="navMenu">
+                <!-- Will be populated by master JS for members, or show public menu -->
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
@@ -1896,26 +1897,83 @@
             }
         });
 
+        // Public/Member mode detection
+        let isPublicMode = false;
+
+        function detectUserMode() {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+            isPublicMode = (isLoggedIn !== 'true');
+            
+            if (isPublicMode) {
+                showPublicMode();
+            } else {
+                showMemberMode();
+            }
+        }
+
+        function showPublicMode() {
+            // Hide member-only elements
+            document.querySelector('.create-event-card').style.display = 'none';
+            document.querySelectorAll('.btn-primary').forEach(btn => {
+                if (btn.textContent.includes('Create Event')) {
+                    btn.style.display = 'none';
+                }
+            });
+            
+            // Update header
+            const pageSubtitle = document.querySelector('.page-subtitle');
+            pageSubtitle.innerHTML = 'Join our global community events. <a href="dcf_login_page.html" style="color: #333; text-decoration: underline;">Login</a> or <a href="dcf_profile_signup.html" style="color: #333; text-decoration: underline;">join</a> to create and manage events.';
+            
+            // Change register buttons to login prompts
+            document.querySelectorAll('.btn-primary').forEach(btn => {
+                if (btn.textContent.includes('Register')) {
+                    btn.textContent = '🔐 Login to Register';
+                    btn.onclick = function() {
+                        window.location.href = 'dcf_login_page.html';
+                    };
+                }
+            });
+        }
+
+        function showMemberMode() {
+            // Show all member features (default state)
+            // Navigation will be handled by master JS
+        }
+
         // Set minimum date to today
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('eventDate').setAttribute('min', today);
             
-            // updateUserDropdownInfo(); // Handled by universal-navbar.js
-            
-        
-
-        
-
-                       // Escape key handler managed by universal-navbar.js
-
+            detectUserMode();
+            setupPublicNavigation();
         });
 
         function openEventDetails(eventId) {
-            alert(`Opening details for event: ${eventId}`);
+            window.location.href = `dcf_event_details.html?id=${eventId}`;
         }
 
-         // Navigation handled by universal-navbar.js
+        // Public navigation fallback
+        function setupPublicNavigation() {
+            if (isPublicMode) {
+                const navMenu = document.getElementById('navMenu');
+                navMenu.innerHTML = `
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="dcf_about.html">About</a></li>
+                    <li><a href="dcf_events_calendar.html" class="active">Events</a></li>
+                    <li><a href="dcf_contact.html">Contact</a></li>
+                `;
+                
+                // Update user menu for public users
+                const userMenu = document.querySelector('.user-menu');
+                userMenu.innerHTML = `
+                    <a href="dcf_login_page.html" class="btn btn-secondary">Login</a>
+                    <a href="dcf_profile_signup.html" class="btn btn-primary">Join Movement</a>
+                `;
+            }
+        }
+
+         // Navigation handled by universal-navbar.js for members
     </script>
 </body>
 </html>
