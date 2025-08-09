@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ethics Workshop - DCF Hungary</title>
+    <title>Event Details - DCF Hungary</title>
     <style>
         * {
             margin: 0;
@@ -409,6 +409,12 @@
             font-size: 1rem;
         }
 
+        .btn:disabled {
+            background: #e5e5e5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
         .content-wrapper {
             display: grid;
             grid-template-columns: 1fr 320px;
@@ -608,6 +614,10 @@
             background: #f8f9fa;
         }
 
+        .registration-card.registered {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
         .attendee-count {
             text-align: center;
             padding: 1rem;
@@ -803,52 +813,19 @@
             border-color: #000;
         }
 
-        .modal {
+        /* Registration Form Styles */
+        .registration-form {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
             background: white;
             border-radius: 12px;
             padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
+            margin-top: 1rem;
+            border: 2px solid #000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
+        .registration-form.show {
+            display: block;
         }
 
         .form-group {
@@ -860,6 +837,11 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
             color: #333;
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: #dc3545;
         }
 
         .form-input {
@@ -896,6 +878,29 @@
             gap: 1rem;
             justify-content: flex-end;
             margin-top: 2rem;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
         }
 
         @media (max-width: 1024px) {
@@ -961,7 +966,7 @@
     <script src="dcf-master-consolidated.js"></script>
 </head>
 
-<body class="dcf-public-page">
+<body>
     <header class="header">
         <nav class="nav-container">
             <a href="index.html" class="logo">
@@ -972,7 +977,8 @@
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>                    <div class="dropdown-menu" id="userDropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
                             <div class="dropdown-info">
@@ -981,7 +987,6 @@
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
-                        
                     </div>
                 </div>
             </div>
@@ -991,251 +996,72 @@
     <main class="main-container">
         <a href="dcf_events_calendar.html" class="back-link">← Back to Events Calendar</a>
 
-        <div class="event-hero">
-            <div class="event-hero-header">
-                <div class="event-date-hero">
-                    <div class="event-date-box-large">
-                        <div class="day">16</div>
-                        <div class="month">JUL</div>
-                    </div>
-                    <div class="event-hero-info">
-                        <h1 class="event-title-hero">AI Ethics Workshop: Implementing Catholic Social Teaching</h1>
-                        <div class="event-meta-hero">
-                            <div class="event-meta-item-hero">
-                                <span>⏰</span>
-                                <span>2:00 PM - 4:00 PM EST</span>
-                            </div>
-                            <div class="event-meta-item-hero">
-                                <span>📍</span>
-                                <span>Virtual/Online</span>
-                            </div>
-                            <div class="event-meta-item-hero">
-                                <span>👥</span>
-                                <span>45 registered</span>
-                            </div>
-                            <div class="event-meta-item-hero">
-                                <span>🌐</span>
-                                <span>English</span>
-                            </div>
-                        </div>
-                        <div class="event-status-hero">
-                            <span class="status-badge status-featured">Featured</span>
-                            <span class="status-badge status-virtual">Virtual</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="event-actions-hero">
-                <button class="btn btn-primary btn-large" onclick="registerForEvent()">🎫 Register Now</button>
-                <button class="btn btn-secondary" onclick="addToCalendar()">📅 Add to Calendar</button>
-                <button class="btn btn-secondary" onclick="shareEvent()">🔗 Share Event</button>
-            </div>
+        <div class="event-hero" id="eventHero">
+            <!-- Event details will be loaded here -->
         </div>
 
         <div class="content-wrapper">
-            <div class="main-content">
-                <div class="content-section">
-                    <div class="event-description">
-                        Interactive workshop exploring practical ways to integrate Catholic Social Teaching principles into AI development workflows. Led by Dr. Sarah Johnson and Fr. Michael Torres, this session will provide concrete frameworks and tools for ethical AI development that prioritize human dignity, social justice, and the common good.
-                    </div>
-                    <div class="tag-list">
-                        <span class="tag primary">AI Ethics</span>
-                        <span class="tag">Catholic Social Teaching</span>
-                        <span class="tag">Workshop</span>
-                        <span class="tag">Development</span>
-                        <span class="tag">Implementation</span>
-                    </div>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">About This Workshop</h2>
-                    <div class="section-content">
-                        <p>This comprehensive workshop is designed for AI developers, researchers, and technology leaders who want to ensure their work aligns with Catholic Social Teaching principles. Participants will learn practical methodologies for implementing ethical frameworks in AI development, from initial design through deployment and monitoring.</p>
-                        <br>
-                        <p>The session combines theological insights with hands-on technical guidance, making it accessible to both technical and non-technical audiences. All participants will receive a comprehensive toolkit for ongoing ethical AI development.</p>
-                    </div>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">Workshop Agenda</h2>
-                    <ul class="agenda-list">
-                        <li class="agenda-item">
-                            <div class="agenda-time">2:00 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">Welcome & Opening Prayer</div>
-                                <div class="agenda-description">Introduction to the workshop goals and opening reflection</div>
-                            </div>
-                        </li>
-                        <li class="agenda-item">
-                            <div class="agenda-time">2:15 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">Catholic Social Teaching Foundations</div>
-                                <div class="agenda-description">Fr. Michael Torres explores key principles: human dignity, common good, subsidiarity, and solidarity</div>
-                            </div>
-                        </li>
-                        <li class="agenda-item">
-                            <div class="agenda-time">2:45 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">AI Ethics Framework Overview</div>
-                                <div class="agenda-description">Dr. Sarah Johnson presents practical frameworks for ethical AI development</div>
-                            </div>
-                        </li>
-                        <li class="agenda-item">
-                            <div class="agenda-time">3:15 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">Interactive Case Studies</div>
-                                <div class="agenda-description">Small group work applying principles to real-world AI scenarios</div>
-                            </div>
-                        </li>
-                        <li class="agenda-item">
-                            <div class="agenda-time">3:45 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">Implementation Toolkit</div>
-                                <div class="agenda-description">Practical tools and resources for ongoing ethical AI development</div>
-                            </div>
-                        </li>
-                        <li class="agenda-item">
-                            <div class="agenda-time">4:00 PM</div>
-                            <div class="agenda-content">
-                                <div class="agenda-title">Q&A and Closing</div>
-                                <div class="agenda-description">Open discussion and next steps for participants</div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">Featured Speakers</h2>
-                    <div class="speakers-grid">
-                        <div class="speaker-card">
-                            <div class="speaker-avatar">SJ</div>
-                            <div class="speaker-info">
-                                <div class="speaker-name">Dr. Sarah Johnson</div>
-                                <div class="speaker-title">AI Ethics Researcher, Lead Facilitator</div>
-                            </div>
-                        </div>
-                        <div class="speaker-card">
-                            <div class="speaker-avatar">MT</div>
-                            <div class="speaker-info">
-                                <div class="speaker-name">Fr. Michael Torres</div>
-                                <div class="speaker-title">Theologian, Ethics Consultant</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">What You'll Learn</h2>
-                    <ul class="requirements-list">
-                        <li>Core principles of Catholic Social Teaching and their relevance to AI development</li>
-                        <li>Practical frameworks for implementing ethical guidelines in AI projects</li>
-                        <li>Methods for evaluating AI systems against human dignity criteria</li>
-                        <li>Tools for ongoing ethical assessment and improvement</li>
-                        <li>Strategies for building ethical AI teams and culture</li>
-                        <li>Case studies of successful ethical AI implementations</li>
-                    </ul>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">Prerequisites</h2>
-                    <ul class="requirements-list">
-                        <li>Basic familiarity with AI/ML concepts (technical background helpful but not required)</li>
-                        <li>Interest in ethical technology development</li>
-                        <li>Stable internet connection for virtual participation</li>
-                        <li>Computer or tablet for accessing workshop materials</li>
-                    </ul>
-                </div>
-
-                <div class="content-section">
-                    <h2 class="section-title">Resources Provided</h2>
-                    <ul class="requirements-list">
-                        <li>Comprehensive ethical AI development toolkit</li>
-                        <li>Catholic Social Teaching reference guide for technologists</li>
-                        <li>Case study workbook with practical exercises</li>
-                        <li>Access to exclusive DCF member resources</li>
-                        <li>Recording of the workshop session</li>
-                        <li>Follow-up resources and community access</li>
-                    </ul>
-                </div>
+            <div class="main-content" id="mainContent">
+                <!-- Event content will be loaded here -->
             </div>
 
             <div class="sidebar">
-                <div class="registration-card">
-                    <h3>Register for Workshop</h3>
-                    <p>Join 45 other participants in this transformative workshop</p>
-                    <button class="btn btn-large" onclick="registerForEvent()">🎫 Register Now</button>
+                <div class="registration-card" id="registrationCard">
+                    <!-- Registration card will be loaded here -->
                 </div>
 
-                <div class="sidebar-card">
-                    <h3 class="sidebar-title">Event Details</h3>
-                    <ul class="event-details-list">
-                        <li>
-                            <div class="event-details-icon">📅</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Date</div>
-                                <div class="event-details-value">Wednesday, July 16, 2025</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="event-details-icon">⏰</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Time</div>
-                                <div class="event-details-value">2:00 PM - 4:00 PM EST</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="event-details-icon">📍</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Location</div>
-                                <div class="event-details-value">Virtual/Online</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="event-details-icon">💰</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Cost</div>
-                                <div class="event-details-value">Free for DCF Members</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="event-details-icon">🌐</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Language</div>
-                                <div class="event-details-value">English</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="event-details-icon">📱</div>
-                            <div class="event-details-content">
-                                <div class="event-details-label">Platform</div>
-                                <div class="event-details-value">Zoom Webinar</div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="sidebar-card">
-                    <h3 class="sidebar-title">Attendance</h3>
-                    <div class="attendee-count">
-                        <div class="attendee-number">45</div>
-                        <div class="attendee-label">Registered Participants</div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <button class="btn btn-secondary" onclick="viewAttendees()">👥 View Attendees</button>
-                        <button class="btn btn-secondary" onclick="inviteColleagues()">📧 Invite Colleagues</button>
-                    </div>
-                </div>
-
-                <div class="sidebar-card">
-                    <h3 class="sidebar-title">Organized By</h3>
-                    <div class="organizer-card">
-                        <div class="organizer-avatar">SJ</div>
-                        <div class="organizer-info">
-                            <div class="organizer-name">Dr. Sarah Johnson</div>
-                            <div class="organizer-title">AI Ethics Researcher</div>
+                <!-- Registration Form (hidden by default) -->
+                <div class="registration-form" id="registrationForm">
+                    <h3 style="margin-bottom: 1rem;">Register for Event</h3>
+                    <div id="registrationMessage"></div>
+                    <form id="eventRegistrationForm">
+                        <div class="form-group">
+                            <label class="form-label required" for="attendeeName">Full Name</label>
+                            <input type="text" id="attendeeName" class="form-input" placeholder="Enter your full name" required>
                         </div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="contactOrganizer()">📧 Contact Organizer</button>
+                        <div class="form-group">
+                            <label class="form-label required" for="attendeeEmail">Email Address</label>
+                            <input type="email" id="attendeeEmail" class="form-input" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="attendeeOrganization">Organization</label>
+                            <input type="text" id="attendeeOrganization" class="form-input" placeholder="Your organization or institution">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="attendeeRole">Role/Title</label>
+                            <input type="text" id="attendeeRole" class="form-input" placeholder="Your role or job title">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="attendeeExperience">Experience Level</label>
+                            <select id="attendeeExperience" class="form-select">
+                                <option value="">Select your experience level</option>
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="attendeeInterests">Specific Interests (Optional)</label>
+                            <input type="text" id="attendeeInterests" class="form-input" placeholder="What aspects interest you most?">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="hideRegistrationForm()">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="submitRegistration">Complete Registration</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="sidebar-card" id="eventDetailsCard">
+                    <!-- Event details sidebar will be loaded here -->
+                </div>
+
+                <div class="sidebar-card" id="attendanceCard">
+                    <!-- Attendance info will be loaded here -->
+                </div>
+
+                <div class="sidebar-card" id="organizerCard">
+                    <!-- Organizer info will be loaded here -->
                 </div>
 
                 <div class="sidebar-card">
@@ -1249,142 +1075,561 @@
                     <button class="btn btn-secondary" onclick="downloadEventFlyer()">📄 Download Flyer</button>
                 </div>
 
-                <div class="sidebar-card">
-                    <h3 class="sidebar-title">Related Events</h3>
-                    <div class="related-events">
-                        <div class="related-event" onclick="openEvent('global-summit')">
-                            <div class="related-event-date">20<br>JUL</div>
-                            <div class="related-event-info">
-                                <div class="related-event-title">DCF Global Summit</div>
-                                <div class="related-event-time">9:00 AM - 5:00 PM</div>
-                            </div>
-                        </div>
-                        <div class="related-event" onclick="openEvent('research-presentation')">
-                            <div class="related-event-date">23<br>JUL</div>
-                            <div class="related-event-info">
-                                <div class="related-event-title">Research Presentation</div>
-                                <div class="related-event-time">11:00 AM - 12:30 PM</div>
-                            </div>
-                        </div>
-                        <div class="related-event" onclick="openEvent('networking-budapest')">
-                            <div class="related-event-date">25<br>JUL</div>
-                            <div class="related-event-info">
-                                <div class="related-event-title">Budapest Networking</div>
-                                <div class="related-event-time">6:00 PM - 8:00 PM</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="sidebar-card" id="relatedEventsCard">
+                    <!-- Related events will be loaded here -->
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Registration Modal -->
-    <div class="modal" id="registrationModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Register for Workshop</h2>
-                <button class="close-btn" onclick="closeModal('registrationModal')">&times;</button>
-            </div>
-            <form id="registrationForm">
-                <div class="form-group">
-                    <label class="form-label" for="attendeeName">Full Name *</label>
-                    <input type="text" id="attendeeName" class="form-input" placeholder="Enter your full name" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="attendeeEmail">Email Address *</label>
-                    <input type="email" id="attendeeEmail" class="form-input" placeholder="Enter your email" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="attendeeOrganization">Organization</label>
-                    <input type="text" id="attendeeOrganization" class="form-input" placeholder="Your organization or institution">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="attendeeRole">Role/Title</label>
-                    <input type="text" id="attendeeRole" class="form-input" placeholder="Your role or job title">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="attendeeExperience">AI Experience Level</label>
-                    <select id="attendeeExperience" class="form-select">
-                        <option value="">Select your experience level</option>
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                        <option value="expert">Expert</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="attendeeInterests">Specific Interests (Optional)</label>
-                    <input type="text" id="attendeeInterests" class="form-input" placeholder="What aspects of AI ethics interest you most?">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('registrationModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Complete Registration</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
-        // Registration functionality
-        function registerForEvent() {
-            document.getElementById('registrationModal').classList.add('active');
-        }
+        // Global variables
+        let currentEvent = null;
+        let currentUser = null;
+        let userRegistration = null;
+        let supabase = null;
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // Registration form submission
-        document.getElementById('registrationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                name: document.getElementById('attendeeName').value,
-                email: document.getElementById('attendeeEmail').value,
-                organization: document.getElementById('attendeeOrganization').value,
-                role: document.getElementById('attendeeRole').value,
-                experience: document.getElementById('attendeeExperience').value,
-                interests: document.getElementById('attendeeInterests').value
-            };
-            
-            console.log('Registration data:', formData);
-            alert('Registration successful! You will receive a confirmation email with event details.');
-            closeModal('registrationModal');
-            
-            // Update registration button
-            const registerBtns = document.querySelectorAll('.btn-primary');
-            registerBtns.forEach(btn => {
-                if (btn.textContent.includes('Register')) {
-                    btn.textContent = '✓ Registered';
-                    btn.classList.remove('btn-primary');
-                    btn.classList.add('btn-secondary');
-                }
-            });
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
         });
 
-        // Calendar functionality
+        async function initializePage() {
+            try {
+                // Initialize Supabase (should be handled by master JS)
+                if (window.supabaseClient) {
+                    supabase = window.supabaseClient;
+                } else {
+                    console.error('Supabase client not available');
+                    return;
+                }
+
+                // Get event ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const eventId = urlParams.get('id');
+                
+                if (!eventId) {
+                    showError('Event not found');
+                    return;
+                }
+
+                // Load event data
+                await loadEvent(eventId);
+                
+                // Check registration status if user is logged in
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    await checkRegistrationStatus(eventId);
+                }
+
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showError('Failed to load event details');
+            }
+        }
+
+
+
+        async function loadEvent(eventId) {
+            try {
+                const { data: event, error } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .single();
+
+                if (error) throw error;
+                if (!event) throw new Error('Event not found');
+
+                currentEvent = event;
+                renderEventDetails(event);
+                
+            } catch (error) {
+                console.error('Error loading event:', error);
+                showError('Event not found or failed to load');
+            }
+        }
+
+        async function checkRegistrationStatus(eventId) {
+            if (!supabase?.auth?.user()) return;
+
+            try {
+                const { data: registration, error } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('user_id', supabase.auth.user().id)
+                    .single();
+
+                if (!error && registration) {
+                    userRegistration = registration;
+                    updateRegistrationUI(true);
+                }
+            } catch (error) {
+                // No registration found - this is expected for unregistered users
+                console.log('No registration found for user');
+            }
+        }
+
+        function renderEventDetails(event) {
+            renderEventHero(event);
+            renderMainContent(event);
+            renderSidebar(event);
+        }
+
+        function renderEventHero(event) {
+            const eventDate = new Date(event.event_date);
+            const day = eventDate.getDate();
+            const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            
+            const formatTime = (timeStr) => {
+                const [hours, minutes] = timeStr.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `${displayHour}:${minutes} ${ampm}`;
+            };
+
+            const eventHero = document.getElementById('eventHero');
+            eventHero.innerHTML = `
+                <div class="event-hero-header">
+                    <div class="event-date-hero">
+                        <div class="event-date-box-large">
+                            <div class="day">${day}</div>
+                            <div class="month">${month}</div>
+                        </div>
+                        <div class="event-hero-info">
+                            <h1 class="event-title-hero">${event.title}</h1>
+                            <div class="event-meta-hero">
+                                <div class="event-meta-item-hero">
+                                    <span>⏰</span>
+                                    <span>${formatTime(event.start_time)} - ${formatTime(event.end_time)} ${event.timezone}</span>
+                                </div>
+                                <div class="event-meta-item-hero">
+                                    <span>📍</span>
+                                    <span>${event.event_type === 'online' ? 'Virtual/Online' : event.location || 'Location TBD'}</span>
+                                </div>
+                                <div class="event-meta-item-hero">
+                                    <span>👥</span>
+                                    <span id="attendeeCount">Loading...</span>
+                                </div>
+                                <div class="event-meta-item-hero">
+                                    <span>🌐</span>
+                                    <span>English</span>
+                                </div>
+                            </div>
+                            <div class="event-status-hero">
+                                ${event.featured ? '<span class="status-badge status-featured">Featured</span>' : ''}
+                                <span class="status-badge status-${event.event_type === 'online' ? 'virtual' : event.event_type === 'in-person' ? 'in-person' : 'hybrid'}">${event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="event-actions-hero">
+                    ${renderRegistrationButton()}
+                    <button class="btn btn-secondary" onclick="addToCalendar()">📅 Add to Calendar</button>
+                    <button class="btn btn-secondary" onclick="shareEvent()">🔗 Share Event</button>
+                </div>
+            `;
+
+            loadAttendeeCount(event.id);
+        }
+
+        function renderRegistrationButton() {
+            const { data: { user } } = supabase?.auth?.getUser() || {};
+            if (!user) {
+                return '<button class="btn btn-primary btn-large" onclick="redirectToLogin()">🔐 Login to Register</button>';
+            } else if (userRegistration) {
+                return '<button class="btn btn-secondary btn-large" disabled>✅ Registered</button>';
+            } else {
+                return '<button class="btn btn-primary btn-large" onclick="showRegistrationForm()">🎫 Register Now</button>';
+            }
+        }
+
+        function renderMainContent(event) {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = `
+                <div class="content-section">
+                    <div class="event-description">
+                        ${event.description}
+                    </div>
+                    <div class="tag-list">
+                        ${event.topics ? event.topics.map(topic => 
+                            `<span class="tag ${topic === 'ai_ethics' ? 'primary' : ''}">${topic.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>`
+                        ).join('') : ''}
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h2 class="section-title">About This Event</h2>
+                    <div class="section-content">
+                        <p>${event.organizer_notes || 'More details about this event will be shared with registered participants.'}</p>
+                    </div>
+                </div>
+
+                ${event.additional_resources ? `
+                <div class="content-section">
+                    <h2 class="section-title">Additional Resources</h2>
+                    <div class="section-content">
+                        <p>${event.additional_resources}</p>
+                    </div>
+                </div>
+                ` : ''}
+
+                ${event.additional_instructions ? `
+                <div class="content-section">
+                    <h2 class="section-title">Event Instructions</h2>
+                    <div class="section-content">
+                        <p>${event.additional_instructions}</p>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        function renderSidebar(event) {
+            renderRegistrationCard(event);
+            renderEventDetailsCard(event);
+            renderAttendanceCard(event);
+            renderOrganizerCard(event);
+            renderRelatedEvents();
+        }
+
+        function renderRegistrationCard(event) {
+            const registrationCard = document.getElementById('registrationCard');
+            const { data: { user } } = supabase?.auth?.getUser() || {};
+            
+            if (!user) {
+                registrationCard.innerHTML = `
+                    <h3>Join the Event</h3>
+                    <p>Create an account or login to register for this event and connect with our community</p>
+                    <button class="btn btn-large" onclick="redirectToLogin()">🔐 Login to Register</button>
+                `;
+            } else if (userRegistration) {
+                registrationCard.className = 'registration-card registered';
+                registrationCard.innerHTML = `
+                    <h3>✅ You're Registered!</h3>
+                    <p>We'll send you event details and reminders via email</p>
+                    <button class="btn btn-large" onclick="cancelRegistration()">Cancel Registration</button>
+                `;
+            } else {
+                registrationCard.innerHTML = `
+                    <h3>Register for Event</h3>
+                    <p>Join other participants in this transformative experience</p>
+                    <button class="btn btn-large" onclick="showRegistrationForm()">🎫 Register Now</button>
+                `;
+            }
+        }
+
+        function renderEventDetailsCard(event) {
+            const eventDetailsCard = document.getElementById('eventDetailsCard');
+            const eventDate = new Date(event.event_date);
+            
+            eventDetailsCard.innerHTML = `
+                <h3 class="sidebar-title">Event Details</h3>
+                <ul class="event-details-list">
+                    <li>
+                        <div class="event-details-icon">📅</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Date</div>
+                            <div class="event-details-value">${eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="event-details-icon">⏰</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Time</div>
+                            <div class="event-details-value">${event.start_time} - ${event.end_time} ${event.timezone}</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="event-details-icon">📍</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Location</div>
+                            <div class="event-details-value">${event.event_type === 'online' ? 'Virtual/Online' : event.location || 'Location TBD'}</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="event-details-icon">💰</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Cost</div>
+                            <div class="event-details-value">Free for DCF Members</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="event-details-icon">🌐</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Language</div>
+                            <div class="event-details-value">English</div>
+                        </div>
+                    </li>
+                    ${event.event_type === 'online' ? `
+                    <li>
+                        <div class="event-details-icon">📱</div>
+                        <div class="event-details-content">
+                            <div class="event-details-label">Platform</div>
+                            <div class="event-details-value">Online Meeting</div>
+                        </div>
+                    </li>
+                    ` : ''}
+                </ul>
+            `;
+        }
+
+        function renderAttendanceCard(event) {
+            const attendanceCard = document.getElementById('attendanceCard');
+            attendanceCard.innerHTML = `
+                <h3 class="sidebar-title">Attendance</h3>
+                <div class="attendee-count">
+                    <div class="attendee-number" id="sidebarAttendeeCount">-</div>
+                    <div class="attendee-label">Registered Participants</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button class="btn btn-secondary" onclick="viewAttendees()">👥 View Attendees</button>
+                    <button class="btn btn-secondary" onclick="inviteColleagues()">📧 Invite Colleagues</button>
+                </div>
+            `;
+        }
+
+        function renderOrganizerCard(event) {
+            const organizerCard = document.getElementById('organizerCard');
+            organizerCard.innerHTML = `
+                <h3 class="sidebar-title">Organized By</h3>
+                <div class="organizer-card">
+                    <div class="organizer-avatar">OR</div>
+                    <div class="organizer-info">
+                        <div class="organizer-name">Event Organizer</div>
+                        <div class="organizer-title">DCF Community Member</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="contactOrganizer()">📧 Contact Organizer</button>
+            `;
+        }
+
+        function renderRelatedEvents() {
+            const relatedEventsCard = document.getElementById('relatedEventsCard');
+            relatedEventsCard.innerHTML = `
+                <h3 class="sidebar-title">Related Events</h3>
+                <div class="related-events">
+                    <div class="related-event" onclick="openEvent('global-summit')">
+                        <div class="related-event-date">20<br>JUL</div>
+                        <div class="related-event-info">
+                            <div class="related-event-title">DCF Global Summit</div>
+                            <div class="related-event-time">9:00 AM - 5:00 PM</div>
+                        </div>
+                    </div>
+                    <div class="related-event" onclick="openEvent('research-presentation')">
+                        <div class="related-event-date">23<br>JUL</div>
+                        <div class="related-event-info">
+                            <div class="related-event-title">Research Presentation</div>
+                            <div class="related-event-time">11:00 AM - 12:30 PM</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAttendeeCount(eventId) {
+            try {
+                const { count, error } = await supabase
+                    .from('event_registrations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_id', eventId)
+                    .eq('status', 'registered');
+
+                if (error) throw error;
+
+                const attendeeCount = count || 0;
+                document.getElementById('attendeeCount').textContent = `${attendeeCount} registered`;
+                document.getElementById('sidebarAttendeeCount').textContent = attendeeCount;
+
+            } catch (error) {
+                console.error('Error loading attendee count:', error);
+                document.getElementById('attendeeCount').textContent = 'Registration info unavailable';
+            }
+        }
+
+        // Registration functions
+        function showRegistrationForm() {
+            const { data: { user } } = supabase?.auth?.getUser() || {};
+            if (!user) {
+                redirectToLogin();
+                return;
+            }
+
+            const form = document.getElementById('registrationForm');
+            form.classList.add('show');
+
+            // Pre-fill user data if available
+            if (user?.email) {
+                document.getElementById('attendeeEmail').value = user.email;
+                document.getElementById('attendeeName').value = user.user_metadata?.full_name || '';
+            }
+
+            // Scroll to form
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideRegistrationForm() {
+            document.getElementById('registrationForm').classList.remove('show');
+            clearRegistrationMessage();
+        }
+
+        async function submitRegistration(e) {
+            e.preventDefault();
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                showRegistrationError('Please log in to register for events');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitRegistration');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.textContent = 'Registering...';
+                submitBtn.disabled = true;
+
+                const formData = {
+                    event_id: currentEvent.id,
+                    user_id: user.id,
+                    attendee_name: document.getElementById('attendeeName').value.trim(),
+                    attendee_email: document.getElementById('attendeeEmail').value.trim(),
+                    organization: document.getElementById('attendeeOrganization').value.trim(),
+                    role: document.getElementById('attendeeRole').value.trim(),
+                    experience_level: document.getElementById('attendeeExperience').value,
+                    interests: document.getElementById('attendeeInterests').value.trim()
+                };
+
+                const { data, error } = await supabase
+                    .from('event_registrations')
+                    .insert([formData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                userRegistration = data;
+                showRegistrationSuccess('Registration successful! You will receive confirmation details via email.');
+                
+                // Update UI
+                setTimeout(() => {
+                    hideRegistrationForm();
+                    updateRegistrationUI(true);
+                    loadAttendeeCount(currentEvent.id);
+                }, 2000);
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                if (error.code === '23505') { // Unique constraint violation
+                    showRegistrationError('You are already registered for this event');
+                } else {
+                    showRegistrationError('Registration failed. Please try again.');
+                }
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function cancelRegistration() {
+            if (!userRegistration) return;
+
+            if (!confirm('Are you sure you want to cancel your registration?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('event_registrations')
+                    .delete()
+                    .eq('id', userRegistration.id);
+
+                if (error) throw error;
+
+                userRegistration = null;
+                updateRegistrationUI(false);
+                loadAttendeeCount(currentEvent.id);
+
+            } catch (error) {
+                console.error('Error canceling registration:', error);
+                alert('Failed to cancel registration. Please try again.');
+            }
+        }
+
+        function updateRegistrationUI(isRegistered) {
+            renderRegistrationCard(currentEvent);
+            
+            // Update hero buttons
+            const heroActions = document.querySelector('.event-actions-hero');
+            if (heroActions) {
+                const registerBtn = heroActions.querySelector('.btn-primary, .btn-secondary');
+                if (registerBtn) {
+                    if (isRegistered) {
+                        registerBtn.textContent = '✅ Registered';
+                        registerBtn.className = 'btn btn-secondary btn-large';
+                        registerBtn.disabled = true;
+                        registerBtn.onclick = null;
+                    } else {
+                        registerBtn.textContent = '🎫 Register Now';
+                        registerBtn.className = 'btn btn-primary btn-large';
+                        registerBtn.disabled = false;
+                        registerBtn.onclick = showRegistrationForm;
+                    }
+                }
+            }
+        }
+
+        function showRegistrationSuccess(message) {
+            const messageDiv = document.getElementById('registrationMessage');
+            messageDiv.innerHTML = `<div class="success-message">${message}</div>`;
+        }
+
+        function showRegistrationError(message) {
+            const messageDiv = document.getElementById('registrationMessage');
+            messageDiv.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        function clearRegistrationMessage() {
+            document.getElementById('registrationMessage').innerHTML = '';
+        }
+
+        function redirectToLogin() {
+            window.location.href = 'dcf_login_page.html';
+        }
+
+        function showError(message) {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = `
+                <div class="error-message" style="text-align: center; padding: 3rem;">
+                    <h2>Error</h2>
+                    <p>${message}</p>
+                    <a href="dcf_events_calendar.html" class="btn btn-primary">Back to Events</a>
+                </div>
+            `;
+        }
+
+        // Utility functions
         function addToCalendar() {
+            if (!currentEvent) return;
+
             const eventDetails = {
-                title: 'AI Ethics Workshop: Implementing Catholic Social Teaching',
-                start: '2025-07-16T14:00:00',
-                end: '2025-07-16T16:00:00',
-                description: 'Interactive workshop exploring practical ways to integrate Catholic Social Teaching principles into AI development workflows.',
-                location: 'Virtual/Online'
+                title: currentEvent.title,
+                start: `${currentEvent.event_date}T${currentEvent.start_time}`,
+                end: `${currentEvent.event_date}T${currentEvent.end_time}`,
+                description: currentEvent.description,
+                location: currentEvent.event_type === 'online' ? 'Virtual/Online' : currentEvent.location
             };
             
-            // Create calendar event URL (Google Calendar format)
             const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start.replace(/[-:]/g, '')}/${eventDetails.end.replace(/[-:]/g, '')}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}`;
             
             window.open(calendarUrl, '_blank');
         }
 
-        // Share functionality
         function shareEvent() {
-            if (navigator.share) {
+            if (navigator.share && currentEvent) {
                 navigator.share({
-                    title: 'AI Ethics Workshop: Implementing Catholic Social Teaching',
-                    text: 'Join this interactive workshop on July 16th exploring practical ways to integrate Catholic Social Teaching principles into AI development.',
+                    title: currentEvent.title,
+                    text: `Join this event: ${currentEvent.title}`,
                     url: window.location.href
                 });
             } else {
@@ -1394,13 +1639,13 @@
 
         function shareToLinkedIn() {
             const url = encodeURIComponent(window.location.href);
-            const title = encodeURIComponent('AI Ethics Workshop: Implementing Catholic Social Teaching');
+            const title = encodeURIComponent(currentEvent?.title || 'DCF Event');
             window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank');
         }
 
         function shareToTwitter() {
             const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Join the AI Ethics Workshop: Implementing Catholic Social Teaching on July 16th! #AIEthics #CatholicSocialTeaching #DCF');
+            const text = encodeURIComponent(`Join this event: ${currentEvent?.title || 'DCF Event'} #DCF #AIEthics`);
             window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
         }
 
@@ -1415,7 +1660,6 @@
             });
         }
 
-        // Other functionality
         function viewAttendees() {
             alert('Attendee list would be displayed here.');
         }
@@ -1425,7 +1669,11 @@
         }
 
         function contactOrganizer() {
-            alert('Contact form or email link would be implemented here.');
+            if (currentEvent?.contact_email) {
+                window.location.href = `mailto:${currentEvent.contact_email}?subject=Question about ${currentEvent.title}`;
+            } else {
+                alert('Contact information not available.');
+            }
         }
 
         function downloadEventFlyer() {
@@ -1433,115 +1681,11 @@
         }
 
         function openEvent(eventId) {
-            alert(`Opening event: ${eventId}`);
+            window.location.href = `dcf_event_details.html?id=${eventId}`;
         }
 
-        // Close modal when clicking outside
-        document.getElementById('registrationModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal('registrationModal');
-            }
-        });
-
-        // User menu functionality
-        let isDropdownOpen = false;
-
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = getOrCreateOverlay();
-            
-            if (isDropdownOpen) {
-                closeUserMenu();
-            } else {
-                openUserMenu();
-            }
-        }
-
-        function openUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = getOrCreateOverlay();
-            
-            dropdown.classList.add('active');
-            overlay.classList.add('active');
-            isDropdownOpen = true;
-            
-            // Force visibility to prevent invisible dropdown bug
-            dropdown.style.opacity = '1';
-            dropdown.style.visibility = 'visible';
-            dropdown.style.transform = 'translateY(0)';
-            dropdown.style.zIndex = '99999';
-            
-            // updateUserDropdownInfo(); - removed, handled by master JS
-        }
-
-        function closeUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = document.querySelector('.dropdown-overlay');
-            
-            dropdown.classList.remove('active');
-            if (overlay) overlay.classList.remove('active');
-            isDropdownOpen = false;
-        }
-
-        function getOrCreateOverlay() {
-            let overlay = document.querySelector('.dropdown-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'dropdown-overlay';
-                overlay.onclick = closeUserMenu;
-                document.body.appendChild(overlay);
-            }
-            return overlay;
-        }
-
-        // updateUserDropdownInfo function removed - handled by master JS
-
-        function generateInitials(name) {
-            if (!name) return 'SJ';
-            
-            // Filter out titles like "Dr." to fix DJ->SJ bug
-            const filteredName = name.replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s+/i, '');
-            const parts = filteredName.split(' ');
-            
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            }
-            return filteredName.substring(0, 2).toUpperCase();
-        }
-
-        function logout() {
-            if (confirm('Are you sure you want to sign out?')) {
-                localStorage.removeItem('dcf_github_session');
-                localStorage.removeItem('dcf_user_logged_in');
-                localStorage.removeItem('dcf_user_name');
-                localStorage.removeItem('dcf_user_email');
-                localStorage.removeItem('dcf_auth_provider');
-                localStorage.removeItem('dcf_remember_login');
-
-                sessionStorage.clear();
-
-                alert('You have been signed out successfully.');
-                window.location.href = 'dcf_login_page.html';
-            }
-        }
-
-        // Initialize user menu on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // updateUserDropdownInfo(); - removed, handled by master JS
-
-            // Check if user is logged in
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
-            if (isLoggedIn !== 'true') {
-                window.location.href = 'dcf_login_page.html';
-            }
-
-            // Close dropdown on escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && isDropdownOpen) {
-                    closeUserMenu();
-                }
-            });
-        });
+        // Event listeners
+        document.getElementById('eventRegistrationForm').addEventListener('submit', submitRegistration);
     </script>
 </body>
 </html>
