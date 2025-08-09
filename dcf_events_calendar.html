@@ -1900,16 +1900,29 @@
         // Public/Member mode detection
         let isPublicMode = false;
 
-        function detectUserMode() {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
-            isPublicMode = (isLoggedIn !== 'true');
-            
-            if (isPublicMode) {
-                showPublicMode();
-            } else {
-                showMemberMode();
-            }
+        async function detectUserMode() {
+    try {
+        if (!window.supabaseClient) {
+            console.log('Supabase not ready, defaulting to public mode');
+            isPublicMode = true;
+            showPublicMode();
+            return;
         }
+        
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        isPublicMode = !user;
+        
+        if (isPublicMode) {
+            showPublicMode();
+        } else {
+            showMemberMode();
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        isPublicMode = true;
+        showPublicMode();
+    }
+}
 
         function showPublicMode() {
             // Hide member-only elements
@@ -1941,13 +1954,13 @@
         }
 
         // Set minimum date to today
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('eventDate').setAttribute('min', today);
-            
-            detectUserMode();
-            setupPublicNavigation();
-        });
+document.addEventListener('DOMContentLoaded', async function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('eventDate').setAttribute('min', today);
+    
+    await detectUserMode();
+    setupPublicNavigation();
+});
 
         function openEventDetails(eventId) {
             window.location.href = `dcf_event_details.html?id=${eventId}`;
