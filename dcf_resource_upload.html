@@ -1463,8 +1463,9 @@
         // Load statistics on page load
         async function loadUploadStats() {
             try {
-                const currentUser = getCurrentUser();
-                if (!currentUser) return;
+                const { data: { session } } = await window.authSupabase.auth.getSession();
+                if (!session?.user) return;
+                const currentUser = { email: session.user.email };
 
                 // Total resources count
                 const { count: totalCount } = await window.authSupabase
@@ -1827,12 +1828,14 @@
             });
         }
 
-        function updatePreview() {
+        async function updatePreview() {
             const title = document.getElementById('resourceTitle').value || 'Resource Title';
             const description = document.getElementById('resourceDescription').value || 'Resource description will appear here...';
             const type = document.getElementById('resourceType').value || 'Resource Type';
             const language = document.getElementById('resourceLanguage').value || 'Language';
-            const author = document.getElementById('resourceAuthor').value || getCurrentUser()?.name || 'Unknown Author';
+            const { data: { session } } = await window.authSupabase.auth.getSession();
+            const currentUserName = session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'Unknown Author';
+            const author = document.getElementById('resourceAuthor').value || currentUserName;
             
             document.getElementById('previewTitle').textContent = title;
             document.getElementById('previewDescription').textContent = description;
@@ -1866,11 +1869,12 @@
 
         async function submitResource() {
             try {
-                const currentUser = getCurrentUser();
-                if (!currentUser) {
+                const { data: { session } } = await window.authSupabase.auth.getSession();
+                if (!session?.user) {
                     alert('You must be logged in to upload resources');
                     return;
                 }
+                const currentUser = { email: session.user.email, name: session.user.user_metadata?.name || session.user.email.split('@')[0] };
 
                 // Show progress modal
                 const progressModal = createProgressModal();
