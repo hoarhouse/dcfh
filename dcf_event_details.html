@@ -1116,9 +1116,9 @@
                 // Load event data
                 await loadEvent(eventId);
                 
-                // Check registration status if user is logged in
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
+                // Check if user is logged in (from localStorage or auth state)
+                const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+                if (isLoggedIn) {
                     await checkRegistrationStatus(eventId);
                 }
 
@@ -1151,14 +1151,15 @@
         }
 
         async function checkRegistrationStatus(eventId) {
-            if (!supabase?.auth?.user()) return;
+            const userEmail = localStorage.getItem('dcf_user_email');
+            if (!userEmail) return;
 
             try {
                 const { data: registration, error } = await supabase
                     .from('event_registrations')
                     .select('*')
                     .eq('event_id', eventId)
-                    .eq('user_id', supabase.auth.user().id)
+                    .eq('attendee_email', userEmail)
                     .single();
 
                 if (!error && registration) {
@@ -1236,8 +1237,8 @@
         }
 
         function renderRegistrationButton() {
-            const { data: { user } } = supabase?.auth?.getUser() || {};
-            if (!user) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+            if (!isLoggedIn) {
                 return '<button class="btn btn-primary btn-large" onclick="redirectToLogin()">🔐 Login to Register</button>';
             } else if (userRegistration) {
                 return '<button class="btn btn-secondary btn-large" disabled>✅ Registered</button>';
@@ -1297,9 +1298,10 @@
 
         function renderRegistrationCard(event) {
             const registrationCard = document.getElementById('registrationCard');
-            const { data: { user } } = supabase?.auth?.getUser() || {};
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
             
-            if (!user) {
+            if (!isLoggedIn) {
+                registrationCard.className = 'registration-card';
                 registrationCard.innerHTML = `
                     <h3>Join the Event</h3>
                     <p>Create an account or login to register for this event and connect with our community</p>
@@ -1313,6 +1315,7 @@
                     <button class="btn btn-large" onclick="cancelRegistration()">Cancel Registration</button>
                 `;
             } else {
+                registrationCard.className = 'registration-card';
                 registrationCard.innerHTML = `
                     <h3>Register for Event</h3>
                     <p>Join other participants in this transformative experience</p>
@@ -1451,8 +1454,8 @@
 
         // Registration functions
         function showRegistrationForm() {
-            const { data: { user } } = supabase?.auth?.getUser() || {};
-            if (!user) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+            if (!isLoggedIn) {
                 redirectToLogin();
                 return;
             }
@@ -1460,10 +1463,15 @@
             const form = document.getElementById('registrationForm');
             form.classList.add('show');
 
-            // Pre-fill user data if available
-            if (user?.email) {
-                document.getElementById('attendeeEmail').value = user.email;
-                document.getElementById('attendeeName').value = user.user_metadata?.full_name || '';
+            // Pre-fill user data from localStorage
+            const userEmail = localStorage.getItem('dcf_user_email');
+            const userName = localStorage.getItem('dcf_user_name');
+            
+            if (userEmail) {
+                document.getElementById('attendeeEmail').value = userEmail;
+            }
+            if (userName) {
+                document.getElementById('attendeeName').value = userName;
             }
 
             // Scroll to form
