@@ -716,7 +716,7 @@ function optimizeAvatars() {
 function getOptimizedImageUrl(originalUrl, width = 300, height = 300) {
     // If it's already a Supabase Storage URL, add transformation parameters
     if (originalUrl.includes('supabase.co/storage')) {
-        return `${originalUrl}?width=${width}&height=${height}&resize=cover&format=webp`;
+        return `${originalUrl}?format=webp`;
     }
     
     // For external URLs, return as-is (could implement external optimization service)
