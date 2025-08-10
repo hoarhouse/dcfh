@@ -138,7 +138,7 @@ async function updateUserInfo() {
     if (avatarElement) {
         if (avatarUrl) {
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundSize = 'contain';
             avatarElement.style.backgroundPosition = 'center';
             avatarElement.textContent = '';
         } else {
@@ -151,7 +151,7 @@ async function updateUserInfo() {
     if (dropdownAvatarElement) {
         if (avatarUrl) {
             dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            dropdownAvatarElement.style.backgroundSize = 'cover';
+            dropdownAvatarElement.style.backgroundSize = 'contain';
             dropdownAvatarElement.style.backgroundPosition = 'center';
             dropdownAvatarElement.textContent = '';
         } else {
