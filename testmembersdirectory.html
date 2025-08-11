@@ -1259,38 +1259,91 @@
         // Sort functionality
         document.getElementById('sortBy').addEventListener('change', function() {
             const sortBy = this.value;
-            const members = Array.from(document.querySelectorAll('.member-card, .member-list-item'));
+            const gridMembers = Array.from(document.querySelectorAll('.member-card'));
+            const listMembers = Array.from(document.querySelectorAll('.member-list-item'));
             
-            members.sort((a, b) => {
-                switch(sortBy) {
-                    case 'name':
-                        const nameA = a.querySelector('.member-name, .member-list-name').textContent;
-                        const nameB = b.querySelector('.member-name, .member-list-name').textContent;
-                        return nameA.localeCompare(nameB);
-                    case 'projects':
-                        const projectsA = parseInt(a.querySelector('.member-stats, .member-list-stats').textContent.match(/(\d+) Projects/)[1]);
-                        const projectsB = parseInt(b.querySelector('.member-stats, .member-list-stats').textContent.match(/(\d+) Projects/)[1]);
-                        return projectsB - projectsA;
-                    case 'connections':
-                        const connectionsA = parseInt(a.querySelector('.member-stats, .member-list-stats').textContent.match(/(\d+) Connections/)[1]);
-                        const connectionsB = parseInt(b.querySelector('.member-stats, .member-list-stats').textContent.match(/(\d+) Connections/)[1]);
-                        return connectionsB - connectionsA;
-                    default:
-                        return 0;
-                }
+            // Sort grid view members
+            gridMembers.sort((a, b) => {
+                return sortMembers(a, b, sortBy);
             });
 
+            // Sort list view members
+            listMembers.sort((a, b) => {
+                return sortMembers(a, b, sortBy);
+            });
+
+            // Clear and re-append sorted members
             const gridContainer = document.getElementById('membersGrid');
             const listContainer = document.getElementById('membersList');
             
-            members.forEach(member => {
-                if (member.classList.contains('member-card')) {
-                    gridContainer.appendChild(member);
-                } else {
-                    listContainer.appendChild(member);
-                }
+            gridContainer.innerHTML = '';
+            listContainer.innerHTML = '';
+            
+            gridMembers.forEach(member => {
+                gridContainer.appendChild(member);
+            });
+            
+            listMembers.forEach(member => {
+                listContainer.appendChild(member);
             });
         });
+
+        function sortMembers(a, b, sortBy) {
+            switch(sortBy) {
+                case 'name':
+                    const nameA = getMemberName(a);
+                    const nameB = getMemberName(b);
+                    return nameA.localeCompare(nameB);
+                    
+                case 'recent':
+                    // Sort by data-user-id (newer users have higher IDs typically)
+                    const idA = parseInt(a.dataset.userId) || 0;
+                    const idB = parseInt(b.dataset.userId) || 0;
+                    return idB - idA; // Descending order
+                    
+                case 'projects':
+                    const projectsA = getProjectCount(a);
+                    const projectsB = getProjectCount(b);
+                    return projectsB - projectsA; // Descending order
+                    
+                case 'connections':
+                    const connectionsA = getConnectionCount(a);
+                    const connectionsB = getConnectionCount(b);
+                    return connectionsB - connectionsA; // Descending order
+                    
+                case 'joined':
+                    // Same as recent for now - could use created_at if available
+                    const joinedIdA = parseInt(a.dataset.userId) || 0;
+                    const joinedIdB = parseInt(b.dataset.userId) || 0;
+                    return joinedIdB - joinedIdA; // Descending order
+                    
+                default:
+                    return 0;
+            }
+        }
+
+        function getMemberName(memberElement) {
+            const nameElement = memberElement.querySelector('.member-name, .member-list-name');
+            return nameElement ? nameElement.textContent.trim() : '';
+        }
+
+        function getProjectCount(memberElement) {
+            const statsElement = memberElement.querySelector('.member-stats, .member-list-stats');
+            if (!statsElement) return 0;
+            
+            const projectText = statsElement.textContent;
+            const projectMatch = projectText.match(/(\d+)\s+Projects?/i);
+            return projectMatch ? parseInt(projectMatch[1]) : 0;
+        }
+
+        function getConnectionCount(memberElement) {
+            const statsElement = memberElement.querySelector('.member-stats, .member-list-stats');
+            if (!statsElement) return 0;
+            
+            const statsText = statsElement.textContent;
+            const connectionMatch = statsText.match(/(\d+)\s+Connections?/i);
+            return connectionMatch ? parseInt(connectionMatch[1]) : 0;
+        }
 
         // Connect/Message functionality will be handled by event delegation
         async function handleConnectClick(button, targetUserId) {
