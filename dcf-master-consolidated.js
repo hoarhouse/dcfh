@@ -761,7 +761,7 @@ function addImageOptimizationCSS() {
         
         /* Optimize avatar loading */
         .user-avatar, .member-avatar, .dropdown-avatar {
-            background-size: cover;
+            background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
         }
