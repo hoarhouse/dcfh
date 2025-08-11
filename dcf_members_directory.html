@@ -1109,6 +1109,83 @@
         // Test that our script loads
         console.log('Members directory page script loaded!');
         
+        // User menu functionality  
+        let isDropdownOpen = false;
+
+        function generateInitials(name) {
+            if (!name) return 'DC';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function updateUserDropdownInfo() {
+            const userName = localStorage.getItem('dcf_user_name') || 'DCF Member';
+            const userEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
+            const authProvider = localStorage.getItem('dcf_auth_provider') || 'demo';
+
+            const nameElement = document.getElementById('dropdownUserName');
+            const emailElement = document.getElementById('dropdownUserEmail');
+
+            if (nameElement) nameElement.textContent = userName;
+            if (emailElement) emailElement.textContent = userEmail;
+
+            const initials = generateInitials(userName);
+            const avatarElement = document.getElementById('userAvatar');
+            const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+
+            if (avatarElement) avatarElement.textContent = initials;
+            if (dropdownAvatarElement) dropdownAvatarElement.textContent = initials;
+
+            if (authProvider === 'github') {
+                if (emailElement) emailElement.textContent = `${userEmail} (GitHub)`;
+            }
+        }
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            if (isDropdownOpen) {
+                closeUserMenu();
+            } else {
+                openUserMenu();
+            }
+        }
+
+        function openUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = getOrCreateOverlay();
+            
+            dropdown.classList.add('active');
+            overlay.classList.add('active');
+            isDropdownOpen = true;
+            
+            updateUserDropdownInfo();
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            const overlay = document.querySelector('.dropdown-overlay');
+            
+            dropdown.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            isDropdownOpen = false;
+        }
+
+        function getOrCreateOverlay() {
+            let overlay = document.querySelector('.dropdown-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'dropdown-overlay';
+                overlay.onclick = closeUserMenu;
+                document.body.appendChild(overlay);
+            }
+            return overlay;
+        }
+        
         // Initialize Supabase - will be handled by consolidated script
         ;
 
