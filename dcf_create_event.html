@@ -515,40 +515,93 @@
 
         .uploaded-files {
             margin-top: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
         }
 
         .uploaded-file {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
             border-radius: 8px;
-            margin-bottom: 0.5rem;
+            overflow: hidden;
+            background: white;
+            position: relative;
+        }
+
+        .file-preview {
+            width: 100%;
+            height: 150px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
         }
 
         .file-info {
-            flex: 1;
+            padding: 0.75rem;
         }
 
         .file-name {
             font-weight: 600;
             color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .file-size {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #666;
         }
 
         .remove-file {
-            background: #dc3545;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(220, 53, 69, 0.9);
             color: white;
             border: none;
-            border-radius: 4px;
-            padding: 0.25rem 0.5rem;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-file:hover {
+            background: #dc3545;
+        }
+
+        .upload-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .upload-limit-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .file-upload.disabled {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         .checkbox-group {
@@ -964,12 +1017,13 @@
 
                 <div class="form-group">
                     <label class="form-label">Event Photos/Banner</label>
-                    <div class="file-upload" onclick="document.getElementById('eventPhotos').click()">
+                    <div class="file-upload" id="fileUploadArea" onclick="document.getElementById('eventPhotos').click()">
                         <div class="upload-icon">📸</div>
                         <div class="upload-text">Click to upload or drag photos here</div>
                         <div class="upload-subtext">Support JPG, PNG, GIF up to 10MB each</div>
                     </div>
                     <input type="file" id="eventPhotos" multiple accept="image/*" style="display: none;">
+                    <div class="upload-limit-text" id="uploadLimitText">0 / 3 images uploaded</div>
                     <div class="uploaded-files" id="uploadedFiles"></div>
                 </div>
 
@@ -1219,6 +1273,7 @@
                     
                     // Prepare event data for Supabase
                     const supabaseEventData = {
+                        image_urls: imageUrls,
                         title: eventData.title,
                         description: eventData.description,
                         category: eventData.category,
@@ -1286,13 +1341,17 @@
         // File upload handling
         document.getElementById('eventPhotos').addEventListener('change', function(e) {
             handleFileUpload(e.target.files);
+            // Reset input so same file can be selected again
+            this.value = '';
         });
 
         // Drag and drop
         const fileUpload = document.querySelector('.file-upload');
         fileUpload.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.classList.add('dragover');
+            if (uploadedPhotos.length < 3) {
+                this.classList.add('dragover');
+            }
         });
 
         fileUpload.addEventListener('dragleave', function(e) {
@@ -1303,60 +1362,89 @@
         fileUpload.addEventListener('drop', function(e) {
             e.preventDefault();
             this.classList.remove('dragover');
-            handleFileUpload(e.dataTransfer.files);
+            if (uploadedPhotos.length < 3) {
+                handleFileUpload(e.dataTransfer.files);
+            }
         });
 
         function handleFileUpload(files) {
             const uploadedFilesContainer = document.getElementById('uploadedFiles');
             
             Array.from(files).forEach(file => {
+                // Check if we've reached the 3 image limit
+                if (uploadedPhotos.length >= 3) {
+                    alert('Maximum 3 images allowed. Please remove an existing image to add a new one.');
+                    return;
+                }
+                
                 if (file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024) {
                     const fileObj = {
                         name: file.name,
                         size: formatFileSize(file.size),
-                        data: file
+                        data: file,
+                        id: Date.now() + Math.random()
                     };
                     
                     uploadedPhotos.push(fileObj);
                     
+                    // Create file element with preview
                     const fileElement = document.createElement('div');
                     fileElement.className = 'uploaded-file';
-                    fileElement.innerHTML = `
-                        <div class="file-info">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${formatFileSize(file.size)}</div>
-                        </div>
-                        <button class="remove-file" onclick="removeFile(${uploadedPhotos.length - 1})">Remove</button>
-                    `;
+                    fileElement.id = `file-${fileObj.id}`;
+                    
+                    // Create image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        fileElement.innerHTML = `
+                            <div class="file-preview" style="background-image: url('${e.target.result}')">
+                                <button class="remove-file" onclick="removeFile('${fileObj.id}')">&times;</button>
+                                <div class="upload-progress" style="display: none;">
+                                    <div class="progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
                     
                     uploadedFilesContainer.appendChild(fileElement);
+                    updateUploadStatus();
                 } else {
                     alert(`File ${file.name} is not a valid image or is too large (max 10MB)`);
                 }
             });
         }
 
-        function removeFile(index) {
-            uploadedPhotos.splice(index, 1);
-            updateUploadedFilesDisplay();
+        function removeFile(fileId) {
+            // Remove from array
+            uploadedPhotos = uploadedPhotos.filter(file => file.id !== fileId);
+            
+            // Remove from DOM
+            const fileElement = document.getElementById(`file-${fileId}`);
+            if (fileElement) {
+                fileElement.remove();
+            }
+            
+            updateUploadStatus();
         }
 
-        function updateUploadedFilesDisplay() {
-            const container = document.getElementById('uploadedFiles');
-            container.innerHTML = '';
+        function updateUploadStatus() {
+            const limitText = document.getElementById('uploadLimitText');
+            const uploadArea = document.getElementById('fileUploadArea');
             
-            uploadedPhotos.forEach((file, index) => {
-                const fileElement = document.createElement('div');
-                fileElement.className = 'uploaded-file';
-                fileElement.innerHTML = `
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${file.size}</div>
-                    </div>
-                    <button class="remove-file" onclick="removeFile(${index})">Remove</button>
-                `;
-                container.appendChild(fileElement);
-            });
+            limitText.textContent = `${uploadedPhotos.length} / 3 images uploaded`;
+            
+            // Disable upload area if at limit
+            if (uploadedPhotos.length >= 3) {
+                uploadArea.classList.add('disabled');
+                uploadArea.onclick = null;
+            } else {
+                uploadArea.classList.remove('disabled');
+                uploadArea.onclick = () => document.getElementById('eventPhotos').click();
+            }
         }
 
         function formatFileSize(bytes) {
