@@ -1279,10 +1279,22 @@
                 // Show loading
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 
+                // Debug: Check what Supabase instances exist
+                console.log('DEBUG: window.supabaseClient:', window.supabaseClient);
+                console.log('DEBUG: window.supabase:', window.supabase);
+                console.log('DEBUG: window.authSupabase:', window.authSupabase);
+                console.log('DEBUG: All window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('supabase')));
+                
                 // Wait for Supabase to be ready - check multiple possible locations
-                while (!window.supabaseClient && !window.supabase && !window.authSupabase) {
-                    console.log('Waiting for Supabase in submit...');
+                let attempts = 0;
+                while (!window.supabaseClient && !window.supabase && !window.authSupabase && attempts < 20) {
+                    console.log('Waiting for Supabase in submit... attempt', attempts);
                     await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+                
+                if (attempts >= 20) {
+                    throw new Error('Supabase client not found after waiting');
                 }
                 
                 // Use whichever Supabase instance is available
