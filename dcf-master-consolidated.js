@@ -137,9 +137,8 @@ async function updateUserInfo() {
     // Set avatars
     if (avatarElement) {
         if (avatarUrl) {
+            avatarElement.className = 'dropdown-avatar';
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            avatarElement.style.backgroundSize = 'contain';
-            avatarElement.style.backgroundPosition = 'center';
             avatarElement.textContent = '';
         } else {
             avatarElement.textContent = initials;
