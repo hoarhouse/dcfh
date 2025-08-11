@@ -1464,6 +1464,8 @@ const { data: user } = await window.masterSupabase
         // Load members from database
         async function loadMembersFromDatabase() {
             try {
+                console.log('Starting to load members...');
+                
                 // Show loading
                 document.getElementById('loadingSpinner').style.display = 'flex';
                 document.getElementById('membersGrid').style.display = 'none';
@@ -1471,38 +1473,70 @@ const { data: user } = await window.masterSupabase
 
                 // Initialize Supabase if needed
                 if (!window.masterSupabase) {
-                    window.initializeSupabase();
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    console.log('Initializing Supabase...');
+                    if (window.initializeSupabase) {
+                        window.initializeSupabase();
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } else {
+                        console.error('initializeSupabase function not found');
+                        throw new Error('Supabase initialization failed');
+                    }
                 }
 
-                // Get current user email to exclude from results
+                // Check if Supabase is working
+                if (!window.masterSupabase) {
+                    console.error('masterSupabase not available after initialization');
+                    throw new Error('Supabase connection failed');
+                }
+
+                console.log('Supabase connected, fetching users...');
+
+                // Get current user email to exclude from results (if available)
                 const currentUserEmail = localStorage.getItem('dcf_user_email');
+                console.log('Current user email:', currentUserEmail);
                 
-                // Fetch users from database (excluding current user)
-                const { data: users, error } = await window.masterSupabase
+                // Fetch users from database
+                let query = window.masterSupabase
                     .from('user_profiles')
                     .select('id, username, name, title, role, organization, location, bio, expertise, skills_offered, avatar_url')
-                    .neq('email', currentUserEmail)
                     .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                // Only exclude current user if we have their email
+                if (currentUserEmail) {
+                    query = query.neq('email', currentUserEmail);
+                }
+
+                const { data: users, error } = await query;
+
+                if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                }
+
+                console.log('Fetched users:', users ? users.length : 'null', users);
 
                 // Clear existing members
                 document.getElementById('membersGrid').innerHTML = '';
                 document.getElementById('membersList').innerHTML = '';
 
-                // Update statistics with real data
-                updateMemberStatistics(users);
+                if (!users || users.length === 0) {
+                    console.log('No users found in database');
+                    // Show a message that no members are available
+                    document.getElementById('membersGrid').innerHTML = '<p>No members found. This could mean the database is empty or there\'s a connection issue.</p>';
+                    document.getElementById('membersList').innerHTML = '<p>No members found. This could mean the database is empty or there\'s a connection issue.</p>';
+                } else {
+                    // Update statistics with real data
+                    updateMemberStatistics(users);
 
-                // Generate member cards with stats
-                for (const user of users) {
-                    const stats = await getUserStats(user.id);
-                    createMemberCard(user, stats);
-                    createMemberListItem(user, stats);
-                }
+                    // Generate member cards with stats
+                    for (const user of users) {
+                        console.log('Processing user:', user.username);
+                        const stats = await getUserStats(user.id);
+                        createMemberCard(user, stats);
+                        createMemberListItem(user, stats);
+                    }
 
-                // Only show featured section if we have members
-                if (users && users.length > 0) {
+                    // Only show featured section if we have members
                     loadFeaturedMembers(users);
                 }
 
@@ -1510,10 +1544,25 @@ const { data: user } = await window.masterSupabase
                 document.getElementById('loadingSpinner').style.display = 'none';
                 switchView('grid');
 
+                console.log('Members loading completed successfully');
+
             } catch (error) {
                 console.error('Error loading members:', error);
                 document.getElementById('loadingSpinner').style.display = 'none';
-                alert('Failed to load members. Please refresh the page.');
+                
+                // Show error message to user
+                const errorMessage = `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <h3>Unable to load members</h3>
+                        <p>Error: ${error.message}</p>
+                        <p>Please check the browser console for more details.</p>
+                        <button onclick="loadMembersFromDatabase()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">Try Again</button>
+                    </div>
+                `;
+                document.getElementById('membersGrid').innerHTML = errorMessage;
+                document.getElementById('membersList').innerHTML = errorMessage;
+                
+                switchView('grid');
             }
         }
 
