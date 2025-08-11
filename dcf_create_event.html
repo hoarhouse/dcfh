@@ -1185,11 +1185,17 @@
                         additional_resources: eventData.additionalResources || null,
                         organizer_notes: eventData.organizerNotes || null,
                         contact_email: eventData.contactEmail || null,
-                        organizer_id: null, // Will be set when we have user authentication
+                        organizer_id: user?.id || null,
                         status: 'active',
                         featured: false
                     };
                     
+                    // Get current user first
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    if (user) {
+                        supabaseEventData.organizer_id = user.id;
+                    }
+
                     // Insert into Supabase
                     const { data, error } = await window.supabaseClient
                         .from('events')
@@ -1200,16 +1206,7 @@
                     
                     console.log('Event created successfully:', data[0]);
                     
-                    // Also save to localStorage as backup
-                    const localEventData = {
-                        ...eventData,
-                        id: data[0].id,
-                        createdAt: data[0].created_at,
-                        supabaseId: data[0].id
-                    };
-                    const existingEvents = JSON.parse(localStorage.getItem('dcf_user_events') || '[]');
-                    existingEvents.push(localEventData);
-                    localStorage.setItem('dcf_user_events', JSON.stringify(existingEvents));
+                    // Event created successfully - no localStorage needed
                     
                     document.getElementById('loadingOverlay').style.display = 'none';
                     alert('Event created successfully!');
