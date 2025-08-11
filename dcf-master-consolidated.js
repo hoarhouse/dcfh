@@ -162,18 +162,18 @@ async function updateUserInfo() {
 }
 
 function generateInitials(name) {
-    if (!name || typeof name !== 'string') return 'DC';
+    if (!name || typeof name !== 'string') return '';
     
-    const cleanName = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.|Rev\.|Fr\.|Sr\.|Rabbi)\s+/i, '');
-    const parts = cleanName.trim().split(' ').filter(part => part.length > 0);
+    const cleanName = name.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
+    const parts = cleanName.split(' ').filter(part => part.length > 0);
     
     if (parts.length >= 2) {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     } else if (parts.length === 1) {
-        return (parts[0][0] + (parts[0][1] || 'C')).toUpperCase();
+        return parts[0].substring(0, 2).toUpperCase();
     }
     
-    return 'DC';
+    return '';
 }
 
 // =============================================================================
