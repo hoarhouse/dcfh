@@ -1049,10 +1049,6 @@
 
             <div class="main-content">
                 <div class="content-header">
-                    <div class="view-toggle">
-                        <button class="view-btn active" onclick="switchView('grid')">⊞ Grid</button>
-                        <button class="view-btn" onclick="switchView('list')">☰ List</button>
-                    </div>
                     <div class="sort-controls">
                         <select class="sort-select" id="sortBy">
                             <option value="name">Sort by Name</option>
@@ -1068,12 +1064,7 @@
                     <div class="spinner"></div>
                 </div>
 
-                <!-- Grid View -->
-                <div class="members-grid" id="membersGrid">
-                    <!-- Real members will be loaded here from database -->
-                </div>
-
-                <!-- List View -->
+                <!-- List View Only -->
                 <div class="members-list" id="membersList">
                     <!-- Dynamic content will be loaded here by JavaScript -->
                 </div>
@@ -1317,25 +1308,16 @@
 
         function toggleNoResults(show) {
             const noResults = document.getElementById('noResults');
-            const membersGrid = document.getElementById('membersGrid');
             const membersList = document.getElementById('membersList');
             const pagination = document.querySelector('.pagination');
 
             if (show) {
                 noResults.style.display = 'block';
-                membersGrid.style.display = 'none';
                 membersList.style.display = 'none';
                 pagination.style.display = 'none';
             } else {
                 noResults.style.display = 'none';
-                const activeView = document.querySelector('.view-btn.active').textContent.includes('Grid') ? 'grid' : 'list';
-                if (activeView === 'grid') {
-                    membersGrid.style.display = 'grid';
-                    membersList.style.display = 'none';
-                } else {
-                    membersGrid.style.display = 'none';
-                    membersList.style.display = 'flex';
-                }
+                membersList.style.display = 'flex';
                 pagination.style.display = 'flex';
             }
         }
@@ -1358,29 +1340,16 @@
         // Sort functionality
         document.getElementById('sortBy').addEventListener('change', function() {
             const sortBy = this.value;
-            const gridMembers = Array.from(document.querySelectorAll('.member-card'));
             const listMembers = Array.from(document.querySelectorAll('.member-list-item'));
             
-            // Sort grid view members
-            gridMembers.sort((a, b) => {
-                return sortMembers(a, b, sortBy);
-            });
-
             // Sort list view members
             listMembers.sort((a, b) => {
                 return sortMembers(a, b, sortBy);
             });
 
             // Clear and re-append sorted members
-            const gridContainer = document.getElementById('membersGrid');
             const listContainer = document.getElementById('membersList');
-            
-            gridContainer.innerHTML = '';
             listContainer.innerHTML = '';
-            
-            gridMembers.forEach(member => {
-                gridContainer.appendChild(member);
-            });
             
             listMembers.forEach(member => {
                 listContainer.appendChild(member);
@@ -1567,7 +1536,6 @@ const { data: user } = await window.masterSupabase
                 
                 // Show loading
                 document.getElementById('loadingSpinner').style.display = 'flex';
-                document.getElementById('membersGrid').style.display = 'none';
                 document.getElementById('membersList').style.display = 'none';
 
                 // Initialize Supabase if needed
@@ -1594,11 +1562,12 @@ const { data: user } = await window.masterSupabase
                 const currentUserEmail = localStorage.getItem('dcf_user_email');
                 console.log('Current user email:', currentUserEmail);
                 
-                // Fetch users from database
+                // Fetch users from database with pagination (25 per page)
                 let query = window.masterSupabase
                     .from('user_profiles')
                     .select('id, username, name, title, role, organization, location, bio, expertise, skills_offered, avatar_url')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(25);
 
                 // Only exclude current user if we have their email
                 if (currentUserEmail) {
@@ -1615,23 +1584,20 @@ const { data: user } = await window.masterSupabase
                 console.log('Fetched users:', users ? users.length : 'null', users);
 
                 // Clear existing members
-                document.getElementById('membersGrid').innerHTML = '';
                 document.getElementById('membersList').innerHTML = '';
 
                 if (!users || users.length === 0) {
                     console.log('No users found in database');
                     // Show a message that no members are available
-                    document.getElementById('membersGrid').innerHTML = '<p>No members found. This could mean the database is empty or there\'s a connection issue.</p>';
                     document.getElementById('membersList').innerHTML = '<p>No members found. This could mean the database is empty or there\'s a connection issue.</p>';
                 } else {
                     // Update statistics with real data
                     updateMemberStatistics(users);
 
-                    // Generate member cards with stats
+                    // Generate member list items with stats
                     for (const user of users) {
                         console.log('Processing user:', user.username);
                         const stats = await getUserStats(user.id);
-                        createMemberCard(user, stats);
                         createMemberListItem(user, stats);
                     }
 
@@ -1641,7 +1607,7 @@ const { data: user } = await window.masterSupabase
 
                 // Hide loading and show results
                 document.getElementById('loadingSpinner').style.display = 'none';
-                switchView('grid');
+                document.getElementById('membersList').style.display = 'flex';
 
                 console.log('Members loading completed successfully');
 
@@ -1658,10 +1624,8 @@ const { data: user } = await window.masterSupabase
                         <button onclick="loadMembersFromDatabase()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">Try Again</button>
                     </div>
                 `;
-                document.getElementById('membersGrid').innerHTML = errorMessage;
                 document.getElementById('membersList').innerHTML = errorMessage;
-                
-                switchView('grid');
+                document.getElementById('membersList').style.display = 'flex';
             }
         }
 
@@ -1808,14 +1772,12 @@ const { data: user } = await window.masterSupabase
 
         function showLoading() {
             document.getElementById('loadingSpinner').style.display = 'flex';
-            document.getElementById('membersGrid').style.display = 'none';
             document.getElementById('membersList').style.display = 'none';
         }
 
         function hideLoading() {
             document.getElementById('loadingSpinner').style.display = 'none';
-            const activeView = document.querySelector('.view-btn.active').textContent.includes('Grid') ? 'grid' : 'list';
-            switchView(activeView);
+            document.getElementById('membersList').style.display = 'flex';
         }
     </script>
 </body>
