@@ -350,7 +350,8 @@ function handlePublicPageAuth() {
             if (!isLoggedIn) {
                 updateNavForAuthState(false);
             } else {
-                // User is logged in - make sure avatar is clickable
+                // User is logged in - add notification bell and make sure avatar is clickable
+                addNotificationBellToMemberPages();
                 const avatar = document.getElementById('userAvatar');
                 if (avatar && !avatar.onclick) {
                     avatar.setAttribute('onclick', 'toggleUserMenu()');
