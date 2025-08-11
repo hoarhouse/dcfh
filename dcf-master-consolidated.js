@@ -761,9 +761,10 @@ function addImageOptimizationCSS() {
         
         /* Optimize avatar loading */
         .user-avatar, .member-avatar, .dropdown-avatar {
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            border-radius: 50% !important;
         }
         
         /* Post image optimization */
