@@ -433,10 +433,31 @@
             color: #666;
         }
 
-        .time-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 1rem;
+        .duration-presets {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .duration-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .duration-btn.active {
+            border-color: #000;
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .duration-btn:hover {
+            border-color: #333;
         }
 
         .conditional-field {
@@ -639,8 +660,8 @@
                 display: none;
             }
 
-            .time-row {
-                grid-template-columns: 1fr;
+            .duration-presets {
+                flex-direction: column;
             }
 
             .toggle-group {
@@ -794,27 +815,42 @@
                 </div>
 
                 <div class="form-group">
-                    <div class="time-row">
-                        <div>
-                            <label class="form-label required" for="startTime">Start Time</label>
-                            <input type="time" id="startTime" class="form-input">
-                        </div>
-                        <div>
-                            <label class="form-label required" for="endTime">End Time</label>
-                            <input type="time" id="endTime" class="form-input">
-                        </div>
-                        <div>
-                            <label class="form-label required" for="timezone">Time Zone</label>
-                            <select id="timezone" class="form-select">
-                                <option value="UTC">UTC</option>
-                                <option value="CET" selected>CET (Budapest)</option>
-                                <option value="EST">EST (New York)</option>
-                                <option value="PST">PST (Los Angeles)</option>
-                                <option value="GMT">GMT (London)</option>
-                                <option value="JST">JST (Tokyo)</option>
-                            </select>
-                        </div>
+                    <label class="form-label required">Event Duration</label>
+                    <div class="duration-presets">
+                        <button type="button" class="duration-btn active" onclick="setDuration(1)">1 hour</button>
+                        <button type="button" class="duration-btn" onclick="setDuration(2)">2 hours</button>
+                        <button type="button" class="duration-btn" onclick="setDuration(4)">Half day</button>
+                        <button type="button" class="duration-btn" onclick="setDuration(8)">Full day</button>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required" for="startTime">Start Time</label>
+                    <select id="startTime" class="form-select">
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required" for="timezone">Time Zone</label>
+                    <select id="timezone" class="form-select">
+                        <option value="CET" selected>Central European Time (Budapest)</option>
+                        <option value="EST">Eastern Time (New York)</option>
+                        <option value="PST">Pacific Time (Los Angeles)</option>
+                        <option value="GMT">Greenwich Mean Time (London)</option>
+                        <option value="UTC">UTC (Universal)</option>
+                    </select>
                 </div>
 
                 <div class="form-group conditional-field" id="onlineLocation">
@@ -981,6 +1017,7 @@
         let selectedVisibility = 'public';
         let selectedEventType = 'online';
         let requiresRegistration = true;
+        let selectedDuration = 1;
 
        
 
@@ -1009,6 +1046,14 @@
                 option.classList.remove('active');
             });
             event.target.closest('.toggle-option').classList.add('active');
+        }
+
+        function setDuration(hours) {
+            selectedDuration = hours;
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
         }
 
         function updateLocationFields() {
@@ -1087,9 +1132,8 @@
             } else if (step === 2) {
                 const date = document.getElementById('eventDate').value;
                 const startTime = document.getElementById('startTime').value;
-                const endTime = document.getElementById('endTime').value;
                 
-                if (!date || !startTime || !endTime) {
+                if (!date || !startTime) {
                     alert('Please fill in date and time information');
                     isValid = false;
                 }
@@ -1122,7 +1166,7 @@
             } else if (currentStep === 2) {
                 eventData.date = document.getElementById('eventDate').value;
                 eventData.startTime = document.getElementById('startTime').value;
-                eventData.endTime = document.getElementById('endTime').value;
+                eventData.duration = selectedDuration;
                 eventData.timezone = document.getElementById('timezone').value;
                 eventData.additionalInstructions = document.getElementById('additionalInstructions').value.trim();
                 
@@ -1173,7 +1217,7 @@
                         visibility: eventData.visibility,
                         event_date: eventData.date,
                         start_time: eventData.startTime,
-                        end_time: eventData.endTime,
+                        duration_hours: eventData.duration,
                         timezone: eventData.timezone,
                         location: eventData.physicalAddress || null,
                         meeting_link: eventData.meetingLink || null,
@@ -1185,7 +1229,7 @@
                         additional_resources: eventData.additionalResources || null,
                         organizer_notes: eventData.organizerNotes || null,
                         contact_email: eventData.contactEmail || null,
-                        organizer_id: user?.id || null,
+                        organizer_id: null, // Will be set below
                         status: 'active',
                         featured: false
                     };
