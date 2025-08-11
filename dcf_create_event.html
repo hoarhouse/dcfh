@@ -1348,10 +1348,14 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if Supabase is ready
+            initializeCreateEventPage();
+        });
+
+        async function initializeCreateEventPage() {
+            // Check if Supabase is ready, if not wait and retry
             if (!window.supabaseClient) {
-                console.error('Supabase client not available');
-                alert('Database connection not available. Please refresh the page.');
+                console.log('Supabase not ready, waiting...');
+                setTimeout(initializeCreateEventPage, 1000);
                 return;
             }
 
@@ -1360,17 +1364,21 @@
             tomorrow.setDate(tomorrow.getDate() + 1);
             document.getElementById('eventDate').value = tomorrow.toISOString().split('T')[0];
             
-            // Set default contact email from user data
-            const userEmail = localStorage.getItem('dcf_user_email');
-            if (userEmail) {
-                document.getElementById('contactEmail').value = userEmail;
+            // Get user email from Supabase auth
+            try {
+                const { data: { user } } = await window.supabaseClient.auth.getUser();
+                if (user?.email) {
+                    document.getElementById('contactEmail').value = user.email;
+                }
+            } catch (error) {
+                console.log('No authenticated user found');
             }
             
             // Initialize location fields
             updateLocationFields();
 
             console.log('Create Event page loaded successfully');
-        });
+        }
     </script>
 </body>
 </html>
