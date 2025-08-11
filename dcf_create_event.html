@@ -1279,11 +1279,14 @@
                 // Show loading
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 
-                // Wait for Supabase to be ready
-                while (!window.supabaseClient) {
+                // Wait for Supabase to be ready - check multiple possible locations
+                while (!window.supabaseClient && !window.supabase && !window.authSupabase) {
                     console.log('Waiting for Supabase in submit...');
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
+                
+                // Use whichever Supabase instance is available
+                const supabase = window.supabaseClient || window.supabase || window.authSupabase;
                 
                 try {
                     // Upload images first if any
@@ -1321,7 +1324,7 @@
                     
                     // Get current user first
                     try {
-                        const { data: { user } } = await window.supabaseClient.auth.getUser();
+                        const { data: { user } } = await supabase.auth.getUser();
                         if (user) {
                             supabaseEventData.organizer_id = user.id;
                         }
@@ -1331,7 +1334,7 @@
                     }
 
                     // Insert into Supabase
-                    const { data, error } = await window.supabaseClient
+                    const { data, error } = await supabase
                         .from('events')
                         .insert([supabaseEventData])
                         .select();
@@ -1483,10 +1486,13 @@
 
         async function uploadEventImages() {
             // Ensure Supabase is ready
-            while (!window.supabaseClient) {
+            while (!window.supabaseClient && !window.supabase && !window.authSupabase) {
                 console.log('Waiting for Supabase in uploadEventImages...');
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
+            
+            // Use whichever Supabase instance is available
+            const supabase = window.supabaseClient || window.supabase || window.authSupabase;
             
             const imageUrls = [];
             
@@ -1495,14 +1501,14 @@
                 const fileName = `event_${Date.now()}_${i}_${file.name}`;
                 
                 try {
-                    const { data, error } = await window.supabaseClient.storage
+                    const { data, error } = await supabase.storage
                         .from('media')
                         .upload(`events/${fileName}`, file);
                     
                     if (error) throw error;
                     
                     // Get public URL
-                    const { data: urlData } = window.supabaseClient.storage
+                    const { data: urlData } = supabase.storage
                         .from('media')
                         .getPublicUrl(`events/${fileName}`);
                     
@@ -1536,9 +1542,12 @@
             
             // Get user email from Supabase auth
             try {
-                const { data: { user } } = await window.supabaseClient.auth.getUser();
-                if (user?.email) {
-                    document.getElementById('contactEmail').value = user.email;
+                const supabase = window.supabaseClient || window.supabase || window.authSupabase;
+                if (supabase) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user?.email) {
+                        document.getElementById('contactEmail').value = user.email;
+                    }
                 }
             } catch (error) {
                 console.log('No authenticated user found');
