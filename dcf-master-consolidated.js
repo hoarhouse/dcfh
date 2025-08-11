@@ -143,7 +143,8 @@ async function updateUserInfo() {
         } else {
             avatarElement.textContent = initials;
             avatarElement.style.backgroundImage = '';
-            avatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+            avatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
+
         }
     }
     
@@ -156,7 +157,7 @@ async function updateUserInfo() {
         } else {
             dropdownAvatarElement.textContent = initials;
             dropdownAvatarElement.style.backgroundImage = '';
-            dropdownAvatarElement.style.background = 'linear-gradient(135deg, #00ff00, #32cd32)';
+            dropdownAvatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
         }
     }
 }
