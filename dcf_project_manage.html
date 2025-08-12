@@ -924,6 +924,7 @@
                 <p class="project-subtitle">Project Management Dashboard</p>
             </div>
             <div class="header-actions">
+                <button class="btn btn-secondary" id="followBtn" onclick="handleFollowClick()" style="display: none;">⭐ Follow</button>
                 <a href="#" class="btn btn-secondary" id="viewProjectBtn">📄 View Project</a>
                 <button class="btn btn-primary" onclick="saveAllChanges()">💾 Save Changes</button>
             </div>
@@ -981,9 +982,9 @@
                     <div style="margin-bottom: 2rem;">
                         <h3 style="margin-bottom: 1rem;">Project Progress</h3>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 36%;"></div>
+                            <div class="progress-fill" style="width: 0%;"></div>
                         </div>
-                        <div class="progress-text">36% Complete (4 of 11 tasks)</div>
+                        <div class="progress-text">0% Complete (0 of 0 tasks)</div>
                     </div>
 
                     <div>
@@ -1019,8 +1020,20 @@
                         <button class="btn btn-primary" onclick="openInviteModal()">+ Invite Member</button>
                     </div>
 
-                    <div class="team-list" id="teamList">
-                        <!-- Team members will be loaded dynamically -->
+                    <!-- Join Requests Section -->
+                    <div id="joinRequestsSection" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1rem; color: #333;">Pending Join Requests</h3>
+                        <div id="joinRequestsList">
+                            <!-- Join requests will be loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Team Members Section -->
+                    <div>
+                        <h3 style="margin-bottom: 1rem; color: #333;">Team Members</h3>
+                        <div class="team-list" id="teamList">
+                            <!-- Team members will be loaded dynamically -->
+                        </div>
                     </div>
                 </div>
 
@@ -1089,10 +1102,10 @@
                                 <span style="font-size: 0.9rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Completion Rate</span>
                                 <span style="font-size: 1.5rem;">🎯</span>
                             </div>
-                            <div id="analytics-completion-rate" style="font-size: 2.5rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">36%</div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #28a745;">
-                                <span>↗</span>
-                                <span>+12% from last period</span>
+                            <div id="analytics-completion-rate" style="font-size: 2.5rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">0%</div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #666;">
+                                <span>→</span>
+                                <span>Calculated from tasks</span>
                             </div>
                         </div>
 
@@ -1101,7 +1114,7 @@
                                 <span style="font-size: 0.9rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Active Tasks</span>
                                 <span style="font-size: 1.5rem;">📋</span>
                             </div>
-                            <div id="analytics-active-tasks" style="font-size: 2.5rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">7</div>
+                            <div id="analytics-active-tasks" style="font-size: 2.5rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">0</div>
                             <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #6c757d;">
                                 <span>→</span>
                                 <span>2 overdue tasks</span>
@@ -1163,7 +1176,7 @@
                             <div style="position: relative; height: 200px; display: flex; align-items: center; justify-content: center;">
                                 <div style="width: 150px; height: 150px; background: conic-gradient(#28a745 0deg 130deg, #e9ecef 130deg 360deg); border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center;">
                                     <div style="position: absolute; width: 60%; height: 60%; background: white; border-radius: 50%;"></div>
-                                    <div id="analytics-progress-text" style="position: absolute; font-size: 2rem; font-weight: 700; color: #333; z-index: 1;">36%</div>
+                                    <div id="analytics-progress-text" style="position: absolute; font-size: 2rem; font-weight: 700; color: #333; z-index: 1;">0%</div>
                                 </div>
                             </div>
                             <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 1rem;">4 of 11 tasks completed</p>
@@ -1507,6 +1520,7 @@
             // Load team members when Team section is shown
             if (sectionId === 'team' && window.currentProject) {
                 loadTeamMembers(window.currentProject);
+                loadJoinRequests(window.currentProject.id);
             }
             
             // Load project files when Resources section is shown
@@ -1517,6 +1531,56 @@
             // Load project activity when Activity section is shown
             if (sectionId === 'activity' && window.currentProject) {
                 loadProjectActivity(window.currentProject.id);
+            }
+        }
+
+        // Populate task assignee dropdown
+        async function populateTaskAssignees() {
+            const projectId = getProjectIdFromUrl();
+            const assigneeSelect = document.getElementById('taskAssignee');
+            
+            if (!assigneeSelect || !projectId) return;
+            
+            try {
+                // Get project owner and members
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select(`*, author:user_profiles!author_id(username)`)
+                    .eq('id', projectId)
+                    .single();
+                
+                const { data: members } = await supabase
+                    .from('project_members')
+                    .select(`*, user_profile:user_profiles!user_id(username)`)
+                    .eq('project_id', projectId);
+                
+                // Clear existing options except first two
+                while (assigneeSelect.children.length > 2) {
+                    assigneeSelect.removeChild(assigneeSelect.lastChild);
+                }
+                
+                // Add project owner
+                if (project?.author?.username) {
+                    const option = document.createElement('option');
+                    option.value = `@${project.author.username}`;
+                    option.textContent = `@${project.author.username} (Owner)`;
+                    assigneeSelect.appendChild(option);
+                }
+                
+                // Add team members
+                if (members && members.length > 0) {
+                    members.forEach(member => {
+                        if (member.user_profile?.username) {
+                            const option = document.createElement('option');
+                            option.value = `@${member.user_profile.username}`;
+                            option.textContent = `@${member.user_profile.username}`;
+                            assigneeSelect.appendChild(option);
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading team members for assignment:', error);
             }
         }
 
@@ -1555,6 +1619,7 @@
         // Modal functions
         function openTaskModal() {
             document.getElementById('taskModal').classList.add('active');
+            populateTaskAssignees();
         }
 
         function openInviteModal() {
@@ -1945,6 +2010,56 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
         );
 
+        // Follow/Join system functions
+        async function checkFollowStatus(projectId) {
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            if (!currentUserEmail) return false;
+
+            try {
+                const { data } = await supabase
+                    .from('project_follows')
+                    .select('id')
+                    .eq('project_id', projectId)
+                    .eq('follower_email', currentUserEmail)
+                    .single();
+                return !!data;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function toggleFollow(projectId) {
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            if (!currentUserEmail) return;
+
+            try {
+                const isFollowing = await checkFollowStatus(projectId);
+                
+                if (isFollowing) {
+                    await supabase
+                        .from('project_follows')
+                        .delete()
+                        .eq('project_id', projectId)
+                        .eq('follower_email', currentUserEmail);
+                } else {
+                    await supabase
+                        .from('project_follows')
+                        .insert([{
+                            project_id: projectId,
+                            follower_email: currentUserEmail
+                        }]);
+                }
+                
+                // Reload project stats to update follower count
+                if (window.currentProject) {
+                    loadProjectStats(window.currentProject);
+                }
+                
+            } catch (error) {
+                console.error('Error toggling follow:', error);
+            }
+        }
+
         // Get project ID from URL
         function getProjectIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1992,6 +2107,12 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 
                 // Load all tasks
                 loadAllTasks(project.id);
+                
+                // Load analytics data
+                loadAnalyticsData();
+                
+                // Setup follow button visibility
+                setupFollowButton(project);
                 
             } catch (error) {
                 console.error('Error loading project:', error);
@@ -2098,6 +2219,17 @@ const supabase = window.masterSupabase || window.supabase.createClient(
 
                 teamList.innerHTML = teamHTML;
 
+                // Update team count in stats after loading members
+                if (window.currentProject) {
+                    loadProjectStats(window.currentProject);
+                }
+                
+                // Also load join requests if this is being called from team section
+                const activeSection = document.querySelector('.content-section.active');
+                if (activeSection && activeSection.id === 'team') {
+                    loadJoinRequests(project.id);
+                }
+
             } catch (error) {
                 console.error('Error loading team members:', error);
                 teamList.innerHTML = `
@@ -2134,11 +2266,47 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 console.log('Error loading file count:', error);
             }
             
+            // Get team member count
+            let teamCount = 1; // Start with 1 for the project owner
+            try {
+                const { data: members } = await supabase
+                    .from('project_members')
+                    .select('id')
+                    .eq('project_id', projectId);
+                teamCount += members ? members.length : 0;
+            } catch (error) {
+                console.log('Error loading team count:', error);
+            }
+            
+            // Get task count
+            let taskCount = 0;
+            try {
+                const { data: tasks } = await supabase
+                    .from('project_tasks')
+                    .select('id')
+                    .eq('project_id', projectId);
+                taskCount = tasks ? tasks.length : 0;
+            } catch (error) {
+                console.log('Error loading task count:', error);
+            }
+            
             // Calculate days active
             const createdDate = new Date(project.created_at);
             const today = new Date();
             const daysActive = Math.ceil((today - createdDate) / (1000 * 60 * 60 * 24));
             
+            // Get follower count
+            let followerCount = 0;
+            try {
+                const { data: followers } = await supabase
+                    .from('project_follows')
+                    .select('id')
+                    .eq('project_id', projectId);
+                followerCount = followers ? followers.length : 0;
+            } catch (error) {
+                console.log('Error loading follower count:', error);
+            }
+
             // Update stats display
             const statsContainer = document.getElementById('projectStats');
             statsContainer.innerHTML = `
@@ -2149,18 +2317,18 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">👥</div>
-                    <div class="stat-number">1</div>
+                    <div class="stat-number">${teamCount}</div>
                     <div class="stat-label">Team Members</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📅</div>
-                    <div class="stat-number">${daysActive}</div>
-                    <div class="stat-label">Days Active</div>
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-number">${followerCount}</div>
+                    <div class="stat-label">Followers</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-number">${project.status || 'active'}</div>
-                    <div class="stat-label">Status</div>
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-number">${taskCount}</div>
+                    <div class="stat-label">Total Tasks</div>
                 </div>
             `;
         }
@@ -2343,6 +2511,32 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             event.target.value = '';
         }
 
+        // Follow button handler
+        async function handleFollowClick() {
+            const projectId = getProjectIdFromUrl();
+            if (!projectId) return;
+            
+            await toggleFollow(projectId);
+            await updateFollowButton(projectId);
+        }
+
+        async function updateFollowButton(projectId) {
+            const followBtn = document.getElementById('followBtn');
+            if (!followBtn) return;
+            
+            const isFollowing = await checkFollowStatus(projectId);
+            
+            if (isFollowing) {
+                followBtn.textContent = '⭐ Following';
+                followBtn.classList.remove('btn-secondary');
+                followBtn.classList.add('btn-primary');
+            } else {
+                followBtn.textContent = '⭐ Follow';
+                followBtn.classList.remove('btn-primary');
+                followBtn.classList.add('btn-secondary');
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateProgressBar();
@@ -2481,6 +2675,86 @@ const supabase = window.masterSupabase || window.supabase.createClient(
         }
 
         // User menu functionality handled by master JS
+        // Load join requests for project owners
+        async function loadJoinRequests(projectId) {
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            const joinRequestsList = document.getElementById('joinRequestsList');
+            const joinRequestsSection = document.getElementById('joinRequestsSection');
+            
+            if (!joinRequestsList || !currentUserEmail) return;
+            
+            try {
+                // Check if current user is project owner
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select('author_id')
+                    .eq('id', projectId)
+                    .single();
+                
+                const { data: userProfile } = await supabase
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('email', currentUserEmail)
+                    .single();
+                
+                const isOwner = userProfile && project && project.author_id === userProfile.id;
+                
+                if (!isOwner) {
+                    joinRequestsSection.style.display = 'none';
+                    return;
+                }
+                
+                // Load pending join requests
+                const { data: requests, error } = await supabase
+                    .from('project_join_requests')
+                    .select(`*, requester:user_profiles!requester_id(username, email)`)
+                    .eq('project_id', projectId)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!requests || requests.length === 0) {
+                    joinRequestsList.innerHTML = `
+                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #666;">
+                            No pending join requests
+                        </div>
+                    `;
+                    return;
+                }
+                
+                joinRequestsList.innerHTML = requests.map(request => {
+                    const username = request.requester?.username || 'user';
+                    const initials = generateInitials(username);
+                    
+                    return `
+                        <div class="team-member" style="background: #fff3cd; border: 1px solid #ffeaa7;">
+                            <div class="member-avatar" style="background: #ffc107;">${initials}</div>
+                            <div class="member-info">
+                                <div class="member-name">@${username}</div>
+                                <div class="member-role">Wants to join project</div>
+                                <div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                                    Requested ${getTimeAgo(request.created_at)}
+                                </div>
+                            </div>
+                            <div class="member-actions">
+                                <button class="btn btn-primary btn-small" onclick="approveJoinRequest('${request.id}', '${request.requester_id}')">✓ Approve</button>
+                                <button class="btn btn-danger btn-small" onclick="rejectJoinRequest('${request.id}')">✗ Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading join requests:', error);
+                joinRequestsList.innerHTML = `
+                    <div style="padding: 1rem; background: #f8d7da; border-radius: 8px; text-align: center; color: #721c24;">
+                        Error loading join requests
+                    </div>
+                `;
+            }
+        }
+
         // Custom confirmation dialog
         let confirmCallback = null;
         
@@ -2523,6 +2797,95 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             }
             closeConfirmModal();
         }
+        // Approve join request
+        async function approveJoinRequest(requestId, userId) {
+            const projectId = getProjectIdFromUrl();
+            
+            try {
+                // Add user to project_members
+                const { error: memberError } = await supabase
+                    .from('project_members')
+                    .insert([{
+                        project_id: projectId,
+                        user_id: userId,
+                        role: 'member',
+                        joined_at: new Date().toISOString()
+                    }]);
+                
+                if (memberError) throw memberError;
+                
+                // Update join request status
+                const { error: requestError } = await supabase
+                    .from('project_join_requests')
+                    .update({ status: 'approved' })
+                    .eq('id', requestId);
+                
+                if (requestError) throw requestError;
+                
+                console.log('Join request approved successfully');
+                
+                // Log activity for join approval
+                const currentEmail = localStorage.getItem('dcf_user_email') || 'user@dcfhungary.org';
+                
+                // Get usernames for activity log
+                const { data: approverProfile } = await supabase
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('email', currentEmail)
+                    .single();
+                
+                const { data: newMemberProfile } = await supabase
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('id', userId)
+                    .single();
+                
+                await supabase
+                    .from('project_activity')
+                    .insert([{
+                        project_id: projectId,
+                        user_email: currentEmail,
+                        user_name: approverProfile?.username || 'user',
+                        user_id: null,
+                        action_type: 'member_joined',
+                        action_description: `Approved @${newMemberProfile?.username || 'user'} to join the project`
+                    }]);
+                
+                // Reload team data
+                if (window.currentProject) {
+                    loadTeamMembers(window.currentProject);
+                    loadJoinRequests(projectId);
+                    loadProjectStats(window.currentProject);
+                }
+                
+            } catch (error) {
+                console.error('Error approving join request:', error);
+                alert('Error approving join request. Please try again.');
+            }
+        }
+
+        // Reject join request
+        async function rejectJoinRequest(requestId) {
+            try {
+                const { error } = await supabase
+                    .from('project_join_requests')
+                    .update({ status: 'rejected' })
+                    .eq('id', requestId);
+                
+                if (error) throw error;
+                
+                console.log('Join request rejected successfully');
+                
+                // Reload join requests
+                const projectId = getProjectIdFromUrl();
+                loadJoinRequests(projectId);
+                
+            } catch (error) {
+                console.error('Error rejecting join request:', error);
+                alert('Error rejecting join request. Please try again.');
+            }
+        }
+
         // Remove team member functionality
         async function removeMember(memberId) {
             showConfirmDialog('Remove Team Member', 'Are you sure you want to remove this team member from the project?', async () => {
@@ -2546,6 +2909,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                     
                     if (project) {
                         loadTeamMembers(project);
+                        loadProjectStats(project);
                     }
                     
                 } catch (error) {
@@ -2794,6 +3158,32 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             return date.toLocaleDateString();
         }
 
+        // Setup follow button based on user permissions
+        async function setupFollowButton(project) {
+            const currentUserEmail = localStorage.getItem('dcf_user_email');
+            const followBtn = document.getElementById('followBtn');
+            
+            if (!currentUserEmail || !followBtn) return;
+            
+            // Check if user is project owner
+            const { data: userProfile } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .eq('email', currentUserEmail)
+                .single();
+            
+            const isOwner = userProfile && project.author_id === userProfile.id;
+            
+            if (isOwner) {
+                // Hide follow button for project owner
+                followBtn.style.display = 'none';
+            } else {
+                // Show follow button for other users
+                followBtn.style.display = 'inline-flex';
+                await updateFollowButton(project.id);
+            }
+        }
+
         // Analytics functionality
         function setTimeFilter(period) {
             document.querySelectorAll('.time-btn').forEach(btn => {
@@ -2816,19 +3206,34 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             if (!projectId) return;
 
             try {
-                const { data, error } = await supabase
-                    .from('project_metrics')
-                    .select(`
-                        *,
-                        projects(title)
-                    `)
-                    .eq('project_id', projectId)
-                    .single();
-                
-                if (!error && data) {
-                    document.getElementById('analytics-completion-rate').textContent = data.completion_percentage + '%';
-                    document.getElementById('analytics-active-tasks').textContent = data.active_tasks;
-                    document.getElementById('analytics-progress-text').textContent = data.completion_percentage + '%';
+                // Get real task data
+                const { data: tasks, error: tasksError } = await supabase
+                    .from('project_tasks')
+                    .select('status')
+                    .eq('project_id', projectId);
+
+                if (!tasksError && tasks) {
+                    const totalTasks = tasks.length;
+                    const completedTasks = tasks.filter(t => t.status === 'completed').length;
+                    const activeTasks = tasks.filter(t => t.status !== 'completed').length;
+                    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                    // Update analytics display
+                    document.getElementById('analytics-completion-rate').textContent = completionRate + '%';
+                    document.getElementById('analytics-active-tasks').textContent = activeTasks;
+                    document.getElementById('analytics-progress-text').textContent = completionRate + '%';
+                    
+                    // Update progress bar
+                    const progressFill = document.querySelector('.progress-fill');
+                    if (progressFill) {
+                        progressFill.style.width = completionRate + '%';
+                    }
+                    
+                    // Update progress text
+                    const progressText = document.querySelector('.progress-text');
+                    if (progressText) {
+                        progressText.textContent = `${completionRate}% Complete (${completedTasks} of ${totalTasks} tasks)`;
+                    }
                 }
             } catch (e) {
                 console.log('Analytics load failed:', e);
