@@ -2164,19 +2164,18 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             if (!files || files.length === 0) return;
 
             const projectId = getProjectIdFromUrl();
-            // Get current user from Supabase session
-            const { data: { session } } = await supabase.auth.getSession();
-            let currentUser = 'Unknown User';
+            // Get current user from localStorage (matching other parts of the app)
+            const currentUserEmail = localStorage.getItem('dcf_user_email') || 'user@dcfhungary.org';
             
-            if (session?.user?.email) {
-                const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('username')
-                    .eq('email', session.user.email)
-                    .single();
-                
-                currentUser = '@' + (profile?.username || 'user');
-            }
+            // Get username from user_profiles table
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('username, id')
+                .eq('email', currentUserEmail)
+                .single();
+            
+            const currentUser = '@' + (profile?.username || 'user');
+            const currentUserId = profile?.id || null;
             
             const progressContainer = document.getElementById('manageUploadProgress');
             const progressBar = document.getElementById('manageUploadProgressBar');
@@ -2213,7 +2212,8 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                             file_name: file.name,
                             file_path: uploadData.path,
                             file_size: file.size,
-                            uploaded_by: currentUser
+                            uploaded_by: currentUser,
+                            uploaded_by_id: currentUserId
                         }]);
                     
                     progressBar.style.width = '100%';
