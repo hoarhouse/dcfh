@@ -1405,42 +1405,33 @@
                 }
             });
         });
-        // Analytics data fetching
-async function fetchProjectAnalytics(projectId = '9f03899b-9997-4d61-b7d0-aac1f60ca9d3') {
-    try {
-        const { data: metrics, error } = await supabase
-            .from('project_metrics')
-            .select(`
-                *,
-                projects(title, status)
-            `)
-            .eq('project_id', projectId)
-            .single();
-        
-        if (error) throw error;
-        
-        updateAnalyticsDisplay(metrics);
-    } catch (error) {
-        console.error('Error fetching analytics:', error);
-    }
-}
 
-function updateAnalyticsDisplay(metrics) {
-    // Update overview cards
-    document.querySelector('.overview-card .card-number').textContent = metrics.completion_percentage + '%';
-    document.querySelectorAll('.overview-card')[1].querySelector('.card-number').textContent = metrics.active_tasks;
-    
-    // Update progress chart
-    document.querySelector('.progress-text').textContent = metrics.completion_percentage + '%';
-    
-    // Update project title
-    document.querySelector('.project-subtitle').textContent = metrics.projects.title;
-}
+        // Analytics-specific code that won't interfere with existing navigation
+        setTimeout(loadAnalyticsData, 2000);
 
-// Call on page load
-document.addEventListener('DOMContentLoaded', function() {
-    fetchProjectAnalytics();
-});
+        async function loadAnalyticsData() {
+            try {
+                const { data, error } = await window.authSupabase
+                    .from('project_metrics')
+                    .select(`
+                        *,
+                        projects(title)
+                    `)
+                    .eq('project_id', '9f03899b-9997-4d61-b7d0-aac1f60ca9d3')
+                    .single();
+                
+                if (!error && data) {
+                    // Update only the numbers, don't touch navigation
+                    document.querySelector('.overview-card .card-number').textContent = data.completion_percentage + '%';
+                    document.querySelectorAll('.overview-card')[1].querySelector('.card-number').textContent = data.active_tasks;
+                    document.querySelector('.progress-text').textContent = data.completion_percentage + '%';
+                    document.querySelector('.project-subtitle').textContent = data.projects.title;
+                }
+            } catch (e) {
+                console.log('Analytics load failed:', e);
+            }
+        }
+       
     </script>
 </body>
 </html>
