@@ -792,8 +792,8 @@
                                 <div class="stat-label">Tasks</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-number">0</div>
-                                <div class="stat-label">Milestones</div>
+                                <div class="stat-number" id="followersCount">0</div>
+                                <div class="stat-label">Followers</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">0</div>
@@ -810,11 +810,11 @@
                     </div>
 
                     <div class="sidebar-card">
-                        <h3 class="sidebar-title">Related Projects</h3>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            <a href="#" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem; border-radius: 6px; transition: background 0.3s ease;">
-                                No related projects yet
-                            </a>
+                        <h3 class="sidebar-title">Recent Activity</h3>
+                        <div id="projectActivity">
+                            <div style="text-align: center; padding: 1rem; color: #666; font-size: 0.9rem;">
+                                Loading activity...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -967,6 +967,8 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 loadProjectStats(projectId);
                 loadProjectFiles(projectId, project);
                 loadProjectTasks(projectId);
+                loadProjectTeam(projectId, project);
+                loadProjectActivity(projectId);
                 
             } catch (error) {
                 console.error('Error loading project:', error);
@@ -1068,19 +1070,8 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 goalsContainer.innerHTML = '<p>Project goals will be defined as the project develops.</p>';
             }
 
-            // Update team section
-            const teamContainer = document.getElementById('projectTeam');
-            const authorInitials = generateInitials(project.author_name);
-            teamContainer.innerHTML = `
-                <div class="team-member">
-                    <div class="member-avatar">${authorInitials}</div>
-                    <div class="member-info">
-                        <div class="member-name">${project.author_name || 'Project Creator'}</div>
-                        <div class="member-role">Project Lead</div>
-                    </div>
-                    <span class="member-badge leader">Leader</span>
-                </div>
-            `;
+            // Load real team members (done in separate function)
+            loadProjectTeam(project.id, project);
             
             // Manage button handled above
         }
@@ -1112,13 +1103,27 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 
                 const fileCount = files ? files.length : 0;
 
+                // Get followers count
+                const { data: followers } = await supabase
+                    .from('project_follows')
+                    .select('id')
+                    .eq('project_id', projectId);
+                
+                const followersCount = followers ? followers.length : 0;
+
                 // Update the stats display
                 const statNumbers = document.querySelectorAll('.stats-grid .stat-number');
                 if (statNumbers.length >= 4) {
-                    statNumbers[0].textContent = memberCount;  // Members
-                    statNumbers[1].textContent = taskCount;    // Tasks
-                    statNumbers[2].textContent = '0';          // Milestones (not implemented yet)
-                    statNumbers[3].textContent = fileCount;    // Files
+                    statNumbers[0].textContent = memberCount;     // Members
+                    statNumbers[1].textContent = taskCount;       // Tasks
+                    statNumbers[2].textContent = followersCount;  // Followers
+                    statNumbers[3].textContent = fileCount;       // Files
+                }
+                
+                // Also update the standalone followers count if it exists
+                const followersElement = document.getElementById('followersCount');
+                if (followersElement) {
+                    followersElement.textContent = followersCount;
                 }
 
                 // Update team size in meta section
@@ -1128,7 +1133,182 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 console.error('Error loading project stats:', error);
             }
         }
+// Load project team members
+        async function loadProjectTeam(projectId, project) {
+            const teamContainer = document.getElementById('projectTeam');
+            
+            try {
+                // Get all project members from database
+                const { data: members, error } = await supabase
+                    .from('project_members')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .eq('status', 'active')
+                    .order('joined_at', { ascending: true });
 
+                if (error) {
+                    console.error('Error loading team members:', error);
+                }
+
+                // Start with project owner
+                const authorInitials = generateInitials(project.author_name);
+                let teamHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Lead</div>
+                        </div>
+                        <span class="member-badge leader">Leader</span>
+                    </div>
+                `;
+
+                // Add actual team members
+                if (members && members.length > 0) {
+                    members.forEach(member => {
+                        const memberInitials = generateInitials(member.user_name);
+                        const roleText = member.role === 'admin' ? 'Admin' : 
+                                       member.role === 'collaborator' ? 'Collaborator' : 'Member';
+                        const badgeClass = member.role === 'admin' ? 'leader' : '';
+                        
+                        teamHTML += `
+                            <div class="team-member">
+                                <div class="member-avatar">${memberInitials}</div>
+                                <div class="member-info">
+                                    <div class="member-name">${member.user_name}</div>
+                                    <div class="member-role">${roleText}</div>
+                                </div>
+                                <span class="member-badge ${badgeClass}">${roleText}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Show message if no additional members
+                if (!members || members.length === 0) {
+                    teamHTML += `
+                        <div style="text-align: center; padding: 1rem; color: #666; font-size: 0.9rem; border-top: 1px solid #f0f0f0; margin-top: 1rem;">
+                            <p>No additional team members yet.</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem;">People can join by clicking "Join Project"</p>
+                        </div>
+                    `;
+                }
+
+                teamContainer.innerHTML = teamHTML;
+
+            } catch (error) {
+                console.error('Error loading team:', error);
+                // Fallback to just showing project owner
+                const authorInitials = generateInitials(project.author_name);
+                teamContainer.innerHTML = `
+                    <div class="team-member">
+                        <div class="member-avatar">${authorInitials}</div>
+                        <div class="member-info">
+                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-role">Project Lead</div>
+                        </div>
+                        <span class="member-badge leader">Leader</span>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; color: #dc3545; font-size: 0.9rem;">
+                        Error loading team members
+                    </div>
+                `;
+            }
+        }
+
+        // Load project activity
+        async function loadProjectActivity(projectId) {
+            const activityContainer = document.getElementById('projectActivity');
+            
+            try {
+                // Get recent project activity
+                const { data: activities, error } = await supabase
+                    .from('project_activity')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (error) {
+                    console.error('Error loading activity:', error);
+                }
+
+                if (!activities || activities.length === 0) {
+                    activityContainer.innerHTML = `
+                        <div style="text-align: center; padding: 1rem; color: #666; font-size: 0.9rem;">
+                            <p>No recent activity</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #999;">Activity will appear here as the project develops</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Display recent activities
+                let activityHTML = '';
+                activities.forEach(activity => {
+                    const timeAgo = getTimeAgo(activity.created_at);
+                    const userInitials = generateInitials(activity.user_name);
+                    
+                    // Get activity icon based on type
+                    let icon = '📝';
+                    switch(activity.action_type) {
+                        case 'project_created': icon = '🚀'; break;
+                        case 'member_joined': icon = '👥'; break;
+                        case 'task_completed': icon = '✅'; break;
+                        case 'task_created': icon = '📋'; break;
+                        case 'file_uploaded': icon = '📎'; break;
+                        case 'comment_added': icon = '💬'; break;
+                        default: icon = '📝';
+                    }
+                    
+                    activityHTML += `
+                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f5f5f5;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0;">
+                                ${userInitials}
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 0.9rem; color: #333; line-height: 1.4; margin-bottom: 0.25rem;">
+                                    ${icon} ${activity.action_description || activity.action_type.replace('_', ' ')}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #666;">
+                                    ${timeAgo}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Remove last border
+                activityHTML = activityHTML.replace(/border-bottom: 1px solid #f5f5f5;(?!.*border-bottom: 1px solid #f5f5f5;)/, '');
+                
+                activityContainer.innerHTML = activityHTML;
+
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                activityContainer.innerHTML = `
+                    <div style="text-align: center; padding: 1rem; color: #dc3545; font-size: 0.9rem;">
+                        Error loading activity
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function for time ago (if not already present)
+        function getTimeAgo(dateString) {
+            const now = new Date();
+            const past = new Date(dateString);
+            const diffMs = now - past;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+            
+            if (diffMinutes < 1) return 'Just now';
+            if (diffMinutes < 60) return `${diffMinutes}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 30) return `${diffDays}d ago`;
+            if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+            return `${Math.floor(diffDays / 365)}y ago`;
+        }
         // Load project tasks
         async function loadProjectTasks(projectId) {
             try {
@@ -1532,6 +1712,8 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 
                 if (response.ok) {
                     updateFollowButton(true);
+                    // Refresh stats to show updated follower count
+                    loadProjectStats(projectId);
                     console.log(`Successfully followed: ${projectTitle}`);
                 } else if (response.status === 409) {
                     console.log('Already following this project');
@@ -1555,6 +1737,8 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 
                 if (response.ok) {
                     updateFollowButton(false);
+                    // Refresh stats to show updated follower count
+                    loadProjectStats(getProjectIdFromUrl());
                     console.log(`Successfully unfollowed: ${projectTitle}`);
                 }
             } catch (error) {
