@@ -964,6 +964,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 }
 
                 displayProject(project);
+                loadProjectStats(projectId);
                 loadProjectFiles(projectId, project);
                 loadProjectTasks(projectId);
                 
@@ -1084,6 +1085,50 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
             // Manage button handled above
         }
 
+        // Load project statistics
+        async function loadProjectStats(projectId) {
+            try {
+                // Get team members count
+                const { data: members } = await supabase
+                    .from('project_members')
+                    .select('id')
+                    .eq('project_id', projectId);
+                
+                const memberCount = (members ? members.length : 0) + 1; // +1 for project owner
+
+                // Get tasks count
+                const { data: tasks } = await supabase
+                    .from('project_tasks')
+                    .select('id')
+                    .eq('project_id', projectId);
+                
+                const taskCount = tasks ? tasks.length : 0;
+
+                // Get files count
+                const { data: files } = await supabase
+                    .from('project_files')
+                    .select('id')
+                    .eq('project_id', projectId);
+                
+                const fileCount = files ? files.length : 0;
+
+                // Update the stats display
+                const statNumbers = document.querySelectorAll('.stats-grid .stat-number');
+                if (statNumbers.length >= 4) {
+                    statNumbers[0].textContent = memberCount;  // Members
+                    statNumbers[1].textContent = taskCount;    // Tasks
+                    statNumbers[2].textContent = '0';          // Milestones (not implemented yet)
+                    statNumbers[3].textContent = fileCount;    // Files
+                }
+
+                // Update team size in meta section
+                document.getElementById('teamSize').textContent = `${memberCount} Member${memberCount !== 1 ? 's' : ''}`;
+
+            } catch (error) {
+                console.error('Error loading project stats:', error);
+            }
+        }
+
         // Load project tasks
         async function loadProjectTasks(projectId) {
             try {
@@ -1107,11 +1152,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                     return;
                 }
 
-                // Update task count in stats
-                const taskStatElements = document.querySelectorAll('.stat-card .stat-number');
-                if (taskStatElements[1] && taskStatElements[1].textContent === '0') {
-                    taskStatElements[1].textContent = tasks.length;
-                }
+                // Task count is now handled by loadProjectStats()
 
                 // Display tasks
                 tasksContainer.innerHTML = tasks.map(task => `
@@ -1164,11 +1205,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                     return;
                 }
 
-                // Update file count in stats
-                const fileStatElement = document.querySelector('.stat-card .stat-number');
-                if (fileStatElement && fileStatElement.textContent === '0') {
-                    fileStatElement.textContent = files.length;
-                }
+                // File count is now handled by loadProjectStats()
 
                 // Get current user email for delete permissions
                 const currentUserEmail = localStorage.getItem('dcf_user_email');
