@@ -1529,66 +1529,7 @@ if (tabName === 'my') {
 }
     }
 
-    // Load user's projects
-    async function loadMyProjects() {
-        const container = document.querySelector('#my .projects-grid') || createMyProjectsContainer();
-        const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
-        
-        try {
-            const { data: projects, error } = await window.masterSupabase
-                .from('projects')
-                .select('*')
-                .eq('author_email', currentUserEmail)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            if (projects.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Projects Yet</h3>
-                        <p>You haven't created any projects yet.</p>
-                        <button class="btn btn-primary" onclick="window.location.href='dcf_create_project.html'">Create Your First Project</button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = projects.map(project => `
-                <div class="my-project-card">
-                    <div class="my-project-header">
-                        <div>
-                            <h3 class="project-title">${project.title}</h3>
-                            <p class="project-meta">Leading • Created ${formatDate(project.created_at)} • 1 member</p>
-                        </div>
-                        <div class="my-project-actions">
-                            <button class="btn btn-secondary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}#analytics'">📊 Analytics</button>
-                            <button class="btn btn-secondary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}#settings'">⚙️ Settings</button>
-                            <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}'">📝 Manage</button>
-                        </div>
-                    </div>
-                    <p class="project-description">${project.description}</p>
-                    <div class="project-tags">
-                        ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
-                    </div>
-                    <div class="project-footer">
-                        <div class="project-members">
-                            <div class="member-avatars">
-                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
-                            </div>
-                            <span class="member-count">1 member</span>
-                        </div>
-                        <span class="status-badge status-${project.status}">${project.status}</span>
-                    </div>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('Error loading my projects:', error);
-            container.innerHTML = '<div>Error loading your projects</div>';
-        }
-    }
-
+    // createMyProjectsContainer function moved to be with loadMyProjectsReal
     function createMyProjectsContainer() {
         const myTab = document.getElementById('my');
         const existingContainer = myTab.querySelector('.projects-grid');
@@ -1618,10 +1559,11 @@ if (tabName === 'my') {
         
         // Since we don't have a following system yet, show empty state
         container.innerHTML = `
-            <div class="empty-state">
-                <h3>No Projects Followed</h3>
-                <p>You're not following any projects yet. Browse the "All Projects" tab to find interesting projects to follow.</p>
-                <button class="btn btn-primary" onclick="switchTab('all')">Browse All Projects</button>
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #666;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+                <h3 style="color: #333; margin-bottom: 1rem;">No Projects Followed Yet</h3>
+                <p style="margin-bottom: 1.5rem;">Start following projects to stay updated on initiatives that interest you.</p>
+                <button class="btn btn-primary" onclick="switchTab('all'); event.target.classList.remove('active'); document.querySelector('[onclick*=\"all\"]').classList.add('active');">Browse All Projects</button>
             </div>
         `;
     }
@@ -1666,9 +1608,9 @@ if (tabName === 'my') {
                             <p class="project-meta">Leading • Created ${formatDate(project.created_at)} • 1 member</p>
                         </div>
                         <div class="my-project-actions">
-                            <button class="btn btn-secondary btn-small">📊 Analytics</button>
-                            <button class="btn btn-secondary btn-small">⚙️ Settings</button>
-                            <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'">📝 Manage</button>
+                            <button class="btn btn-secondary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}#analytics'">📊 Analytics</button>
+                            <button class="btn btn-secondary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}#settings'">⚙️ Settings</button>
+                            <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}'">📝 Manage</button>
                         </div>
                     </div>
                     <p class="project-description">${project.description}</p>
