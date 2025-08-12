@@ -566,6 +566,11 @@
             color: white;
         }
 
+        .member-badge.contributor {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         .join-project-card {
             background: linear-gradient(135deg, #000, #333);
             color: white;
@@ -1138,12 +1143,11 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
             const teamContainer = document.getElementById('projectTeam');
             
             try {
-                // Get all project members from database
+                // Get all project members from database with user profiles
                 const { data: members, error } = await supabase
                     .from('project_members')
-                    .select('*')
+                    .select(`*, user_profile:user_profiles!user_id(username)`)
                     .eq('project_id', projectId)
-                    .eq('status', 'active')
                     .order('joined_at', { ascending: true });
 
                 if (error) {
@@ -1166,16 +1170,17 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 // Add actual team members
                 if (members && members.length > 0) {
                     members.forEach(member => {
-                        const memberInitials = generateInitials(member.user_name);
+                        const memberInitials = generateInitials(member.user_profile?.username || member.user_name);
                         const roleText = member.role === 'admin' ? 'Admin' : 
-                                       member.role === 'collaborator' ? 'Collaborator' : 'Member';
-                        const badgeClass = member.role === 'admin' ? 'leader' : '';
+                                       member.role === 'contributor' ? 'Contributor' : 'Member';
+                        const badgeClass = member.role === 'admin' ? 'leader' : 
+                                         member.role === 'contributor' ? 'contributor' : '';
                         
                         teamHTML += `
                             <div class="team-member">
                                 <div class="member-avatar">${memberInitials}</div>
                                 <div class="member-info">
-                                    <div class="member-name">${member.user_name}</div>
+                                    <div class="member-name">@${member.user_profile?.username || member.user_name}</div>
                                     <div class="member-role">${roleText}</div>
                                 </div>
                                 <span class="member-badge ${badgeClass}">${roleText}</span>
@@ -1204,7 +1209,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
                         <div class="member-info">
-                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                           <div class="member-name">@${project.author_name || 'Project Creator'}</div>
                             <div class="member-role">Project Lead</div>
                         </div>
                         <span class="member-badge leader">Leader</span>
