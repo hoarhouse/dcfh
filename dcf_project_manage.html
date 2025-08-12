@@ -2164,7 +2164,19 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             if (!files || files.length === 0) return;
 
             const projectId = getProjectIdFromUrl();
-            const currentUser = localStorage.getItem('dcf_user_name') || localStorage.getItem('dcf_user_email') || 'Unknown User';;
+            // Get current user from Supabase session
+            const { data: { session } } = await supabase.auth.getSession();
+            let currentUser = 'Unknown User';
+            
+            if (session?.user?.email) {
+                const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('email', session.user.email)
+                    .single();
+                
+                currentUser = '@' + (profile?.username || 'user');
+            }
             
             const progressContainer = document.getElementById('manageUploadProgress');
             const progressBar = document.getElementById('manageUploadProgressBar');
