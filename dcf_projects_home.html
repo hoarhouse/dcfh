@@ -1602,10 +1602,16 @@
         
         switch(userStatus) {
             case 'owner':
-                button.textContent = '👑 You Own This';
-                button.className = 'btn btn-secondary btn-small join-btn';
-                button.disabled = true;
-                button.onclick = null;
+                button.textContent = '⚙️ Manage Project';
+                button.className = 'btn btn-small join-btn';
+                button.style.background = '#dc3545';
+                button.style.color = 'white';
+                button.style.border = '2px solid #dc3545';
+                button.disabled = false;
+                button.onclick = (e) => {
+                    e.stopPropagation();
+                    window.location.href = `dcf_project_manage.html?id=${projectId}`;
+                };
                 break;
             case 'member':
                 button.textContent = '✓ Member';
@@ -1622,6 +1628,9 @@
             default:
                 button.textContent = '🤝 Join Project';
                 button.className = 'btn btn-primary btn-small join-btn';
+                button.style.background = '';
+                button.style.color = '';
+                button.style.border = '';
                 button.disabled = false;
                 button.onclick = (e) => {
                     e.stopPropagation();
@@ -2008,21 +2017,25 @@ if (tabName === 'my') {
             const requestData = await requestResponse.json();
             const pendingRequests = requestData.map(r => r.project_id);
             
-// Check if user owns any displayed projects
+// Check if user owns any displayed projects by comparing author_email
             const userEmail = localStorage.getItem('dcf_user_email');
             const ownedProjects = [];
-            document.querySelectorAll('.project-card').forEach(card => {
-                const projectMeta = card.querySelector('.project-meta');
-                if (projectMeta && projectMeta.dataset.authorEmail === userEmail) {
-                    ownedProjects.push(card.dataset.projectId);
+            
+            // Get all projects from the current display to check ownership
+            const allProjectsResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?author_email=eq.${userEmail}&select=id`, {
+                headers: {
+                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
                 }
             });
+            const ownedProjectsData = await allProjectsResponse.json();
+            const ownedProjectIds = ownedProjectsData.map(p => p.id);
             
             // Update all join buttons based on current status
             document.querySelectorAll('.join-btn').forEach(button => {
                 const projectId = button.getAttribute('data-project-id');
                 
-                if (ownedProjects.includes(projectId)) {
+                if (ownedProjectIds.includes(projectId)) {
                     updateJoinButton(projectId, 'owner');
                 } else if (memberProjects[projectId]) {
                     updateJoinButton(projectId, memberProjects[projectId]);
