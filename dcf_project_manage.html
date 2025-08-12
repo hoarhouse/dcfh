@@ -2198,9 +2198,13 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                                     <div class="member-name">@${username}</div>
                                     <div class="member-role">${member.role || 'Member'}</div>
                                 </div>
-                                <div class="role-badge role-member">${member.role || 'Member'}</div>
+                                <div class="role-badge ${getRoleBadgeClass(member.role || 'member')}">${(member.role || 'member').charAt(0).toUpperCase() + (member.role || 'member').slice(1)}</div>
                                 <div class="member-actions">
-                                    <button class="btn btn-secondary btn-small">Profile</button>
+                                    <select onchange="changeMemberRole('${member.id}', this.value)" class="form-select" style="width: auto; padding: 0.3rem 0.5rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                        <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member</option>
+                                        <option value="contributor" ${member.role === 'contributor' ? 'selected' : ''}>Contributor</option>
+                                        <option value="admin" ${member.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                    </select>
                                     <button class="btn btn-danger btn-small" onclick="removeMember('${member.id}')">Remove</button>
                                 </div>
                             </div>
@@ -2738,6 +2742,11 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                                 </div>
                             </div>
                             <div class="member-actions">
+                                <select id="roleSelect_${request.id}" class="form-select" style="width: auto; padding: 0.4rem 0.6rem; font-size: 0.8rem; margin-right: 0.5rem;">
+                                    <option value="member">Member</option>
+                                    <option value="contributor">Contributor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
                                 <button class="btn btn-primary btn-small" onclick="approveJoinRequest('${request.id}', '${request.requester_id}')">✓ Approve</button>
                                 <button class="btn btn-danger btn-small" onclick="rejectJoinRequest('${request.id}')">✗ Reject</button>
                             </div>
@@ -2802,13 +2811,16 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             const projectId = getProjectIdFromUrl();
             
             try {
+                // Get selected role from dropdown
+                const selectedRole = document.getElementById(`roleSelect_${requestId}`).value;
+                
                 // Add user to project_members
                 const { error: memberError } = await supabase
                     .from('project_members')
                     .insert([{
                         project_id: projectId,
                         user_id: userId,
-                        role: 'member',
+                        role: selectedRole,
                         joined_at: new Date().toISOString()
                     }]);
                 
@@ -3255,6 +3267,56 @@ const supabase = window.masterSupabase || window.supabase.createClient(
 
         function generateAnalyticsPowerBI() {
             alert('PowerBI dashboard integration would be implemented here. This would create interactive dashboards for stakeholders.');
+        }
+
+        // Role badge styling helper
+        function getRoleBadgeClass(role) {
+            const roleClasses = {
+                'owner': 'role-leader',
+                'admin': 'role-leader', 
+                'member': 'role-member',
+                'contributor': 'role-contributor'
+            };
+            return roleClasses[role] || 'role-member';
+        }
+
+        // Change member role
+        async function changeMemberRole(memberId, newRole) {
+            try {
+                const { error } = await supabase
+                    .from('project_members')
+                    .update({ role: newRole })
+                    .eq('id', memberId);
+                
+                if (error) throw error;
+                
+                console.log('Member role updated successfully');
+                
+                // Log activity for role change
+                const projectId = getProjectIdFromUrl();
+                const currentEmail = localStorage.getItem('dcf_user_email') || 'user@dcfhungary.org';
+                
+                const { data: userProfile } = await supabase
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('email', currentEmail)
+                    .single();
+                
+                await supabase
+                    .from('project_activity')
+                    .insert([{
+                        project_id: projectId,
+                        user_email: currentEmail,
+                        user_name: userProfile?.username || 'user',
+                        user_id: null,
+                        action_type: 'member_role_changed',
+                        action_description: `Changed member role to ${newRole}`
+                    }]);
+                
+            } catch (error) {
+                console.error('Error changing member role:', error);
+                alert('Error changing member role. Please try again.');
+            }
         }
     </script>
 </body>
