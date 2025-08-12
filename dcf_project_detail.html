@@ -1502,25 +1502,205 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
             }
         }
 
-        // Follow/Unfollow functionality
-        function toggleFollow() {
-            const followBtn = document.getElementById('followBtn');
-            if (followBtn.textContent.includes('⭐ Follow')) {
-                followBtn.textContent = '✓ Following';
-                followBtn.style.background = '#e8f5e8';
-                followBtn.style.color = '#2d7d2d';
-                followBtn.style.borderColor = '#2d7d2d';
-            } else {
-                followBtn.textContent = '⭐ Follow';
-                followBtn.style.background = 'transparent';
-                followBtn.style.color = '#666';
-                followBtn.style.borderColor = '#e5e5e5';
+        // =============================================================================
+        // FOLLOW/JOIN SYSTEM FUNCTIONS 
+        // =============================================================================
+
+        async function followProject(projectId, projectTitle) {
+            const userEmail = localStorage.getItem('dcf_user_email');
+            const userName = localStorage.getItem('dcf_user_name');
+            
+            if (!userEmail) {
+                alert('Please log in to follow projects');
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_email: userEmail,
+                        user_name: userName,
+                        project_id: projectId
+                    })
+                });
+                
+                if (response.ok) {
+                    updateFollowButton(true);
+                    console.log(`Successfully followed: ${projectTitle}`);
+                } else if (response.status === 409) {
+                    console.log('Already following this project');
+                }
+            } catch (error) {
+                console.error('Error following project:', error);
             }
         }
 
-        // Join project functionality
-        function joinProject() {
-            alert('Welcome to the project! You will receive an email with next steps.');
+        async function unfollowProject(projectId, projectTitle) {
+            const userEmail = localStorage.getItem('dcf_user_email');
+            
+            try {
+                const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows?user_email=eq.${userEmail}&project_id=eq.${projectId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                    }
+                });
+                
+                if (response.ok) {
+                    updateFollowButton(false);
+                    console.log(`Successfully unfollowed: ${projectTitle}`);
+                }
+            } catch (error) {
+                console.error('Error unfollowing project:', error);
+            }
+        }
+
+        function updateFollowButton(isFollowing) {
+            const followBtn = document.getElementById('followBtn');
+            if (!followBtn) return;
+            
+            if (isFollowing) {
+                followBtn.textContent = '✓ Following';
+                followBtn.className = 'btn btn-secondary';
+                followBtn.onclick = () => unfollowProject(getProjectIdFromUrl(), window.currentProject?.title);
+            } else {
+                followBtn.textContent = '⭐ Follow';
+                followBtn.className = 'btn btn-secondary';
+                followBtn.onclick = () => followProject(getProjectIdFromUrl(), window.currentProject?.title);
+            }
+        }
+
+        async function joinProjectRequest(projectId, projectTitle) {
+            const userEmail = localStorage.getItem('dcf_user_email');
+            const userName = localStorage.getItem('dcf_user_name');
+            
+            if (!userEmail) {
+                alert('Please log in to join projects');
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_email: userEmail,
+                        user_name: userName,
+                        project_id: projectId,
+                        message: `${userName} would like to join ${projectTitle}`
+                    })
+                });
+                
+                if (response.ok) {
+                    updateJoinButton('pending');
+                    console.log(`Join request sent for: ${projectTitle}`);
+                } else if (response.status === 409) {
+                    alert('You have already requested to join this project');
+                }
+            } catch (error) {
+                console.error('Error joining project:', error);
+            }
+        }
+
+        function updateJoinButton(userStatus) {
+            const joinBtn = document.getElementById('joinBtn');
+            const joinCard = document.querySelector('.join-project-card');
+            if (!joinBtn) return;
+            
+            switch(userStatus) {
+                case 'owner':
+                    if (joinBtn) joinBtn.style.display = 'none';
+                    if (joinCard) joinCard.style.display = 'none';
+                    break;
+                case 'member':
+                    joinBtn.textContent = '✓ Member';
+                    joinBtn.className = 'btn btn-secondary';
+                    joinBtn.disabled = true;
+                    if (joinCard) joinCard.style.display = 'none';
+                    break;
+                case 'pending':
+                    joinBtn.textContent = '⏳ Request Pending';
+                    joinBtn.className = 'btn btn-secondary';
+                    joinBtn.disabled = true;
+                    if (joinCard) {
+                        joinCard.querySelector('h3').textContent = 'Join Request Pending';
+                        joinCard.querySelector('p').textContent = 'Your request to join this project is being reviewed.';
+                        joinCard.querySelector('button').style.display = 'none';
+                    }
+                    break;
+                default:
+                    joinBtn.textContent = '🤝 Join Project';
+                    joinBtn.className = 'btn btn-primary';
+                    joinBtn.disabled = false;
+                    joinBtn.onclick = () => joinProjectRequest(getProjectIdFromUrl(), window.currentProject?.title);
+            }
+        }
+
+        // Check user's follow and join status for this project
+        async function checkUserProjectStatus() {
+            const userEmail = localStorage.getItem('dcf_user_email');
+            const projectId = getProjectIdFromUrl();
+            
+            if (!userEmail || !projectId) return;
+            
+            try {
+                // Check if following
+                const followResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows?user_email=eq.${userEmail}&project_id=eq.${projectId}`, {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                    }
+                });
+                
+                const followData = await followResponse.json();
+                const isFollowing = followData && followData.length > 0;
+                updateFollowButton(isFollowing);
+                
+                // Check membership status
+                const memberResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_members?user_email=eq.${userEmail}&project_id=eq.${projectId}`, {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                    }
+                });
+                
+                const memberData = await memberResponse.json();
+                
+                // Check pending join requests
+                const requestResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests?user_email=eq.${userEmail}&project_id=eq.${projectId}&status=eq.pending`, {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                    }
+                });
+                
+                const requestData = await requestResponse.json();
+                
+                // Check if user owns this project
+                if (window.currentProject && userEmail === window.currentProject.author_email) {
+                    updateJoinButton('owner');
+                } else if (memberData && memberData.length > 0) {
+                    updateJoinButton('member');
+                } else if (requestData && requestData.length > 0) {
+                    updateJoinButton('pending');
+                } else {
+                    updateJoinButton('none');
+                }
+                
+            } catch (error) {
+                console.error('Error checking user project status:', error);
+            }
         }
 
         // Manage project functionality
@@ -1538,9 +1718,14 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
             // Load project data
             loadProject();
 
-            // Setup event listeners
-            document.getElementById('followBtn').addEventListener('click', toggleFollow);
-            document.getElementById('joinBtn').addEventListener('click', joinProject);
+            // Check user's current follow/join status and update buttons
+            checkUserProjectStatus();
+            
+            // Update join card button
+            const joinCardBtn = document.querySelector('.join-project-card button');
+            if (joinCardBtn) {
+                joinCardBtn.onclick = () => joinProjectRequest(getProjectIdFromUrl(), window.currentProject?.title);
+            }
         });
     </script>
     </body>
