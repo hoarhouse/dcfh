@@ -1735,9 +1735,95 @@
         // Delete project
         function deleteProject() {
             if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-                if (confirm('This will permanently delete all project data. Type "DELETE" to confirm.')) {
-                    alert('Project deletion would be processed here.');
+                const confirmation = prompt('This will permanently delete all project data. Type "DELETE" to confirm:');
+                if (confirmation === 'DELETE') {
+                    executeProjectDeletion();
+                } else {
+                    alert('Project deletion cancelled. You must type "DELETE" exactly.');
                 }
+            }
+        }
+
+        async function executeProjectDeletion() {
+            const projectId = getProjectIdFromUrl();
+            if (!projectId) return;
+
+            try {
+                // Show loading
+                const loadingDiv = document.createElement('div');
+                loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;';
+                loadingDiv.textContent = 'Deleting project...';
+                document.body.appendChild(loadingDiv);
+
+                // Delete in order: files, activity, tasks, members, metrics, then project
+                
+                // 1. Delete project files from storage and database
+                const { data: files } = await supabase
+                    .from('project_files')
+                    .select('file_path')
+                    .eq('project_id', projectId);
+                
+                if (files && files.length > 0) {
+                    // Delete files from storage
+                    const filePaths = files.map(f => f.file_path).filter(Boolean);
+                    if (filePaths.length > 0) {
+                        await supabase.storage
+                            .from('project-files')
+                            .remove(filePaths);
+                    }
+                    
+                    // Delete file records
+                    await supabase
+                        .from('project_files')
+                        .delete()
+                        .eq('project_id', projectId);
+                }
+
+                // 2. Delete project activity
+                await supabase
+                    .from('project_activity')
+                    .delete()
+                    .eq('project_id', projectId);
+
+                // 3. Delete project tasks
+                await supabase
+                    .from('project_tasks')
+                    .delete()
+                    .eq('project_id', projectId);
+
+                // 4. Delete project members
+                await supabase
+                    .from('project_members')
+                    .delete()
+                    .eq('project_id', projectId);
+
+                // 5. Delete project metrics
+                await supabase
+                    .from('project_metrics')
+                    .delete()
+                    .eq('project_id', projectId);
+
+                // 6. Finally, delete the project itself
+                const { error } = await supabase
+                    .from('projects')
+                    .delete()
+                    .eq('id', projectId);
+
+                if (error) throw error;
+
+                // Remove loading
+                document.body.removeChild(loadingDiv);
+
+                alert('Project deleted successfully!');
+                window.location.href = 'dcf_projects_home.html';
+
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                // Remove loading if it exists
+                const loadingDiv = document.querySelector('div[style*="position: fixed"]');
+                if (loadingDiv) document.body.removeChild(loadingDiv);
+                
+                alert('Error deleting project: ' + error.message);
             }
         }
 
