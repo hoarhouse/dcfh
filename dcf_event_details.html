@@ -1077,6 +1077,18 @@
             initializePage();
         });
 
+        // Add event ownership check function
+        function isEventOwner(event) {
+            if (!event) return false;
+            
+            const currentUserEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+            const currentUserId = window.dcfUser?.id;
+            
+            // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
+            return (event.organizer_id && currentUserId && event.organizer_id === currentUserId) ||
+                   (event.contact_email && currentUserEmail && event.contact_email === currentUserEmail);
+        }
+
         async function initializePage() {
             try {
                 // Initialize Supabase
@@ -1213,6 +1225,11 @@
                     ${renderRegistrationButton()}
                     <button class="btn btn-secondary" onclick="addToCalendar()">📅 Add to Calendar</button>
                     <button class="btn btn-secondary" onclick="shareEvent()">🔗 Share Event</button>
+                    ${isEventOwner(event) ? `
+                        <button class="btn btn-primary" onclick="window.location.href='dcf_event_manage.html'" style="background: #000; color: white; border: 2px solid #000;">
+                            ⚙️ Manage This Event
+                        </button>
+                    ` : ''}
                 </div>
             `;
 
