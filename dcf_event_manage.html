@@ -908,18 +908,30 @@
         async function loadAttendanceCounts() {
             for (let event of allEvents) {
                 try {
+                    // Count all registrations (going + interested + registered)
                     const { count, error } = await supabase
                         .from('event_registrations')
                         .select('*', { count: 'exact', head: true })
                         .eq('event_id', event.id)
-                        .eq('status', 'registered');
+                        .in('status', ['going', 'interested', 'registered']);
 
                     if (!error) {
                         event.attendee_count = count || 0;
                     }
+
+                    // Also get going count specifically
+                    const { count: goingCount } = await supabase
+                        .from('event_registrations')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', event.id)
+                        .in('status', ['going', 'registered']);
+
+                    event.going_count = goingCount || 0;
+
                 } catch (error) {
                     console.error(`Error loading attendance for event ${event.id}:`, error);
                     event.attendee_count = 0;
+                    event.going_count = 0;
                 }
             }
         }
@@ -1056,7 +1068,8 @@
                 </div>
 
                 <div class="attendee-info">
-                    <span class="attendee-count">${event.attendee_count || 0} registered</span>
+                    <span class="attendee-count">${event.going_count || 0} going</span>
+                    <span class="attendee-count" style="margin-left: 0.5rem;">${event.attendee_count || 0} total responses</span>
                     ${event.max_attendees ? `<span class="registration-rate">of ${event.max_attendees} max</span>` : ''}
                     <div style="flex: 1;"></div>
                     <small style="color: #999;">Created ${new Date(event.created_at).toLocaleDateString()}</small>
@@ -1251,19 +1264,45 @@
                     return;
                 }
 
-                registrationList.innerHTML = registrations.map(reg => `
-                    <div class="registration-item">
-                        <div class="registration-info">
-                            <h4>${reg.attendee_name}</h4>
-                            <p>${reg.attendee_email}</p>
-                            ${reg.organization ? `<p><strong>Organization:</strong> ${reg.organization}</p>` : ''}
-                            <p><small>Registered: ${new Date(reg.registered_at).toLocaleDateString()}</small></p>
-                        </div>
-                        <div>
-                            <span class="status-badge status-${reg.status}">${reg.status.toUpperCase()}</span>
-                        </div>
+                // Count status types
+                const statusCounts = registrations.reduce((acc, reg) => {
+                    acc[reg.status] = (acc[reg.status] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // Status display config
+                const statusConfig = {
+                    'going': { text: '✅ Going', color: '#28a745' },
+                    'interested': { text: '⭐ Interested', color: '#ffc107' },
+                    'not_going': { text: '❌ Not Going', color: '#6c757d' },
+                    'registered': { text: '✅ Registered', color: '#28a745' }
+                };
+
+                registrationList.innerHTML = `
+                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem;">
+                        <strong>Registration Summary:</strong><br>
+                        ${Object.entries(statusCounts).map(([status, count]) => {
+                            const config = statusConfig[status] || { text: status, color: '#666' };
+                            return `<span style="color: ${config.color}; margin-right: 1rem;">${config.text}: ${count}</span>`;
+                        }).join('')}
                     </div>
-                `).join('');
+                    ${registrations.map(reg => {
+                        const config = statusConfig[reg.status] || { text: reg.status, color: '#666' };
+                        return `
+                            <div class="registration-item">
+                                <div class="registration-info">
+                                    <h4>${reg.attendee_name}</h4>
+                                    <p>${reg.attendee_email}</p>
+                                    ${reg.organization ? `<p><strong>Organization:</strong> ${reg.organization}</p>` : ''}
+                                    <p><small>Registered: ${new Date(reg.registered_at).toLocaleDateString()}</small></p>
+                                </div>
+                                <div>
+                                    <span class="status-badge" style="background: ${config.color}20; color: ${config.color}; border: 1px solid ${config.color};">${config.text}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                `;
 
             } catch (error) {
                 console.error('Error loading registrations:', error);
