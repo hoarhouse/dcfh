@@ -2711,10 +2711,10 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 // Load pending join requests
                 const { data: requests, error } = await supabase
                     .from('project_join_requests')
-                    .select(`*, requester:user_profiles!requester_id(username, email)`)
+                    .select(`*`)
                     .eq('project_id', projectId)
                     .eq('status', 'pending')
-                    .order('created_at', { ascending: false });
+                    .order('requested_at', { ascending: false });
                 
                 if (error) throw error;
                 
@@ -2728,14 +2728,14 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 }
                 
                 joinRequestsList.innerHTML = requests.map(request => {
-                    const username = request.requester?.username || 'user';
+                    const username = request.user_name || request.user_email.split('@')[0];
                     const initials = generateInitials(username);
                     
                     return `
                         <div class="team-member" style="background: #fff3cd; border: 1px solid #ffeaa7;">
                             <div class="member-avatar" style="background: #ffc107;">${initials}</div>
                             <div class="member-info">
-                                <div class="member-name">@${username}</div>
+                                <div class="member-name">${username}</div>
                                 <div class="member-role">Wants to join project</div>
                                 <div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
                                     Requested ${getTimeAgo(request.created_at)}
