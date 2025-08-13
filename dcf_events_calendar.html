@@ -765,7 +765,7 @@
             let attempts = 0;
             const maxAttempts = 20;
             
-            function loadEvents() {
+            async function loadEvents() {
                 attempts++;
                 
                 // Try both possible Supabase clients
@@ -789,7 +789,9 @@
                             const events = data || [];
                             console.log('Loaded events:', events.length);
                             
-                            displayEvents(events);
+                            checkUserRegistrations(events).then(eventsWithRegistrations => {
+                                displayEvents(eventsWithRegistrations);
+                            });
                             displayStats(events);
                             displayUpcomingEvents(events);
                         })
@@ -810,7 +812,39 @@
             setTimeout(loadEvents, 1000);
         });
 
-        function displayEvents(events) {
+        async function checkUserRegistrations(events) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
+                              localStorage.getItem('dcf_user_email') || 
+                              window.dcfUser?.userName;
+            
+            if (!isLoggedIn) return events;
+
+            try {
+                const supabase = window.authSupabase || window.masterSupabase;
+                const userEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+                
+                if (!supabase || !userEmail) return events;
+
+                const { data: registrations } = await supabase
+                    .from('event_registrations')
+                    .select('event_id, status')
+                    .eq('attendee_email', userEmail);
+
+                // Add registration status to events
+                return events.map(event => {
+                    const registration = registrations?.find(reg => reg.event_id === event.id);
+                    return {
+                        ...event,
+                        userRegistrationStatus: registration?.status || null
+                    };
+                });
+            } catch (error) {
+                console.error('Error checking registrations:', error);
+                return events;
+            }
+        }
+
+        async function displayEvents(events) {
             const container = document.getElementById('eventsContainer');
             
             if (events.length === 0) {
@@ -825,6 +859,31 @@
             }
 
             container.innerHTML = events.map(event => {
+                // Determine button display based on registration status
+                let registerButtonHtml;
+                if (event.userRegistrationStatus) {
+                    const statusConfig = {
+                        'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
+                        'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
+                        'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' }
+                    };
+                    const config = statusConfig[event.userRegistrationStatus];
+                    registerButtonHtml = `
+                        <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                onclick="event.stopPropagation(); showStatusChangeOptions('${event.id}', this, '${event.userRegistrationStatus}')" 
+                                style="background: ${config.bg}; color: ${config.color}; border: 2px solid ${config.border}; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            ${config.text}
+                        </button>
+                    `;
+                } else {
+                    registerButtonHtml = `
+                        <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                onclick="event.stopPropagation(); toggleRegistrationOptions('${event.id}', this)" 
+                                style="background: #dc3545; color: white; border: 2px solid #dc3545; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            Register
+                        </button>
+                    `;
+                }
                 const eventDate = new Date(event.event_date);
                 const day = eventDate.getDate();
                 const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
@@ -860,7 +919,7 @@
                             <span class="event-time">${event.start_time || 'Time TBD'} ${event.timezone || 'UTC'}</span>
                             <div class="event-actions" style="display: flex; gap: 0.5rem;">
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEventDetails('${event.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Details</button>
-                                <button class="btn btn-primary btn-small register-btn" data-event-id="${event.id}" onclick="event.stopPropagation(); quickRegister('${event.id}', '${event.title.replace(/'/g, "\\'")}', this)" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Register</button>
+${registerButtonHtml}
                                 ${isEventOwner(event) ? `
                                     <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); window.location.href='dcf_event_manage.html'" style="background: #000; color: white; border-color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                                         ⚙️ Manage
@@ -964,6 +1023,8 @@
             document.getElementById('upcomingEventsContainer').innerHTML = 
                 '<p style="color: #666; font-size: 0.9rem; text-align: center;">Unable to load events</p>';
         }
+        
+
         async function quickRegister(eventId, eventTitle, buttonElement) {
             const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
                               localStorage.getItem('dcf_user_email') || 
