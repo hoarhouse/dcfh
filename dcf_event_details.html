@@ -1019,7 +1019,7 @@
                         <button class="btn btn-large" onclick="registerWithStatus('interested')" style="background: #ffc107; color: #000; border: 2px solid #ffc107;">
                             ⭐ Interested (Maybe)
                         </button>
-                        <button class="btn btn-large" onclick="hideRegistrationForm()" style="background: #6c757d; color: white; border: 2px solid #6c757d;">
+                        <button class="btn btn-large" onclick="registerWithStatus('not_going')" style="background: #6c757d; color: white; border: 2px solid #6c757d;">
                             ❌ Can't Make It
                         </button>
                     </div>
@@ -1243,9 +1243,16 @@
             if (!isLoggedIn) {
                 return '<button class="btn btn-primary btn-large" onclick="redirectToLogin()">🔐 Login to Register</button>';
             } else if (userRegistration) {
-                return '<button class="btn btn-secondary btn-large" disabled>✅ Registered</button>';
+                const statusConfig = {
+                    'going': { text: '✅ Going', bg: '#28a745', color: 'white' },
+                    'interested': { text: '⭐ Interested', bg: '#ffc107', color: '#000' },
+                    'not_going': { text: '❌ Not Going', bg: '#6c757d', color: 'white' },
+                    'registered': { text: '✅ Registered', bg: '#28a745', color: 'white' }
+                };
+                const config = statusConfig[userRegistration.status] || statusConfig['registered'];
+                return `<button class="btn btn-large" onclick="showHeroRegistrationOptions()" style="background: ${config.bg}; color: ${config.color}; border: 2px solid ${config.bg};">${config.text}</button>`;
             } else {
-                return '<button class="btn btn-large" onclick="showRegistrationForm()" style="background: #dc3545; color: white; border: 2px solid #dc3545;">🎫 Register Now</button>';
+                return '<button class="btn btn-large" onclick="showHeroRegistrationOptions()" style="background: #dc3545; color: white; border: 2px solid #dc3545;">🎫 Register Now</button>';
             }
         }
 
@@ -1493,10 +1500,7 @@
             }
 
             try {
-                // Check if user is authenticated with Supabase
                 const { data: { user } } = await supabase.auth.getUser();
-                console.log('Supabase auth user:', user);
-                
                 const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
                 const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
 
@@ -1504,25 +1508,46 @@
                     throw new Error('User email not found');
                 }
 
-                const formData = {
-                    event_id: currentEvent.id,
-                    user_id: user.id,  // This is required for RLS policy
-                    attendee_name: userName,
-                    attendee_email: userEmail,
-                    status: status === 'going' ? 'registered' : 'interested'
-                };
-
-                const { data, error } = await supabase
+                // Check if registration exists
+                const { data: existingReg } = await supabase
                     .from('event_registrations')
-                    .insert([formData])
-                    .select()
+                    .select('*')
+                    .eq('event_id', currentEvent.id)
+                    .eq('attendee_email', userEmail)
                     .single();
 
-                if (error) throw error;
+                if (existingReg) {
+                    // Update existing registration
+                    const { data, error } = await supabase
+                        .from('event_registrations')
+                        .update({ status: status })
+                        .eq('id', existingReg.id)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    userRegistration = data;
+                } else {
+                    // Create new registration
+                    const formData = {
+                        event_id: currentEvent.id,
+                        user_id: user?.id,
+                        attendee_name: userName,
+                        attendee_email: userEmail,
+                        status: status
+                    };
 
-                userRegistration = data;
-                const statusText = status === 'going' ? 'registered' : 'marked as interested';
-                showRegistrationSuccess(`Great! You've ${statusText} for this event.`);
+                    const { data, error } = await supabase
+                        .from('event_registrations')
+                        .insert([formData])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    userRegistration = data;
+                }
+
+                showRegistrationSuccess(`Status updated to ${status.replace('_', ' ')}!`);
                 
                 // Update UI
                 setTimeout(() => {
@@ -1539,6 +1564,19 @@
                     showRegistrationError('Registration failed. Please try again.');
                 }
             }
+        }
+
+        function showHeroRegistrationOptions() {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
+                              localStorage.getItem('dcf_user_email') || 
+                              window.dcfUser?.userName;
+            
+            if (!isLoggedIn) {
+                redirectToLogin();
+                return;
+            }
+
+            showRegistrationForm();
         }
 
         async function cancelRegistration() {
