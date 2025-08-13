@@ -182,15 +182,49 @@ function generateInitials(name) {
 // =============================================================================
 // 5. NAVIGATION FUNCTIONS
 // =============================================================================
+
+function getCorrectBasePath() {
+    const pathname = window.location.pathname;
+    const pathParts = pathname.split('/').filter(p => p);
+    const filename = pathParts[pathParts.length - 1] || 'index.html';
+    
+    console.log('DEBUG PATH - pathname:', pathname);
+    console.log('DEBUG PATH - pathParts:', pathParts);
+    console.log('DEBUG PATH - filename:', filename);
+    
+    // Check if we're in a subfolder by looking at known folder names
+    const knownFolders = ['members', 'projects', 'events', 'resources', 'auth', 'admin', 'public'];
+    
+    // Find the current folder
+    let currentFolder = null;
+    for (let i = pathParts.length - 2; i >= 0; i--) {
+        if (knownFolders.includes(pathParts[i])) {
+            currentFolder = pathParts[i];
+            break;
+        }
+    }
+    
+    console.log('DEBUG PATH - currentFolder:', currentFolder);
+    
+    // If we're in a known subfolder, go up one level
+    if (currentFolder) {
+        console.log('DEBUG PATH - returning: ../');
+        return '../';
+    }
+    
+    // If we're at root level (index.html or similar), no need to go up
+    console.log('DEBUG PATH - returning: ./');
+    return './';
+}
+
 function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown || dropdown.querySelector('.nav-item')) return;
 
     const currentPage = window.location.pathname.split('/').pop();
     
-    // Determine the base path based on current location
-    const pathDepth = window.location.pathname.split('/').filter(p => p && p !== 'index.html').length - 1;
-    const basePath = pathDepth > 0 ? '../'.repeat(pathDepth) : '';
+    // Use the correct base path calculation
+    const basePath = getCorrectBasePath();
     
     const navigationItems = [
         { href: basePath + 'members/dcf_member_home.html', icon: '🏠', text: 'My Feed' },
@@ -201,6 +235,9 @@ function addNavigationItems() {
         { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
 
     ];
+    
+    console.log('DEBUG NAV - basePath:', basePath);
+    console.log('DEBUG NAV - navigationItems:', navigationItems);
 
     const navSection = document.createElement('div');
     navSection.innerHTML = '<div class="dropdown-divider"></div>';
@@ -243,9 +280,8 @@ function populateTopNavigation() {
     
     const currentPage = window.location.pathname.split('/').pop();
     
-    // Determine the base path based on current location
-    const pathDepth = window.location.pathname.split('/').filter(p => p && p !== 'index.html').length - 1;
-    const basePath = pathDepth > 0 ? '../'.repeat(pathDepth) : '';
+    // Use the correct base path calculation
+    const basePath = getCorrectBasePath();
     
     // Member navigation
     const memberNav = [
@@ -256,6 +292,9 @@ function populateTopNavigation() {
         { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
         { href: basePath + 'public/dcf_contact.html', text: 'Contact' }
     ];
+    
+    console.log('DEBUG TOP NAV - basePath:', basePath);
+    console.log('DEBUG TOP NAV - memberNav:', memberNav);
     
     const navItems = memberNav.filter(item => item.href !== currentPage);
     
@@ -324,8 +363,7 @@ async function confirmLogout() {
     localStorage.clear();
     sessionStorage.clear();
     // Navigate to login page with proper path
-    const pathDepth = window.location.pathname.split('/').filter(p => p && p !== 'index.html').length - 1;
-    const basePath = pathDepth > 0 ? '../'.repeat(pathDepth) : '';
+    const basePath = getCorrectBasePath();
     window.location.href = basePath + 'auth/dcf_login_page.html';
 }
 
@@ -610,8 +648,8 @@ function initializeFooter() {
                     <a href="index.html">Home</a>
                     <a href="dcf_about.html">About</a>
                     <a href="dcf_contact.html">Contact</a>
-                    <a href=basePath + 'auth/dcf_login_page.html'>Login</a>
-                    <a href=basePath + 'auth/dcf_profile_signup.html'>Join</a>
+                    <a href="${getCorrectBasePath()}auth/dcf_login_page.html">Login</a>
+                    <a href="${getCorrectBasePath()}auth/dcf_profile_signup.html">Join</a>
                 </div>
             </div>
         </div>
