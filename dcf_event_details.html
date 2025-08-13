@@ -1455,16 +1455,7 @@
             const form = document.getElementById('registrationForm');
             form.classList.add('show');
 
-            // Pre-fill user data from localStorage
-            const userEmail = localStorage.getItem('dcf_user_email');
-            const userName = localStorage.getItem('dcf_user_name');
-            
-            if (userEmail) {
-                document.getElementById('attendeeEmail').value = userEmail;
-            }
-            if (userName) {
-                document.getElementById('attendeeName').value = userName;
-            }
+            // No longer pre-filling form fields since we removed the form
 
             // Scroll to form
             form.scrollIntoView({ behavior: 'smooth' });
@@ -1485,8 +1476,16 @@
             }
 
             try {
-                const userEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName;
+                // Check if user is authenticated with Supabase
+                const { data: { user } } = await supabase.auth.getUser();
+                console.log('Supabase auth user:', user);
+                
+                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+
+                if (!userEmail) {
+                    throw new Error('User email not found');
+                }
 
                 const formData = {
                     event_id: currentEvent.id,
