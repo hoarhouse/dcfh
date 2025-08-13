@@ -606,6 +606,38 @@
                 align-self: center;
             }
         }
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .register-btn.registered {
+            background: #28a745 !important;
+            border-color: #28a745 !important;
+            color: white !important;
+        }
+
+        .register-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -812,6 +844,13 @@
                             </div>
                         </div>
                         <div class="event-description">${event.description}</div>
+                        <div class="event-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+                            <span class="event-time">${event.start_time || 'Time TBD'} ${event.timezone || 'UTC'}</span>
+                            <div class="event-actions" style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEventDetails('${event.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Details</button>
+                                <button class="btn btn-primary btn-small register-btn" data-event-id="${event.id}" onclick="event.stopPropagation(); quickRegister('${event.id}', '${event.title.replace(/'/g, "\\'")}', this)" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Register</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -907,6 +946,90 @@
             
             document.getElementById('upcomingEventsContainer').innerHTML = 
                 '<p style="color: #666; font-size: 0.9rem; text-align: center;">Unable to load events</p>';
+        }
+        async function quickRegister(eventId, eventTitle, buttonElement) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
+                              localStorage.getItem('dcf_user_email') || 
+                              window.dcfUser?.userName;
+            
+            if (!isLoggedIn) {
+                localStorage.setItem('dcf_redirect_after_login', window.location.href);
+                window.location.href = 'dcf_login_page.html';
+                return;
+            }
+
+            try {
+                buttonElement.textContent = 'Registering...';
+                buttonElement.disabled = true;
+
+                const supabase = window.authSupabase || window.masterSupabase || window.supabase.createClient(
+                    'https://atzommnkkwzgbktuzjti.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                );
+
+                const { data: { user } } = await supabase.auth.getUser();
+                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+
+                const formData = {
+                    event_id: eventId,
+                    user_id: user.id,
+                    attendee_name: userName,
+                    attendee_email: userEmail,
+                    status: 'registered'
+                };
+
+                const { data, error } = await supabase
+                    .from('event_registrations')
+                    .insert([formData]);
+
+                if (error) throw error;
+
+                // Update button to show registered
+                buttonElement.textContent = '✅ Registered';
+                buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
+                buttonElement.disabled = true;
+                buttonElement.onclick = null;
+
+                // Show success notification
+                showNotification(`Successfully registered for ${eventTitle}!`, 'success');
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                buttonElement.textContent = 'Register';
+                buttonElement.disabled = false;
+                
+                if (error.code === '23505') {
+                    showNotification('You are already registered for this event', 'info');
+                    buttonElement.textContent = '✅ Registered';
+                    buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
+                    buttonElement.disabled = true;
+                } else {
+                    showNotification('Registration failed. Please try again.', 'error');
+                }
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     </script>
 </body>
