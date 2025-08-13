@@ -19,6 +19,12 @@ async function connectToAuth() {
         try {
             const testSession = await window.masterSupabase.auth.getUser();
             console.log('Auth test result:', testSession);
+            
+            // If user is logged in, setup session management
+            if (testSession?.data?.user && window.dcfAuth?.setupSessionManagement) {
+                console.log('Setting up session management for active user');
+                window.dcfAuth.setupSessionManagement();
+            }
         } catch (e) {
             console.log('Auth test failed:', e);
         }
@@ -357,14 +363,56 @@ function closeLogoutModal() {
 }
 
 async function confirmLogout() {
-    if (window.masterSupabase) {
-        await window.masterSupabase.auth.signOut();
+    try {
+        // Sign out from Supabase first
+        if (window.masterSupabase) {
+            await window.masterSupabase.auth.signOut();
+        }
+        
+        // Clear old auth keys specifically to avoid conflicts
+        const oldAuthKeys = [
+            'dcf_github_session',
+            'dcf_user_logged_in',
+            'dcf_user_name',
+            'dcf_user_email',
+            'dcf_auth_provider',
+            'dcf_remember_login',
+            'dcf_redirect_after_login'
+        ];
+        
+        oldAuthKeys.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        // Clear all session storage
+        sessionStorage.clear();
+        
+        // Clear global user state
+        if (window.dcfUser) {
+            window.dcfUser = {
+                isLoggedIn: false,
+                profile: null,
+                session: null
+            };
+        }
+        
+        // Clear session management
+        if (window.dcfAuth?.clearSessionManagement) {
+            window.dcfAuth.clearSessionManagement();
+        }
+        
+        // Navigate to login page with proper path
+        const basePath = getCorrectBasePath();
+        window.location.href = basePath + 'auth/dcf_login_page.html';
+        
+    } catch (error) {
+        console.error('Error during logout:', error);
+        // Force logout even if Supabase signOut fails
+        localStorage.clear();
+        sessionStorage.clear();
+        const basePath = getCorrectBasePath();
+        window.location.href = basePath + 'auth/dcf_login_page.html';
     }
-    localStorage.clear();
-    sessionStorage.clear();
-    // Navigate to login page with proper path
-    const basePath = getCorrectBasePath();
-    window.location.href = basePath + 'auth/dcf_login_page.html';
 }
 
 // =============================================================================

@@ -162,6 +162,64 @@ async function signOutUser() {
 }
 
 /**
+ * Handle session refresh and timeout
+ */
+let sessionRefreshTimer = null;
+
+function setupSessionManagement() {
+    // Clear any existing timer
+    if (sessionRefreshTimer) {
+        clearTimeout(sessionRefreshTimer);
+    }
+    
+    // Set up automatic session refresh
+    // Refresh token 5 minutes before expiry (Supabase default is 1 hour)
+    const refreshInterval = 55 * 60 * 1000; // 55 minutes
+    
+    sessionRefreshTimer = setInterval(async () => {
+        try {
+            const { data: { session }, error } = await window.authSupabase.auth.getSession();
+            
+            if (!session) {
+                console.log('No session found during refresh check');
+                clearInterval(sessionRefreshTimer);
+                return;
+            }
+            
+            // Check if token will expire soon (within 10 minutes)
+            const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+            const now = Date.now();
+            const timeUntilExpiry = expiresAt - now;
+            
+            if (timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
+                console.log('Refreshing session token...');
+                const { data: refreshData, error: refreshError } = await window.authSupabase.auth.refreshSession();
+                
+                if (refreshError) {
+                    console.error('Session refresh failed:', refreshError);
+                    // Force logout on refresh failure
+                    await signOutUser();
+                } else {
+                    console.log('Session refreshed successfully');
+                }
+            }
+        } catch (error) {
+            console.error('Session management error:', error);
+        }
+    }, refreshInterval);
+}
+
+/**
+ * Clear session management timers
+ */
+function clearSessionManagement() {
+    if (sessionRefreshTimer) {
+        clearInterval(sessionRefreshTimer);
+        sessionRefreshTimer = null;
+    }
+}
+
+/**
  * Redirect if not logged in (replaces localStorage checks)
  */
 async function requireAuth() {
@@ -221,6 +279,8 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
             profile: null,
             session: null
         };
+        // Clear session management on logout
+        clearSessionManagement();
     } else if (event === 'SIGNED_IN' && session?.user) {
         const profile = await getUserProfile(session.user.id, session.user.email);
         console.log('Profile found:', profile);
@@ -238,6 +298,8 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
         };
         console.log('Updated dcfUser:', window.dcfUser);
         updateUserInterface();
+        // Setup session management on login
+        setupSessionManagement();
     }
 });
 
@@ -260,5 +322,7 @@ window.dcfAuth = {
     getUserId,
     signOutUser,
     requireAuth,
-    updateUserInterface
+    updateUserInterface,
+    setupSessionManagement,
+    clearSessionManagement
 };
