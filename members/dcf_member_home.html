@@ -1175,11 +1175,10 @@
         let currentMedia = [];
         let posts = [];
 
-        // Use auth system's Supabase client
-        const supabase = window.supabase.createClient(
-    'https://atzommnkkwzgbktuzjti.supabase.co',
-    'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-);
+        // Use the authenticated Supabase client from auth system
+        function getSupabaseClient() {
+            return window.masterSupabase || window.authSupabase;
+        }
         
         // Initialize auth and UI when page loads
 document.addEventListener('DOMContentLoaded', async function() {
@@ -1205,8 +1204,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('DEBUG: dcfUser after init:', window.dcfUser);
     console.log('DEBUG: getCurrentUser result:', getCurrentUser());
     
-    // Now load posts
-    loadPosts();
+    // Wait a moment for master JS to set up connections, then load posts
+    setTimeout(() => {
+        console.log('DEBUG: Loading posts after delay...');
+        loadPosts();
+    }, 1000);
 });
 
         function convertUrlsToLinks(text) {
@@ -1314,16 +1316,30 @@ async function loadPosts() {
     try {
         document.getElementById('loadingState').style.display = 'block';
         
-        const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/posts?select=*&order=created_at.desc', {
-            headers: {
-                'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-            }
-        });
+        // Use the authenticated Supabase client instead of direct fetch
+        const supabase = window.masterSupabase || window.authSupabase;
+        if (!supabase) {
+            throw new Error('Supabase client not available');
+        }
         
-        if (!response.ok) throw new Error('Database error');
+        console.log('DEBUG: Using Supabase client for posts');
         
-        const posts_data = await response.json();
+        // Get current user session to ensure we're authenticated
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('DEBUG: Current session:', !!session);
+        
+        // Load posts using Supabase client with proper authentication
+        const { data: posts_data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Supabase posts error:', error);
+            throw new Error(`Database error: ${error.message}`);
+        }
+        
+        console.log('DEBUG: Posts loaded:', posts_data?.length || 0);
         posts = posts_data || [];
         displayPosts();
         
@@ -1333,7 +1349,18 @@ async function loadPosts() {
         console.error('Error loading posts:', error);
         const loadingElement = document.getElementById('loadingState');
         if (loadingElement) loadingElement.style.display = 'none';
-        showMessage('Failed to load posts', 'error');
+        
+        // Show more detailed error message
+        const container = document.getElementById('postsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-feed">
+                    <h3>Unable to load posts</h3>
+                    <p>Error: ${error.message}</p>
+                    <button onclick="loadPosts()" class="btn btn-primary" style="margin-top: 1rem;">Retry</button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -1515,28 +1542,31 @@ async function loadPosts() {
                             document.getElementById('progressText').textContent = progressPercent + '%';
                         }
                         
-                        // Upload file using direct API call
-const formData = new FormData();
-formData.append('file', file);
+                        // Upload file using Supabase client
+                        const supabase = window.masterSupabase || window.authSupabase;
+                        if (!supabase) {
+                            throw new Error('Supabase client not available');
+                        }
 
-const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
-    method: 'POST',
-    headers: {
-        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-    },
-    body: formData
-});
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('media')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
 
-if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text();
-    throw new Error(`Upload failed: ${errorText}`);
-}
+                        if (uploadError) {
+                            console.error('Upload error:', uploadError);
+                            throw new Error(`Upload failed: ${uploadError.message}`);
+                        }
 
-const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+                        // Get public URL
+                        const { data: urlData } = supabase.storage
+                            .from('media')
+                            .getPublicUrl(fileName);
 
-mediaUrls.push(publicUrl);
-mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
+                        mediaUrls.push(urlData.publicUrl);
+                        mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
                     }
                 }
 
@@ -1545,32 +1575,30 @@ mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
                     document.body.removeChild(progressContainer);
                 }
 
-               // Insert post and get the actual data back
-const insertResponse = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/posts', {
-    method: 'POST',
-    headers: {
-        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-    },
-    body: JSON.stringify({
-        content: content || null,
-        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-        media_type: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
-        author_email: currentUserEmail,
-        author_name: currentUserName
-    })
-});
+               // Insert post using Supabase client
+                const supabase = window.masterSupabase || window.authSupabase;
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
 
-if (!insertResponse.ok) {
-    const errorText = await insertResponse.text();
-    console.error('API Error:', errorText);
-    throw new Error(`Failed to create post: ${errorText}`);
-}
+                const { data: insertedPostArray, error: insertError } = await supabase
+                    .from('posts')
+                    .insert({
+                        content: content || null,
+                        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+                        media_type: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
+                        author_email: currentUserEmail,
+                        author_name: currentUserName
+                    })
+                    .select()
+                    .single();
 
-const insertedPostArray = await insertResponse.json();
-const insertedPost = insertedPostArray[0];
+                if (insertError) {
+                    console.error('Supabase insert error:', insertError);
+                    throw new Error(`Failed to create post: ${insertError.message}`);
+                }
+
+                const insertedPost = insertedPostArray;
 
 
                 // Add the real post to top of posts array and refresh display
@@ -1705,6 +1733,11 @@ const insertedPost = insertedPostArray[0];
             }
             
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+
                 const { error } = await supabase
                     .from('posts')
                     .update({ content: newContent })
@@ -1743,6 +1776,11 @@ const insertedPost = insertedPostArray[0];
             }
 
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+
                 const { error } = await supabase
                     .from('posts')
                     .delete()
@@ -1763,6 +1801,10 @@ const insertedPost = insertedPostArray[0];
         // Load post likes
         async function loadPostLikes(postId) {
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
                 const { data, error } = await supabase
                     .from('post_likes')
                     .select('*')
@@ -1789,6 +1831,11 @@ const insertedPost = insertedPostArray[0];
         // Toggle like on post
         async function toggleLike(postId) {
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
                 const currentUserEmail = getCurrentUser()?.email;
                 const currentUserName = getCurrentUser()?.name;
 
@@ -1834,6 +1881,10 @@ const insertedPost = insertedPostArray[0];
         // Load post comments
         async function loadPostComments(postId) {
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
                 const { data, error } = await supabase
                     .from('post_comments')
                     .select('*')
@@ -1871,6 +1922,11 @@ const insertedPost = insertedPostArray[0];
             if (!content) return;
 
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
                 const currentUserEmail = getCurrentUser()?.email;
                 const currentUserName = getCurrentUser()?.name;
 
@@ -1951,6 +2007,10 @@ const insertedPost = insertedPostArray[0];
         // Load comments for modal
         async function loadPostCommentsForModal(postId) {
             try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
                 const { data, error } = await supabase
                     .from('post_comments')
                     .select('*')
