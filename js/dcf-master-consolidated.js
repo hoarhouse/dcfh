@@ -137,25 +137,27 @@ async function updateUserInfo() {
     // Set avatars
     if (avatarElement) {
         if (avatarUrl) {
-            avatarElement.className = 'dropdown-avatar';
+            avatarElement.className = 'user-avatar';
             avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+            avatarElement.style.backgroundSize = 'cover';
+            avatarElement.style.backgroundPosition = 'center';
             avatarElement.textContent = '';
         } else {
-            avatarElement.textContent = initials;
+            avatarElement.className = 'user-avatar';
+            avatarElement.textContent = initials || '?';
             avatarElement.style.backgroundImage = '';
             avatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
-
         }
     }
     
     if (dropdownAvatarElement) {
         if (avatarUrl) {
             dropdownAvatarElement.style.backgroundImage = `url(${avatarUrl})`;
-            dropdownAvatarElement.style.backgroundSize = 'contain';
+            dropdownAvatarElement.style.backgroundSize = 'cover';
             dropdownAvatarElement.style.backgroundPosition = 'center';
             dropdownAvatarElement.textContent = '';
         } else {
-            dropdownAvatarElement.textContent = initials;
+            dropdownAvatarElement.textContent = initials || '?';
             dropdownAvatarElement.style.backgroundImage = '';
             dropdownAvatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
         }
@@ -380,9 +382,12 @@ function updateNavForAuthState(isLoggedIn) {
     
     if (navActions) {
         if (!isLoggedIn) {
+            // Update avatar for logged out state
+            updateAvatarForLoggedOutState();
+            
             navActions.innerHTML = `
-                <a href=basePath + 'auth/dcf_login_page.html' class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
-                <a href=basePath + 'auth/dcf_profile_signup.html' class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
+                <a href="auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
+                <a href="auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
             `;
         }
     }
@@ -1018,6 +1023,19 @@ function addNotificationBellToMemberPages() {
             `;
             document.head.appendChild(style);
         }
+    }
+}
+
+
+function updateAvatarForLoggedOutState() {
+    const avatarElement = document.getElementById('userAvatar');
+    if (avatarElement) {
+        avatarElement.className = 'user-avatar logged-out';
+        avatarElement.textContent = '👤';
+        avatarElement.style.backgroundImage = '';
+        avatarElement.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
+        avatarElement.removeAttribute('onclick');
+        avatarElement.style.cursor = 'default';
     }
 }
 
