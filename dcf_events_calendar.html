@@ -1074,7 +1074,7 @@ ${registerButtonHtml}
                 buttonElement.onclick = null;
 
                 // Show success notification
-                showNotification(`Successfully registered for ${eventTitle}!`, 'success');
+                showSuccessAlert(`Successfully registered for ${eventTitle}!`);
 
             } catch (error) {
                 console.error('Registration error:', error);
@@ -1082,36 +1082,82 @@ ${registerButtonHtml}
                 buttonElement.disabled = false;
                 
                 if (error.code === '23505') {
-                    showNotification('You are already registered for this event', 'info');
+                    showInfoAlert('You are already registered for this event');
                     buttonElement.textContent = '✅ Registered';
                     buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
                     buttonElement.disabled = true;
                 } else {
-                    showNotification('Registration failed. Please try again.', 'error');
+                    showErrorAlert('Registration failed. Please try again.');
                 }
             }
         }
 
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
+        function showSuccessAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
                 position: fixed;
                 top: 20px;
                 right: 20px;
+                z-index: 10001;
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
                 padding: 1rem 1.5rem;
                 border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 10000;
-                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
+            alert.innerHTML = `✅ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
 
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+        function showErrorAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10001;
+                background: #f8d7da;
+                border: 1px solid #f5c6cb;
+                color: #721c24;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `❌ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function showInfoAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10001;
+                background: #e1f5fe;
+                border: 1px solid #b3e5fc;
+                color: #01579b;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `ℹ️ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        // Legacy function for compatibility
+        function showNotification(message, type) {
+            if (type === 'success') {
+                showSuccessAlert(message);
+            } else if (type === 'error') {
+                showErrorAlert(message);
+            } else {
+                showInfoAlert(message);
+            }
         }
 
         function toggleRegistrationOptions(eventId, buttonElement) {
