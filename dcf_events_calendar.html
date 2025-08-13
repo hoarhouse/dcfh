@@ -868,9 +868,10 @@
                     const statusConfig = {
                         'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
                         'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
-                        'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' }
+                        'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' },
+                        'registered': { text: '✅ Registered', bg: '#28a745', border: '#28a745', color: 'white' }
                     };
-                    const config = statusConfig[event.userRegistrationStatus];
+                    const config = statusConfig[event.userRegistrationStatus] || statusConfig['registered'];
                     registerButtonHtml = `
                         <button class="btn btn-small register-btn" data-event-id="${event.id}" 
                                 onclick="event.stopPropagation(); showStatusChangeOptions('${event.id}', this, '${event.userRegistrationStatus}')" 
@@ -1111,6 +1112,140 @@ ${registerButtonHtml}
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        }
+
+        function toggleRegistrationOptions(eventId, buttonElement) {
+            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
+                              localStorage.getItem('dcf_user_email') || 
+                              window.dcfUser?.userName;
+            
+            if (!isLoggedIn) {
+                localStorage.setItem('dcf_redirect_after_login', window.location.href);
+                window.location.href = 'dcf_login_page.html';
+                return;
+            }
+
+            const existingOptions = buttonElement.parentElement.querySelector('.registration-options');
+            if (existingOptions) {
+                existingOptions.remove();
+                return;
+            }
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'registration-options';
+            optionsDiv.style.cssText = `display: flex; gap: 0.25rem; margin-top: 0.5rem;`;
+
+            optionsDiv.innerHTML = `
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'going', this)" style="background: #28a745; color: white; border: 2px solid #28a745; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Going</button>
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'interested', this)" style="background: #ffc107; color: #000; border: 2px solid #ffc107; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Interested</button>
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'not_going', this)" style="background: #6c757d; color: white; border: 2px solid #6c757d; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Not Going</button>
+            `;
+
+            buttonElement.parentElement.appendChild(optionsDiv);
+        }
+
+        async function selectRegistrationStatus(eventId, status, buttonElement) {
+            try {
+                const supabase = window.authSupabase || window.masterSupabase || window.supabase.createClient(
+                    'https://atzommnkkwzgbktuzjti.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+                );
+
+                const { data: { user } } = await supabase.auth.getUser();
+                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+
+                const { data: existingReg } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('attendee_email', userEmail)
+                    .single();
+
+                if (existingReg) {
+                    const { error } = await supabase
+                        .from('event_registrations')
+                        .update({ status: status })
+                        .eq('id', existingReg.id);
+                    if (error) throw error;
+                } else {
+                    const formData = {
+                        event_id: eventId,
+                        user_id: user?.id,
+                        attendee_name: userName,
+                        attendee_email: userEmail,
+                        status: status
+                    };
+                    const { error } = await supabase
+                        .from('event_registrations')
+                        .insert([formData]);
+                    if (error) throw error;
+                }
+
+                updateRegistrationStatus(eventId, status);
+                showNotification(`Status updated to ${status.replace('_', ' ')}!`, 'success');
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showNotification('Failed to update status. Please try again.', 'error');
+            }
+        }
+
+        function updateRegistrationStatus(eventId, status) {
+            const eventCard = document.querySelector(`[data-event-id="${eventId}"]`).closest('.event-card');
+            const registerBtn = eventCard.querySelector('.register-btn');
+            const optionsDiv = eventCard.querySelector('.registration-options');
+
+            if (optionsDiv) optionsDiv.remove();
+
+            const statusConfig = {
+                'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
+                'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
+                'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' }
+            };
+
+            const config = statusConfig[status];
+            registerBtn.textContent = config.text;
+            registerBtn.style.background = config.bg;
+            registerBtn.style.borderColor = config.border;
+            registerBtn.style.color = config.color;
+            registerBtn.onclick = (e) => {
+                e.stopPropagation();
+                showStatusChangeOptions(eventId, registerBtn, status);
+            };
+        }
+
+        function showStatusChangeOptions(eventId, buttonElement, currentStatus) {
+            const existingOptions = buttonElement.parentElement.querySelector('.status-change-options');
+            if (existingOptions) {
+                existingOptions.remove();
+                return;
+            }
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'status-change-options';
+            optionsDiv.style.cssText = `display: flex; gap: 0.25rem; margin-top: 0.5rem;`;
+
+            const options = [
+                { status: 'going', text: 'Going', bg: '#28a745', color: 'white' },
+                { status: 'interested', text: 'Interested', bg: '#ffc107', color: '#000' },
+                { status: 'not_going', text: 'Not Going', bg: '#6c757d', color: 'white' }
+            ];
+
+            optionsDiv.innerHTML = options.map(option => `
+                <button class="btn btn-small" 
+                        onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', '${option.status}', this)" 
+                        style="background: ${option.status === currentStatus ? option.bg : 'transparent'}; 
+                               color: ${option.status === currentStatus ? option.color : '#666'}; 
+                               border: 2px solid ${option.bg}; 
+                               padding: 0.3rem 0.6rem; 
+                               font-size: 0.75rem;
+                               opacity: ${option.status === currentStatus ? '1' : '0.7'};">
+                    ${option.text}
+                </button>
+            `).join('');
+
+            buttonElement.parentElement.appendChild(optionsDiv);
         }
     </script>
 </body>
