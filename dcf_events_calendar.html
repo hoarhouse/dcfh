@@ -748,6 +748,18 @@
             window.location.href = `dcf_event_details.html?id=${eventId}`;
         }
 
+        // Add event ownership check function
+        function isEventOwner(event) {
+            if (!event) return false;
+            
+            const currentUserEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+            const currentUserId = window.dcfUser?.id;
+            
+            // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
+            return (event.organizer_id && currentUserId && event.organizer_id === currentUserId) ||
+                   (event.contact_email && currentUserEmail && event.contact_email === currentUserEmail);
+        }
+
         // Wait for master JS to initialize
         document.addEventListener('DOMContentLoaded', function() {
             let attempts = 0;
@@ -849,6 +861,11 @@
                             <div class="event-actions" style="display: flex; gap: 0.5rem;">
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEventDetails('${event.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Details</button>
                                 <button class="btn btn-primary btn-small register-btn" data-event-id="${event.id}" onclick="event.stopPropagation(); quickRegister('${event.id}', '${event.title.replace(/'/g, "\\'")}', this)" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Register</button>
+                                ${isEventOwner(event) ? `
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); window.location.href='dcf_event_manage.html'" style="background: #000; color: white; border-color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                        ⚙️ Manage
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
