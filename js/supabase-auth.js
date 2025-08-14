@@ -1,6 +1,55 @@
 // supabase-auth.js - Master Authentication Utilities
 // Replaces all localStorage-based authentication with proper Supabase Auth
 
+/**
+ * Nuclear cleanup of old cached auth data
+ * Clears all potentially corrupted or old authentication data
+ */
+function clearAllAuthCache() {
+    console.log('🧹 NUCLEAR CLEANUP: Clearing all cached auth data...');
+    
+    // Clear all localStorage keys containing auth data
+    Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || 
+            key.includes('auth') || 
+            key.includes('token') || 
+            key.includes('session') ||
+            key.startsWith('dcf_')) {
+            console.log('🧹 Removing localStorage key:', key);
+            localStorage.removeItem(key);
+        }
+    });
+    
+    // Clear all sessionStorage keys containing auth data
+    Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('supabase') || 
+            key.includes('auth') || 
+            key.includes('token') || 
+            key.includes('session') ||
+            key.startsWith('dcf_')) {
+            console.log('🧹 Removing sessionStorage key:', key);
+            sessionStorage.removeItem(key);
+        }
+    });
+    
+    // Clear specific DCF keys that might exist
+    const specificKeys = [
+        'dcf_auth_token', 'dcf_user_logged_in', 'dcf_user_name', 
+        'dcf_user_email', 'dcf_github_session', 'dcf_auth_provider',
+        'dcf_user_id', 'dcf_session', 'dcf_login_status'
+    ];
+    
+    specificKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+    
+    console.log('🧹 NUCLEAR CLEANUP: Complete - all old auth data cleared');
+}
+
+// Run cleanup immediately when this script loads
+clearAllAuthCache();
+
 // Create ONE Supabase client and use it everywhere
 if (!window.authSupabase) {
     window.authSupabase = window.supabase.createClient(
