@@ -1301,12 +1301,32 @@
                 );
 
                 // Check authentication
-                const authUser = getCurrentUser();
-                if (!authUser) {
+                console.log('🔍 DEBUG: Checking auth in event manage page...');
+                
+                // Try to get current user from improved auth system
+                let authUser = null;
+                if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+                    authUser = window.dcfAuth.getCurrentUser();
+                    console.log('🔍 DEBUG: dcfAuth.getCurrentUser result:', authUser);
+                } else if (typeof getCurrentUser === 'function') {
+                    authUser = getCurrentUser();
+                    console.log('🔍 DEBUG: getCurrentUser result:', authUser);
+                } else {
+                    console.log('🔍 DEBUG: No getCurrentUser function available');
+                }
+                
+                // Also check Supabase session directly
+                const { data: { session } } = await supabase.auth.getSession();
+                console.log('🔍 DEBUG: Supabase session:', session);
+                
+                if (!authUser && !session?.user) {
+                    console.log('🔍 DEBUG: No auth user or session, redirecting to login');
                     localStorage.setItem('dcf_redirect_after_login', window.location.href);
                     window.location.href = '../auth/dcf_login_page.html';
                     return;
                 }
+                
+                console.log('🔍 DEBUG: Auth check passed, continuing...');
 
                 // Get current user from Supabase auth
                 try {
