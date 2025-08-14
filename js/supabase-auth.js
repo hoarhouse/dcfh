@@ -1,6 +1,21 @@
 // supabase-auth.js - Master Authentication Utilities
 // Replaces all localStorage-based authentication with proper Supabase Auth
 
+// EMERGENCY: Reinitialize Supabase client
+const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+
+// EMERGENCY: Create Supabase client immediately
+if (typeof window !== 'undefined' && typeof supabase !== 'undefined') {
+    window.authSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ EMERGENCY: Supabase client restored');
+} else if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
+    window.authSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ EMERGENCY: Supabase client restored via window.supabase');
+} else {
+    console.error('❌ EMERGENCY: Could not create Supabase client - supabase library not found');
+}
+
 /**
  * DISABLED: Auth cleanup completely disabled to preserve user session
  * Previous cleanup was breaking user authentication
