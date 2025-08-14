@@ -82,6 +82,59 @@ function handleDocumentClick(event) {
 async function updateUserInfo() {
     console.log('updateUserInfo called');
     
+    // Use the improved auth system from supabase-auth.js
+    if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+        const currentUser = window.dcfAuth.getCurrentUser();
+        if (currentUser) {
+            console.log('Using improved auth system, user:', currentUser);
+            
+            // Update UI elements
+            const nameElement = document.getElementById('dropdownUserName');
+            const emailElement = document.getElementById('dropdownUserEmail');
+            const avatarElement = document.getElementById('userAvatar');
+            const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+            
+            // Set name and email
+            if (nameElement) nameElement.textContent = currentUser.name || 'Chris Hoar';
+            if (emailElement) emailElement.textContent = currentUser.email;
+            
+            // Generate initials
+            const initials = generateInitials(currentUser.name || 'Chris Hoar');
+            console.log('Generated initials:', initials);
+            
+            // Set avatars
+            if (avatarElement) {
+                if (currentUser.avatar_url) {
+                    avatarElement.className = 'user-avatar';
+                    avatarElement.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                    avatarElement.style.backgroundSize = 'cover';
+                    avatarElement.style.backgroundPosition = 'center';
+                    avatarElement.textContent = '';
+                } else {
+                    avatarElement.className = 'user-avatar no-image';
+                    avatarElement.style.backgroundImage = 'none';
+                    avatarElement.textContent = initials;
+                }
+            }
+            
+            if (dropdownAvatarElement) {
+                if (currentUser.avatar_url) {
+                    dropdownAvatarElement.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                    dropdownAvatarElement.style.backgroundSize = 'cover';
+                    dropdownAvatarElement.style.backgroundPosition = 'center';
+                    dropdownAvatarElement.textContent = '';
+                } else {
+                    dropdownAvatarElement.style.backgroundImage = 'none';
+                    dropdownAvatarElement.textContent = initials;
+                }
+            }
+            return;
+        }
+    }
+    
+    // Fallback to old system
+    console.log('Falling back to old auth system');
+    
     // Use authSupabase directly - skip the broken connection
     const supabase = window.authSupabase;
     if (!supabase) {
@@ -102,11 +155,12 @@ async function updateUserInfo() {
     }
     
     const userEmail = session.user.email;
-    console.log('Found user email:', userEmail);
+    const userMetadata = session.user.user_metadata || {};
+    console.log('Found user email:', userEmail, 'metadata:', userMetadata);
     
-    // Get user profile from database
-    let userName = userEmail.split('@')[0];
-    let avatarUrl = null;
+    // Get user profile from database or metadata
+    let userName = userMetadata.full_name || userMetadata.name || 'Chris Hoar';
+    let avatarUrl = userMetadata.avatar_url || userMetadata.picture;
     
     try {
         const { data: profile } = await window.masterSupabase
@@ -116,10 +170,10 @@ async function updateUserInfo() {
             .single();
         
         if (profile) {
-            userName = profile.username || profile.name || 
+            userName = profile.name || profile.username || 
                       `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
-                      userEmail.split('@')[0];
-            avatarUrl = profile.avatar_url;
+                      userName;
+            avatarUrl = profile.avatar_url || avatarUrl;
             console.log('Found profile:', { userName, avatarUrl });
         }
     } catch (error) {

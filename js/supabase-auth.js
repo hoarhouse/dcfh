@@ -5,7 +5,7 @@
 if (!window.authSupabase) {
     window.authSupabase = window.supabase.createClient(
         'https://atzommnkkwzgbktuzjti.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
     );
 
 }
@@ -76,8 +76,8 @@ async function getUserProfile(userId, userEmail) {
         // Use direct fetch since Supabase client is broken
         const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=*`, {
             headers: {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8',
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8'
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
             }
         });
         
@@ -108,10 +108,15 @@ function getCurrentUser() {
     if (!window.dcfUser.isLoggedIn) return null;
     
     const profile = window.dcfUser.profile;
+    const session = window.dcfUser.session;
+    
+    // Extract user data from session metadata for auth providers like GitHub/Google
+    const userMetadata = session?.user?.user_metadata || {};
+    
     return {
         id: profile.id,
         email: profile.email,
-        name: profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email,
+        name: profile.name || userMetadata.full_name || userMetadata.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Chris Hoar',
         username: profile.username,
         first_name: profile.first_name,
         last_name: profile.last_name,
@@ -119,7 +124,7 @@ function getCurrentUser() {
         organization: profile.organization,
         location: profile.location,
         bio: profile.bio,
-        avatar_url: profile.avatar_url,
+        avatar_url: profile.avatar_url || userMetadata.avatar_url || userMetadata.picture,
         role: profile.role,
         // Add any other fields you need
         authProvider: 'supabase'
@@ -263,7 +268,7 @@ function updateUserInterface() {
     const emailElement = document.getElementById('dropdownUserEmail');
     
     if (nameElement) nameElement.textContent = user.name;
-    if (emailElement) nameElement.textContent = user.email;
+    if (emailElement) emailElement.textContent = user.email;
 }
 
 /**
@@ -302,8 +307,9 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
             profile: profile || {
                 id: session.user.id,
                 email: session.user.email,
-                name: session.user.user_metadata?.full_name || session.user.email,
-                username: session.user.email.split('@')[0]
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Chris Hoar',
+                username: session.user.email.split('@')[0],
+                avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
             },
             session: session
         };
