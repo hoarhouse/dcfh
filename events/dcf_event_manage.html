@@ -1301,21 +1301,20 @@
                 );
 
                 // Check authentication
-                const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                                 localStorage.getItem('dcf_user_email') || 
-                                 window.dcfUser?.userName;
-
-                if (!isLoggedIn) {
+                const authUser = getCurrentUser();
+                if (!authUser) {
+                    localStorage.setItem('dcf_redirect_after_login', window.location.href);
                     window.location.href = '../auth/dcf_login_page.html';
                     return;
                 }
 
-                // Get current user from Supabase auth or localStorage
+                // Get current user from Supabase auth
                 try {
                     const { data: { user } } = await supabase.auth.getUser();
-                    currentUser = user;
+                    currentUser = user || { id: authUser.id, email: authUser.email };
                 } catch (error) {
-                    console.log('No Supabase auth user, using localStorage');
+                    console.log('Using auth user from getCurrentUser');
+                    currentUser = { id: authUser.id, email: authUser.email };
                 }
 
                 await loadEvents();
@@ -1333,12 +1332,9 @@
                 // Filter by organizer if we have a current user
                 if (currentUser?.id) {
                     query = query.eq('organizer_id', currentUser.id);
-                } else {
+                } else if (currentUser?.email) {
                     // Fallback: try to match by email if available
-                    const userEmail = localStorage.getItem('dcf_user_email');
-                    if (userEmail) {
-                        query = query.eq('contact_email', userEmail);
-                    }
+                    query = query.eq('contact_email', currentUser.email);
                 }
 
                 const { data: events, error } = await query.order('created_at', { ascending: false });

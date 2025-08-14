@@ -1281,10 +1281,13 @@
                 const supabase = window.masterSupabase;
 
                 // Get current user
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
                     throw new Error('You must be logged in to create events');
                 }
+                
+                // Also get the session for user id
+                const { data: { session } } = await supabase.auth.getSession();
 
                 // Handle file uploads if any
                 let imageUrls = [];
@@ -1333,9 +1336,9 @@
                     topics: eventData.topics || [],
                     additional_resources: eventData.additionalResources || null,
                     organizer_notes: eventData.organizerNotes || null,
-                    contact_email: eventData.contactEmail || null,
+                    contact_email: eventData.contactEmail || currentUser.email,
                     image_urls: imageUrls,
-                    organizer_id: session.user.id,
+                    organizer_id: session?.user?.id || currentUser.id,
                     status: 'active',
                     featured: false,
                     created_at: new Date().toISOString()
@@ -1368,7 +1371,16 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check if user is logged in
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                // Store current page URL to return after login
+                localStorage.setItem('dcf_redirect_after_login', window.location.href);
+                window.location.href = '../auth/dcf_login_page.html';
+                return;
+            }
+            
             updateProgress();
             initializeCheckboxes();
             updateLocationFields();
@@ -1377,6 +1389,14 @@
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             document.getElementById('eventDate').value = tomorrow.toISOString().split('T')[0];
+            
+            // Pre-fill contact email if available
+            if (currentUser.email) {
+                const contactEmailField = document.getElementById('contactEmail');
+                if (contactEmailField && !contactEmailField.value) {
+                    contactEmailField.value = currentUser.email;
+                }
+            }
         });
     </script>
 </body>
