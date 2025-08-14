@@ -35,7 +35,8 @@ async function initializeAuth() {
                     email: session.user.email,
                     name: session.user.user_metadata?.full_name || 
                           session.user.user_metadata?.name || 
-                          'Chris Hoar',
+                          session.user.email?.split('@')[0] || 
+                          'User',
                     username: session.user.email?.split('@')[0] || 'user',
                     avatar_url: session.user.user_metadata?.avatar_url || 
                                session.user.user_metadata?.picture
@@ -116,7 +117,8 @@ if (window.authSupabase) {
                     email: session.user.email,
                     name: session.user.user_metadata?.full_name || 
                           session.user.user_metadata?.name || 
-                          'Chris Hoar',
+                          session.user.email?.split('@')[0] || 
+                          'User',
                     username: session.user.email?.split('@')[0] || 'user',
                     avatar_url: session.user.user_metadata?.avatar_url || 
                                session.user.user_metadata?.picture
