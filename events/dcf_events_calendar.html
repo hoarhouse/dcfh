@@ -775,12 +775,12 @@
         function isEventOwner(event) {
             if (!event) return false;
             
-            const currentUserEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-            const currentUserId = window.dcfUser?.id;
+            const currentUser = getCurrentUser();
+            if (!currentUser) return false;
             
             // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
-            return (event.organizer_id && currentUserId && event.organizer_id === currentUserId) ||
-                   (event.contact_email && currentUserEmail && event.contact_email === currentUserEmail);
+            return (event.organizer_id && currentUser.id && event.organizer_id === currentUser.id) ||
+                   (event.contact_email && currentUser.email && event.contact_email === currentUser.email);
         }
 
         // Wait for master JS to initialize
@@ -836,15 +836,12 @@
         });
 
         async function checkUserRegistrations(events) {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-            
-            if (!isLoggedIn) return events;
+            const currentUser = getCurrentUser();
+            if (!currentUser) return events;
 
             try {
                 const supabase = window.authSupabase || window.masterSupabase;
-                const userEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
+                const userEmail = currentUser.email;
                 
                 if (!supabase || !userEmail) return events;
 
@@ -1053,11 +1050,8 @@ ${registerButtonHtml}
         
 
         async function quickRegister(eventId, eventTitle, buttonElement) {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-            
-            if (!isLoggedIn) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 localStorage.setItem('dcf_redirect_after_login', window.location.href);
                 window.location.href = '../auth/dcf_login_page.html';
                 return;
@@ -1073,12 +1067,12 @@ ${registerButtonHtml}
                 );
 
                 const { data: { user } } = await supabase.auth.getUser();
-                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+                const userEmail = currentUser.email;
+                const userName = currentUser.name;
 
                 const formData = {
                     event_id: eventId,
-                    user_id: user.id,
+                    user_id: user?.id || currentUser.id,
                     attendee_name: userName,
                     attendee_email: userEmail,
                     status: 'registered'
@@ -1184,11 +1178,8 @@ ${registerButtonHtml}
         }
 
         function toggleRegistrationOptions(eventId, buttonElement) {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-            
-            if (!isLoggedIn) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 localStorage.setItem('dcf_redirect_after_login', window.location.href);
                 window.location.href = '../auth/dcf_login_page.html';
                 return;
@@ -1221,8 +1212,9 @@ ${registerButtonHtml}
                 );
 
                 const { data: { user } } = await supabase.auth.getUser();
-                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+                const currentUser = getCurrentUser();
+                const userEmail = currentUser.email;
+                const userName = currentUser.name;
 
                 const { data: existingReg } = await supabase
                     .from('event_registrations')
@@ -1240,7 +1232,7 @@ ${registerButtonHtml}
                 } else {
                     const formData = {
                         event_id: eventId,
-                        user_id: user?.id,
+                        user_id: user?.id || currentUser.id,
                         attendee_name: userName,
                         attendee_email: userEmail,
                         status: status

@@ -1546,12 +1546,12 @@
         function isEventOwner(event) {
             if (!event) return false;
             
-            const currentUserEmail = localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-            const currentUserId = window.dcfUser?.id;
+            const currentUser = getCurrentUser();
+            if (!currentUser) return false;
             
             // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
-            return (event.organizer_id && currentUserId && event.organizer_id === currentUserId) ||
-                   (event.contact_email && currentUserEmail && event.contact_email === currentUserEmail);
+            return (event.organizer_id && currentUser.id && event.organizer_id === currentUser.id) ||
+                   (event.contact_email && currentUser.email && event.contact_email === currentUser.email);
         }
 
         async function initializePage() {
@@ -1574,11 +1574,9 @@
                 // Load event data
                 await loadEvent(eventId);
                 
-                // Check if user is logged in (from localStorage or auth state)
-                const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-                if (isLoggedIn) {
+                // Check if user is logged in (from auth state)
+                const currentUser = getCurrentUser();
+                if (currentUser) {
                     await checkRegistrationStatus(eventId);
                 }
 
@@ -1611,8 +1609,10 @@
         }
 
         async function checkRegistrationStatus(eventId) {
-            const userEmail = localStorage.getItem('dcf_user_email');
-            if (!userEmail) return;
+            const currentUser = getCurrentUser();
+            if (!currentUser) return;
+            
+            const userEmail = currentUser.email;
 
             try {
                 const { data: registration, error } = await supabase
@@ -1702,16 +1702,14 @@
         }
 
         function renderRegistrationButton() {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
+            const currentUser = getCurrentUser();
             
             // Check if user is the event owner
-            if (isLoggedIn && isEventOwner(currentEvent)) {
+            if (currentUser && isEventOwner(currentEvent)) {
                 return '<button class="btn btn-large" style="background: #28a745; color: white; border: 2px solid #28a745;" disabled>✅ Event Organizer</button>';
             }
             
-            if (!isLoggedIn) {
+            if (!currentUser) {
                 return '<button class="btn btn-primary btn-large" onclick="redirectToLogin()">🔐 Login to Register</button>';
             } else if (userRegistration) {
                 const statusConfig = {
@@ -1778,11 +1776,9 @@
 
         function renderRegistrationCard(event) {
             const registrationCard = document.getElementById('registrationCard');
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                                  localStorage.getItem('dcf_user_email') || 
-                                  window.dcfUser?.userName;
+            const currentUser = getCurrentUser();
             
-            if (!isLoggedIn) {
+            if (!currentUser) {
                 registrationCard.className = 'registration-card';
                 registrationCard.innerHTML = `
                     <h3>Join the Event</h3>
@@ -1928,10 +1924,8 @@
 
         // Registration functions
         function showRegistrationForm() {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-            if (!isLoggedIn) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 redirectToLogin();
                 return;
             }
@@ -1951,18 +1945,16 @@
         }
 
         async function registerWithStatus(status) {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
-            if (!isLoggedIn) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 showRegistrationError('Please log in to register for events');
                 return;
             }
 
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-                const userEmail = user?.email || localStorage.getItem('dcf_user_email') || window.dcfUser?.email;
-                const userName = localStorage.getItem('dcf_user_name') || window.dcfUser?.userName || user?.user_metadata?.full_name;
+                const userEmail = currentUser.email;
+                const userName = currentUser.name;
 
                 if (!userEmail) {
                     throw new Error('User email not found');
@@ -1991,7 +1983,7 @@
                     // Create new registration
                     const formData = {
                         event_id: currentEvent.id,
-                        user_id: user?.id,
+                        user_id: user?.id || currentUser.id,
                         attendee_name: userName,
                         attendee_email: userEmail,
                         status: status
@@ -2027,11 +2019,9 @@
         }
 
         function showHeroRegistrationOptions() {
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true' || 
-                              localStorage.getItem('dcf_user_email') || 
-                              window.dcfUser?.userName;
+            const currentUser = getCurrentUser();
             
-            if (!isLoggedIn) {
+            if (!currentUser) {
                 redirectToLogin();
                 return;
             }
@@ -2223,8 +2213,9 @@
                 socialData.follows = followsCount || 0;
 
                 // Check user's interaction status
-                const userEmail = localStorage.getItem('dcf_user_email');
-                if (userEmail) {
+                const currentUser = getCurrentUser();
+                if (currentUser) {
+                    const userEmail = currentUser.email;
                     const { data: userLike } = await supabase
                         .from('event_likes')
                         .select('*')
@@ -2278,19 +2269,21 @@
 
             // Update user avatar in comment form
             const userAvatar = document.getElementById('commentUserAvatar');
-            const userName = localStorage.getItem('dcf_user_name') || 'User';
+            const currentUser = getCurrentUser();
+            const userName = currentUser?.name || 'User';
             const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
             userAvatar.textContent = initials;
         }
 
         async function toggleLike() {
-            const userEmail = localStorage.getItem('dcf_user_email');
-            if (!userEmail) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 redirectToLogin();
                 return;
             }
 
             try {
+                const userEmail = currentUser.email;
                 if (socialData.userLiked) {
                     // Remove like
                     await supabase
@@ -2308,7 +2301,7 @@
                         .insert([{
                             event_id: currentEvent.id,
                             user_email: userEmail,
-                            user_name: localStorage.getItem('dcf_user_name') || 'Anonymous'
+                            user_name: currentUser.name || 'Anonymous'
                         }]);
 
                     socialData.likes++;
@@ -2322,13 +2315,14 @@
         }
 
         async function toggleFollow() {
-            const userEmail = localStorage.getItem('dcf_user_email');
-            if (!userEmail) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 redirectToLogin();
                 return;
             }
 
             try {
+                const userEmail = currentUser.email;
                 if (socialData.userFollowing) {
                     // Unfollow
                     await supabase
@@ -2346,7 +2340,7 @@
                         .insert([{
                             event_id: currentEvent.id,
                             user_email: userEmail,
-                            user_name: localStorage.getItem('dcf_user_name') || 'Anonymous'
+                            user_name: currentUser.name || 'Anonymous'
                         }]);
 
                     socialData.follows++;
@@ -2417,8 +2411,8 @@
         }
 
         async function submitComment() {
-            const userEmail = localStorage.getItem('dcf_user_email');
-            if (!userEmail) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
                 redirectToLogin();
                 return;
             }
@@ -2427,12 +2421,13 @@
             if (!commentText) return;
 
             try {
+                const userEmail = currentUser.email;
                 const { data, error } = await supabase
                     .from('event_comments')
                     .insert([{
                         event_id: currentEvent.id,
                         user_email: userEmail,
-                        user_name: localStorage.getItem('dcf_user_name') || 'Anonymous',
+                        user_name: currentUser.name || 'Anonymous',
                         comment_text: commentText
                     }])
                     .select()
@@ -2506,11 +2501,12 @@
 
         async function trackShare(platform) {
             try {
+                const currentUser = getCurrentUser();
                 await supabase
                     .from('event_shares')
                     .insert([{
                         event_id: currentEvent.id,
-                        user_email: localStorage.getItem('dcf_user_email') || 'anonymous',
+                        user_email: currentUser?.email || 'anonymous',
                         platform: platform
                     }]);
 
