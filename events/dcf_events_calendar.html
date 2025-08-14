@@ -745,7 +745,8 @@
             <div class="main-content">
                 <div class="content-header">
                     <div class="view-toggle">
-                        <button class="view-btn active" onclick="switchView('list')">📋 List</button>
+                        <button class="view-btn active" id="allEventsTab" onclick="switchEventFilter('all')">📅 All Events</button>
+                        <button class="view-btn" id="myEventsTab" onclick="switchEventFilter('my')">👤 My Events</button>
                     </div>
                     <a href="dcf_create_event.html" class="btn btn-primary">📅 Create Event</a>
                 </div>
@@ -763,8 +764,107 @@
     </main>
 
     <script>
+        // Global variables
+        let currentEventFilter = 'all'; // 'all' or 'my'
+        let allEventsCache = []; // Cache all events to avoid re-fetching
+        
         function switchView(view) {
             // Only list view for now
+        }
+        
+        function switchEventFilter(filterType) {
+            currentEventFilter = filterType;
+            
+            // Update active tab
+            document.getElementById('allEventsTab').classList.remove('active');
+            document.getElementById('myEventsTab').classList.remove('active');
+            
+            if (filterType === 'all') {
+                document.getElementById('allEventsTab').classList.add('active');
+            } else {
+                document.getElementById('myEventsTab').classList.add('active');
+            }
+            
+            // Update tab counts
+            updateTabCounts();
+            
+            // Update page title and description
+            updatePageHeader(filterType);
+            
+            // Filter and display events
+            filterAndDisplayEvents(filterType);
+            
+            // Update URL without page reload
+            const url = new URL(window.location);
+            if (filterType === 'my') {
+                url.searchParams.set('view', 'my');
+            } else {
+                url.searchParams.delete('view');
+            }
+            window.history.replaceState({}, '', url);
+        }
+        
+        function updatePageHeader(filterType) {
+            const pageTitle = document.querySelector('.page-title');
+            const pageSubtitle = document.querySelector('.page-subtitle');
+            
+            if (filterType === 'my') {
+                pageTitle.textContent = 'My Events';
+                pageSubtitle.textContent = 'Manage and track the events you\'ve created, from workshops to community gatherings';
+            } else {
+                pageTitle.textContent = 'Events Calendar';
+                pageSubtitle.textContent = 'Join workshops, conferences, and community gatherings that advance ethical AI and human-centered technology';
+            }
+        }
+        
+        function updateTabCounts() {
+            if (allEventsCache.length === 0) return;
+            
+            const currentUser = getCurrentUser();
+            const allEventsCount = allEventsCache.length;
+            let myEventsCount = 0;
+            
+            if (currentUser) {
+                myEventsCount = allEventsCache.filter(event => isEventOwner(event)).length;
+            }
+            
+            // Update tab text with counts
+            const allEventsTab = document.getElementById('allEventsTab');
+            const myEventsTab = document.getElementById('myEventsTab');
+            
+            allEventsTab.innerHTML = `📅 All Events (${allEventsCount})`;
+            myEventsTab.innerHTML = `👤 My Events (${myEventsCount})`;
+        }
+        
+        function filterAndDisplayEvents(filterType) {
+            if (allEventsCache.length === 0) {
+                // If no events cached, reload from server
+                loadEvents();
+                return;
+            }
+            
+            let filteredEvents = allEventsCache;
+            
+            if (filterType === 'my') {
+                const currentUser = getCurrentUser();
+                if (currentUser) {
+                    filteredEvents = allEventsCache.filter(event => isEventOwner(event));
+                } else {
+                    // User not logged in, show empty state
+                    filteredEvents = [];
+                }
+            }
+            
+            // Display the filtered events
+            displayEvents(filteredEvents);
+            displayUpcomingEvents(filteredEvents);
+            updateStatsDisplay(filteredEvents);
+            updateTabCounts();
+            
+            // Show custom empty state for My Events if needed
+            if (filterType === 'my' && filteredEvents.length === 0) {
+                showMyEventsEmptyState();
+            }
         }
 
         function openEventDetails(eventId) {
@@ -796,6 +896,18 @@
 
         // Wait for master JS to initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Check URL parameters for view type
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            
+            if (viewParam === 'my') {
+                currentEventFilter = 'my';
+                // Update active tab
+                document.getElementById('allEventsTab').classList.remove('active');
+                document.getElementById('myEventsTab').classList.add('active');
+                // Update page header
+                updatePageHeader('my');
+            }
             let attempts = 0;
             const maxAttempts = 20;
             
@@ -824,10 +936,12 @@
                             console.log('Loaded events:', events.length);
                             
                             checkUserRegistrations(events).then(eventsWithRegistrations => {
-                                displayEvents(eventsWithRegistrations);
+                                // Cache all events
+                                allEventsCache = eventsWithRegistrations;
+                                
+                                // Apply current filter and display
+                                filterAndDisplayEvents(currentEventFilter);
                             });
-                            displayStats(events);
-                            displayUpcomingEvents(events);
                         })
                         .catch(error => {
                             console.error('Error loading events:', error);
@@ -967,7 +1081,7 @@ ${registerButtonHtml}
             }).join('');
         }
 
-        function displayStats(events) {
+        function updateStatsDisplay(events) {
             const container = document.getElementById('statsContainer');
             const totalEvents = events.length;
             const upcomingEvents = events.filter(e => new Date(e.event_date) >= new Date()).length;
@@ -1059,6 +1173,30 @@ ${registerButtonHtml}
                 '<p style="color: #666; font-size: 0.9rem; text-align: center;">Unable to load events</p>';
         }
         
+        function showMyEventsEmptyState() {
+            const container = document.getElementById('eventsContainer');
+            const currentUser = getCurrentUser();
+            
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Please Log In</h3>
+                        <p>You need to be logged in to view your events.</p>
+                        <a href="../auth/dcf_login_page.html" class="btn btn-primary">Login</a>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Events Created Yet</h3>
+                        <p>You haven't created any events yet. Ready to organize your first workshop, conference, or community gathering?</p>
+                        <a href="dcf_create_event.html" class="btn btn-primary">📅 Create Your First Event</a>
+                        <br><br>
+                        <button onclick="switchEventFilter('all')" class="btn btn-secondary">📅 Browse All Events</button>
+                    </div>
+                `;
+            }
+        }
 
         async function quickRegister(eventId, eventTitle, buttonElement) {
             const currentUser = getCurrentUser();
