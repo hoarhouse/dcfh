@@ -122,8 +122,9 @@ async function updateUserInfo() {
             const avatarElement = document.getElementById('userAvatar');
             const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
             
-            // Set name and email using database data
-            if (nameElement) nameElement.textContent = profileName || currentUser.username || 'User';
+            // Set username (with @ prefix) and email using database data
+            const displayUsername = profileUsername ? `@${profileUsername}` : `@${currentUser.username}` || '@user';
+            if (nameElement) nameElement.textContent = displayUsername;
             if (emailElement) emailElement.textContent = currentUser.email;
             
             // Generate initials using database data
@@ -188,6 +189,7 @@ async function updateUserInfo() {
     
     // Get user profile from database or metadata
     let userName = userMetadata.full_name || userMetadata.name || userEmail?.split('@')[0] || 'User';
+    let userUsername = userEmail?.split('@')[0] || 'user';
     let avatarUrl = null; // No external provider avatars
     
     try {
@@ -201,8 +203,9 @@ async function updateUserInfo() {
             userName = profile.name || profile.username || 
                       `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
                       userName;
+            userUsername = profile.username || userUsername;
             avatarUrl = profile.avatar_url || avatarUrl;
-            console.log('Found profile:', { userName, avatarUrl });
+            console.log('Found profile:', { userName, userUsername, avatarUrl });
         }
     } catch (error) {
         console.log('Profile fetch error:', error);
@@ -214,8 +217,9 @@ async function updateUserInfo() {
     const avatarElement = document.getElementById('userAvatar');
     const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
     
-    // Set name and email
-    if (nameElement) nameElement.textContent = userName;
+    // Set username (with @ prefix) and email
+    const displayUsername = userUsername ? `@${userUsername}` : '@user';
+    if (nameElement) nameElement.textContent = displayUsername;
     if (emailElement) emailElement.textContent = userEmail;
     
     // Generate initials
