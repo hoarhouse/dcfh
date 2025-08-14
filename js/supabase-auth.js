@@ -87,19 +87,58 @@ function getUserId() {
 
 // Update UI
 function updateUserInterface() {
+    console.log('🔄 updateUserInterface called');
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        console.log('❌ No user found for UI update');
+        return;
+    }
     
-    // Update avatar
+    console.log('👤 Updating UI for user:', user.name, user.email);
+    
+    // Update avatar - preserve CSS styling
     const avatars = document.querySelectorAll('#userAvatar, .dropdown-avatar');
     avatars.forEach(avatar => {
+        console.log('🎨 Updating avatar element:', avatar.id || avatar.className);
+        
         if (user.avatar_url) {
+            console.log('🖼️ Setting profile image:', user.avatar_url);
             avatar.style.backgroundImage = `url(${user.avatar_url})`;
             avatar.style.backgroundSize = 'cover';
+            avatar.style.backgroundPosition = 'center';
             avatar.textContent = '';
         } else {
+            console.log('🔤 Setting initials:', getInitials(user.name));
+            // Clear any background image but keep original gradient
+            avatar.style.backgroundImage = '';
             avatar.textContent = getInitials(user.name);
         }
+        
+        // Ensure visibility is maintained for main avatar
+        if (avatar.id === 'userAvatar') {
+            // Force maintain the original styling for main avatar
+            avatar.style.display = 'flex';
+            avatar.style.alignItems = 'center';
+            avatar.style.justifyContent = 'center';
+            avatar.style.width = '48px';
+            avatar.style.height = '48px';
+            avatar.style.borderRadius = '50%';
+            avatar.style.color = 'white';
+            avatar.style.fontWeight = '600';
+            avatar.style.fontSize = '0.8rem';
+            avatar.style.cursor = 'pointer';
+            avatar.style.border = '2px solid rgba(255, 255, 255, 0.1)';
+            avatar.style.boxSizing = 'border-box';
+            avatar.style.overflow = 'hidden';
+            avatar.style.flexShrink = '0';
+            
+            // Set background gradient if no profile image
+            if (!user.avatar_url) {
+                avatar.style.background = 'linear-gradient(135deg, #000, #333)';
+            }
+        }
+        
+        console.log('✅ Avatar updated, visible:', avatar.offsetWidth > 0, avatar.offsetHeight > 0);
     });
     
     // Update dropdown
@@ -108,6 +147,8 @@ function updateUserInterface() {
     
     if (nameEl) nameEl.textContent = user.name;
     if (emailEl) emailEl.textContent = user.email;
+    
+    console.log('✅ UI update completed');
 }
 
 function getInitials(name) {

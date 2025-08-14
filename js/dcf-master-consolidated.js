@@ -102,8 +102,10 @@ async function updateUserInfo() {
             const initials = generateInitials(currentUser.name || 'Chris Hoar');
             console.log('Generated initials:', initials);
             
-            // Set avatars
+            // Set avatars - preserve visibility
             if (avatarElement) {
+                console.log('🎨 Master JS updating avatar for:', currentUser.name);
+                
                 if (currentUser.avatar_url) {
                     avatarElement.className = 'user-avatar';
                     avatarElement.style.backgroundImage = `url(${currentUser.avatar_url})`;
@@ -111,10 +113,30 @@ async function updateUserInfo() {
                     avatarElement.style.backgroundPosition = 'center';
                     avatarElement.textContent = '';
                 } else {
-                    avatarElement.className = 'user-avatar no-image';
-                    avatarElement.style.backgroundImage = 'none';
+                    avatarElement.className = 'user-avatar';
+                    // Clear background image but set gradient
+                    avatarElement.style.backgroundImage = '';
+                    avatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
                     avatarElement.textContent = initials;
                 }
+                
+                // Always ensure visibility properties
+                avatarElement.style.display = 'flex';
+                avatarElement.style.alignItems = 'center';
+                avatarElement.style.justifyContent = 'center';
+                avatarElement.style.width = '48px';
+                avatarElement.style.height = '48px';
+                avatarElement.style.borderRadius = '50%';
+                avatarElement.style.color = 'white';
+                avatarElement.style.fontWeight = '600';
+                avatarElement.style.fontSize = '0.8rem';
+                avatarElement.style.cursor = 'pointer';
+                avatarElement.style.border = '2px solid rgba(255, 255, 255, 0.1)';
+                avatarElement.style.boxSizing = 'border-box';
+                avatarElement.style.overflow = 'hidden';
+                avatarElement.style.flexShrink = '0';
+                
+                console.log('✅ Master JS avatar updated, visible:', avatarElement.offsetWidth > 0);
             }
             
             if (dropdownAvatarElement) {
@@ -124,7 +146,8 @@ async function updateUserInfo() {
                     dropdownAvatarElement.style.backgroundPosition = 'center';
                     dropdownAvatarElement.textContent = '';
                 } else {
-                    dropdownAvatarElement.style.backgroundImage = 'none';
+                    dropdownAvatarElement.style.backgroundImage = '';
+                    dropdownAvatarElement.style.background = 'linear-gradient(135deg, #000, #333)';
                     dropdownAvatarElement.textContent = initials;
                 }
             }
