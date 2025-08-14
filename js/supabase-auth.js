@@ -4,7 +4,7 @@
 // Create ONE Supabase client and use it everywhere
 if (!window.authSupabase) {
     window.authSupabase = window.supabase.createClient(
-        'https://xjrcgrcqmhktjyynrnit.supabase.co',
+        'https://atzommnkkwzgbktuzjti.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8'
     );
 
@@ -74,7 +74,7 @@ async function initializeAuth() {
 async function getUserProfile(userId, userEmail) {
     try {
         // Use direct fetch since Supabase client is broken
-        const response = await fetch(`https://xjrcgrcqmhktjyynrnit.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=*`, {
+        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=*`, {
             headers: {
                 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8',
                 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcmNncmNxbWhrdGp5eW5ybml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4OTAwOTYsImV4cCI6MjA0OTQ2NjA5Nn0.VDOoN8LXyNR9NTFKvqKFHZ5EHDJRq4smEJLAHADxEP8'
