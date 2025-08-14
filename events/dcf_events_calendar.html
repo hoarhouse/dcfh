@@ -1072,31 +1072,38 @@
                     created_by: event.created_by,
                     registrationStatus: event.userRegistrationStatus
                 });
-                let registerButtonHtml;
-                if (event.userRegistrationStatus) {
-                    const statusConfig = {
-                        'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
-                        'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
-                        'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' },
-                        'registered': { text: '✅ Registered', bg: '#28a745', border: '#28a745', color: 'white' }
-                    };
-                    const config = statusConfig[event.userRegistrationStatus] || statusConfig['registered'];
-                    registerButtonHtml = `
-                        <button class="btn btn-small register-btn" data-event-id="${event.id}" 
-                                onclick="event.stopPropagation(); showStatusChangeOptions('${event.id}', this, '${event.userRegistrationStatus}')" 
-                                style="background: ${config.bg}; color: ${config.color}; border: 2px solid ${config.border}; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                            ${config.text}
-                        </button>
-                    `;
-                } else {
-                    registerButtonHtml = `
-                        <button class="btn btn-small register-btn" data-event-id="${event.id}" 
-                                onclick="event.stopPropagation(); toggleRegistrationOptions('${event.id}', this)" 
-                                style="background: #dc3545; color: white; border: 2px solid #dc3545; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                            Register
-                        </button>
-                    `;
+                // Only show register button if user is NOT the event owner
+                let registerButtonHtml = '';
+                const isOwner = isEventOwner(event);
+                
+                if (!isOwner) {
+                    if (event.userRegistrationStatus) {
+                        const statusConfig = {
+                            'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
+                            'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
+                            'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' },
+                            'registered': { text: '✅ Registered', bg: '#28a745', border: '#28a745', color: 'white' }
+                        };
+                        const config = statusConfig[event.userRegistrationStatus] || statusConfig['registered'];
+                        registerButtonHtml = `
+                            <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                    onclick="event.stopPropagation(); showStatusChangeOptions('${event.id}', this, '${event.userRegistrationStatus}')" 
+                                    style="background: ${config.bg}; color: ${config.color}; border: 2px solid ${config.border}; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                ${config.text}
+                            </button>
+                        `;
+                    } else {
+                        registerButtonHtml = `
+                            <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                    onclick="event.stopPropagation(); toggleRegistrationOptions('${event.id}', this)" 
+                                    style="background: #dc3545; color: white; border: 2px solid #dc3545; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                Register
+                            </button>
+                        `;
+                    }
                 }
+                
+                console.log('🔍 DEBUG: Button logic for', event.title, '- isOwner:', isOwner, '- showing register:', !isOwner, '- showing manage:', isOwner);
                 const eventDate = new Date(event.event_date);
                 const day = eventDate.getDate();
                 const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
@@ -1133,7 +1140,7 @@
                             <div class="event-actions" style="display: flex; gap: 0.5rem;">
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEventDetails('${event.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Details</button>
 ${registerButtonHtml}
-                                ${isEventOwner(event) ? `
+                                ${isOwner ? `
                                     <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); handleManageEvent('${event.id}', event)" style="background: #000; color: white; border-color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                                         ⚙️ Manage
                                     </button>
