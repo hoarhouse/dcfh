@@ -1,4 +1,4 @@
-// Simple Supabase Auth - WORKING VERSION
+// Simple Working Authentication - Master-consolidated.js controls avatars
 const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
 
@@ -52,7 +52,7 @@ async function initializeAuth() {
     }
 }
 
-// Simple getCurrentUser
+// Get current user
 function getCurrentUser() {
     if (!window.dcfUser?.isLoggedIn) return null;
     
@@ -66,7 +66,7 @@ function getCurrentUser() {
     };
 }
 
-// Simple user check functions
+// User check functions
 function isUserLoggedIn() {
     return window.dcfUser?.isLoggedIn || false;
 }
@@ -83,28 +83,17 @@ function getUserId() {
     return getCurrentUser()?.id || null;
 }
 
-// Simple UI update - DON'T TOUCH AVATARS
+// DO NOT UPDATE AVATARS - master-consolidated.js handles it
 function updateUserInterface() {
+    // Only update dropdown text, not avatars
     const user = getCurrentUser();
     if (!user) return;
     
-    // DON'T update avatars - let master-consolidated.js handle it
-    
-    // Update dropdown only
     const nameEl = document.getElementById('dropdownUserName');
     const emailEl = document.getElementById('dropdownUserEmail');
     
     if (nameEl) nameEl.textContent = user.name;
     if (emailEl) emailEl.textContent = user.email;
-}
-
-function getInitials(name) {
-    if (!name) return 'CH';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
 }
 
 // Sign out
