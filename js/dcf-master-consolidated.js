@@ -88,25 +88,53 @@ async function updateUserInfo() {
         if (currentUser) {
             console.log('Using improved auth system, user:', currentUser);
             
+            // Fetch real profile data from database
+            let profileName = currentUser.name;
+            let profileUsername = currentUser.username;
+            let profileAvatarUrl = currentUser.avatar_url;
+            
+            if (window.masterSupabase && currentUser.email) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('name, first_name, last_name, username, avatar_url')
+                        .eq('email', currentUser.email)
+                        .single();
+                    
+                    if (profile) {
+                        profileName = profile.name || profile.username || 
+                                    `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
+                                    profileName;
+                        profileUsername = profile.username || profileUsername;
+                        profileAvatarUrl = profile.avatar_url || profileAvatarUrl;
+                        console.log('Found database profile:', { profileName, profileUsername, profileAvatarUrl });
+                    } else {
+                        console.log('No profile found in database for:', currentUser.email);
+                    }
+                } catch (error) {
+                    console.log('Database profile fetch error:', error);
+                }
+            }
+            
             // Update UI elements
             const nameElement = document.getElementById('dropdownUserName');
             const emailElement = document.getElementById('dropdownUserEmail');
             const avatarElement = document.getElementById('userAvatar');
             const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
             
-            // Set name and email
-            if (nameElement) nameElement.textContent = currentUser.name || currentUser.username || 'User';
+            // Set name and email using database data
+            if (nameElement) nameElement.textContent = profileName || currentUser.username || 'User';
             if (emailElement) emailElement.textContent = currentUser.email;
             
-            // Generate initials
-            const initials = generateInitials(currentUser.name || currentUser.username || 'User');
+            // Generate initials using database data
+            const initials = generateInitials(profileName || currentUser.username || 'User');
             console.log('Generated initials:', initials);
             
-            // Set avatars with full control
+            // Set avatars with database profile data
             if (avatarElement) {
-                if (currentUser.avatar_url) {
+                if (profileAvatarUrl) {
                     avatarElement.className = 'user-avatar';
-                    avatarElement.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                    avatarElement.style.backgroundImage = `url(${profileAvatarUrl})`;
                     avatarElement.style.backgroundSize = 'cover';
                     avatarElement.style.backgroundPosition = 'center';
                     avatarElement.textContent = '';
@@ -118,8 +146,8 @@ async function updateUserInfo() {
             }
             
             if (dropdownAvatarElement) {
-                if (currentUser.avatar_url) {
-                    dropdownAvatarElement.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                if (profileAvatarUrl) {
+                    dropdownAvatarElement.style.backgroundImage = `url(${profileAvatarUrl})`;
                     dropdownAvatarElement.style.backgroundSize = 'cover';
                     dropdownAvatarElement.style.backgroundPosition = 'center';
                     dropdownAvatarElement.textContent = '';
