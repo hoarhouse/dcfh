@@ -1183,8 +1183,9 @@
             container.appendChild(projectElement);
         });
         
-        // Check follow status for all displayed projects
+        // Check follow status and ownership for all displayed projects
         checkFollowStatus();
+        checkJoinStatus();
         
         // Reinitialize image optimization for new content
         if (window.reinitializeImageOptimization) {
@@ -1520,7 +1521,8 @@
     }
 
     async function unfollowProject(projectId, projectTitle) {
-        const userEmail = localStorage.getItem('dcf_user_email');
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        const userEmail = currentUser ? currentUser.email : null;
         
         try {
             const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows?user_email=eq.${userEmail}&project_id=eq.${projectId}`, {
@@ -1682,8 +1684,9 @@
             const totalProjects = allProjects.length;
             
             // Get current user's projects  
-const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
-const currentUserName = localStorage.getItem('dcf_user_name') || '';
+const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+const currentUserEmail = currentUser ? currentUser.email : null;
+const currentUserName = currentUser ? currentUser.name : '';
 const myProjects = allProjects.filter(project => 
     project.author_email === currentUserEmail || project.author_name === currentUserName
 );
@@ -1696,7 +1699,8 @@ const myProjects = allProjects.filter(project =>
             statNumbers[0].textContent = totalProjects; // Total Projects
             statNumbers[1].textContent = myProjects.length; // My Projects  
             // Get following count for current user
-            const userEmail = localStorage.getItem('dcf_user_email');
+            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const userEmail = currentUser ? currentUser.email : null;
             if (userEmail) {
                 const followResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows?user_email=eq.${userEmail}&select=id`, {
                     headers: {
@@ -1762,7 +1766,8 @@ if (tabName === 'my') {
     // Load projects user is following
     async function loadFollowingProjects() {
         const container = document.querySelector('#following .projects-grid');
-        const userEmail = localStorage.getItem('dcf_user_email');
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        const userEmail = currentUser ? currentUser.email : null;
         
         if (!userEmail) {
             container.innerHTML = `
@@ -1839,7 +1844,8 @@ if (tabName === 'my') {
     // Load real user projects for My Projects tab
     async function loadMyProjectsReal() {
         const container = document.getElementById('myProjectsContainer');
-        const currentUserEmail = localStorage.getItem('dcf_user_email') || 'member@dcfhungary.org';
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        const currentUserEmail = currentUser ? currentUser.email : null;
         
         if (!currentUserEmail) {
             container.innerHTML = '<div class="empty-state"><h3>Please log in to view your projects</h3></div>';
@@ -1975,7 +1981,8 @@ if (tabName === 'my') {
 
     // Check if user is following displayed projects and update button states
     async function checkFollowStatus() {
-        const userEmail = localStorage.getItem('dcf_user_email');
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        const userEmail = currentUser ? currentUser.email : null;
         if (!userEmail) return;
         
         try {
@@ -2004,9 +2011,31 @@ if (tabName === 'my') {
         checkJoinStatus();
     }
 
+    // Check if current user owns the project (similar to Events isEventOwner function)
+    function isProjectOwner(project) {
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        
+        if (!currentUser) return false;
+        
+        // Check by email first (most reliable)
+        if (project.author_email && currentUser.email && 
+            project.author_email.toLowerCase() === currentUser.email.toLowerCase()) {
+            return true;
+        }
+        
+        // Check by username as fallback
+        if (project.author_username && currentUser.username && 
+            project.author_username.toLowerCase() === currentUser.username.toLowerCase()) {
+            return true;
+        }
+        
+        return false;
+    }
+
     // Check if user has joined or requested to join displayed projects
     async function checkJoinStatus() {
-        const userEmail = localStorage.getItem('dcf_user_email');
+        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+        const userEmail = currentUser ? currentUser.email : null;
         if (!userEmail) return;
         
         try {
@@ -2035,23 +2064,24 @@ if (tabName === 'my') {
             const requestData = await requestResponse.json();
             const pendingRequests = requestData.map(r => r.project_id);
             
-            // Get all projects from the current display to check ownership
-            
-            // Get all projects from the current display to check ownership
-            const allProjectsResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?author_email=eq.${userEmail}&select=id`, {
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                }
-            });
-            const ownedProjectsData = await allProjectsResponse.json();
-            const ownedProjectIds = ownedProjectsData.map(p => p.id);
-            
             // Update all join buttons based on current status
             document.querySelectorAll('.join-btn').forEach(button => {
                 const projectId = button.getAttribute('data-project-id');
+                const projectCard = button.closest('.project-card');
                 
-                if (ownedProjectIds.includes(projectId)) {
+                // Get project data from the DOM to check ownership
+                let isOwner = false;
+                if (projectCard) {
+                    const authorMeta = projectCard.querySelector('.project-meta[data-author-email]');
+                    if (authorMeta) {
+                        const authorEmail = authorMeta.getAttribute('data-author-email');
+                        const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+                        isOwner = currentUser && currentUser.email && 
+                                 authorEmail && authorEmail.toLowerCase() === currentUser.email.toLowerCase();
+                    }
+                }
+                
+                if (isOwner) {
                     updateJoinButton(projectId, 'owner');
                 } else if (memberProjects[projectId]) {
                     updateJoinButton(projectId, memberProjects[projectId] || 'member');
