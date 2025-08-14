@@ -1343,11 +1343,10 @@
 
         async function getCurrentUser() {
             try {
-                const { data: { session } } = await window.authSupabase.auth.getSession();
-                return session?.user ? { 
-                    email: session.user.email, 
-                    name: session.user.user_metadata?.name || session.user.email.split('@')[0] 
-                } : null;
+                if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+                    return window.dcfAuth.getCurrentUser();
+                }
+                return null;
             } catch (error) {
                 console.error('Error getting current user:', error);
                 return null;
@@ -1356,7 +1355,8 @@
 
         async function loadResource() {
             try {
-                const { data: resource, error } = await window.authSupabase
+                const supabase = window.authSupabase || window.masterSupabase;
+                const { data: resource, error } = await supabase
                     .from('resources')
                     .select('*')
                     .eq('id', resourceId)
@@ -1550,7 +1550,8 @@
 
         async function loadComments() {
             try {
-                const { data: comments, error } = await window.authSupabase
+                const supabase = window.authSupabase || window.masterSupabase;
+                const { data: comments, error } = await supabase
                     .from('resource_comments')
                     .select('*')
                     .eq('resource_id', resourceId)
@@ -1593,7 +1594,7 @@
 
         async function loadCommentReplies(parentId) {
             try {
-                const { data: replies, error } = await window.authSupabase
+                const { data: replies, error } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_comments')
                     .select('*')
                     .eq('parent_comment_id', parentId)
@@ -1667,7 +1668,7 @@
 
         async function getTotalCommentCount() {
             try {
-                const { count } = await window.authSupabase
+                const { count } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_comments')
                     .select('*', { count: 'exact', head: true })
                     .eq('resource_id', resourceId);
@@ -1681,7 +1682,7 @@
 
         async function loadRelatedResources() {
             try {
-                const { data: related, error } = await window.authSupabase
+                const { data: related, error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .select('id, title, type, author_name, download_count')
                     .eq('status', 'approved')
@@ -1734,7 +1735,7 @@
 
             try {
                 // Load user likes
-                const { data: likes } = await window.authSupabase
+                const { data: likes } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_likes')
                     .select('resource_id')
                     .eq('user_email', currentUser.email);
@@ -1742,7 +1743,7 @@
                 userLikes = new Set((likes || []).map(l => l.resource_id));
 
                 // Load user bookmarks
-                const { data: bookmarks } = await window.authSupabase
+                const { data: bookmarks } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_bookmarks')
                     .select('resource_id')
                     .eq('user_email', currentUser.email);
@@ -1783,7 +1784,7 @@
                 const isLiked = userLikes.has(resourceId);
                 
                 if (isLiked) {
-                    await window.authSupabase
+                    await (window.authSupabase || window.masterSupabase)
                         .from('resource_likes')
                         .delete()
                         .eq('resource_id', resourceId)
@@ -1793,7 +1794,7 @@
                     document.getElementById('likeBtn').classList.remove('active');
                     document.getElementById('likeBtn').querySelector('span:last-child').textContent = 'Like';
                 } else {
-                    await window.authSupabase
+                    await (window.authSupabase || window.masterSupabase)
                         .from('resource_likes')
                         .insert({
                             resource_id: resourceId,
@@ -1827,7 +1828,7 @@
                 const isBookmarked = userBookmarks.has(resourceId);
                 
                 if (isBookmarked) {
-                    await window.authSupabase
+                    await (window.authSupabase || window.masterSupabase)
                         .from('resource_bookmarks')
                         .delete()
                         .eq('resource_id', resourceId)
@@ -1837,7 +1838,7 @@
                     document.getElementById('bookmarkBtn').classList.remove('active');
                     document.getElementById('bookmarkBtn').querySelector('span:last-child').textContent = 'Save';
                 } else {
-                    await window.authSupabase
+                    await (window.authSupabase || window.masterSupabase)
                         .from('resource_bookmarks')
                         .insert({
                             resource_id: resourceId,
@@ -1930,7 +1931,7 @@
             }
 
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_comments')
                     .insert({
                         resource_id: resourceId,
@@ -1981,7 +1982,7 @@
             }
 
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_comments')
                     .insert({
                         resource_id: resourceId,
@@ -2013,7 +2014,7 @@
 
             try {
                 // Delete the comment and its replies
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_comments')
                     .delete()
                     .or(`id.eq.${commentId},parent_comment_id.eq.${commentId}`);
@@ -2066,7 +2067,7 @@
             }
 
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({
                         title: newTitle,
@@ -2121,7 +2122,7 @@
             if (!confirmed) return;
 
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({ status: 'approved' })
                     .eq('id', resourceId);
@@ -2143,7 +2144,7 @@
             if (!confirmed) return;
 
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({ status: 'rejected' })
                     .eq('id', resourceId);
@@ -2166,13 +2167,13 @@
 
             try {
                 // Delete all related data first
-                await window.authSupabase.from('resource_comments').delete().eq('resource_id', resourceId);
-                await window.authSupabase.from('resource_likes').delete().eq('resource_id', resourceId);
-                await window.authSupabase.from('resource_bookmarks').delete().eq('resource_id', resourceId);
-                await window.authSupabase.from('resource_analytics').delete().eq('resource_id', resourceId);
+                await (window.authSupabase || window.masterSupabase).from('resource_comments').delete().eq('resource_id', resourceId);
+                await (window.authSupabase || window.masterSupabase).from('resource_likes').delete().eq('resource_id', resourceId);
+                await (window.authSupabase || window.masterSupabase).from('resource_bookmarks').delete().eq('resource_id', resourceId);
+                await (window.authSupabase || window.masterSupabase).from('resource_analytics').delete().eq('resource_id', resourceId);
 
                 // Delete the resource
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .delete()
                     .eq('id', resourceId);
@@ -2193,7 +2194,7 @@
             if (!currentUser) return;
 
             try {
-                await window.authSupabase
+                await (window.authSupabase || window.masterSupabase)
                     .from('resource_analytics')
                     .insert({
                         resource_id: resourceId,
@@ -2211,7 +2212,7 @@
 
         async function incrementViewCount() {
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({ 
                         view_count: (currentResource.view_count || 0) + 1 
@@ -2230,7 +2231,7 @@
 
         async function incrementDownloadCount() {
             try {
-                const { error } = await window.authSupabase
+                const { error } = await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({ 
                         download_count: (currentResource.download_count || 0) + 1 
@@ -2250,13 +2251,13 @@
         async function updateLikeCount() {
             try {
                 // Get current like count from database
-                const { count } = await window.authSupabase
+                const { count } = await (window.authSupabase || window.masterSupabase)
                     .from('resource_likes')
                     .select('*', { count: 'exact', head: true })
                     .eq('resource_id', resourceId);
 
                 // Update resource like count
-                await window.authSupabase
+                await (window.authSupabase || window.masterSupabase)
                     .from('resources')
                     .update({ like_count: count || 0 })
                     .eq('id', resourceId);

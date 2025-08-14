@@ -934,7 +934,8 @@
 
         async function loadResources() {
             try {
-                const { data: resources, error } = await window.authSupabase
+                const supabase = window.authSupabase || window.masterSupabase;
+                const { data: resources, error } = await supabase
                     .from('resources')
                     .select(`
                         *,
@@ -966,13 +967,13 @@
                 const currentUser = await getCurrentUser();
                 
                 // Total resources
-                const { count: totalCount } = await window.authSupabase
+                const { count: totalCount } = await supabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .eq('status', 'approved');
 
                 // Total downloads
-                const { data: downloadStats } = await window.authSupabase
+                const { data: downloadStats } = await supabase
                     .from('resources')
                     .select('download_count')
                     .eq('status', 'approved');
@@ -980,7 +981,7 @@
                 const totalDownloads = downloadStats?.reduce((sum, r) => sum + (r.download_count || 0), 0) || 0;
 
                 // Contributors count
-                const { data: contributors } = await window.authSupabase
+                const { data: contributors } = await supabase
                     .from('resources')
                     .select('author_email')
                     .eq('status', 'approved');
@@ -991,7 +992,7 @@
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 
-                const { count: recentCount } = await window.authSupabase
+                const { count: recentCount } = await supabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .eq('status', 'approved')
@@ -1002,12 +1003,13 @@
                 let myBookmarksCount = 0;
                 
                 if (currentUser) {
-                    const { count: contributionsCount } = await window.authSupabase
+                    const supabase = window.authSupabase || window.masterSupabase;
+                    const { count: contributionsCount } = await supabase
                         .from('resources')
                         .select('*', { count: 'exact', head: true })
                         .eq('author_email', currentUser.email);
                     
-                    const { count: bookmarksCount } = await window.authSupabase
+                    const { count: bookmarksCount } = await supabase
                         .from('resource_bookmarks')
                         .select('*', { count: 'exact', head: true })
                         .eq('user_email', currentUser.email);
@@ -1016,7 +1018,7 @@
                     myBookmarksCount = bookmarksCount || 0;
 
                     // Load user's bookmarks
-                    const { data: userBookmarks } = await window.authSupabase
+                    const { data: userBookmarks } = await supabase
                         .from('resource_bookmarks')
                         .select('resource_id')
                         .eq('user_email', currentUser.email);
@@ -1134,8 +1136,10 @@
         }
 
         async function getCurrentUser() {
-            const { data: { session } } = await window.authSupabase.auth.getSession();
-            return session?.user ? { email: session.user.email, name: session.user.user_metadata?.name || 'User' } : null;
+            if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+                return window.dcfAuth.getCurrentUser();
+            }
+            return null;
         }
 
         function setupEventListeners() {
@@ -1248,7 +1252,8 @@
                 const isBookmarked = bookmarkedResources.has(resourceId);
                 
                 if (isBookmarked) {
-                    await window.authSupabase
+                    const supabase = window.authSupabase || window.masterSupabase;
+                    await supabase
                         .from('resource_bookmarks')
                         .delete()
                         .eq('resource_id', resourceId)
@@ -1258,7 +1263,8 @@
                     event.target.textContent = '🔖 Save';
                     event.target.classList.remove('share-button');
                 } else {
-                    await window.authSupabase
+                    const supabase = window.authSupabase || window.masterSupabase;
+                    await supabase
                         .from('resource_bookmarks')
                         .insert({
                             resource_id: resourceId,
@@ -1291,7 +1297,8 @@
 
                 // Record download analytics
                 if (currentUser) {
-                    await window.authSupabase
+                    const supabase = window.authSupabase || window.masterSupabase;
+                    await supabase
                         .from('resource_analytics')
                         .insert({
                             resource_id: resourceId,
@@ -1301,7 +1308,8 @@
                 }
 
                 // Increment download count
-                await window.authSupabase
+                const supabase = window.authSupabase || window.masterSupabase;
+                await supabase
                     .from('resources')
                     .update({ 
                         download_count: (resource.download_count || 0) + 1 
