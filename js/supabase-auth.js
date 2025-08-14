@@ -1,11 +1,10 @@
-// Simple Supabase Auth - Just Works
+// Simple Supabase Auth - WORKING VERSION
 const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
 
 // Create Supabase client
 if (typeof window !== 'undefined' && window.supabase) {
     window.authSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase client created');
 }
 
 // Make getSupabaseClient available
@@ -29,7 +28,6 @@ async function initializeAuth() {
         const { data: { session } } = await window.authSupabase.auth.getSession();
         
         if (session?.user) {
-            // Set user data immediately from session
             window.dcfUser = {
                 isLoggedIn: true,
                 profile: {
@@ -85,70 +83,19 @@ function getUserId() {
     return getCurrentUser()?.id || null;
 }
 
-// Update UI
+// Simple UI update - DON'T TOUCH AVATARS
 function updateUserInterface() {
-    console.log('🔄 updateUserInterface called');
     const user = getCurrentUser();
-    if (!user) {
-        console.log('❌ No user found for UI update');
-        return;
-    }
+    if (!user) return;
     
-    console.log('👤 Updating UI for user:', user.name, user.email);
+    // DON'T update avatars - let master-consolidated.js handle it
     
-    // Update avatar - preserve CSS styling
-    const avatars = document.querySelectorAll('#userAvatar, .dropdown-avatar');
-    avatars.forEach(avatar => {
-        console.log('🎨 Updating avatar element:', avatar.id || avatar.className);
-        
-        if (user.avatar_url) {
-            console.log('🖼️ Setting profile image:', user.avatar_url);
-            avatar.style.backgroundImage = `url(${user.avatar_url})`;
-            avatar.style.backgroundSize = 'cover';
-            avatar.style.backgroundPosition = 'center';
-            avatar.textContent = '';
-        } else {
-            console.log('🔤 Setting initials:', getInitials(user.name));
-            // Clear any background image but keep original gradient
-            avatar.style.backgroundImage = '';
-            avatar.textContent = getInitials(user.name);
-        }
-        
-        // Ensure visibility is maintained for main avatar
-        if (avatar.id === 'userAvatar') {
-            // Force maintain the original styling for main avatar
-            avatar.style.display = 'flex';
-            avatar.style.alignItems = 'center';
-            avatar.style.justifyContent = 'center';
-            avatar.style.width = '48px';
-            avatar.style.height = '48px';
-            avatar.style.borderRadius = '50%';
-            avatar.style.color = 'white';
-            avatar.style.fontWeight = '600';
-            avatar.style.fontSize = '0.8rem';
-            avatar.style.cursor = 'pointer';
-            avatar.style.border = '2px solid rgba(255, 255, 255, 0.1)';
-            avatar.style.boxSizing = 'border-box';
-            avatar.style.overflow = 'hidden';
-            avatar.style.flexShrink = '0';
-            
-            // Set background gradient if no profile image
-            if (!user.avatar_url) {
-                avatar.style.background = 'linear-gradient(135deg, #000, #333)';
-            }
-        }
-        
-        console.log('✅ Avatar updated, visible:', avatar.offsetWidth > 0, avatar.offsetHeight > 0);
-    });
-    
-    // Update dropdown
+    // Update dropdown only
     const nameEl = document.getElementById('dropdownUserName');
     const emailEl = document.getElementById('dropdownUserEmail');
     
     if (nameEl) nameEl.textContent = user.name;
     if (emailEl) emailEl.textContent = user.email;
-    
-    console.log('✅ UI update completed');
 }
 
 function getInitials(name) {
@@ -172,8 +119,6 @@ async function signOutUser() {
 // Auth state listener
 if (window.authSupabase) {
     window.authSupabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state:', event);
-        
         if (event === 'SIGNED_IN' && session?.user) {
             window.dcfUser = {
                 isLoggedIn: true,
@@ -198,11 +143,9 @@ if (window.authSupabase) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Initializing auth...');
     const loggedIn = await initializeAuth();
     if (loggedIn) {
         updateUserInterface();
-        console.log('User logged in:', getCurrentUser());
     }
 });
 
