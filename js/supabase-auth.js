@@ -33,13 +33,9 @@ async function initializeAuth() {
                 profile: {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.full_name || 
-                          session.user.user_metadata?.name || 
-                          session.user.email?.split('@')[0] || 
-                          'User',
+                    name: session.user.email?.split('@')[0] || 'User',
                     username: session.user.email?.split('@')[0] || 'user',
-                    avatar_url: session.user.user_metadata?.avatar_url || 
-                               session.user.user_metadata?.picture
+                    avatar_url: null
                 },
                 session: session
             };
@@ -115,13 +111,9 @@ if (window.authSupabase) {
                 profile: {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.full_name || 
-                          session.user.user_metadata?.name || 
-                          session.user.email?.split('@')[0] || 
-                          'User',
+                    name: session.user.email?.split('@')[0] || 'User',
                     username: session.user.email?.split('@')[0] || 'user',
-                    avatar_url: session.user.user_metadata?.avatar_url || 
-                               session.user.user_metadata?.picture
+                    avatar_url: null
                 },
                 session: session
             };

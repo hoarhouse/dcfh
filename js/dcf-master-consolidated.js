@@ -95,11 +95,11 @@ async function updateUserInfo() {
             const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
             
             // Set name and email
-            if (nameElement) nameElement.textContent = currentUser.name || 'Chris Hoar';
+            if (nameElement) nameElement.textContent = currentUser.name || currentUser.username || 'User';
             if (emailElement) emailElement.textContent = currentUser.email;
             
             // Generate initials
-            const initials = generateInitials(currentUser.name || 'Chris Hoar');
+            const initials = generateInitials(currentUser.name || currentUser.username || 'User');
             console.log('Generated initials:', initials);
             
             // Set avatars with full control
@@ -159,8 +159,8 @@ async function updateUserInfo() {
     console.log('Found user email:', userEmail, 'metadata:', userMetadata);
     
     // Get user profile from database or metadata
-    let userName = userMetadata.full_name || userMetadata.name || 'Chris Hoar';
-    let avatarUrl = userMetadata.avatar_url || userMetadata.picture;
+    let userName = userMetadata.full_name || userMetadata.name || userEmail?.split('@')[0] || 'User';
+    let avatarUrl = null; // No external provider avatars
     
     try {
         const { data: profile } = await window.masterSupabase
@@ -425,11 +425,9 @@ async function confirmLogout() {
         
         // Clear old auth keys specifically to avoid conflicts
         const oldAuthKeys = [
-            'dcf_github_session',
             'dcf_user_logged_in',
             'dcf_user_name',
             'dcf_user_email',
-            'dcf_auth_provider',
             'dcf_remember_login',
             'dcf_redirect_after_login'
         ];
