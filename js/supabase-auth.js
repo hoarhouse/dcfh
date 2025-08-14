@@ -10,6 +10,17 @@ if (!window.authSupabase) {
 
 }
 
+// Add the missing getSupabaseClient function that event pages are calling
+function getSupabaseClient() {
+    if (!window.authSupabase) {
+        console.error('❌ Supabase client not initialized');
+        return null;
+    }
+    console.log('✅ getSupabaseClient() returning client');
+    return window.authSupabase;
+}
+window.getSupabaseClient = getSupabaseClient;
+
 // Global user state
 window.dcfUser = {
     isLoggedIn: false,
