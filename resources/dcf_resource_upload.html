@@ -1136,7 +1136,7 @@
                     return;
                 }
 
-                const submitBtn = event.target;
+                const submitBtn = document.querySelector('button[onclick="submitResource()"]');
                 const originalText = submitBtn.textContent;
                 submitBtn.textContent = 'Submitting...';
                 submitBtn.disabled = true;
@@ -1149,8 +1149,8 @@
                 const supabase = window.masterSupabase;
 
                 // Get current user
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
+                const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+                if (!currentUser) {
                     throw new Error('You must be logged in to upload resources');
                 }
 
@@ -1181,13 +1181,14 @@
                 const resourceRecord = {
                     title: resourceData.title,
                     description: resourceData.description,
-                    category: resourceData.category,
-                    topics: resourceData.topics ? resourceData.topics.join(', ') : '',
+                    type: resourceData.category,  // Changed from 'category' to 'type'
                     file_url: fileUrl,
                     file_name: resourceData.file ? resourceData.file.name : null,
                     file_size: resourceData.file ? resourceData.file.size : null,
                     file_type: resourceData.file ? resourceData.file.type : null,
-                    uploaded_by: session.user.id,
+                    author_name: currentUser.name || currentUser.email?.split('@')[0] || 'User',
+                    author_email: currentUser.email,
+                    uploaded_by: currentUser.email,
                     status: 'pending',
                     created_at: new Date().toISOString()
                 };
@@ -1207,7 +1208,7 @@
                 console.error('Error submitting resource:', error);
                 showAlert('Error submitting resource: ' + error.message, 'error', 'Submission Error');
                 
-                const submitBtn = event.target;
+                const submitBtn = document.querySelector('button[onclick="submitResource()"]');
                 submitBtn.textContent = 'Submit Resource';
                 submitBtn.disabled = false;
             }
