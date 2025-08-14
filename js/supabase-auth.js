@@ -2,53 +2,69 @@
 // Replaces all localStorage-based authentication with proper Supabase Auth
 
 /**
- * Nuclear cleanup of old cached auth data
- * Clears all potentially corrupted or old authentication data
+ * DISABLED: Auth cleanup completely disabled to preserve user session
+ * Previous cleanup was breaking user authentication
  */
-function clearAllAuthCache() {
-    console.log('🧹 NUCLEAR CLEANUP: Clearing all cached auth data...');
+
+// CLEANUP COMPLETELY DISABLED - DO NOT CLEAR ANY AUTH DATA
+console.log('🛑 AUTH CLEANUP DISABLED: Preserving all user session data');
+
+/**
+ * EMERGENCY: Force restore user session and profile data
+ */
+async function emergencyRestoreSession() {
+    console.log('🚨 EMERGENCY: Attempting to restore user session...');
     
-    // Clear all localStorage keys containing auth data
-    Object.keys(localStorage).forEach(key => {
-        if (key.includes('supabase') || 
-            key.includes('auth') || 
-            key.includes('token') || 
-            key.includes('session') ||
-            key.startsWith('dcf_')) {
-            console.log('🧹 Removing localStorage key:', key);
-            localStorage.removeItem(key);
+    try {
+        // Get current Supabase session
+        const { data: { session }, error } = await window.authSupabase.auth.getSession();
+        
+        if (error) {
+            console.error('🚨 EMERGENCY: Session error:', error);
+            return false;
         }
-    });
-    
-    // Clear all sessionStorage keys containing auth data
-    Object.keys(sessionStorage).forEach(key => {
-        if (key.includes('supabase') || 
-            key.includes('auth') || 
-            key.includes('token') || 
-            key.includes('session') ||
-            key.startsWith('dcf_')) {
-            console.log('🧹 Removing sessionStorage key:', key);
-            sessionStorage.removeItem(key);
+        
+        if (session && session.user) {
+            console.log('🚨 EMERGENCY: Found active session:', session.user);
+            
+            // Force restore user data immediately
+            window.dcfUser = {
+                isLoggedIn: true,
+                profile: {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || 
+                          session.user.user_metadata?.name || 
+                          'Chris Hoar',
+                    username: session.user.email?.split('@')[0] || 'user',
+                    avatar_url: session.user.user_metadata?.avatar_url || 
+                               session.user.user_metadata?.picture
+                },
+                session: session
+            };
+            
+            console.log('🚨 EMERGENCY: Restored dcfUser:', window.dcfUser);
+            
+            // Update UI immediately
+            if (typeof updateUserInterface === 'function') {
+                updateUserInterface();
+                console.log('🚨 EMERGENCY: Updated user interface');
+            }
+            
+            return true;
+        } else {
+            console.log('🚨 EMERGENCY: No active session found');
+            return false;
         }
-    });
-    
-    // Clear specific DCF keys that might exist
-    const specificKeys = [
-        'dcf_auth_token', 'dcf_user_logged_in', 'dcf_user_name', 
-        'dcf_user_email', 'dcf_github_session', 'dcf_auth_provider',
-        'dcf_user_id', 'dcf_session', 'dcf_login_status'
-    ];
-    
-    specificKeys.forEach(key => {
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-    });
-    
-    console.log('🧹 NUCLEAR CLEANUP: Complete - all old auth data cleared');
+        
+    } catch (error) {
+        console.error('🚨 EMERGENCY: Session restore failed:', error);
+        return false;
+    }
 }
 
-// Run cleanup immediately when this script loads
-clearAllAuthCache();
+// Run emergency restore immediately
+emergencyRestoreSession();
 
 // Create ONE Supabase client and use it everywhere
 if (!window.authSupabase) {
@@ -82,8 +98,12 @@ window.dcfUser = {
  */
 async function initializeAuth() {
     try {
+        console.log('🔍 DEBUG: Initializing auth system...');
+        
         // Get current session
         const { data: { session }, error } = await window.authSupabase.auth.getSession();
+        
+        console.log('🔍 DEBUG: Session from Supabase:', session);
         
         if (error) {
             console.error('Auth session error:', error);
@@ -91,19 +111,31 @@ async function initializeAuth() {
         }
 
         if (session?.user) {
+            console.log('🔍 DEBUG: User found in session:', session.user);
+            
             // User is logged in, get their profile
             const profile = await getUserProfile(session.user.id, session.user.email);
-            if (profile) {
-                window.dcfUser = {
-                    isLoggedIn: true,
-                    profile: profile,
-                    session: session
-                };
-                return true;
-            }
+            console.log('🔍 DEBUG: Profile from database:', profile);
+            
+            // ALWAYS set dcfUser even if no database profile found
+            window.dcfUser = {
+                isLoggedIn: true,
+                profile: profile || {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Chris Hoar',
+                    username: session.user.email.split('@')[0],
+                    avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+                },
+                session: session
+            };
+            
+            console.log('🔍 DEBUG: Set dcfUser to:', window.dcfUser);
+            return true;
         }
         
         // User not logged in
+        console.log('🔍 DEBUG: No user session found');
         window.dcfUser = {
             isLoggedIn: false,
             profile: null,
@@ -154,15 +186,23 @@ function isUserLoggedIn() {
  * Get current user data (replaces localStorage.getItem calls)
  */
 function getCurrentUser() {
-    if (!window.dcfUser.isLoggedIn) return null;
+    console.log('🔍 DEBUG: getCurrentUser called - dcfUser state:', window.dcfUser);
+    
+    if (!window.dcfUser || !window.dcfUser.isLoggedIn) {
+        console.log('🔍 DEBUG: No logged in user found in dcfUser');
+        return null;
+    }
     
     const profile = window.dcfUser.profile;
     const session = window.dcfUser.session;
     
+    console.log('🔍 DEBUG: Profile data:', profile);
+    console.log('🔍 DEBUG: Session data:', session);
+    
     // Extract user data from session metadata for auth providers like GitHub/Google
     const userMetadata = session?.user?.user_metadata || {};
     
-    return {
+    const userData = {
         id: profile.id,
         email: profile.email,
         name: profile.name || userMetadata.full_name || userMetadata.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Chris Hoar',
@@ -178,6 +218,9 @@ function getCurrentUser() {
         // Add any other fields you need
         authProvider: 'supabase'
     };
+    
+    console.log('🔍 DEBUG: getCurrentUser returning:', userData);
+    return userData;
 }
 
 /**
@@ -371,11 +414,23 @@ window.authSupabase.auth.onAuthStateChange(async (event, session) => {
 
 // Initialize auth on ALL pages including login
 document.addEventListener('DOMContentLoaded', function() {
-    initializeAuth().then(isLoggedIn => {
-        if (isLoggedIn) {
-            updateUserInterface();
-        }
-    });
+    console.log('🔍 DEBUG: DOMContentLoaded - starting emergency auth restoration');
+    
+    // Run emergency restore first
+    setTimeout(() => {
+        emergencyRestoreSession().then(restored => {
+            console.log('🚨 EMERGENCY: Session restore result:', restored);
+            
+            // Then run normal initialization
+            initializeAuth().then(isLoggedIn => {
+                console.log('🔍 DEBUG: Auth initialization complete, logged in:', isLoggedIn);
+                if (isLoggedIn) {
+                    updateUserInterface();
+                    console.log('🔍 DEBUG: User interface updated');
+                }
+            });
+        });
+    }, 100);
 });
 
 // Export functions for global use
@@ -390,5 +445,6 @@ window.dcfAuth = {
     requireAuth,
     updateUserInterface,
     setupSessionManagement,
-    clearSessionManagement
+    clearSessionManagement,
+    emergencyRestoreSession  // Emergency restore function
 };
