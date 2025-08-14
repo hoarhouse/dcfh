@@ -1,104 +1,61 @@
-// supabase-auth.js - Master Authentication Utilities
-// Replaces all localStorage-based authentication with proper Supabase Auth
-
-// EMERGENCY: Reinitialize Supabase client
-const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-
-// EMERGENCY: Create Supabase client immediately
-if (typeof window !== 'undefined' && typeof supabase !== 'undefined') {
-    window.authSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ EMERGENCY: Supabase client restored');
-} else if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
-    window.authSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ EMERGENCY: Supabase client restored via window.supabase');
-} else {
-    console.error('❌ EMERGENCY: Could not create Supabase client - supabase library not found');
-}
-
 /**
- * DISABLED: Auth cleanup completely disabled to preserve user session
- * Previous cleanup was breaking user authentication
+ * DCF Hungary Authentication System
+ * Production-ready Supabase authentication with proper error handling
  */
 
-// CLEANUP COMPLETELY DISABLED - DO NOT CLEAR ANY AUTH DATA
-console.log('🛑 AUTH CLEANUP DISABLED: Preserving all user session data');
+// Supabase configuration - single source of truth
+const SUPABASE_CONFIG = {
+    url: 'https://atzommnkkwzgbktuzjti.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+};
 
 /**
- * EMERGENCY: Force restore user session and profile data
+ * Initialize Supabase client - single initialization point
  */
-async function emergencyRestoreSession() {
-    console.log('🚨 EMERGENCY: Attempting to restore user session...');
-    
-    try {
-        // Get current Supabase session
-        const { data: { session }, error } = await window.authSupabase.auth.getSession();
-        
-        if (error) {
-            console.error('🚨 EMERGENCY: Session error:', error);
-            return false;
-        }
-        
-        if (session && session.user) {
-            console.log('🚨 EMERGENCY: Found active session:', session.user);
-            
-            // Force restore user data immediately
-            window.dcfUser = {
-                isLoggedIn: true,
-                profile: {
-                    id: session.user.id,
-                    email: session.user.email,
-                    name: session.user.user_metadata?.full_name || 
-                          session.user.user_metadata?.name || 
-                          'Chris Hoar',
-                    username: session.user.email?.split('@')[0] || 'user',
-                    avatar_url: session.user.user_metadata?.avatar_url || 
-                               session.user.user_metadata?.picture
-                },
-                session: session
-            };
-            
-            console.log('🚨 EMERGENCY: Restored dcfUser:', window.dcfUser);
-            
-            // Update UI immediately
-            if (typeof updateUserInterface === 'function') {
-                updateUserInterface();
-                console.log('🚨 EMERGENCY: Updated user interface');
-            }
-            
-            return true;
-        } else {
-            console.log('🚨 EMERGENCY: No active session found');
-            return false;
-        }
-        
-    } catch (error) {
-        console.error('🚨 EMERGENCY: Session restore failed:', error);
-        return false;
-    }
-}
-
-// Run emergency restore immediately
-emergencyRestoreSession();
-
-// Create ONE Supabase client and use it everywhere
-if (!window.authSupabase) {
-    window.authSupabase = window.supabase.createClient(
-        'https://atzommnkkwzgbktuzjti.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-    );
-
-}
-
-// Add the missing getSupabaseClient function that event pages are calling
-function getSupabaseClient() {
-    if (!window.authSupabase) {
-        console.error('❌ Supabase client not initialized');
+function initializeSupabaseClient() {
+    if (typeof window === 'undefined') {
+        console.error('Window object not available');
         return null;
     }
-    console.log('✅ getSupabaseClient() returning client');
+
+    // Check if Supabase library is loaded
+    const supabaseLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+    if (!supabaseLib || typeof supabaseLib.createClient !== 'function') {
+        console.error('Supabase library not loaded');
+        return null;
+    }
+
+    try {
+        const client = supabaseLib.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        console.log('Supabase client initialized successfully');
+        return client;
+    } catch (error) {
+        console.error('Failed to initialize Supabase client:', error);
+        return null;
+    }
+}
+
+// Initialize the client once
+const supabaseClient = initializeSupabaseClient();
+if (supabaseClient) {
+    window.authSupabase = supabaseClient;
+} else {
+    throw new Error('Failed to initialize Supabase client');
+}
+
+/**
+ * Get Supabase client instance
+ * @returns {Object|null} Supabase client or null if not initialized
+ */
+function getSupabaseClient() {
+    if (!window.authSupabase) {
+        console.error('Supabase client not initialized');
+        return null;
+    }
     return window.authSupabase;
 }
+
+// Make function globally available
 window.getSupabaseClient = getSupabaseClient;
 
 // Global user state
@@ -109,16 +66,17 @@ window.dcfUser = {
 };
 
 /**
- * Initialize auth system - call this on every page
+ * Initialize authentication system
+ * @returns {Promise<boolean>} True if user is logged in, false otherwise
  */
 async function initializeAuth() {
+    if (!window.authSupabase) {
+        console.error('Supabase client not initialized');
+        return false;
+    }
+
     try {
-        console.log('🔍 DEBUG: Initializing auth system...');
-        
-        // Get current session
         const { data: { session }, error } = await window.authSupabase.auth.getSession();
-        
-        console.log('🔍 DEBUG: Session from Supabase:', session);
         
         if (error) {
             console.error('Auth session error:', error);
@@ -126,31 +84,29 @@ async function initializeAuth() {
         }
 
         if (session?.user) {
-            console.log('🔍 DEBUG: User found in session:', session.user);
-            
-            // User is logged in, get their profile
+            // Get user profile from database
             const profile = await getUserProfile(session.user.id, session.user.email);
-            console.log('🔍 DEBUG: Profile from database:', profile);
             
-            // ALWAYS set dcfUser even if no database profile found
+            // Set user state with profile data or fallback to session data
             window.dcfUser = {
                 isLoggedIn: true,
                 profile: profile || {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Chris Hoar',
+                    name: session.user.user_metadata?.full_name || 
+                          session.user.user_metadata?.name || 
+                          'Chris Hoar',
                     username: session.user.email.split('@')[0],
-                    avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+                    avatar_url: session.user.user_metadata?.avatar_url || 
+                               session.user.user_metadata?.picture
                 },
                 session: session
             };
             
-            console.log('🔍 DEBUG: Set dcfUser to:', window.dcfUser);
             return true;
         }
         
-        // User not logged in
-        console.log('🔍 DEBUG: No user session found');
+        // No active session
         window.dcfUser = {
             isLoggedIn: false,
             profile: null,
@@ -160,32 +116,42 @@ async function initializeAuth() {
         
     } catch (error) {
         console.error('Auth initialization error:', error);
+        window.dcfUser = {
+            isLoggedIn: false,
+            profile: null,
+            session: null
+        };
         return false;
     }
 }
 
 /**
- * Get user profile from database
+ * Get user profile from database using Supabase client
+ * @param {string} userId - User ID
+ * @param {string} userEmail - User email
+ * @returns {Object|null} User profile or null
  */
 async function getUserProfile(userId, userEmail) {
     try {
-        // Use direct fetch since Supabase client is broken
-        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/user_profiles?email=eq.${userEmail}&select=*`, {
-            headers: {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-            return data[0];
+        if (!window.authSupabase) {
+            console.error('Supabase client not available');
+            return null;
         }
-        
-        return null;
+
+        const { data, error } = await window.authSupabase
+            .from('user_profiles')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+
+        if (error) {
+            console.log('No profile found in database, will use session data');
+            return null;
+        }
+
+        return data;
     } catch (error) {
-        console.error('Get profile error:', error);
+        console.error('Profile fetch error:', error);
         return null;
     }
 }
@@ -198,30 +164,24 @@ function isUserLoggedIn() {
 }
 
 /**
- * Get current user data (replaces localStorage.getItem calls)
+ * Get current user data
+ * @returns {Object|null} User data or null if not logged in
  */
 function getCurrentUser() {
-    console.log('🔍 DEBUG: getCurrentUser called - dcfUser state:', window.dcfUser);
-    
-    if (!window.dcfUser || !window.dcfUser.isLoggedIn) {
-        console.log('🔍 DEBUG: No logged in user found in dcfUser');
+    if (!window.dcfUser || !window.dcfUser.isLoggedIn || !window.dcfUser.profile) {
         return null;
     }
     
     const profile = window.dcfUser.profile;
     const session = window.dcfUser.session;
-    
-    console.log('🔍 DEBUG: Profile data:', profile);
-    console.log('🔍 DEBUG: Session data:', session);
-    
-    // Extract user data from session metadata for auth providers like GitHub/Google
     const userMetadata = session?.user?.user_metadata || {};
     
-    const userData = {
+    return {
         id: profile.id,
         email: profile.email,
-        name: profile.name || userMetadata.full_name || userMetadata.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Chris Hoar',
-        username: profile.username,
+        name: profile.name || userMetadata.full_name || userMetadata.name || 
+              `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User',
+        username: profile.username || profile.email?.split('@')[0],
         first_name: profile.first_name,
         last_name: profile.last_name,
         title: profile.title,
@@ -230,12 +190,8 @@ function getCurrentUser() {
         bio: profile.bio,
         avatar_url: profile.avatar_url || userMetadata.avatar_url || userMetadata.picture,
         role: profile.role,
-        // Add any other fields you need
         authProvider: 'supabase'
     };
-    
-    console.log('🔍 DEBUG: getCurrentUser returning:', userData);
-    return userData;
 }
 
 /**
@@ -391,64 +347,112 @@ function generateInitials(name) {
 }
 
 /**
- * Listen for auth state changes
+ * Set up auth state listener
  */
-window.authSupabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', event, session);
-    
-    if (event === 'SIGNED_OUT' || !session) {
-        window.dcfUser = {
-            isLoggedIn: false,
-            profile: null,
-            session: null
-        };
-        // Clear session management on logout
-        clearSessionManagement();
-    } else if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await getUserProfile(session.user.id, session.user.email);
-        console.log('Profile found:', profile);
+function setupAuthStateListener() {
+    if (!window.authSupabase) {
+        console.error('Cannot setup auth listener - Supabase client not initialized');
+        return;
+    }
+
+    window.authSupabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event);
         
-        // ALWAYS set dcfUser even if no profile found
-        window.dcfUser = {
-            isLoggedIn: true,
-            profile: profile || {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Chris Hoar',
-                username: session.user.email.split('@')[0],
-                avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
-            },
-            session: session
-        };
-        console.log('Updated dcfUser:', window.dcfUser);
-        updateUserInterface();
-        // Setup session management on login
-        setupSessionManagement();
+        if (event === 'SIGNED_OUT' || !session) {
+            window.dcfUser = {
+                isLoggedIn: false,
+                profile: null,
+                session: null
+            };
+            clearSessionManagement();
+        } else if (event === 'SIGNED_IN' && session?.user) {
+            const profile = await getUserProfile(session.user.id, session.user.email);
+            
+            window.dcfUser = {
+                isLoggedIn: true,
+                profile: profile || {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || 
+                          session.user.user_metadata?.name || 'User',
+                    username: session.user.email.split('@')[0],
+                    avatar_url: session.user.user_metadata?.avatar_url || 
+                               session.user.user_metadata?.picture
+                },
+                session: session
+            };
+            
+            updateUserInterface();
+            setupSessionManagement();
+        }
+    });
+}
+
+// Initialize auth state listener
+setupAuthStateListener();
+
+/**
+ * Initialize authentication system when DOM is ready
+ */
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Initializing DCF Hungary authentication system...');
+    
+    try {
+        const isLoggedIn = await initializeAuth();
+        
+        if (isLoggedIn) {
+            updateUserInterface();
+            setupSessionManagement();
+            console.log('User authenticated successfully');
+        } else {
+            console.log('No active user session');
+        }
+    } catch (error) {
+        console.error('Failed to initialize authentication:', error);
     }
 });
 
-// Initialize auth on ALL pages including login
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 DEBUG: DOMContentLoaded - starting emergency auth restoration');
-    
-    // Run emergency restore first
-    setTimeout(() => {
-        emergencyRestoreSession().then(restored => {
-            console.log('🚨 EMERGENCY: Session restore result:', restored);
-            
-            // Then run normal initialization
-            initializeAuth().then(isLoggedIn => {
-                console.log('🔍 DEBUG: Auth initialization complete, logged in:', isLoggedIn);
-                if (isLoggedIn) {
-                    updateUserInterface();
-                    console.log('🔍 DEBUG: User interface updated');
-                }
-            });
+/**
+ * Surgical cleanup - remove only conflicting authentication data
+ * Preserves working Supabase sessions while cleaning up old localStorage auth
+ */
+function surgicalAuthCleanup() {
+    try {
+        // Only remove specific localStorage keys that conflict with Supabase auth
+        const conflictingKeys = [
+            'dcf_github_session',
+            'dcf_auth_provider',
+            'dcf_user_logged_in',
+            'dcf_user_name', 
+            'dcf_user_email',
+            'dcf_user_id'
+        ];
+        
+        let removedKeys = [];
+        conflictingKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                removedKeys.push(key);
+            }
         });
-    }, 100);
-});
+        
+        if (removedKeys.length > 0) {
+            console.log('Surgical cleanup removed conflicting keys:', removedKeys);
+        }
+        
+        // Never touch:
+        // - window.authSupabase (working Supabase client)
+        // - Supabase session data in localStorage/sessionStorage
+        // - Any supabase-related storage keys
+        
+    } catch (error) {
+        console.error('Surgical cleanup error:', error);
+    }
+}
 
-// Export functions for global use
+/**
+ * Export authentication functions for global use
+ */
 window.dcfAuth = {
     initializeAuth,
     isUserLoggedIn,
@@ -461,5 +465,5 @@ window.dcfAuth = {
     updateUserInterface,
     setupSessionManagement,
     clearSessionManagement,
-    emergencyRestoreSession  // Emergency restore function
+    surgicalAuthCleanup
 };
