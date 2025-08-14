@@ -1280,8 +1280,14 @@
                 }
                 const supabase = window.masterSupabase;
 
-                // Get current user
-                const currentUser = getCurrentUser();
+                // Get current user from improved auth system
+                let currentUser = null;
+                if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+                    currentUser = window.dcfAuth.getCurrentUser();
+                } else if (typeof getCurrentUser === 'function') {
+                    currentUser = getCurrentUser();
+                }
+                
                 if (!currentUser) {
                     throw new Error('You must be logged in to create events');
                 }
@@ -1372,14 +1378,39 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
-            // Check if user is logged in
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
-                // Store current page URL to return after login
+            console.log('🔍 DEBUG: Checking auth in create event page...');
+            
+            // Try to get current user from improved auth system
+            let currentUser = null;
+            if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
+                currentUser = window.dcfAuth.getCurrentUser();
+                console.log('🔍 DEBUG: dcfAuth.getCurrentUser result:', currentUser);
+            } else if (typeof getCurrentUser === 'function') {
+                currentUser = getCurrentUser();
+                console.log('🔍 DEBUG: getCurrentUser result:', currentUser);
+            } else {
+                console.log('🔍 DEBUG: No getCurrentUser function available');
+            }
+            
+            // Also check Supabase session directly
+            if (window.authSupabase) {
+                const { data: { session } } = await window.authSupabase.auth.getSession();
+                console.log('🔍 DEBUG: Supabase session:', session);
+                
+                if (!currentUser && !session?.user) {
+                    console.log('🔍 DEBUG: No auth user or session, redirecting to login');
+                    localStorage.setItem('dcf_redirect_after_login', window.location.href);
+                    window.location.href = '../auth/dcf_login_page.html';
+                    return;
+                }
+            } else if (!currentUser) {
+                console.log('🔍 DEBUG: No auth system available and no current user, redirecting to login');
                 localStorage.setItem('dcf_redirect_after_login', window.location.href);
                 window.location.href = '../auth/dcf_login_page.html';
                 return;
             }
+            
+            console.log('🔍 DEBUG: Auth check passed, initializing create page...');
             
             updateProgress();
             initializeCheckboxes();
