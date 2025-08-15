@@ -82,6 +82,30 @@ function handleDocumentClick(event) {
 async function updateUserInfo() {
     console.log('updateUserInfo called');
     
+    // Check localStorage auth first
+    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
+    if (isLoggedIn) {
+        const userName = localStorage.getItem('dcf_user_name');
+        const userEmail = localStorage.getItem('dcf_user_email');
+        
+        // Update avatar
+        const avatar = document.querySelector('.user-avatar');
+        if (avatar && userName) {
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+            avatar.textContent = initials;
+            avatar.style.display = 'flex';
+        }
+        
+        // Update dropdown
+        const dropdownName = document.querySelector('#dropdownUserName');
+        if (dropdownName) dropdownName.textContent = userName;
+        
+        const dropdownEmail = document.querySelector('#dropdownUserEmail');
+        if (dropdownEmail) dropdownEmail.textContent = userEmail;
+        
+        return; // Don't fall back to old auth
+    }
+    
     // Use the improved auth system from supabase-auth.js
     if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
         const currentUser = window.dcfAuth.getCurrentUser();
