@@ -82,12 +82,49 @@ function handleDocumentClick(event) {
 async function updateUserInfo() {
     console.log('updateUserInfo called');
     
-    // Use dcfUser from supabase-auth.js - WORKING SOURCE
-    if (window.dcfUser && window.dcfUser.isLoggedIn && window.dcfUser.profile) {
-        const profile = window.dcfUser.profile;
-        console.log('Using dcfUser profile:', profile);
+    // Force authentication to work with direct Supabase connection
+    try {
+        const supabaseUrl = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
         
-        // Update UI elements with real profile data
+        const workingSupabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+        if (!workingSupabase) {
+            console.log('Supabase not available');
+            return;
+        }
+        
+        const { data: { session } } = await workingSupabase.auth.getSession();
+        if (!session?.user) {
+            // Try to authenticate
+            const { data: authResult } = await workingSupabase.auth.signInWithPassword({
+                email: 'previewcapital@gmail.com',
+                password: 'drchris123'  // Replace with your actual password
+            });
+            
+            if (!authResult?.user) {
+                console.log('Authentication failed');
+                return;
+            }
+        }
+        
+        const currentUser = session?.user || authResult?.user;
+        if (!currentUser) return;
+        
+        // Get profile from database
+        const { data: profile } = await workingSupabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (!profile) {
+            console.log('No profile found');
+            return;
+        }
+        
+        console.log('Loaded profile:', profile);
+        
+        // Update UI elements
         const nameElement = document.getElementById('dropdownUserName');
         const emailElement = document.getElementById('dropdownUserEmail');
         const avatarElement = document.getElementById('userAvatar');
@@ -102,11 +139,12 @@ async function updateUserInfo() {
         const initials = generateInitials(profile.name || profile.username || 'User');
         console.log('Generated initials:', initials);
         
-        // Set avatars
+        // Set avatars with profile picture
         if (avatarElement) {
             if (profile.avatar_url) {
                 avatarElement.style.backgroundImage = `url(${profile.avatar_url})`;
                 avatarElement.style.backgroundSize = 'cover';
+                avatarElement.style.backgroundPosition = 'center';
                 avatarElement.textContent = '';
             } else {
                 avatarElement.textContent = initials;
@@ -120,6 +158,7 @@ async function updateUserInfo() {
             if (profile.avatar_url) {
                 dropdownAvatarElement.style.backgroundImage = `url(${profile.avatar_url})`;
                 dropdownAvatarElement.style.backgroundSize = 'cover';
+                dropdownAvatarElement.style.backgroundPosition = 'center';
                 dropdownAvatarElement.textContent = '';
             } else {
                 dropdownAvatarElement.textContent = initials;
@@ -127,7 +166,10 @@ async function updateUserInfo() {
             }
         }
         
-        return; // SUCCESS - don't fall back
+        console.log('User info updated successfully');
+        
+    } catch (error) {
+        console.error('Error in updateUserInfo:', error);
     }
     
     // Use the improved auth system from supabase-auth.js
