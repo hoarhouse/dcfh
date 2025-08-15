@@ -535,8 +535,6 @@
 
         .image-overlay {
             position: absolute;
-            width: 80px;
-            height: 80px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.9);
@@ -547,67 +545,122 @@
             backdrop-filter: blur(1px);
         }
 
+        /* Varied overlay sizes for visual hierarchy */
+        .overlay-primary {
+            width: 90px;
+            height: 90px;
+        }
+
+        .overlay-secondary {
+            width: 70px;
+            height: 70px;
+        }
+
+        .overlay-tertiary {
+            width: 60px;
+            height: 60px;
+        }
+
         .image-overlay:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 3px 6px rgba(0, 0, 0, 0.3);
             border-color: rgba(255, 255, 255, 1);
         }
 
-        /* Overlay Positioning */
-        .overlay-top-right {
+        /* Refined Asymmetrical Overlay Positioning */
+        .overlay-elegant-top {
+            top: 20px;
+            right: 25px;
+        }
+
+        .overlay-balanced-bottom {
+            bottom: 25px;
+            left: 20px;
+        }
+
+        .overlay-offset-center {
+            top: 35%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+
+        .overlay-lower-right {
+            bottom: 30px;
+            right: 30px;
+        }
+
+        .overlay-upper-left {
+            top: 25px;
+            left: 20px;
+        }
+
+        .overlay-mid-left {
+            top: 45%;
+            left: 15px;
+            transform: translateY(-50%);
+        }
+
+        .overlay-flowing-right {
+            top: 60%;
+            right: 18px;
+            transform: translateY(-50%);
+        }
+
+        /* Edge strip positioning */
+        .overlay-strip-top {
             top: 15px;
             right: 15px;
         }
 
-        .overlay-top-left {
+        .overlay-strip-top-2 {
             top: 15px;
-            left: 15px;
+            right: 110px;
         }
 
-        .overlay-bottom-right {
-            bottom: 15px;
-            right: 15px;
-        }
-
-        .overlay-bottom-left {
-            bottom: 15px;
-            left: 15px;
-        }
-
-        .overlay-center-right {
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-        }
-
-        .overlay-center-left {
-            top: 50%;
-            left: 15px;
-            transform: translateY(-50%);
+        .overlay-strip-top-3 {
+            top: 15px;
+            right: 190px;
         }
 
         /* Responsive overlay sizing */
         @media (max-width: 768px) {
-            .image-overlay {
-                width: 60px;
-                height: 60px;
-                border-radius: 8px;
+            .overlay-primary {
+                width: 70px;
+                height: 70px;
             }
             
-            .overlay-top-right,
-            .overlay-top-left,
-            .overlay-bottom-right,
-            .overlay-bottom-left,
-            .overlay-center-right,
-            .overlay-center-left {
-                margin: 10px;
+            .overlay-secondary {
+                width: 55px;
+                height: 55px;
+            }
+            
+            .overlay-tertiary {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .image-overlay {
+                border-radius: 8px;
             }
         }
 
         @media (max-width: 480px) {
-            .image-overlay {
+            .overlay-primary {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .overlay-secondary {
                 width: 50px;
                 height: 50px;
+            }
+            
+            .overlay-tertiary {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .image-overlay {
                 border-radius: 6px;
             }
         }
@@ -1878,6 +1931,9 @@ async function loadPosts() {
             
             // Setup Enter key event listeners for comment inputs
             setupCommentKeyHandlers();
+            
+            // Initialize lazy loading for overlay images
+            initializeLazyOverlays();
         }
         
         // Setup Enter key functionality for comment inputs
@@ -1905,6 +1961,46 @@ async function loadPosts() {
             }
         }
 
+        // PERFORMANCE-OPTIMIZED LAZY OVERLAY LOADING
+        function initializeLazyOverlays() {
+            // Batch process all deferred overlay images
+            const deferredImages = document.querySelectorAll('img[data-src]');
+            
+            if (deferredImages.length === 0) return;
+            
+            // Use Intersection Observer for efficient lazy loading
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        
+                        // Progressive enhancement: Load overlay image
+                        const tempImg = new Image();
+                        tempImg.onload = function() {
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            img.style.opacity = '0';
+                            
+                            // Smooth fade in
+                            setTimeout(() => {
+                                img.style.transition = 'opacity 0.3s ease';
+                                img.style.opacity = '1';
+                            }, 50);
+                        };
+                        
+                        tempImg.src = img.dataset.src;
+                        observer.unobserve(img);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.1
+            });
+            
+            // Observe all deferred images
+            deferredImages.forEach(img => imageObserver.observe(img));
+        }
+
         async function getMediaHtml(post) {
             try {
                 const urls = JSON.parse(post.media_url);
@@ -1928,49 +2024,50 @@ async function loadPosts() {
             }
         }
 
-        // REVOLUTIONARY MAIN-IMAGE-DRIVEN COLLAGE CREATOR
+        // REFINED COLLAGE CREATOR WITH PERFORMANCE OPTIMIZATION
         async function createRevolutionaryCollage(urls, postId) {
             // Get main image orientation to drive the entire layout
             const mainImageOrientation = await getImageOrientationClass(urls[0]);
             const isMainVertical = mainImageOrientation === 'post-image-vertical';
-            const isMainHorizontal = mainImageOrientation === 'post-image-horizontal';
-            const isMainSquare = mainImageOrientation === 'post-image-square';
             
             const clickHandler = `onclick="event.stopPropagation(); openPhotoExperience('${postId}')"`;
             const overlayClickHandler = (index) => `onclick="event.stopPropagation(); swapImages('${postId}', 0, ${index})"`;
             
+            // Progressive enhancement: Main image loads immediately, overlays deferred
+            const deferredOverlayAttr = 'data-src';
+            
             if (urls.length === 2) {
-                // Two images: Main image with single overlay
+                // Two images: Single elegant overlay
                 return `
                     <div class="main-image-collage" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}" loading="lazy">
+                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container">
-                            <img src="${urls[1]}" alt="Secondary image" class="image-overlay overlay-top-right" loading="lazy" ${overlayClickHandler(1)}>
+                            <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
                         </div>
                     </div>
                 `;
             } else if (urls.length === 3) {
                 if (isMainVertical) {
-                    // Vertical main: Stack layout with thumbnails on the side
+                    // Vertical main: Stack layout with thumbnails
                     return `
                         <div class="vertical-stack-layout" ${clickHandler}>
                             <div class="main-image-container">
-                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}" loading="lazy">
+                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}">
                             </div>
                             <div class="secondary-thumbnails">
-                                <img src="${urls[1]}" alt="Thumbnail" class="thumbnail-image" loading="lazy" ${overlayClickHandler(1)}>
-                                <img src="${urls[2]}" alt="Thumbnail" class="thumbnail-image" loading="lazy" ${overlayClickHandler(2)}>
+                                <img ${deferredOverlayAttr}="${urls[1]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(1)}>
+                                <img ${deferredOverlayAttr}="${urls[2]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(2)}>
                             </div>
                         </div>
                     `;
                 } else {
-                    // Horizontal/Square main: Overlays in corners
+                    // Horizontal/Square: Asymmetrical pair
                     return `
                         <div class="main-image-collage" ${clickHandler}>
-                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}" loading="lazy">
+                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                             <div class="overlay-container">
-                                <img src="${urls[1]}" alt="Secondary image" class="image-overlay overlay-top-right" loading="lazy" ${overlayClickHandler(1)}>
-                                <img src="${urls[2]}" alt="Secondary image" class="image-overlay overlay-bottom-right" loading="lazy" ${overlayClickHandler(2)}>
+                                <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
+                                <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-balanced-bottom" ${overlayClickHandler(2)}>
                             </div>
                         </div>
                     `;
@@ -1981,60 +2078,60 @@ async function loadPosts() {
                     return `
                         <div class="vertical-stack-layout" ${clickHandler}>
                             <div class="main-image-container">
-                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}" loading="lazy">
+                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}">
                             </div>
                             <div class="secondary-thumbnails">
-                                <img src="${urls[1]}" alt="Thumbnail" class="thumbnail-image" loading="lazy" ${overlayClickHandler(1)}>
-                                <img src="${urls[2]}" alt="Thumbnail" class="thumbnail-image" loading="lazy" ${overlayClickHandler(2)}>
-                                <img src="${urls[3]}" alt="Thumbnail" class="thumbnail-image" loading="lazy" ${overlayClickHandler(3)}>
+                                <img ${deferredOverlayAttr}="${urls[1]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(1)}>
+                                <img ${deferredOverlayAttr}="${urls[2]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(2)}>
+                                <img ${deferredOverlayAttr}="${urls[3]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(3)}>
                             </div>
                         </div>
                     `;
                 } else {
-                    // Horizontal/Square main: Corner overlays
+                    // Horizontal/Square: Artistic triangle
                     return `
                         <div class="main-image-collage" ${clickHandler}>
-                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}" loading="lazy">
+                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                             <div class="overlay-container">
-                                <img src="${urls[1]}" alt="Secondary image" class="image-overlay overlay-top-right" loading="lazy" ${overlayClickHandler(1)}>
-                                <img src="${urls[2]}" alt="Secondary image" class="image-overlay overlay-top-left" loading="lazy" ${overlayClickHandler(2)}>
-                                <img src="${urls[3]}" alt="Secondary image" class="image-overlay overlay-bottom-right" loading="lazy" ${overlayClickHandler(3)}>
+                                <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
+                                <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-offset-center" ${overlayClickHandler(2)}>
+                                <img ${deferredOverlayAttr}="${urls[3]}" alt="Secondary image" class="image-overlay overlay-tertiary overlay-balanced-bottom" ${overlayClickHandler(3)}>
                             </div>
                         </div>
                     `;
                 }
             } else if (urls.length === 5) {
-                // Five images: All corners + center overlay
+                // Five images: Edge strip pattern
                 return `
                     <div class="main-image-collage" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}" loading="lazy">
+                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container">
-                            <img src="${urls[1]}" alt="Secondary image" class="image-overlay overlay-top-right" loading="lazy" ${overlayClickHandler(1)}>
-                            <img src="${urls[2]}" alt="Secondary image" class="image-overlay overlay-top-left" loading="lazy" ${overlayClickHandler(2)}>
-                            <img src="${urls[3]}" alt="Secondary image" class="image-overlay overlay-bottom-right" loading="lazy" ${overlayClickHandler(3)}>
-                            <img src="${urls[4]}" alt="Secondary image" class="image-overlay overlay-bottom-left" loading="lazy" ${overlayClickHandler(4)}>
+                            <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-strip-top" ${overlayClickHandler(1)}>
+                            <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-strip-top-2" ${overlayClickHandler(2)}>
+                            <img ${deferredOverlayAttr}="${urls[3]}" alt="Secondary image" class="image-overlay overlay-tertiary overlay-strip-top-3" ${overlayClickHandler(3)}>
+                            <img ${deferredOverlayAttr}="${urls[4]}" alt="Secondary image" class="image-overlay overlay-tertiary overlay-flowing-right" ${overlayClickHandler(4)}>
                         </div>
                     </div>
                 `;
             } else {
-                // 6+ images: All corners + center overlays with count indicator
-                const additionalCount = urls.length - 6;
+                // 6+ images: Refined asymmetrical with count
+                const additionalCount = urls.length - 5;
                 return `
                     <div class="main-image-collage" data-total-images="${urls.length}" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}" loading="lazy">
+                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container" data-count="${additionalCount}">
-                            <img src="${urls[1]}" alt="Secondary image" class="image-overlay overlay-top-right" loading="lazy" ${overlayClickHandler(1)}>
-                            <img src="${urls[2]}" alt="Secondary image" class="image-overlay overlay-top-left" loading="lazy" ${overlayClickHandler(2)}>
-                            <img src="${urls[3]}" alt="Secondary image" class="image-overlay overlay-bottom-right" loading="lazy" ${overlayClickHandler(3)}>
-                            <img src="${urls[4]}" alt="Secondary image" class="image-overlay overlay-bottom-left" loading="lazy" ${overlayClickHandler(4)}>
-                            <img src="${urls[5]}" alt="Secondary image" class="image-overlay overlay-center-right" loading="lazy" ${overlayClickHandler(5)}>
+                            <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
+                            <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-upper-left" ${overlayClickHandler(2)}>
+                            <img ${deferredOverlayAttr}="${urls[3]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-flowing-right" ${overlayClickHandler(3)}>
+                            <img ${deferredOverlayAttr}="${urls[4]}" alt="Secondary image" class="image-overlay overlay-tertiary overlay-lower-right" ${overlayClickHandler(4)}>
+                            <img ${deferredOverlayAttr}="${urls[5]}" alt="Secondary image" class="image-overlay overlay-tertiary overlay-mid-left" ${overlayClickHandler(5)}>
                         </div>
                     </div>
                 `;
             }
         }
 
-        // INTERACTIVE OVERLAY IMAGE SWAPPING
+        // OPTIMIZED INTERACTIVE OVERLAY IMAGE SWAPPING
         function swapImages(postId, mainIndex, overlayIndex) {
             // Find the post and swap the images in the media_url array
             const post = posts.find(p => p.id === postId);
@@ -2051,16 +2148,24 @@ async function loadPosts() {
                 // Update the post data
                 post.media_url = JSON.stringify(urls);
                 
-                // Find the post element and update its media display
+                // Find the post element and update its media display efficiently
                 const postElement = document.querySelector(`[data-post-id="${postId}"]`);
                 if (postElement) {
                     const mediaContainer = postElement.querySelector('.post-media');
                     if (mediaContainer) {
+                        // Show loading state
+                        mediaContainer.style.opacity = '0.7';
+                        
                         // Recreate the media HTML with swapped images
                         getMediaHtml(post).then(newMediaHtml => {
-                            mediaContainer.innerHTML = newMediaHtml;
-                            // Re-setup event listeners after DOM update
-                            setupCommentKeyHandlers();
+                            // Batch DOM update
+                            requestAnimationFrame(() => {
+                                mediaContainer.innerHTML = newMediaHtml;
+                                mediaContainer.style.opacity = '1';
+                                
+                                // Re-initialize lazy loading for new overlays
+                                initializeLazyOverlays();
+                            });
                         });
                     }
                 }
