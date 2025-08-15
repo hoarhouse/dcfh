@@ -53,6 +53,22 @@
 - Copy exact pattern from working Events section for auth integration
 - When unsure about authentication: USE Events section pattern exactly
 
+### 7. MASTER-CONSOLIDATED.JS TOTAL CONTROL - ABSOLUTE REQUIREMENT
+- master-consolidated.js handles 100% of user interface elements
+- master-consolidated.js handles 100% of authentication data
+- master-consolidated.js handles 100% of user profiles
+- master-consolidated.js handles 100% of navigation dropdowns
+- Individual pages provide ONLY CSS styling for display
+- NEVER query .from('user_profiles') in individual pages
+- NEVER populate user avatars or dropdowns manually
+- NEVER set innerHTML for user interface elements
+- NEVER initialize authentication systems
+- NEVER interfere with master JS operations
+- HTML: Only provide structure with correct IDs/classes
+- JavaScript: Only use getCurrentUser() for page functionality, never UI population
+- If user interface broken: Check CSS styling only, verify HTML structure
+- DO NOT add JavaScript to fix user interface - let master JS handle all user data
+
 ## ⚠️ MANDATORY WARNINGS
 Show these before ANY dangerous operations:
 - 🚨 WARNING: This will modify working authentication systems
@@ -62,6 +78,7 @@ Show these before ANY dangerous operations:
 - 🚨 WARNING: This will change navigation or profile systems
 - 🚨 WARNING: This will use non-Supabase storage for data/images
 - 🚨 WARNING: This will add page-specific authentication handling instead of using master-consolidated.js
+- 🚨 WARNING: This will interfere with master-consolidated.js total control of user interface elements
 
 ## ✅ ONLY ALLOWED ACTIONS:
 1. Fix specific broken functionality mentioned in prompt
