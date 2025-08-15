@@ -82,28 +82,52 @@ function handleDocumentClick(event) {
 async function updateUserInfo() {
     console.log('updateUserInfo called');
     
-    // Check localStorage auth first
-    const isLoggedIn = localStorage.getItem('dcf_user_logged_in') === 'true';
-    if (isLoggedIn) {
-        const userName = localStorage.getItem('dcf_user_name');
-        const userEmail = localStorage.getItem('dcf_user_email');
+    // Use dcfUser from supabase-auth.js - WORKING SOURCE
+    if (window.dcfUser && window.dcfUser.isLoggedIn && window.dcfUser.profile) {
+        const profile = window.dcfUser.profile;
+        console.log('Using dcfUser profile:', profile);
         
-        // Update avatar
-        const avatar = document.querySelector('.user-avatar');
-        if (avatar && userName) {
-            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-            avatar.textContent = initials;
-            avatar.style.display = 'flex';
+        // Update UI elements with real profile data
+        const nameElement = document.getElementById('dropdownUserName');
+        const emailElement = document.getElementById('dropdownUserEmail');
+        const avatarElement = document.getElementById('userAvatar');
+        const dropdownAvatarElement = document.querySelector('.dropdown-avatar');
+        
+        // Set username and email
+        const displayUsername = profile.username ? `@${profile.username}` : `@${profile.name || 'user'}`;
+        if (nameElement) nameElement.textContent = displayUsername;
+        if (emailElement) emailElement.textContent = profile.email;
+        
+        // Generate initials
+        const initials = generateInitials(profile.name || profile.username || 'User');
+        console.log('Generated initials:', initials);
+        
+        // Set avatars
+        if (avatarElement) {
+            if (profile.avatar_url) {
+                avatarElement.style.backgroundImage = `url(${profile.avatar_url})`;
+                avatarElement.style.backgroundSize = 'cover';
+                avatarElement.textContent = '';
+            } else {
+                avatarElement.textContent = initials;
+                avatarElement.style.backgroundImage = '';
+            }
+            avatarElement.setAttribute('onclick', 'toggleUserMenu()');
+            avatarElement.style.cursor = 'pointer';
         }
         
-        // Update dropdown
-        const dropdownName = document.querySelector('#dropdownUserName');
-        if (dropdownName) dropdownName.textContent = userName;
+        if (dropdownAvatarElement) {
+            if (profile.avatar_url) {
+                dropdownAvatarElement.style.backgroundImage = `url(${profile.avatar_url})`;
+                dropdownAvatarElement.style.backgroundSize = 'cover';
+                dropdownAvatarElement.textContent = '';
+            } else {
+                dropdownAvatarElement.textContent = initials;
+                dropdownAvatarElement.style.backgroundImage = '';
+            }
+        }
         
-        const dropdownEmail = document.querySelector('#dropdownUserEmail');
-        if (dropdownEmail) dropdownEmail.textContent = userEmail;
-        
-        return; // Don't fall back to old auth
+        return; // SUCCESS - don't fall back
     }
     
     // Use the improved auth system from supabase-auth.js
