@@ -940,23 +940,8 @@ window.showComingSoon = showComingSoon;
 // =============================================================================
 // 17. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
 // =============================================================================
-// Handle missing tables gracefully
-window.handleMissingTable = function(tableName, error) {
-    if (error?.code === '42P01') {
-        console.log(`ℹ️ Table "${tableName}" doesn't exist - feature disabled`);
-        return true;
-    }
-    return false;
-};
-
-// Override comment loading to handle missing table
-window.loadCommentsForPost = function(postId) {
-    console.log(`ℹ️ Comments disabled - table doesn't exist`);
-    const container = document.getElementById(`comments-list-${postId}`);
-    if (container) {
-        container.innerHTML = '<p style="color: #666; font-style: italic; text-align: center; padding: 1rem;">Comments feature coming soon!</p>';
-    }
-};
+// Handle missing tables gracefully - REMOVED SINCE TABLES EXIST
+// Comments table is called 'post_comments' not 'comments'
 // Make dcfSupabase available as authSupabase and masterSupabase for existing code
 window.authSupabase = window.dcfSupabase;
 window.masterSupabase = window.dcfSupabase;
