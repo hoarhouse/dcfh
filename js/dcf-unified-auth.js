@@ -368,11 +368,11 @@ function populateTopNavigation() {
     
     // Member navigation
     const memberNav = [
-        { href: basePath + 'dcf_member_home.html', text: 'Home' },
-        { href: basePath + 'dcf_members_directory.html', text: 'Members' },
-        { href: basePath + 'dcf_projects_home.html', text: 'Projects' },
-        { href: basePath + 'dcf_events_calendar.html', text: 'Events' },
-        { href: basePath + 'dcf_resources_library.html', text: 'Resources' }
+        { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
+        { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
+        { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
+        { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
+        { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' }
     ];
     
     console.log('DEBUG TOP NAV - basePath:', basePath);
@@ -938,8 +938,25 @@ window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 
 // =============================================================================
-// 16. BACKWARDS COMPATIBILITY - SUPPORT OLD VARIABLE NAMES
+// 17. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
 // =============================================================================
+// Handle missing tables gracefully
+window.handleMissingTable = function(tableName, error) {
+    if (error?.code === '42P01') {
+        console.log(`ℹ️ Table "${tableName}" doesn't exist - feature disabled`);
+        return true;
+    }
+    return false;
+};
+
+// Override comment loading to handle missing table
+window.loadCommentsForPost = function(postId) {
+    console.log(`ℹ️ Comments disabled - table doesn't exist`);
+    const container = document.getElementById(`comments-list-${postId}`);
+    if (container) {
+        container.innerHTML = '<p style="color: #666; font-style: italic; text-align: center; padding: 1rem;">Comments feature coming soon!</p>';
+    }
+};
 // Make dcfSupabase available as authSupabase and masterSupabase for existing code
 window.authSupabase = window.dcfSupabase;
 window.masterSupabase = window.dcfSupabase;
