@@ -97,14 +97,13 @@ async function updateUserInfo() {
                 try {
                     const { data: profile } = await window.masterSupabase
                         .from('user_profiles')
-                        .select('name, first_name, last_name, username, avatar_url')
+                        .select('name, username, avatar_url')
+
                         .eq('email', currentUser.email)
                         .single();
                     
                     if (profile) {
-                        profileName = profile.name || profile.username || 
-                                    `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
-                                    profileName;
+                        profileName = profile.name || profile.username || profileName;
                         profileUsername = profile.username || profileUsername;
                         profileAvatarUrl = profile.avatar_url || profileAvatarUrl;
                         console.log('Found database profile:', { profileName, profileUsername, profileAvatarUrl });
@@ -197,14 +196,13 @@ async function updateUserInfo() {
     try {
         const { data: profile } = await window.masterSupabase
             .from('user_profiles')
-            .select('name, first_name, last_name, username, avatar_url')
+            .select('name, username, avatar_url')
+
             .eq('email', userEmail)
             .single();
         
         if (profile) {
-            userName = profile.name || profile.username || 
-                      `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
-                      userName;
+            userName = profile.name || profile.username || userName;
             userUsername = profile.username || userUsername;
             avatarUrl = profile.avatar_url || avatarUrl;
             console.log('Found profile:', { userName, userUsername, avatarUrl });
