@@ -28,14 +28,39 @@ async function initializeAuth() {
         const { data: { session } } = await window.authSupabase.auth.getSession();
         
         if (session?.user) {
+            // Initialize with defaults
+            let userName = session.user.email?.split('@')[0] || 'User';
+            let userUsername = session.user.email?.split('@')[0] || 'user';
+            let userAvatarUrl = null;
+            
+            // Query user_profiles table for actual username field
+            try {
+                const { data: profile } = await window.authSupabase
+                    .from('user_profiles')
+                    .select('name, username, avatar_url')
+                    .eq('email', session.user.email)
+                    .single();
+                
+                if (profile) {
+                    userName = profile.name || userName;
+                    userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
+                    userAvatarUrl = profile.avatar_url || userAvatarUrl;
+                    console.log('Found user profile:', { userName, userUsername, userAvatarUrl });
+                } else {
+                    console.log('No profile found in user_profiles table for:', session.user.email);
+                }
+            } catch (error) {
+                console.log('Profile fetch error in auth init:', error);
+            }
+            
             window.dcfUser = {
                 isLoggedIn: true,
                 profile: {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.email?.split('@')[0] || 'User',
-                    username: session.user.email?.split('@')[0] || 'user',
-                    avatar_url: null
+                    name: userName,
+                    username: userUsername,
+                    avatar_url: userAvatarUrl
                 },
                 session: session
             };
@@ -106,14 +131,37 @@ async function signOutUser() {
 if (window.authSupabase) {
     window.authSupabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
+            // Initialize with defaults
+            let userName = session.user.email?.split('@')[0] || 'User';
+            let userUsername = session.user.email?.split('@')[0] || 'user';
+            let userAvatarUrl = null;
+            
+            // Query user_profiles table for actual username field
+            try {
+                const { data: profile } = await window.authSupabase
+                    .from('user_profiles')
+                    .select('name, username, avatar_url')
+                    .eq('email', session.user.email)
+                    .single();
+                
+                if (profile) {
+                    userName = profile.name || userName;
+                    userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
+                    userAvatarUrl = profile.avatar_url || userAvatarUrl;
+                    console.log('Auth state change - found profile:', { userName, userUsername, userAvatarUrl });
+                }
+            } catch (error) {
+                console.log('Profile fetch error in auth state change:', error);
+            }
+            
             window.dcfUser = {
                 isLoggedIn: true,
                 profile: {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.email?.split('@')[0] || 'User',
-                    username: session.user.email?.split('@')[0] || 'user',
-                    avatar_url: null
+                    name: userName,
+                    username: userUsername,
+                    avatar_url: userAvatarUrl
                 },
                 session: session
             };
