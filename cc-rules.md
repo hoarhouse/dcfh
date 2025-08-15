@@ -61,6 +61,7 @@ Show these before ANY dangerous operations:
 - 🚨 WARNING: This will add data that isn't from database/user input
 - 🚨 WARNING: This will change navigation or profile systems
 - 🚨 WARNING: This will use non-Supabase storage for data/images
+- 🚨 WARNING: This will add page-specific authentication handling instead of using master-consolidated.js
 
 ## ✅ ONLY ALLOWED ACTIONS:
 1. Fix specific broken functionality mentioned in prompt
