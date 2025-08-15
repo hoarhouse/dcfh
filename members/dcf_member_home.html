@@ -2122,6 +2122,9 @@ async function loadPosts() {
                                 <span id="comment-like-count-${comment.id}">0</span>
                             </span>
                             <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
+                            ${comment.author_email === (window.dcfAuth?.getCurrentUser()?.email) ? `
+                                <span class="comment-action" onclick="editComment('${comment.id}')">Edit</span>
+                            ` : ''}
                             <span class="comment-time">${formatTime(comment.created_at)}</span>
                         </div>
                     </div>
@@ -2312,6 +2315,104 @@ async function loadPosts() {
                 console.error('Error toggling comment like:', error);
                 showMessage('Failed to like comment', 'error');
             }
+        }
+        
+        // Edit comment inline
+        function editComment(commentId) {
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            const contentElement = commentElement.querySelector('.comment-text');
+            const actionsElement = commentElement.querySelector('.comment-actions');
+            
+            if (!contentElement || !actionsElement) return;
+
+            const originalContent = contentElement.textContent;
+            
+            // Replace content with textarea
+            contentElement.innerHTML = `
+                <textarea style="width: 100%; min-height: 60px; padding: 0.5rem; border: 2px solid #333; border-radius: 8px; font-size: 0.9rem; font-family: inherit; resize: vertical;" id="edit-comment-textarea-${commentId}">${originalContent}</textarea>
+                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button onclick="saveCommentEdit('${commentId}')" style="padding: 0.25rem 0.75rem; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">Save</button>
+                    <button onclick="cancelCommentEdit('${commentId}')" data-original-content="${originalContent.replace(/"/g, '&quot;')}" style="padding: 0.25rem 0.75rem; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">Cancel</button>
+                </div>
+            `;
+            
+            // Hide action buttons during edit
+            actionsElement.style.display = 'none';
+            
+            // Focus the textarea
+            document.getElementById(`edit-comment-textarea-${commentId}`).focus();
+        }
+        
+        // Save comment edit
+        async function saveCommentEdit(commentId) {
+            const textarea = document.getElementById(`edit-comment-textarea-${commentId}`);
+            const newContent = textarea.value.trim();
+            
+            if (!newContent) {
+                showMessage('Comment cannot be empty', 'error');
+                return;
+            }
+            
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
+                
+                // Verify user owns this comment
+                const { data: comment, error: fetchError } = await supabase
+                    .from('post_comments')
+                    .select('author_email')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                if (comment.author_email !== currentUserEmail) {
+                    showMessage('You can only edit your own comments', 'error');
+                    return;
+                }
+                
+                // Update comment content
+                const { error: updateError } = await supabase
+                    .from('post_comments')
+                    .update({ content: newContent })
+                    .eq('id', commentId);
+                
+                if (updateError) throw updateError;
+                
+                // Update UI with new content
+                const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+                const contentElement = commentElement.querySelector('.comment-text');
+                const actionsElement = commentElement.querySelector('.comment-actions');
+                
+                contentElement.innerHTML = convertUrlsToLinks(newContent);
+                actionsElement.style.display = 'flex';
+                
+                showMessage('Comment updated successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                showMessage('Failed to update comment', 'error');
+            }
+        }
+        
+        // Cancel comment edit
+        function cancelCommentEdit(commentId) {
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            const contentElement = commentElement.querySelector('.comment-text');
+            const actionsElement = commentElement.querySelector('.comment-actions');
+            
+            const cancelButton = document.querySelector(`[onclick="cancelCommentEdit('${commentId}')"]`);
+            const originalContent = cancelButton.getAttribute('data-original-content');
+            
+            // Restore original content
+            contentElement.innerHTML = convertUrlsToLinks(originalContent);
+            
+            // Show action buttons again
+            actionsElement.style.display = 'flex';
         }
         
         // Submit reply to comment
