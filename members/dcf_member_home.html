@@ -1469,9 +1469,27 @@
 
         async function createPostHTML(post) {
             const authorName = post.author_name || 'Unknown User';
-            // Use SAME logic as dropdown: get current user and use their name/username
+            // Use EXACT SAME logic as working dropdown: get username from database
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
-            const authorUsername = currentUser?.name || currentUser?.username || 'user';
+            let profileUsername = currentUser?.username;
+            
+            // Get username from database EXACTLY like working dropdown
+            if (window.masterSupabase && currentUser?.email) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('username')
+                        .eq('email', currentUser.email)
+                        .single();
+                    if (profile) {
+                        profileUsername = profile.username || profileUsername;
+                    }
+                } catch (error) {
+                    console.log('Profile username fetch error:', error);
+                }
+            }
+            
+            const authorUsername = profileUsername || 'user';
             const authorInitials = getInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
@@ -1748,9 +1766,27 @@
 
         async function createCommentHTML(comment) {
             const authorName = comment.author_name || 'Unknown User';
-            // Use SAME logic as dropdown: get current user and use their name/username
+            // Use EXACT SAME logic as working dropdown: get username from database
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
-            const authorUsername = currentUser?.name || currentUser?.username || 'user';
+            let profileUsername = currentUser?.username;
+            
+            // Get username from database EXACTLY like working dropdown
+            if (window.masterSupabase && currentUser?.email) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('username')
+                        .eq('email', currentUser.email)
+                        .single();
+                    if (profile) {
+                        profileUsername = profile.username || profileUsername;
+                    }
+                } catch (error) {
+                    console.log('Profile username fetch error:', error);
+                }
+            }
+            
+            const authorUsername = profileUsername || 'user';
             const timeAgo = formatTimeAgo(comment.created_at);
             const authorInitials = getInitials(authorName);
             
