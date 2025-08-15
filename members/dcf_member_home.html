@@ -2048,14 +2048,22 @@ async function loadPosts() {
                 const authorEmails = [...new Set(data.map(c => c.author_email))];
                 
                 // Get usernames for comment authors
-                const { data: profiles } = await supabase
+                const { data: profiles, error: profileError } = await supabase
                     .from('user_profiles')
                     .select('email, username')
                     .in('email', authorEmails);
                 
+                if (profileError) {
+                    console.warn('Error loading comment profiles:', profileError);
+                }
+                
+                console.log('DEBUG: Comment profiles loaded:', profiles);
+                console.log('DEBUG: Author emails:', authorEmails);
+                
                 // Match comments with usernames
                 const commentsWithUsernames = data.map(comment => {
                     const profile = profiles?.find(p => p.email === comment.author_email);
+                    console.log(`DEBUG: For email ${comment.author_email}, found profile:`, profile);
                     return {
                         ...comment,
                         username: profile?.username
@@ -2098,7 +2106,9 @@ async function loadPosts() {
         function renderComment(comment, repliesMap, postId, level = 0) {
             const replies = repliesMap[comment.id] || [];
             const levelClass = `comment-level-${Math.min(level, 3)}`;
+            // Use actual username from database, not email prefix
             const displayName = comment.username ? `@${comment.username}` : comment.author_name;
+            console.log(`DEBUG: Comment ${comment.id} - username: "${comment.username}", displayName: "${displayName}"`);
             
             return `
                 <div class="comment ${levelClass}" data-comment-id="${comment.id}">
