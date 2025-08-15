@@ -34,23 +34,27 @@ async function initializeAuth() {
             let userAvatarUrl = null;
             
             // Query user_profiles table for actual username field
-            try {
-                const { data: profile } = await window.authSupabase
-                    .from('user_profiles')
-                    .select('name, username, avatar_url')
-                    .eq('email', session.user.email)
-                    .single();
-                
-                if (profile) {
-                    userName = profile.name || userName;
-                    userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
-                    userAvatarUrl = profile.avatar_url || userAvatarUrl;
-                    console.log('Found user profile:', { userName, userUsername, userAvatarUrl });
-                } else {
-                    console.log('No profile found in user_profiles table for:', session.user.email);
+            if (window.masterSupabase) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('name, first_name, last_name, username, avatar_url')
+                        .eq('email', session.user.email)
+                        .single();
+                    
+                    if (profile) {
+                        userName = profile.name || profile.username || userName;
+                        userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
+                        userAvatarUrl = profile.avatar_url || userAvatarUrl;
+                        console.log('Found user profile in auth init:', { userName, userUsername, userAvatarUrl });
+                    } else {
+                        console.log('No profile found in user_profiles table for:', session.user.email);
+                    }
+                } catch (error) {
+                    console.log('Profile fetch error in auth init:', error);
                 }
-            } catch (error) {
-                console.log('Profile fetch error in auth init:', error);
+            } else {
+                console.log('masterSupabase not available in auth init');
             }
             
             window.dcfUser = {
@@ -137,21 +141,27 @@ if (window.authSupabase) {
             let userAvatarUrl = null;
             
             // Query user_profiles table for actual username field
-            try {
-                const { data: profile } = await window.authSupabase
-                    .from('user_profiles')
-                    .select('name, username, avatar_url')
-                    .eq('email', session.user.email)
-                    .single();
-                
-                if (profile) {
-                    userName = profile.name || userName;
-                    userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
-                    userAvatarUrl = profile.avatar_url || userAvatarUrl;
-                    console.log('Auth state change - found profile:', { userName, userUsername, userAvatarUrl });
+            if (window.masterSupabase) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('name, first_name, last_name, username, avatar_url')
+                        .eq('email', session.user.email)
+                        .single();
+                    
+                    if (profile) {
+                        userName = profile.name || profile.username || userName;
+                        userUsername = profile.username || userUsername; // USE DATABASE USERNAME FIELD
+                        userAvatarUrl = profile.avatar_url || userAvatarUrl;
+                        console.log('Auth state change - found profile:', { userName, userUsername, userAvatarUrl });
+                    } else {
+                        console.log('No profile found in user_profiles table for:', session.user.email);
+                    }
+                } catch (error) {
+                    console.log('Profile fetch error in auth state change:', error);
                 }
-            } catch (error) {
-                console.log('Profile fetch error in auth state change:', error);
+            } else {
+                console.log('masterSupabase not available in auth state change');
             }
             
             window.dcfUser = {
