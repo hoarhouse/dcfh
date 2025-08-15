@@ -57,11 +57,11 @@ async function initializeAuth() {
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
             
-            // Get profile data with timeout
+            // Get profile data with timeout - FIXED QUERY
             const profilePromise = window.dcfSupabase
                 .from('user_profiles')
-                .select('*')
-                .eq('id', session.user.id)
+                .select('name, username, email, avatar_url')
+                .eq('email', session.user.email)
                 .single();
                 
             const profileTimeoutPromise = new Promise((_, reject) => 
