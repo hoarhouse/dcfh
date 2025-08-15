@@ -985,6 +985,28 @@
             text-decoration: underline;
         }
         
+        /* LOADING STATES FOR PROGRESSIVE ENHANCEMENT */
+        .comments-loading {
+            color: #999;
+            font-style: italic;
+            font-size: 13px;
+            padding: 8px 0;
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+        
+        .basic-collage {
+            transition: transform 0.2s ease;
+        }
+        
+        .basic-collage:hover {
+            transform: scale(1.02);
+        }
+        
         .comments-section {
             margin-top: 1rem;
             padding-top: 1rem;
@@ -1987,10 +2009,11 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // Load posts separately from user profiles (no foreign key exists)
+        // PHASE 1: FAST INITIAL LOAD - Basic posts only
+        console.time('Phase 1: Basic Posts Load');
         const { data: posts_data, error: postsError } = await supabase
             .from('posts')
-            .select('*')
+            .select('id, content, media_url, media_type, author_email, author_name, created_at')
             .order('created_at', { ascending: false });
         
         if (postsError) {
@@ -1998,30 +2021,32 @@ async function loadPosts() {
             throw new Error(`Database error: ${postsError.message}`);
         }
         
-        // Get user profiles to match usernames by email
-        const { data: profiles_data, error: profilesError } = await supabase
+        // Cache user profiles for progressive enhancement
+        let profiles_data = null;
+        const profilePromise = supabase
             .from('user_profiles')
-            .select('email, username, name');
+            .select('email, username, name')
+            .then(({ data, error }) => {
+                if (!error) profiles_data = data;
+                return data;
+            });
         
-        if (profilesError) {
-            console.warn('Could not load user profiles:', profilesError);
-        }
-        
-        // Match posts with user profiles by email
-        posts = (posts_data || []).map(post => {
-            const profile = profiles_data?.find(p => p.email === post.author_email);
-            return {
-                ...post,
-                user_profiles: profile ? { username: profile.username, name: profile.name } : null
-            };
-        });
+        // Store posts immediately without waiting for profiles
+        posts = posts_data || [];
+        originalPosts = [...posts];
         
         console.log('DEBUG: Posts loaded:', posts?.length || 0);
-        originalPosts = [...posts]; // Store original posts for filtering
-        await displayPosts();
+        console.timeEnd('Phase 1: Basic Posts Load');
+        
+        // PHASE 1: Render basic posts immediately
+        await displayBasicPosts();
         
         const loadingElement = document.getElementById('loadingState');
         if (loadingElement) loadingElement.style.display = 'none';
+        
+        // PHASE 2: Progressive enhancement - start background loading
+        console.time('Phase 2: Progressive Enhancement');
+        progressiveEnhancement(profilePromise);
     } catch (error) {
         console.error('Error loading posts:', error);
         const loadingElement = document.getElementById('loadingState');
@@ -2042,7 +2067,8 @@ async function loadPosts() {
 }
 
         // Display posts in the feed
-        async function displayPosts() {
+        // PHASE 1: FAST BASIC POST DISPLAY - NO COMPLEX FEATURES
+        async function displayBasicPosts() {
             const container = document.getElementById('postsContainer');
             
             if (posts.length === 0) {
@@ -2055,10 +2081,10 @@ async function loadPosts() {
                 return;
             }
 
-            // Process posts asynchronously to handle orientation detection
-            const postsHtml = await Promise.all(posts.map(async (post, index) => {
-                const username = post.user_profiles?.username || post.username || post.author_email?.split('@')[0] || 'user';
-                const mediaHtml = post.media_url ? await getMediaHtml(post, index) : '';
+            // Render basic posts synchronously for speed
+            const postsHtml = posts.map((post, index) => {
+                const username = post.author_email?.split('@')[0] || 'user';
+                const basicMediaHtml = post.media_url ? getBasicMediaHtml(post) : '';
                 
                 return `
                 <div class="post" data-post-id="${post.id}">
@@ -2073,14 +2099,14 @@ async function loadPosts() {
                     ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
                     
                     ${post.media_url ? `
-                        <div class="post-media">
-                            ${mediaHtml}
+                        <div class="post-media" id="media-${post.id}">
+                            ${basicMediaHtml}
                         </div>
                     ` : ''}
                     
-                    <!-- Top 3 Comments Display Under Post -->
+                    <!-- Loading placeholder for comments -->
                     <div class="post-top-comments" id="top-comments-${post.id}">
-                        <!-- Comments will be loaded here -->
+                        <div class="comments-loading">Loading comments...</div>
                     </div>
                     
                     <div class="post-actions">
@@ -2138,22 +2164,266 @@ async function loadPosts() {
                     </div>
                 </div>
             `;
-            }));
+            }).join('');
 
-            container.innerHTML = postsHtml.join('');
-
-            // Load likes and comments for each post
-            posts.forEach(post => {
-                loadPostLikes(post.id);
-                loadPostComments(post.id);
-                loadTopComments(post.id); // Load top 3 comments under each post
-            });
-            
-            // Setup Enter key event listeners for comment inputs
-            setupCommentKeyHandlers();
-            
-            // Initialize lazy loading for overlay images
-            initializeLazyOverlays();
+            container.innerHTML = postsHtml;
+        }
+        
+        // BASIC MEDIA HTML - NO COMPLEX OVERLAYS INITIALLY
+        function getBasicMediaHtml(post) {
+            try {
+                const urls = JSON.parse(post.media_url);
+                const types = JSON.parse(post.media_type);
+                
+                if (urls.length === 1) {
+                    if (types[0] === 'image') {
+                        return `<img src="${urls[0]}" alt="Post media" class="clickable-image post-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; border-radius: 8px;">`;
+                    } else {
+                        return `<video src="${urls[0]}" controls preload="metadata" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
+                    }
+                } else {
+                    // Multi-image: Show first image with count indicator
+                    return `
+                        <div class="basic-collage" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="position: relative; cursor: pointer;">
+                            <img src="${urls[0]}" alt="Post media" class="post-image post-image-horizontal" loading="lazy" style="width: 100%; border-radius: 8px;">
+                            <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">+${urls.length - 1}</div>
+                        </div>
+                    `;
+                }
+            } catch {
+                return post.media_type === 'image' 
+                    ? `<img src="${post.media_url}" alt="Post media" class="clickable-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; border-radius: 8px;">` 
+                    : `<video src="${post.media_url}" controls style="width: 100%; border-radius: 8px;"></video>`;
+            }
+        }
+        
+        // PHASE 2: PROGRESSIVE ENHANCEMENT
+        async function progressiveEnhancement(profilePromise) {
+            try {
+                // Wait for profiles to load
+                await profilePromise;
+                
+                // Update usernames if profiles loaded
+                if (profiles_data) {
+                    posts = posts.map(post => {
+                        const profile = profiles_data.find(p => p.email === post.author_email);
+                        return {
+                            ...post,
+                            user_profiles: profile ? { username: profile.username, name: profile.name } : null
+                        };
+                    });
+                    
+                    // Update displayed usernames
+                    posts.forEach(post => {
+                        const username = post.user_profiles?.username || post.author_email?.split('@')[0] || 'user';
+                        const authorElement = document.querySelector(`[data-post-id="${post.id}"] .post-author-name`);
+                        if (authorElement) {
+                            authorElement.textContent = `@${username}`;
+                        }
+                        const avatarElement = document.querySelector(`[data-post-id="${post.id}"] .post-avatar`);
+                        if (avatarElement) {
+                            avatarElement.textContent = generateInitials(username);
+                        }
+                    });
+                }
+                
+                // Load comments and likes in batches
+                setTimeout(() => {
+                    console.time('Batch Comment Loading');
+                    batchLoadCommentsAndLikes();
+                }, 100);
+                
+                // Enhance media with overlays
+                setTimeout(() => {
+                    console.time('Media Enhancement');
+                    enhanceMediaWithOverlays();
+                }, 300);
+                
+                console.timeEnd('Phase 2: Progressive Enhancement');
+                
+            } catch (error) {
+                console.error('Progressive enhancement error:', error);
+            }
+        }
+        
+        // BATCH LOAD COMMENTS AND LIKES FOR PERFORMANCE
+        async function batchLoadCommentsAndLikes() {
+            try {
+                const postIds = posts.map(p => p.id);
+                
+                // Batch load likes and comments in parallel
+                await Promise.all([
+                    batchLoadLikes(postIds),
+                    batchLoadTopComments(postIds)
+                ]);
+                
+                console.timeEnd('Batch Comment Loading');
+                
+            } catch (error) {
+                console.error('Batch loading error:', error);
+            }
+        }
+        
+        // BATCH LOAD LIKES FOR ALL POSTS
+        async function batchLoadLikes(postIds) {
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) return;
+                
+                const { data: likes } = await supabase
+                    .from('post_likes')
+                    .select('post_id, user_email')
+                    .in('post_id', postIds);
+                
+                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
+                
+                // Process likes by post
+                postIds.forEach(postId => {
+                    const postLikes = likes?.filter(l => l.post_id === postId) || [];
+                    const userLiked = postLikes.some(l => l.user_email === currentUserEmail);
+                    
+                    // Update UI
+                    const likeBtn = document.getElementById(`like-btn-${postId}`);
+                    const likeIcon = document.getElementById(`like-icon-${postId}`);
+                    const likeCount = document.getElementById(`like-count-${postId}`);
+                    
+                    if (likeBtn && likeIcon && likeCount) {
+                        likeIcon.textContent = userLiked ? '❤️' : '🤍';
+                        likeCount.textContent = postLikes.length;
+                        likeBtn.classList.toggle('liked', userLiked);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Batch likes loading error:', error);
+            }
+        }
+        
+        // BATCH LOAD TOP COMMENTS FOR ALL POSTS
+        async function batchLoadTopComments(postIds) {
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) return;
+                
+                // Get all comments for all posts
+                const { data: comments } = await supabase
+                    .from('post_comments')
+                    .select(`
+                        id, post_id, content, author_email, author_name, created_at,
+                        comment_likes(count)
+                    `)
+                    .in('post_id', postIds)
+                    .is('parent_id', null);
+                
+                if (!comments) return;
+                
+                // Get all unique author emails
+                const authorEmails = [...new Set(comments.map(c => c.author_email))];
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username')
+                    .in('email', authorEmails);
+                
+                // Process comments by post
+                postIds.forEach(postId => {
+                    const postComments = comments.filter(c => c.post_id === postId);
+                    
+                    if (postComments.length === 0) {
+                        // Remove loading placeholder
+                        const placeholder = document.querySelector(`#top-comments-${postId} .comments-loading`);
+                        if (placeholder) placeholder.remove();
+                        return;
+                    }
+                    
+                    // Process and sort comments
+                    const processedComments = postComments.map(comment => {
+                        const profile = profiles?.find(p => p.email === comment.author_email);
+                        const likeCount = comment.comment_likes?.[0]?.count || 0;
+                        return {
+                            ...comment,
+                            username: profile?.username,
+                            like_count: likeCount
+                        };
+                    });
+                    
+                    processedComments.sort((a, b) => {
+                        if (a.like_count !== b.like_count) {
+                            return b.like_count - a.like_count;
+                        }
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
+                    
+                    // Display top 3 comments
+                    const topComments = processedComments.slice(0, 3);
+                    const topCommentsContainer = document.getElementById(`top-comments-${postId}`);
+                    
+                    if (topCommentsContainer) {
+                        const commentsHtml = topComments.map(comment => {
+                            const displayName = comment.username ? `@${comment.username}` : comment.author_name;
+                            const likesText = comment.like_count > 0 ? `<span class="top-comment-likes">${comment.like_count} ${comment.like_count === 1 ? 'like' : 'likes'}</span>` : '';
+                            
+                            return `
+                                <div class="top-comment">
+                                    <span class="top-comment-author">${displayName}</span>
+                                    <span class="top-comment-text">${convertUrlsToLinks(comment.content)}</span>
+                                    ${likesText}
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        const moreCommentsLink = postComments.length > 3 
+                            ? `<a href="#" class="more-comments-link" onclick="event.preventDefault(); toggleComments('${postId}');">View ${postComments.length - 3} more comments</a>`
+                            : '';
+                        
+                        topCommentsContainer.innerHTML = commentsHtml + moreCommentsLink;
+                    }
+                    
+                    // Update comment count
+                    const commentCount = document.getElementById(`comment-count-${postId}`);
+                    if (commentCount) {
+                        commentCount.textContent = postComments.length;
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Batch comments loading error:', error);
+            }
+        }
+        
+        // ENHANCE MEDIA WITH COMPLEX OVERLAYS
+        async function enhanceMediaWithOverlays() {
+            try {
+                // Replace basic media with full collage systems
+                for (const post of posts) {
+                    if (!post.media_url) continue;
+                    
+                    try {
+                        const urls = JSON.parse(post.media_url);
+                        if (urls.length > 1) {
+                            const mediaContainer = document.getElementById(`media-${post.id}`);
+                            if (mediaContainer) {
+                                const enhancedMediaHtml = await getMediaHtml(post, posts.indexOf(post));
+                                mediaContainer.innerHTML = enhancedMediaHtml;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error enhancing media for post:', post.id, e);
+                    }
+                }
+                
+                // Initialize lazy overlay loading
+                initializeLazyOverlays();
+                
+                console.timeEnd('Media Enhancement');
+                
+            } catch (error) {
+                console.error('Media enhancement error:', error);
+            }
+        }
+        
+        // ORIGINAL DISPLAY POSTS FOR BACKWARDS COMPATIBILITY
+        async function displayPosts() {
+            return displayBasicPosts();
         }
         
         // Setup Enter key functionality for comment inputs
