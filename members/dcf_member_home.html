@@ -561,10 +561,25 @@
             color: #333;
         }
         
-        .comment-replies {
-            margin-left: 44px;
-            margin-top: 0.5rem;
+        .comment-level-0 { 
+            margin-left: 0px; 
+        }
+        
+        .comment-level-1 { 
+            margin-left: 40px; 
             border-left: 2px solid #e5e5e5;
+            padding-left: 1rem;
+        }
+        
+        .comment-level-2 { 
+            margin-left: 80px; 
+            border-left: 2px solid #ddd;
+            padding-left: 1rem;
+        }
+        
+        .comment-level-3 { 
+            margin-left: 120px; 
+            border-left: 2px solid #ccc;
             padding-left: 1rem;
         }
         
@@ -2012,13 +2027,15 @@ async function loadPosts() {
             }
         }
 
-        // Load post comments with threading support
+        // Load post comments with threading support and proper usernames
         async function loadPostComments(postId) {
             try {
                 const supabase = getSupabaseClient();
                 if (!supabase) {
                     throw new Error('Supabase client not available');
                 }
+                
+                // Get comments
                 const { data, error } = await supabase
                     .from('post_comments')
                     .select('*')
@@ -2027,25 +2044,43 @@ async function loadPosts() {
 
                 if (error) throw error;
 
+                // Get unique author emails from comments
+                const authorEmails = [...new Set(data.map(c => c.author_email))];
+                
+                // Get usernames for comment authors
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username')
+                    .in('email', authorEmails);
+                
+                // Match comments with usernames
+                const commentsWithUsernames = data.map(comment => {
+                    const profile = profiles?.find(p => p.email === comment.author_email);
+                    return {
+                        ...comment,
+                        username: profile?.username
+                    };
+                });
+
                 const commentCount = document.getElementById(`comment-count-${postId}`);
-                if (commentCount) commentCount.textContent = data.length;
+                if (commentCount) commentCount.textContent = commentsWithUsernames.length;
                 
                 // Store stats for filtering
                 if (!postStats[postId]) postStats[postId] = {};
-                postStats[postId].comments = data.length;
+                postStats[postId].comments = commentsWithUsernames.length;
 
                 const commentsList = document.getElementById(`comments-list-${postId}`);
                 if (commentsList) {
                     // Build threaded comment structure
-                    const rootComments = data.filter(c => !c.parent_id);
+                    const rootComments = commentsWithUsernames.filter(c => !c.parent_id);
                     const repliesMap = {};
-                    data.filter(c => c.parent_id).forEach(reply => {
+                    commentsWithUsernames.filter(c => c.parent_id).forEach(reply => {
                         if (!repliesMap[reply.parent_id]) repliesMap[reply.parent_id] = [];
                         repliesMap[reply.parent_id].push(reply);
                     });
                     
                     commentsList.innerHTML = rootComments.map(comment => 
-                        renderComment(comment, repliesMap, postId)
+                        renderComment(comment, repliesMap, postId, 0)
                     ).join('');
                 }
 
@@ -2054,14 +2089,17 @@ async function loadPosts() {
             }
         }
         
-        // Render comment with replies
-        function renderComment(comment, repliesMap, postId) {
+        // Render comment with replies and proper nesting levels
+        function renderComment(comment, repliesMap, postId, level = 0) {
             const replies = repliesMap[comment.id] || [];
+            const levelClass = `comment-level-${Math.min(level, 3)}`;
+            const displayName = comment.username ? `@${comment.username}` : comment.author_name;
+            
             return `
-                <div class="comment" data-comment-id="${comment.id}">
+                <div class="comment ${levelClass}" data-comment-id="${comment.id}">
                     <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
                     <div class="comment-content">
-                        <div class="comment-author">@${comment.username || comment.author_name}</div>
+                        <div class="comment-author">${displayName}</div>
                         <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
                         <div class="comment-actions">
                             <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
@@ -2069,15 +2107,11 @@ async function loadPosts() {
                         </div>
                     </div>
                 </div>
-                <div class="reply-input-box" id="reply-box-${comment.id}">
+                <div class="reply-input-box ${levelClass}" id="reply-box-${comment.id}">
                     <input type="text" placeholder="Write a reply..." id="reply-input-${comment.id}" onkeypress="if(event.key==='Enter') submitReply('${comment.id}', '${postId}')">
                     <button class="btn btn-primary btn-small" onclick="submitReply('${comment.id}', '${postId}')">Reply</button>
                 </div>
-                ${replies.length > 0 ? `
-                    <div class="comment-replies">
-                        ${replies.map(reply => renderComment(reply, repliesMap, postId)).join('')}
-                    </div>
-                ` : ''}
+                ${replies.length > 0 ? replies.map(reply => renderComment(reply, repliesMap, postId, level + 1)).join('') : ''}
             `;
         }
 
