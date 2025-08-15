@@ -878,8 +878,12 @@
             z-index: 2;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: opacity 0.3s ease, transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             transform: scale(0.9);
+        }
+        
+        .main-photo.loading {
+            opacity: 0;
         }
 
         .photo-experience.active .main-photo {
@@ -2732,6 +2736,40 @@ async function loadPosts() {
         let currentPhotoPost = null;
         let currentPhotoIndex = 0;
         let photoCommentsVisible = false;
+        
+        // Helper function to load image with proper state management
+        function loadPhotoWithStates(imageUrl, onComplete) {
+            const mainPhoto = document.getElementById('mainPhoto');
+            const dynamicBg = document.getElementById('dynamicBg');
+            
+            // Clear previous image and show loading state
+            mainPhoto.src = '';
+            mainPhoto.classList.add('loading');
+            
+            // Preload the new image
+            const img = new Image();
+            img.onload = function() {
+                // Image loaded successfully, now display it
+                mainPhoto.src = imageUrl;
+                dynamicBg.style.backgroundImage = `url(${imageUrl})`;
+                
+                // Remove loading state and show image
+                setTimeout(() => {
+                    mainPhoto.classList.remove('loading');
+                }, 50);
+                
+                if (onComplete) onComplete();
+            };
+            
+            img.onerror = function() {
+                console.error('Failed to load image:', imageUrl);
+                mainPhoto.classList.remove('loading');
+                if (onComplete) onComplete();
+            };
+            
+            // Start loading
+            img.src = imageUrl;
+        }
 
         function openPhotoExperience(postId) {
             const post = posts.find(p => p.id === postId);
@@ -2748,14 +2786,10 @@ async function loadPosts() {
                 currentPhotoIndex = 0;
                 
                 const experience = document.getElementById('photoExperience');
-                const mainPhoto = document.getElementById('mainPhoto');
-                const dynamicBg = document.getElementById('dynamicBg');
                 const counter = document.getElementById('photoCounter');
                 const progressBar = document.getElementById('progressBar');
                 
-                // Set initial photo
-                mainPhoto.src = urls[0];
-                dynamicBg.style.backgroundImage = `url(${urls[0]})`;
+                // Update UI elements first
                 counter.textContent = `1 / ${urls.length}`;
                 progressBar.style.width = `${(1 / urls.length) * 100}%`;
                 
@@ -2766,12 +2800,15 @@ async function loadPosts() {
                 // Update comments button
                 loadPhotoComments(postId);
                 
-                // Show experience
+                // Show experience with modal visible but image loading
                 experience.classList.add('active');
                 document.body.style.overflow = 'hidden';
                 
-                // Update navigation visibility
-                updatePhotoNavigation();
+                // Load initial photo with proper state management
+                loadPhotoWithStates(urls[0], () => {
+                    // Update navigation visibility after image loads
+                    updatePhotoNavigation();
+                });
                 
             } catch (error) {
                 console.error('Error opening photo experience:', error);
@@ -2824,24 +2861,18 @@ async function loadPosts() {
             
             try {
                 const urls = JSON.parse(currentPhotoPost.media_url);
-                const mainPhoto = document.getElementById('mainPhoto');
-                const dynamicBg = document.getElementById('dynamicBg');
                 const counter = document.getElementById('photoCounter');
                 const progressBar = document.getElementById('progressBar');
                 
-                // Smooth transition
-                mainPhoto.style.opacity = '0';
+                // Update UI elements
+                counter.textContent = `${currentPhotoIndex + 1} / ${urls.length}`;
+                progressBar.style.width = `${((currentPhotoIndex + 1) / urls.length) * 100}%`;
                 
-                setTimeout(() => {
-                    mainPhoto.src = urls[currentPhotoIndex];
-                    dynamicBg.style.backgroundImage = `url(${urls[currentPhotoIndex]})`;
-                    counter.textContent = `${currentPhotoIndex + 1} / ${urls.length}`;
-                    progressBar.style.width = `${((currentPhotoIndex + 1) / urls.length) * 100}%`;
-                    
-                    mainPhoto.style.opacity = '1';
-                }, 200);
+                // Load photo with proper state management
+                loadPhotoWithStates(urls[currentPhotoIndex], () => {
+                    updatePhotoNavigation();
+                });
                 
-                updatePhotoNavigation();
             } catch (error) {
                 console.error('Error updating photo display:', error);
             }
