@@ -938,8 +938,11 @@ window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 
 // =============================================================================
-// 15. AUTO-INITIALIZATION
+// 16. BACKWARDS COMPATIBILITY - SUPPORT OLD VARIABLE NAMES
 // =============================================================================
+// Make dcfSupabase available as authSupabase and masterSupabase for existing code
+window.authSupabase = window.dcfSupabase;
+window.masterSupabase = window.dcfSupabase;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM loaded, starting DCF initialization...');
     
