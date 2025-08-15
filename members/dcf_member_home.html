@@ -1864,9 +1864,9 @@ async function loadPosts() {
             }
 
             // Process posts asynchronously to handle orientation detection
-            const postsHtml = await Promise.all(posts.map(async post => {
+            const postsHtml = await Promise.all(posts.map(async (post, index) => {
                 const username = post.user_profiles?.username || post.username || post.author_email?.split('@')[0] || 'user';
-                const mediaHtml = post.media_url ? await getMediaHtml(post) : '';
+                const mediaHtml = post.media_url ? await getMediaHtml(post, index) : '';
                 
                 return `
                 <div class="post" data-post-id="${post.id}">
@@ -1961,7 +1961,11 @@ async function loadPosts() {
             }
         }
 
-        // PERFORMANCE-OPTIMIZED LAZY OVERLAY LOADING
+        // PERFORMANCE-OPTIMIZED LAZY OVERLAY LOADING WITH CONCURRENCY CONTROL
+        let currentlyLoadingImages = 0;
+        const maxConcurrentImages = 4;
+        const imageLoadQueue = [];
+        
         function initializeLazyOverlays() {
             // Batch process all deferred overlay images
             const deferredImages = document.querySelectorAll('img[data-src]');
@@ -1973,49 +1977,85 @@ async function loadPosts() {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const img = entry.target;
-                        
-                        // Progressive enhancement: Load overlay image
-                        const tempImg = new Image();
-                        tempImg.onload = function() {
-                            img.src = img.dataset.src;
-                            img.removeAttribute('data-src');
-                            img.style.opacity = '0';
-                            
-                            // Smooth fade in
-                            setTimeout(() => {
-                                img.style.transition = 'opacity 0.3s ease';
-                                img.style.opacity = '1';
-                            }, 50);
-                        };
-                        
-                        tempImg.src = img.dataset.src;
                         observer.unobserve(img);
+                        
+                        // Add to queue for controlled loading
+                        queueImageLoad(img);
                     }
                 });
             }, {
-                rootMargin: '50px 0px',
+                rootMargin: '20px 0px',
                 threshold: 0.1
             });
             
             // Observe all deferred images
             deferredImages.forEach(img => imageObserver.observe(img));
         }
+        
+        function queueImageLoad(img) {
+            if (currentlyLoadingImages < maxConcurrentImages) {
+                loadImageWithControl(img);
+            } else {
+                imageLoadQueue.push(img);
+            }
+        }
+        
+        function loadImageWithControl(img) {
+            currentlyLoadingImages++;
+            
+            // Progressive enhancement: Load overlay image
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                img.style.opacity = '0';
+                
+                // Smooth fade in
+                setTimeout(() => {
+                    img.style.transition = 'opacity 0.3s ease';
+                    img.style.opacity = '1';
+                }, 50);
+                
+                // Process next image in queue
+                processImageQueue();
+            };
+            
+            tempImg.onerror = function() {
+                console.warn('Failed to load overlay image:', img.dataset.src);
+                processImageQueue();
+            };
+            
+            tempImg.src = img.dataset.src;
+        }
+        
+        function processImageQueue() {
+            currentlyLoadingImages--;
+            
+            if (imageLoadQueue.length > 0 && currentlyLoadingImages < maxConcurrentImages) {
+                const nextImg = imageLoadQueue.shift();
+                loadImageWithControl(nextImg);
+            }
+        }
 
-        async function getMediaHtml(post) {
+        async function getMediaHtml(post, postIndex = 0) {
             try {
                 const urls = JSON.parse(post.media_url);
                 const types = JSON.parse(post.media_type);
                 
+                // PRIORITY LOADING: First 3 posts get immediate loading, rest get lazy loading
+                const isHighPriority = postIndex < 3;
+                const singleImageLoading = isHighPriority ? '' : 'loading="lazy"';
+                
                 if (urls.length === 1) {
                     if (types[0] === 'image') {
                         const orientationClass = await getImageOrientationClass(urls[0]);
-                        return `<img src="${urls[0]}" alt="Post media" class="clickable-image post-image ${orientationClass}" loading="lazy" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; border-radius: 8px;">`;
+                        return `<img src="${urls[0]}" alt="Post media" class="clickable-image post-image ${orientationClass}" ${singleImageLoading} onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; border-radius: 8px;">`;
                     } else {
                         return `<video src="${urls[0]}" controls preload="metadata" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
                     }
                 } else {
                     // REVOLUTIONARY MAIN-IMAGE-DRIVEN COLLAGE SYSTEM
-                    return await createRevolutionaryCollage(urls, post.id);
+                    return await createRevolutionaryCollage(urls, post.id, postIndex);
                 }
             } catch {
                 return post.media_type === 'image' 
@@ -2025,7 +2065,7 @@ async function loadPosts() {
         }
 
         // REFINED COLLAGE CREATOR WITH PERFORMANCE OPTIMIZATION
-        async function createRevolutionaryCollage(urls, postId) {
+        async function createRevolutionaryCollage(urls, postId, postIndex = 0) {
             // Get main image orientation to drive the entire layout
             const mainImageOrientation = await getImageOrientationClass(urls[0]);
             const isMainVertical = mainImageOrientation === 'post-image-vertical';
@@ -2033,14 +2073,16 @@ async function loadPosts() {
             const clickHandler = `onclick="event.stopPropagation(); openPhotoExperience('${postId}')"`;
             const overlayClickHandler = (index) => `onclick="event.stopPropagation(); swapImages('${postId}', 0, ${index})"`;
             
-            // Progressive enhancement: Main image loads immediately, overlays deferred
+            // PRIORITY LOADING: First 3 posts get immediate loading, rest get lazy loading
+            const isHighPriority = postIndex < 3;
+            const mainImageLoading = isHighPriority ? '' : '${mainImageLoading}';
             const deferredOverlayAttr = 'data-src';
             
             if (urls.length === 2) {
                 // Two images: Single elegant overlay
                 return `
                     <div class="main-image-collage" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
+                        <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container">
                             <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
                         </div>
@@ -2052,7 +2094,7 @@ async function loadPosts() {
                     return `
                         <div class="vertical-stack-layout" ${clickHandler}>
                             <div class="main-image-container">
-                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}">
+                                <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="post-image ${mainImageOrientation}">
                             </div>
                             <div class="secondary-thumbnails">
                                 <img ${deferredOverlayAttr}="${urls[1]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(1)}>
@@ -2064,7 +2106,7 @@ async function loadPosts() {
                     // Horizontal/Square: Asymmetrical pair
                     return `
                         <div class="main-image-collage" ${clickHandler}>
-                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
+                            <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                             <div class="overlay-container">
                                 <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
                                 <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-balanced-bottom" ${overlayClickHandler(2)}>
@@ -2078,7 +2120,7 @@ async function loadPosts() {
                     return `
                         <div class="vertical-stack-layout" ${clickHandler}>
                             <div class="main-image-container">
-                                <img src="${urls[0]}" alt="Main image" class="post-image ${mainImageOrientation}">
+                                <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="post-image ${mainImageOrientation}">
                             </div>
                             <div class="secondary-thumbnails">
                                 <img ${deferredOverlayAttr}="${urls[1]}" alt="Thumbnail" class="thumbnail-image" ${overlayClickHandler(1)}>
@@ -2091,7 +2133,7 @@ async function loadPosts() {
                     // Horizontal/Square: Artistic triangle
                     return `
                         <div class="main-image-collage" ${clickHandler}>
-                            <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
+                            <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                             <div class="overlay-container">
                                 <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
                                 <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-offset-center" ${overlayClickHandler(2)}>
@@ -2104,7 +2146,7 @@ async function loadPosts() {
                 // Five images: Edge strip pattern
                 return `
                     <div class="main-image-collage" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
+                        <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container">
                             <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-strip-top" ${overlayClickHandler(1)}>
                             <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-strip-top-2" ${overlayClickHandler(2)}>
@@ -2118,7 +2160,7 @@ async function loadPosts() {
                 const additionalCount = urls.length - 5;
                 return `
                     <div class="main-image-collage" data-total-images="${urls.length}" ${clickHandler}>
-                        <img src="${urls[0]}" alt="Main image" class="primary-image post-image ${mainImageOrientation}">
+                        <img src="${urls[0]}" ${mainImageLoading} alt="Main image" class="primary-image post-image ${mainImageOrientation}">
                         <div class="overlay-container" data-count="${additionalCount}">
                             <img ${deferredOverlayAttr}="${urls[1]}" alt="Secondary image" class="image-overlay overlay-primary overlay-elegant-top" ${overlayClickHandler(1)}>
                             <img ${deferredOverlayAttr}="${urls[2]}" alt="Secondary image" class="image-overlay overlay-secondary overlay-upper-left" ${overlayClickHandler(2)}>
