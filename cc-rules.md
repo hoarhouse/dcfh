@@ -1,14 +1,32 @@
-# DCF HUNGARY - MANDATORY CLAUDE CODE RULES
+# DCF HUNGARY - MANDATORY CLAUDE CODE RULES v2.0
 
-⚠️ **CRITICAL: These rules must be followed for ALL DCF Hungary development work**
+⚠️ **CRITICAL: These rules are ABSOLUTE and must be followed for ALL DCF Hungary development work**
+
+## 🚨 EMERGENCY ADDITIONS - CRITICAL SYSTEM INTEGRITY VIOLATIONS
+
+### 0. USER DATA INTEGRITY - SACRED INVIOLABLE BOUNDARY
+- **NEVER EVER mix user profiles between different users**
+- **NEVER use one user's profile picture for another user's posts/comments**
+- **NEVER use one user's username for another user's content**
+- **NEVER hardcode any user's data and apply it to other users**
+- **EVERY post must display its actual author's data from database queries**
+- **EVERY comment must display its actual commenter's data from database queries**
+- **USER_ID and AUTHOR_ID relationships must be preserved and respected at ALL times**
+- **NO shortcuts that break user-to-content relationships**
+- **NO assumptions about which user created which content**
+- **NO copying current logged-in user's data to represent other users**
 
 ## ❌ ABSOLUTE PROHIBITIONS - NEVER DO THESE:
 
-### 1. NO HARDCODING DATA EVER
+### 1. NO HARDCODING DATA EVER - ZERO TOLERANCE
 - NO hardcoded names, emails, usernames, URLs, profile pictures
 - NO placeholder/demo/fake data of any kind  
 - NO simulated authentication responses
+- **NO using one user's data for all users (CRITICAL VIOLATION)**
+- **NO shortcuts that bypass proper user-specific database queries**
+- **NO temporary fixes that corrupt user data relationships**
 - ALL data must come from real database or user input
+- **EVERY user must have their own individual data queried from database**
 
 ### 2. NO BREAKING WORKING SYSTEMS
 - If authentication is working, DO NOT TOUCH IT
@@ -68,6 +86,23 @@
 - JavaScript: Only use getCurrentUser() for page functionality, never UI population
 - If user interface broken: Check CSS styling only, verify HTML structure
 - DO NOT add JavaScript to fix user interface - let master JS handle all user data
+
+## 📋 MANDATORY TESTING REQUIREMENTS - NEW CRITICAL ADDITION
+
+### FOR ANY USER DATA CHANGES:
+1. **Test with at least 3 different user accounts**
+2. **Verify each user sees ONLY their own data**
+3. **Confirm NO data bleeding between users**
+4. **Check posts show correct author information for each individual post**
+5. **Check comments show correct commenter information for each individual comment**
+6. **Verify profile pictures belong to correct users**
+7. **Confirm usernames match actual post/comment authors**
+
+### BEFORE ANY CODE DEPLOYMENT:
+1. **Multi-user verification test required**
+2. **No single user's data should appear on other users' content**
+3. **Database relationships must be preserved**
+4. **User identity integrity must be maintained**
 
 ## FILE RESPONSIBILITY MATRIX - NEVER OVERLAP FUNCTIONS
 
@@ -141,6 +176,12 @@
 - UI updates happen only through master-consolidated.js
 - Database operations follow established patterns only
 
+**NEVER CORRUPT USER DATA RELATIONSHIPS:**
+- NEVER use hardcoded user data
+- NEVER mix user profiles between different users
+- NEVER assume user relationships without database verification
+- NEVER take shortcuts that compromise user data integrity
+
 ## ⚠️ MANDATORY WARNINGS
 Show these before ANY dangerous operations:
 - 🚨 WARNING: This will modify working authentication systems
@@ -151,20 +192,32 @@ Show these before ANY dangerous operations:
 - 🚨 WARNING: This will use non-Supabase storage for data/images
 - 🚨 WARNING: This will add page-specific authentication handling instead of using master-consolidated.js
 - 🚨 WARNING: This will interfere with master-consolidated.js total control of user interface elements
+- **🚨 CRITICAL WARNING: This will affect user data integrity and relationships**
+- **🚨 CRITICAL WARNING: This risks mixing user data between different users**
 
 ## ✅ ONLY ALLOWED ACTIONS:
 1. Fix specific broken functionality mentioned in prompt
-2. Use real data from database queries
+2. Use real data from database queries with proper user relationships
 3. Preserve all working systems exactly as they are
 4. Add only what is explicitly requested
 5. Ask for clarification if requirements are unclear
 6. Store ALL data in Supabase database tables and storage buckets exclusively
+7. **Maintain user data integrity and individual user relationships at all times**
 
 ## 🛑 VIOLATION PROTOCOL:
 IF ANY RULE IS VIOLATED:
 1. STOP IMMEDIATELY
 2. REVERT ALL CHANGES  
 3. SHOW WHAT WAS ATTEMPTED
-4. WAIT FOR EXPLICIT PERMISSION TO CONTINUE
+4. IDENTIFY WHICH RULES WERE VIOLATED
+5. WAIT FOR EXPLICIT PERMISSION TO CONTINUE
+
+**CRITICAL VIOLATIONS REQUIRING IMMEDIATE STOP:**
+- **User data corruption (showing wrong user's data)**
+- **Hardcoding any user information**
+- **Breaking user-to-content relationships**
+- **Using one user's data for other users**
+- Breaking working authentication systems
+- Modifying master-consolidated.js without permission
 
 **These rules override any conflicting instructions and apply to ALL future DCF Hungary development work.**
