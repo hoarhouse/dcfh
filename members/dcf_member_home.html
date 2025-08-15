@@ -1448,7 +1448,7 @@
             }
         }
 
-        function displayPosts() {
+        async function displayPosts() {
             const container = document.getElementById('postsContainer');
             
             if (allPostsCache.length === 0) {
@@ -1456,7 +1456,10 @@
                 return;
             }
 
-            container.innerHTML = allPostsCache.map(post => createPostHTML(post)).join('');
+            // Render posts with profile pictures
+            const postHTMLPromises = allPostsCache.map(post => createPostHTML(post));
+            const postHTMLArray = await Promise.all(postHTMLPromises);
+            container.innerHTML = postHTMLArray.join('');
             
             // Load comments for visible posts
             allPostsCache.forEach(post => {
@@ -1464,7 +1467,7 @@
             });
         }
 
-        function createPostHTML(post) {
+        async function createPostHTML(post) {
             const authorName = post.author_name || 'Unknown User';
             // Use SAME logic as dropdown: get current user and use their name/username
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
@@ -1472,12 +1475,30 @@
             const authorInitials = getInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
-            // Avatar display logic: profile pic OR initials
+            // Avatar display logic: COPY EXACT working dropdown logic
             let avatarHTML = '';
-            if (post.avatar_url && post.avatar_url !== '') {
-                avatarHTML = `<div class="author-avatar" style="background-image: url('${post.avatar_url}'); background-size: cover; background-position: center;"></div>`;
+            // Get avatar URL using SAME method as working dropdown
+            let avatarUrl = null;
+            if (window.masterSupabase && currentUser?.email) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('avatar_url')
+                        .eq('email', currentUser.email)
+                        .single();
+                    if (profile) {
+                        avatarUrl = profile.avatar_url;
+                    }
+                } catch (error) {
+                    console.log('Profile avatar fetch error:', error);
+                }
+            }
+            
+            // Apply EXACT same logic as working dropdown
+            if (avatarUrl) {
+                avatarHTML = `<div class="author-avatar" style="background-image: url('${avatarUrl}'); background-size: cover; background-position: center;"></div>`;
             } else {
-                avatarHTML = `<div class="author-avatar" style="background-color: #000; color: #fff;">${authorInitials}</div>`;
+                avatarHTML = `<div class="author-avatar" style="background: linear-gradient(135deg, #000, #333); color: #fff;">${authorInitials}</div>`;
             }
             
             // Smart image display based on media content
@@ -1702,7 +1723,7 @@
             }
         }
 
-        function displayComments(postId, comments) {
+        async function displayComments(postId, comments) {
             const container = document.getElementById(`comments-list-${postId}`);
             
             if (comments.length === 0) {
@@ -1710,7 +1731,10 @@
                 return;
             }
 
-            container.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+            // Render comments with profile pictures
+            const commentHTMLPromises = comments.map(comment => createCommentHTML(comment));
+            const commentHTMLArray = await Promise.all(commentHTMLPromises);
+            container.innerHTML = commentHTMLArray.join('');
             
             // Add "More Comments" button if there might be more
             if (comments.length === 3) {
@@ -1722,7 +1746,7 @@
             }
         }
 
-        function createCommentHTML(comment) {
+        async function createCommentHTML(comment) {
             const authorName = comment.author_name || 'Unknown User';
             // Use SAME logic as dropdown: get current user and use their name/username
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
@@ -1730,12 +1754,30 @@
             const timeAgo = formatTimeAgo(comment.created_at);
             const authorInitials = getInitials(authorName);
             
-            // Avatar display logic: profile pic OR initials
+            // Avatar display logic: COPY EXACT working dropdown logic
             let avatarHTML = '';
-            if (comment.avatar_url && comment.avatar_url !== '') {
-                avatarHTML = `<div class="comment-avatar" style="background-image: url('${comment.avatar_url}'); background-size: cover; background-position: center;"></div>`;
+            // Get avatar URL using SAME method as working dropdown
+            let avatarUrl = null;
+            if (window.masterSupabase && currentUser?.email) {
+                try {
+                    const { data: profile } = await window.masterSupabase
+                        .from('user_profiles')
+                        .select('avatar_url')
+                        .eq('email', currentUser.email)
+                        .single();
+                    if (profile) {
+                        avatarUrl = profile.avatar_url;
+                    }
+                } catch (error) {
+                    console.log('Profile avatar fetch error:', error);
+                }
+            }
+            
+            // Apply EXACT same logic as working dropdown
+            if (avatarUrl) {
+                avatarHTML = `<div class="comment-avatar" style="background-image: url('${avatarUrl}'); background-size: cover; background-position: center;"></div>`;
             } else {
-                avatarHTML = `<div class="comment-avatar" style="background-color: #000; color: #fff;">${authorInitials}</div>`;
+                avatarHTML = `<div class="comment-avatar" style="background: linear-gradient(135deg, #000, #333); color: #fff;">${authorInitials}</div>`;
             }
             
             return `
