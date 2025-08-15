@@ -542,49 +542,6 @@
             color: #666;
             font-size: 0.9rem;
             line-height: 1.4;
-            margin-bottom: 0.5rem;
-        }
-        
-        .comment-actions {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.8rem;
-            color: #999;
-        }
-        
-        .comment-action {
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        
-        .comment-action:hover {
-            color: #333;
-        }
-        
-        .comment-replies {
-            margin-left: 44px;
-            margin-top: 0.5rem;
-            border-left: 2px solid #e5e5e5;
-            padding-left: 1rem;
-        }
-        
-        .reply-input-box {
-            display: none;
-            margin-top: 0.5rem;
-            margin-left: 44px;
-        }
-        
-        .reply-input-box.active {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .reply-input-box input {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            font-size: 0.85rem;
         }
 
         .comment-input-section {
@@ -1241,6 +1198,7 @@
         // Global variables
         let currentMedia = [];
         let posts = [];
+        let originalPosts = []; // Keep original posts for filtering
         let currentFilter = 'latest';
         let postStats = {}; // Store likes and comments count for each post
 
@@ -1397,10 +1355,13 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // Load posts using Supabase client with proper authentication
+        // Load posts with username from user_profiles
         const { data: posts_data, error } = await supabase
             .from('posts')
-            .select('*')
+            .select(`
+                *,
+                user_profiles!posts_author_email_fkey(username, name)
+            `)
             .order('created_at', { ascending: false });
         
         if (error) {
@@ -1410,6 +1371,7 @@ async function loadPosts() {
         
         console.log('DEBUG: Posts loaded:', posts_data?.length || 0);
         posts = posts_data || [];
+        originalPosts = [...posts]; // Store original posts for filtering
         displayPosts();
         
         const loadingElement = document.getElementById('loadingState');
@@ -1447,15 +1409,17 @@ async function loadPosts() {
                 return;
             }
 
-            container.innerHTML = posts.map(post => `
+            container.innerHTML = posts.map(post => {
+                const username = post.user_profiles?.username || post.username || post.author_email?.split('@')[0] || 'user';
+                return `
                 <div class="post" data-post-id="${post.id}">
                     <div class="post-header">
-                        <div class="post-avatar">${generateInitials(post.username || post.author_email?.split('@')[0] || post.author_name)}</div>
+                        <div class="post-avatar">${generateInitials(username)}</div>
                         <div class="post-author">
-                            <div class="post-author-name">@${post.username || post.author_email?.split('@')[0] || 'user'}</div>
+                            <div class="post-author-name">@${username}</div>
                             <div class="post-time">${formatTime(post.created_at)}</div>
                         </div>
-                    </div>
+                    </div>`;
                     
                     ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
                     
@@ -1497,7 +1461,8 @@ async function loadPosts() {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Load likes and comments for each post
             posts.forEach(post => {
@@ -1697,35 +1662,34 @@ async function loadPosts() {
             }
         }
 
-        // Copy post link to clipboard
-        async function copyPostLink(postId) {
-            const url = `${window.location.origin}${window.location.pathname}#post-${postId}`;
-            try {
-                await navigator.clipboard.writeText(url);
-                showMessage('Post link copied to clipboard!', 'success');
-                
-                // Check if URL contains post ID on page load and scroll to it
-                if (!window.postLinkHandlerAdded) {
-                    window.postLinkHandlerAdded = true;
-                    window.addEventListener('load', () => {
-                        const hash = window.location.hash;
-                        if (hash && hash.startsWith('#post-')) {
-                            const postId = hash.replace('#post-', '');
-                            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
-                            if (postElement) {
-                                postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                postElement.style.boxShadow = '0 0 20px rgba(255, 0, 102, 0.5)';
-                                setTimeout(() => {
-                                    postElement.style.boxShadow = '';
-                                }, 2000);
-                            }
-                        }
-                    });
+        // Show post link in copyable format
+        function copyPostLink(postId) {
+            const url = `https://hoarhouse.github.io/dcfh/members/dcf_member_home.html#post-${postId}`;
+            
+            // Create modal to show the link
+            const modalHtml = `
+                <div id="linkModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%;">
+                        <h3 style="margin: 0 0 1rem 0; color: #333;">Post Link</h3>
+                        <p style="margin: 0 0 1rem 0; color: #666;">Copy this link to share the post:</p>
+                        <input type="text" value="${url}" readonly onclick="this.select()" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px; font-family: monospace; font-size: 0.9rem; background: #f8f9fa;">
+                        <div style="margin-top: 1rem; text-align: right;">
+                            <button onclick="document.body.removeChild(document.getElementById('linkModal'))" style="padding: 0.5rem 1rem; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Auto-select the text for easy copying
+            setTimeout(() => {
+                const input = document.querySelector('#linkModal input');
+                if (input) {
+                    input.focus();
+                    input.select();
                 }
-            } catch (error) {
-                console.error('Failed to copy link:', error);
-                showMessage('Failed to copy link', 'error');
-            }
+            }, 100);
         }
         
         // WORKING SHARE BUTTON FUNCTION - TURNS INTO PROGRESS BAR
@@ -1991,7 +1955,7 @@ async function loadPosts() {
             }
         }
 
-        // Load post comments with threading support
+        // Load post comments (flat structure)
         async function loadPostComments(postId) {
             try {
                 const supabase = getSupabaseClient();
@@ -2015,49 +1979,20 @@ async function loadPosts() {
 
                 const commentsList = document.getElementById(`comments-list-${postId}`);
                 if (commentsList) {
-                    // Build threaded comment structure
-                    const rootComments = data.filter(c => !c.parent_id);
-                    const repliesMap = {};
-                    data.filter(c => c.parent_id).forEach(reply => {
-                        if (!repliesMap[reply.parent_id]) repliesMap[reply.parent_id] = [];
-                        repliesMap[reply.parent_id].push(reply);
-                    });
-                    
-                    commentsList.innerHTML = rootComments.map(comment => 
-                        renderComment(comment, repliesMap, postId)
-                    ).join('');
+                    commentsList.innerHTML = data.map(comment => `
+                        <div class="comment">
+                            <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
+                            <div class="comment-content">
+                                <div class="comment-author">@${comment.username || comment.author_name}</div>
+                                <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
+                            </div>
+                        </div>
+                    `).join('');
                 }
 
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
-        }
-        
-        // Render comment with replies
-        function renderComment(comment, repliesMap, postId) {
-            const replies = repliesMap[comment.id] || [];
-            return `
-                <div class="comment" data-comment-id="${comment.id}">
-                    <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
-                    <div class="comment-content">
-                        <div class="comment-author">@${comment.username || comment.author_name}</div>
-                        <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
-                        <div class="comment-actions">
-                            <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
-                            <span class="comment-time">${formatTime(comment.created_at)}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="reply-input-box" id="reply-box-${comment.id}">
-                    <input type="text" placeholder="Write a reply..." id="reply-input-${comment.id}" onkeypress="if(event.key==='Enter') submitReply('${comment.id}', '${postId}')">
-                    <button class="btn btn-primary btn-small" onclick="submitReply('${comment.id}', '${postId}')">Reply</button>
-                </div>
-                ${replies.length > 0 ? `
-                    <div class="comment-replies">
-                        ${replies.map(reply => renderComment(reply, repliesMap, postId)).join('')}
-                    </div>
-                ` : ''}
-            `;
         }
 
         // Add comment to post
@@ -2108,56 +2043,6 @@ async function loadPosts() {
             }
         }
         
-        // Toggle reply box
-        function toggleReplyBox(commentId, postId) {
-            const replyBox = document.getElementById(`reply-box-${commentId}`);
-            if (replyBox) {
-                replyBox.classList.toggle('active');
-                if (replyBox.classList.contains('active')) {
-                    document.getElementById(`reply-input-${commentId}`).focus();
-                }
-            }
-        }
-        
-        // Submit reply to comment
-        async function submitReply(parentId, postId) {
-            const replyInput = document.getElementById(`reply-input-${parentId}`);
-            const content = replyInput.value.trim();
-            
-            if (!content) return;
-            
-            try {
-                const supabase = getSupabaseClient();
-                if (!supabase) {
-                    throw new Error('Supabase client not available');
-                }
-                
-                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
-                const currentUserName = window.dcfAuth?.getCurrentUser()?.name;
-                const currentUsername = window.dcfAuth?.getCurrentUser()?.username;
-                
-                const { error } = await supabase
-                    .from('post_comments')
-                    .insert({
-                        post_id: postId,
-                        content: content,
-                        author_email: currentUserEmail,
-                        author_name: currentUserName,
-                        username: currentUsername || currentUserEmail?.split('@')[0],
-                        parent_id: parentId
-                    });
-                
-                if (error) throw error;
-                
-                replyInput.value = '';
-                toggleReplyBox(parentId, postId);
-                loadPostComments(postId);
-                
-            } catch (error) {
-                console.error('Error adding reply:', error);
-                showMessage('Failed to add reply', 'error');
-            }
-        }
 
         // Open post in modal
         function openPostModal(postId) {
@@ -2491,8 +2376,8 @@ async function loadPosts() {
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
             
-            // Sort posts based on filter
-            let sortedPosts = [...posts];
+            // Sort posts based on filter - use originalPosts to preserve all data
+            let sortedPosts = [...originalPosts];
             
             switch(filterType) {
                 case 'latest':
@@ -2528,16 +2413,16 @@ async function loadPosts() {
                     
                     // If no trending posts, show recent popular ones
                     if (sortedPosts.length === 0) {
-                        sortedPosts = [...posts].sort((a, b) => {
+                        sortedPosts = [...originalPosts].sort((a, b) => {
                             const engagementA = (postStats[a.id]?.likes || 0) + (postStats[a.id]?.comments || 0) * 2;
                             const engagementB = (postStats[b.id]?.likes || 0) + (postStats[b.id]?.comments || 0) * 2;
                             return engagementB - engagementA;
-                        }).slice(0, 10);
+                        });
                     }
                     break;
             }
             
-            // Update posts array and redisplay
+            // Update posts for display without modifying original
             posts = sortedPosts;
             displayPosts();
         }
