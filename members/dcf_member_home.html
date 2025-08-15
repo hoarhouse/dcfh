@@ -1113,15 +1113,7 @@
             try {
                 let query = supabase
                     .from('posts')
-                    .select(`
-                        *,
-                        user_profiles!posts_user_id_fkey (
-                            id,
-                            username,
-                            full_name,
-                            avatar_url
-                        )
-                    `)
+                    .select('*')
                     .eq('status', 'active')
                     .range(currentPage * postsPerPage, (currentPage + 1) * postsPerPage - 1);
 
@@ -1144,11 +1136,27 @@
 
                 if (error) throw error;
 
-                if (posts.length < postsPerPage) {
+                // Separate query for user profiles
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username, full_name, avatar_url');
+
+                // Match posts with user profiles by email
+                const postsWithProfiles = posts.map(post => {
+                    const userProfile = profiles?.find(profile => 
+                        profile.email === post.author_email
+                    );
+                    return {
+                        ...post,
+                        user_profiles: userProfile || null
+                    };
+                });
+
+                if (postsWithProfiles.length < postsPerPage) {
                     hasMorePosts = false;
                 }
 
-                allPostsCache = [...allPostsCache, ...posts];
+                allPostsCache = [...allPostsCache, ...postsWithProfiles];
                 currentPage++;
 
                 displayPosts();
@@ -1341,15 +1349,7 @@
             try {
                 const { data: comments, error } = await supabase
                     .from('comments')
-                    .select(`
-                        *,
-                        user_profiles!comments_user_id_fkey (
-                            id,
-                            username,
-                            full_name,
-                            avatar_url
-                        )
-                    `)
+                    .select('*')
                     .eq('post_id', postId)
                     .eq('status', 'active')
                     .order('like_count', { ascending: false })
@@ -1357,7 +1357,23 @@
 
                 if (error) throw error;
 
-                displayComments(postId, comments || []);
+                // Separate query for user profiles
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username, full_name, avatar_url');
+
+                // Match comments with user profiles by email
+                const commentsWithProfiles = (comments || []).map(comment => {
+                    const userProfile = profiles?.find(profile => 
+                        profile.email === comment.author_email
+                    );
+                    return {
+                        ...comment,
+                        user_profiles: userProfile || null
+                    };
+                });
+
+                displayComments(postId, commentsWithProfiles);
 
             } catch (error) {
                 console.error('Error loading comments:', error);
@@ -1662,6 +1678,189 @@
                 loadPosts();
             }
         });
+
+        async function updatePostCommentCount(postId) {
+            const supabase = window.authSupabase || window.masterSupabase;
+            
+            try {
+                const { data: comments, error } = await supabase
+                    .from('comments')
+                    .select('id')
+                    .eq('post_id', postId)
+                    .eq('status', 'active');
+
+                if (error) throw error;
+
+                const commentCount = comments.length;
+                const button = document.querySelector(`[data-post-id="${postId}"] .action-btn:nth-child(2)`);
+                if (button) {
+                    button.innerHTML = `💬 ${commentCount}`;
+                }
+
+            } catch (error) {
+                console.error('Error updating comment count:', error);
+            }
+        }
+
+        async function toggleCommentLike(commentId, buttonElement) {
+            if (!currentUser) {
+                alert('Please log in to like comments');
+                return;
+            }
+
+            const supabase = window.authSupabase || window.masterSupabase;
+            
+            try {
+                const isLiked = buttonElement.classList.contains('liked');
+                
+                if (isLiked) {
+                    // Remove like
+                    await supabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_id', currentUser.id);
+                    
+                    buttonElement.classList.remove('liked');
+                } else {
+                    // Add like
+                    await supabase
+                        .from('comment_likes')
+                        .insert([{
+                            comment_id: commentId,
+                            user_id: currentUser.id
+                        }]);
+                    
+                    buttonElement.classList.add('liked');
+                }
+                
+                // Update like count display
+                await updateCommentLikeCount(commentId, buttonElement);
+
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+            }
+        }
+
+        async function updateCommentLikeCount(commentId, buttonElement) {
+            const supabase = window.authSupabase || window.masterSupabase;
+            
+            try {
+                const { data: likes, error } = await supabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+
+                if (error) throw error;
+
+                const likeCount = likes.length;
+                buttonElement.innerHTML = `❤️ ${likeCount}`;
+
+            } catch (error) {
+                console.error('Error updating comment like count:', error);
+            }
+        }
+
+        function showReplyForm(commentId) {
+            // Reply functionality placeholder
+            alert('Reply functionality would be implemented here');
+        }
+
+        async function loadAllComments(postId) {
+            const supabase = window.authSupabase || window.masterSupabase;
+            
+            try {
+                const { data: comments, error } = await supabase
+                    .from('comments')
+                    .select('*')
+                    .eq('post_id', postId)
+                    .eq('status', 'active')
+                    .order('like_count', { ascending: false });
+
+                if (error) throw error;
+
+                // Separate query for user profiles
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username, full_name, avatar_url');
+
+                // Match comments with user profiles by email
+                const commentsWithProfiles = (comments || []).map(comment => {
+                    const userProfile = profiles?.find(profile => 
+                        profile.email === comment.author_email
+                    );
+                    return {
+                        ...comment,
+                        user_profiles: userProfile || null
+                    };
+                });
+
+                displayComments(postId, commentsWithProfiles, false); // false = don't show "more comments" button
+
+            } catch (error) {
+                console.error('Error loading all comments:', error);
+            }
+        }
+
+        function filterComments(postId, filterType) {
+            // Update active filter button
+            const filterButtons = document.querySelectorAll(`#comments-${postId} .filter-btn`);
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Reload comments with new filter
+            loadCommentsWithFilter(postId, filterType);
+        }
+
+        async function loadCommentsWithFilter(postId, filterType) {
+            const supabase = window.authSupabase || window.masterSupabase;
+            
+            try {
+                let query = supabase
+                    .from('comments')
+                    .select('*')
+                    .eq('post_id', postId)
+                    .eq('status', 'active')
+                    .limit(3);
+
+                // Apply sorting based on filter type
+                switch (filterType) {
+                    case 'latest':
+                        query = query.order('created_at', { ascending: false });
+                        break;
+                    case 'oldest':
+                        query = query.order('created_at', { ascending: true });
+                        break;
+                    default: // most liked
+                        query = query.order('like_count', { ascending: false });
+                }
+
+                const { data: comments, error } = await query;
+
+                if (error) throw error;
+
+                // Separate query for user profiles
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username, full_name, avatar_url');
+
+                // Match comments with user profiles by email
+                const commentsWithProfiles = (comments || []).map(comment => {
+                    const userProfile = profiles?.find(profile => 
+                        profile.email === comment.author_email
+                    );
+                    return {
+                        ...comment,
+                        user_profiles: userProfile || null
+                    };
+                });
+
+                displayComments(postId, commentsWithProfiles);
+
+            } catch (error) {
+                console.error('Error loading filtered comments:', error);
+            }
+        }
     </script>
 </body>
 </html>
