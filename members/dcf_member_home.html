@@ -1031,7 +1031,6 @@
     <script>
         let currentFilter = 'latest';
         let allPostsCache = [];
-        let currentUser = null;
         let isLoading = false;
         let hasMorePosts = true;
         let currentPage = 0;
@@ -1042,36 +1041,25 @@
             let attempts = 0;
             const maxAttempts = 20;
             
-            console.log('🔍 AUTH: Page loading, checking auth state...');
-            
             function initializePage() {
                 attempts++;
                 
+                // Try both possible Supabase clients
                 const supabase = window.authSupabase || window.masterSupabase;
                 
                 if (supabase && typeof supabase.from === 'function') {
-                    console.log('🔍 AUTH: Supabase available, checking auth methods...');
-                    console.log('🔍 AUTH: window.dcfAuth exists:', !!window.dcfAuth);
-                    console.log('🔍 AUTH: getCurrentUser exists:', typeof getCurrentUser);
-                    
-                    // Use robust auth check like working Events page
-                    if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
-                        currentUser = window.dcfAuth.getCurrentUser();
-                        console.log('🔍 AUTH: dcfAuth user:', currentUser);
-                    } else if (typeof getCurrentUser === 'function') {
-                        currentUser = getCurrentUser();
-                        console.log('🔍 AUTH: legacy auth user:', currentUser);
-                    } else {
-                        console.log('🔍 AUTH: No auth methods available!');
-                    }
+                    console.log('Loading posts with Supabase client...');
                     loadPosts();
                 } else if (attempts < maxAttempts) {
+                    console.log(`Waiting for Supabase... attempt ${attempts}/${maxAttempts}`);
                     setTimeout(initializePage, 500);
                 } else {
+                    console.error('Failed to load Supabase after maximum attempts');
                     showEmptyState('Unable to connect to database. Please refresh the page.');
                 }
             }
             
+            // Start loading after a short delay
             setTimeout(initializePage, 1000);
         });
 
@@ -1474,6 +1462,7 @@
             
             if (!content) return;
             
+            const currentUser = getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to comment');
                 return;
@@ -1505,6 +1494,7 @@
         }
 
         async function toggleLike(postId, buttonElement) {
+            const currentUser = getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to like posts');
                 return;
@@ -1739,6 +1729,7 @@
         }
 
         async function toggleCommentLike(commentId, buttonElement) {
+            const currentUser = getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to like comments');
                 return;

@@ -40,6 +40,19 @@
 - NO exceptions - everything goes to Supabase
 - When unsure about storage: ASK before assuming storage location
 
+### 6. AUTHENTICATION DELEGATION - ABSOLUTE REQUIREMENT
+- NEVER manually set currentUser variables in individual pages
+- NEVER duplicate authentication logic in page-specific JavaScript
+- Let master-consolidated.js handle ALL authentication automatically
+- Individual pages should ONLY consume authentication, not manage it
+- NO page-specific authentication initialization code
+- NO currentUser = getCurrentUser() variable assignments
+- Use only: getCurrentUser() when authentication data is needed
+- Master-consolidated.js handles: user login, profile loading, dropdown population
+- Individual pages handle: feature-specific functionality only
+- Copy exact pattern from working Events section for auth integration
+- When unsure about authentication: USE Events section pattern exactly
+
 ## ⚠️ MANDATORY WARNINGS
 Show these before ANY dangerous operations:
 - 🚨 WARNING: This will modify working authentication systems
