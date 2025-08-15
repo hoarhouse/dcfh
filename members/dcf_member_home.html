@@ -2009,44 +2009,49 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // PHASE 1: FAST INITIAL LOAD - Basic posts only
-        console.time('Phase 1: Basic Posts Load');
-        const { data: posts_data, error: postsError } = await supabase
+        // BATCH-BASED PROGRESSIVE LOADING
+        console.time('Total Posts Load');
+        
+        // Get total post count first
+        const { count: totalPosts } = await supabase
             .from('posts')
-            .select('id, content, media_url, media_type, author_email, author_name, created_at')
-            .order('created_at', { ascending: false });
+            .select('*', { count: 'exact', head: true });
         
-        if (postsError) {
-            console.error('Supabase posts error:', postsError);
-            throw new Error(`Database error: ${postsError.message}`);
-        }
+        console.log(`DEBUG: Total posts to load: ${totalPosts}`);
         
-        // Cache user profiles for progressive enhancement
-        let profiles_data = null;
+        // Cache user profiles for all batches
         const profilePromise = supabase
             .from('user_profiles')
-            .select('email, username, name')
-            .then(({ data, error }) => {
-                if (!error) profiles_data = data;
-                return data;
-            });
+            .select('email, username, name');
         
-        // Store posts immediately without waiting for profiles
-        posts = posts_data || [];
-        originalPosts = [...posts];
-        
-        console.log('DEBUG: Posts loaded:', posts?.length || 0);
-        console.timeEnd('Phase 1: Basic Posts Load');
-        
-        // PHASE 1: Render basic posts immediately
-        await displayBasicPosts();
+        // Initialize containers
+        posts = [];
+        originalPosts = [];
+        const container = document.getElementById('postsContainer');
+        container.innerHTML = '';
         
         const loadingElement = document.getElementById('loadingState');
         if (loadingElement) loadingElement.style.display = 'none';
         
-        // PHASE 2: Progressive enhancement - start background loading
-        console.time('Phase 2: Progressive Enhancement');
-        progressiveEnhancement(profilePromise);
+        // Load posts in batches of 10
+        const BATCH_SIZE = 10;
+        const totalBatches = Math.ceil(totalPosts / BATCH_SIZE);
+        
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const offset = batchIndex * BATCH_SIZE;
+            console.time(`Batch ${batchIndex + 1} Processing`);
+            
+            await processBatch(supabase, offset, BATCH_SIZE, profilePromise, batchIndex);
+            
+            console.timeEnd(`Batch ${batchIndex + 1} Processing`);
+            
+            // Small delay between batches for smooth experience
+            if (batchIndex < totalBatches - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        console.timeEnd('Total Posts Load');
     } catch (error) {
         console.error('Error loading posts:', error);
         const loadingElement = document.getElementById('loadingState');
@@ -2419,6 +2424,190 @@ async function loadPosts() {
             } catch (error) {
                 console.error('Media enhancement error:', error);
             }
+        }
+        
+        // BATCH PROCESSING FUNCTION
+        async function processBatch(supabase, offset, batchSize, profilePromise, batchIndex) {
+            try {
+                // Load batch of posts
+                const { data: batchPosts, error: postsError } = await supabase
+                    .from('posts')
+                    .select('id, content, media_url, media_type, author_email, author_name, created_at')
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + batchSize - 1);
+                
+                if (postsError) {
+                    console.error(`Batch ${batchIndex + 1} posts error:`, postsError);
+                    return;
+                }
+                
+                if (!batchPosts || batchPosts.length === 0) {
+                    console.log(`Batch ${batchIndex + 1}: No posts to load`);
+                    return;
+                }
+                
+                console.log(`Batch ${batchIndex + 1}: Loaded ${batchPosts.length} posts`);
+                
+                // Add posts to global arrays
+                posts.push(...batchPosts);
+                originalPosts.push(...batchPosts);
+                
+                // Render batch posts immediately
+                const container = document.getElementById('postsContainer');
+                const batchHtml = batchPosts.map(post => {
+                    const username = post.author_email?.split('@')[0] || 'user';
+                    const basicMediaHtml = post.media_url ? getBasicMediaHtml(post) : '';
+                    
+                    return `
+                    <div class="post" data-post-id="${post.id}">
+                        <div class="post-header">
+                            <div class="post-avatar">${generateInitials(username)}</div>
+                            <div class="post-author">
+                                <div class="post-author-name">@${username}</div>
+                                <div class="post-time">${formatTime(post.created_at)}</div>
+                            </div>
+                        </div>
+                        
+                        ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
+                        
+                        ${post.media_url ? `
+                            <div class="post-media" id="media-${post.id}">
+                                ${basicMediaHtml}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Loading placeholder for comments -->
+                        <div class="post-top-comments" id="top-comments-${post.id}">
+                            <div class="comments-loading">Loading comments...</div>
+                        </div>
+                        
+                        <div class="post-actions">
+                            <button class="post-action" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
+                                <span id="like-icon-${post.id}">🤍</span>
+                                <span id="like-count-${post.id}">0</span> likes
+                            </button>
+                            <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
+                                💬 <span id="comment-count-${post.id}">0</span> comments
+                            </button>
+                            <button class="post-action" onclick="event.stopPropagation(); copyPostLink('${post.id}')">
+                                🔗 Link
+                            </button>
+                            <button class="post-action share-button" id="share-btn-${post.id}" onclick="event.stopPropagation(); sharePost('${post.id}', this);">
+                                Share
+                            </button>
+                            ${post.author_email === window.dcfAuth?.getCurrentUser()?.email ? `
+                                <button class="post-action" onclick="event.stopPropagation(); editPost('${post.id}')">
+                                    ✏️ Edit
+                                </button>
+                                <button class="post-action" onclick="event.stopPropagation(); deletePost('${post.id}')">
+                                    🗑️ Delete
+                                </button>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                            <!-- Smart Comment Filter Controls -->
+                            <div class="comment-filter-section">
+                                <select class="comment-filter-dropdown" id="comment-filter-${post.id}" onchange="applyCommentFilter('${post.id}')">
+                                    <option value="priority">Top Comments</option>
+                                    <option value="most-liked">Most Liked</option>
+                                    <option value="latest">Latest</option>
+                                    <option value="oldest">Oldest</option>
+                                    <option value="all">All Comments</option>
+                                </select>
+                                <span class="comment-count-display" id="comment-total-${post.id}">0 comments</span>
+                            </div>
+                            
+                            <!-- Initial Top 3 Comments Display -->
+                            <div id="comments-preview-${post.id}"></div>
+                            
+                            <!-- More Comments Section (Initially Hidden) -->
+                            <div id="comments-expanded-${post.id}" style="display: none;"></div>
+                            
+                            <!-- More Comments Toggle -->
+                            <div class="more-comments-toggle" id="more-comments-btn-${post.id}" style="display: none;">
+                                <button class="btn-link" onclick="toggleMoreComments('${post.id}')">View More Comments</button>
+                            </div>
+                            
+                            <div class="comment-input-section">
+                                <textarea class="comment-input" id="comment-input-${post.id}" placeholder="Write a comment..." rows="1"></textarea>
+                                <button class="comment-submit" onclick="addComment('${post.id}')">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+                
+                // Append batch to container
+                container.insertAdjacentHTML('beforeend', batchHtml);
+                
+                // IMMEDIATELY load comments and likes for this batch
+                const batchPostIds = batchPosts.map(p => p.id);
+                
+                // Load comments and likes for this batch in parallel
+                await Promise.all([
+                    batchLoadLikes(batchPostIds),
+                    batchLoadTopComments(batchPostIds)
+                ]);
+                
+                // Progressive enhancement for usernames if this is first batch
+                if (batchIndex === 0) {
+                    profilePromise.then(({ data: profiles_data }) => {
+                        if (profiles_data) {
+                            enhanceUsernamesForBatch(batchPosts, profiles_data);
+                        }
+                    });
+                }
+                
+                // Enhance media with overlays after a short delay
+                setTimeout(() => {
+                    enhanceMediaForBatch(batchPosts);
+                }, 200);
+                
+            } catch (error) {
+                console.error(`Error processing batch ${batchIndex + 1}:`, error);
+            }
+        }
+        
+        // ENHANCE USERNAMES FOR A BATCH
+        function enhanceUsernamesForBatch(batchPosts, profiles_data) {
+            batchPosts.forEach(post => {
+                const profile = profiles_data.find(p => p.email === post.author_email);
+                if (profile) {
+                    const username = profile.username || post.author_email?.split('@')[0] || 'user';
+                    const authorElement = document.querySelector(`[data-post-id="${post.id}"] .post-author-name`);
+                    if (authorElement) {
+                        authorElement.textContent = `@${username}`;
+                    }
+                    const avatarElement = document.querySelector(`[data-post-id="${post.id}"] .post-avatar`);
+                    if (avatarElement) {
+                        avatarElement.textContent = generateInitials(username);
+                    }
+                }
+            });
+        }
+        
+        // ENHANCE MEDIA FOR A BATCH
+        async function enhanceMediaForBatch(batchPosts) {
+            for (const post of batchPosts) {
+                if (!post.media_url) continue;
+                
+                try {
+                    const urls = JSON.parse(post.media_url);
+                    if (urls.length > 1) {
+                        const mediaContainer = document.getElementById(`media-${post.id}`);
+                        if (mediaContainer) {
+                            const enhancedMediaHtml = await getMediaHtml(post, posts.indexOf(post));
+                            mediaContainer.innerHTML = enhancedMediaHtml;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error enhancing media for post:', post.id, e);
+                }
+            }
+            
+            // Initialize lazy overlay loading for this batch
+            initializeLazyOverlays();
         }
         
         // ORIGINAL DISPLAY POSTS FOR BACKWARDS COMPATIBILITY
