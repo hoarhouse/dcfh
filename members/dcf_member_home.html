@@ -447,26 +447,61 @@
 
         .post-media img,
         .post-media video {
+            display: block;
+            border-radius: 8px;
+            margin: 0 auto;
+            object-fit: contain;
+        }
+        
+        /* Orientation-based image display */
+        .post-image-horizontal {
             width: 100%;
             height: auto;
             max-height: 400px;
-            max-width: 100%;
-            object-fit: cover;
-            display: block;
+            object-fit: contain;
             border-radius: 8px;
         }
         
-        /* Responsive image constraints */
+        .post-image-vertical {
+            max-height: 500px;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .post-image-square {
+            max-width: 400px;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .post-media img,
-            .post-media video {
+            .post-image-horizontal {
+                max-height: 300px;
+            }
+            .post-image-vertical {
+                max-height: 400px;
+            }
+            .post-image-square {
+                max-width: 300px;
                 max-height: 300px;
             }
         }
         
         @media (max-width: 480px) {
-            .post-media img,
-            .post-media video {
+            .post-image-horizontal {
+                max-height: 250px;
+            }
+            .post-image-vertical {
+                max-height: 350px;
+            }
+            .post-image-square {
+                max-width: 250px;
                 max-height: 250px;
             }
         }
@@ -1292,6 +1327,33 @@
         let currentFilter = 'latest';
         let postStats = {}; // Store likes and comments count for each post
         
+        // Detect image orientation and return appropriate CSS class
+        function getImageOrientationClass(imageUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const { naturalWidth, naturalHeight } = img;
+                    const aspectRatio = naturalWidth / naturalHeight;
+                    
+                    if (Math.abs(aspectRatio - 1) < 0.1) {
+                        // Square-ish (ratio between 0.9 and 1.1)
+                        resolve('post-image-square');
+                    } else if (aspectRatio > 1.2) {
+                        // Horizontal (width significantly larger than height)
+                        resolve('post-image-horizontal');
+                    } else {
+                        // Vertical (height larger than or close to width)
+                        resolve('post-image-vertical');
+                    }
+                };
+                img.onerror = function() {
+                    // Default to horizontal if can't load
+                    resolve('post-image-horizontal');
+                };
+                img.src = imageUrl;
+            });
+        }
+        
         // Image compression function
         function compressImage(file, maxWidth = 1200, maxHeight = 800, quality = 0.8) {
             return new Promise((resolve) => {
@@ -1531,7 +1593,7 @@ async function loadPosts() {
         
         console.log('DEBUG: Posts loaded:', posts?.length || 0);
         originalPosts = [...posts]; // Store original posts for filtering
-        displayPosts();
+        await displayPosts();
         
         const loadingElement = document.getElementById('loadingState');
         if (loadingElement) loadingElement.style.display = 'none';
@@ -1555,7 +1617,7 @@ async function loadPosts() {
 }
 
         // Display posts in the feed
-        function displayPosts() {
+        async function displayPosts() {
             const container = document.getElementById('postsContainer');
             
             if (posts.length === 0) {
@@ -1568,8 +1630,11 @@ async function loadPosts() {
                 return;
             }
 
-            container.innerHTML = posts.map(post => {
+            // Process posts asynchronously to handle orientation detection
+            const postsHtml = await Promise.all(posts.map(async post => {
                 const username = post.user_profiles?.username || post.username || post.author_email?.split('@')[0] || 'user';
+                const mediaHtml = post.media_url ? await getMediaHtml(post) : '';
+                
                 return `
                 <div class="post" data-post-id="${post.id}">
                     <div class="post-header">
@@ -1584,7 +1649,7 @@ async function loadPosts() {
                     
                     ${post.media_url ? `
                         <div class="post-media">
-                            ${getMediaHtml(post)}
+                            ${mediaHtml}
                         </div>
                     ` : ''}
                     
@@ -1621,7 +1686,9 @@ async function loadPosts() {
                     </div>
                 </div>
             `;
-            }).join('');
+            }));
+
+            container.innerHTML = postsHtml.join('');
 
             // Load likes and comments for each post
             posts.forEach(post => {
@@ -1630,15 +1697,18 @@ async function loadPosts() {
             });
         }
 
-        function getMediaHtml(post) {
+        async function getMediaHtml(post) {
             try {
                 const urls = JSON.parse(post.media_url);
                 const types = JSON.parse(post.media_type);
                 
                 if (urls.length === 1) {
-                    return types[0] === 'image' 
-                        ? `<img src="${urls[0]}" alt="Post media" class="clickable-image post-image" loading="lazy" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;">` 
-                        : `<video src="${urls[0]}" controls preload="metadata" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
+                    if (types[0] === 'image') {
+                        const orientationClass = await getImageOrientationClass(urls[0]);
+                        return `<img src="${urls[0]}" alt="Post media" class="clickable-image post-image ${orientationClass}" loading="lazy" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')" style="width: 100%; border-radius: 8px;">`;
+                    } else {
+                        return `<video src="${urls[0]}" controls preload="metadata" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
+                    }
                 } else {
                     // Multiple images - create collage with click handler
                     let collageHtml = '';
@@ -1646,39 +1716,39 @@ async function loadPosts() {
 
                     if (urls.length === 2) {
                         collageHtml = `<div style="display: flex; gap: 5px; height: 350px;" ${clickHandler}>`;
-                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image" loading="lazy" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
-                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image" loading="lazy" style="width: 50%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 50%; height: 100%; object-fit: contain; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 50%; height: 100%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '</div>';
                     } else if (urls.length === 3) {
                         collageHtml = `<div style="display: flex; gap: 5px; height: 350px;" ${clickHandler}>`;
-                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image" loading="lazy" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 66.67%; height: 100%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '<div style="display: flex; flex-direction: column; gap: 5px; width: 33.33%;">';
-                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
-                        collageHtml += `<img src="${urls[2]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 50%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 50%; object-fit: contain; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[2]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 50%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '</div></div>';
                     } else if (urls.length === 4) {
                         collageHtml = `<div style="display: flex; gap: 5px; height: 350px;" ${clickHandler}>`;
                         collageHtml += '<div style="display: flex; flex-direction: column; gap: 3px; width: 33.33%; height: 100%;">';
-                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
-                        collageHtml += `<img src="${urls[2]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
-                        collageHtml += `<img src="${urls[3]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 32%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[1]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 32%; object-fit: contain; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[2]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 32%; object-fit: contain; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[3]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 32%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '</div>';
-                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image" loading="lazy" style="width: 66.67%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 66.67%; height: 100%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '</div>';
                     } else if (urls.length === 5) {
                         collageHtml = `<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;" ${clickHandler}>`;
-                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 60%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 60%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '<div style="display: flex; gap: 5px; height: 40%;">';
                         for (let i = 1; i < 5; i++) {
-                            collageHtml += `<img src="${urls[i]}" class="clickable-image post-image" loading="lazy" style="width: 25%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                            collageHtml += `<img src="${urls[i]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 25%; height: 100%; object-fit: contain; border-radius: 8px;">`;
                         }
                         collageHtml += '</div></div>';
                     } else if (urls.length === 6) {
                         collageHtml = `<div style="display: flex; flex-direction: column; gap: 5px; height: 400px;" ${clickHandler}>`;
-                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image" loading="lazy" style="width: 100%; height: 75%; object-fit: cover; border-radius: 8px;">`;
+                        collageHtml += `<img src="${urls[0]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 100%; height: 75%; object-fit: contain; border-radius: 8px;">`;
                         collageHtml += '<div style="display: flex; gap: 5px; height: 25%;">';
                         for (let i = 1; i < 6; i++) {
-                            collageHtml += `<img src="${urls[i]}" class="clickable-image post-image" loading="lazy" style="width: 20%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                            collageHtml += `<img src="${urls[i]}" class="clickable-image post-image post-image-square" loading="lazy" style="width: 20%; height: 100%; object-fit: contain; border-radius: 8px;">`;
                         }
                         collageHtml += '</div></div>';
                     }
@@ -1687,7 +1757,7 @@ async function loadPosts() {
                 }
             } catch {
                 return post.media_type === 'image' 
-                    ? `<img src="${post.media_url}" alt="Post media" class="clickable-image" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')">` 
+                    ? `<img src="${post.media_url}" alt="Post media" class="clickable-image post-image-horizontal" onclick="event.stopPropagation(); openPhotoExperience('${post.id}')">` 
                     : `<video src="${post.media_url}" controls></video>`;
             }
         }
@@ -1801,7 +1871,7 @@ async function loadPosts() {
 
                 // Add the real post to top of posts array and refresh display
                 posts.unshift(insertedPost);
-                displayPosts();
+                await displayPosts();
 
                 // Clear form
                 document.getElementById('postContent').value = '';
@@ -2021,7 +2091,7 @@ async function loadPosts() {
                 if (error) throw error;
 
                 posts = posts.filter(post => post.id !== postId);
-                displayPosts();
+                await displayPosts();
                 showMessage('Post deleted successfully!', 'success');
 
             } catch (error) {
@@ -2868,7 +2938,7 @@ async function loadPosts() {
         }
         
         // Filter posts function
-        function filterPosts(filterType) {
+        async function filterPosts(filterType) {
             currentFilter = filterType;
             
             // Update active button
@@ -2923,7 +2993,7 @@ async function loadPosts() {
             
             // Update posts for display without modifying original
             posts = sortedPosts;
-            displayPosts();
+            await displayPosts();
         }
 
         // Close modal when clicking outside
