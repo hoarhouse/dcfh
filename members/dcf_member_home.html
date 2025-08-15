@@ -1155,27 +1155,11 @@
                     }
                 }
 
-                // Separate query for user profiles
-                const { data: profiles } = await supabase
-                    .from('user_profiles')
-                    .select('email, username, full_name, avatar_url');
-
-                // Match posts with user profiles by email
-                const postsWithProfiles = posts.map(post => {
-                    const userProfile = profiles?.find(profile => 
-                        profile.email === post.author_email
-                    );
-                    return {
-                        ...post,
-                        user_profiles: userProfile || null
-                    };
-                });
-
-                if (postsWithProfiles.length < postsPerPage) {
+                if (posts.length < postsPerPage) {
                     hasMorePosts = false;
                 }
 
-                allPostsCache = [...allPostsCache, ...postsWithProfiles];
+                allPostsCache = [...allPostsCache, ...posts];
                 currentPage++;
 
                 displayPosts();
@@ -1206,8 +1190,7 @@
         }
 
         function createPostHTML(post) {
-            const author = post.user_profiles || {};
-            const authorName = author.username || author.full_name || 'Unknown User';
+            const authorName = post.author_name || 'Unknown User';
             const authorInitials = getInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
@@ -1221,10 +1204,7 @@
                 <div class="post-card" data-post-id="${post.id}">
                     <div class="post-header">
                         <div class="author-avatar">
-                            ${author.avatar_url ? 
-                                `<img src="${author.avatar_url}" alt="${authorName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` :
-                                authorInitials
-                            }
+                            ${authorInitials}
                         </div>
                         <div class="post-meta">
                             <div class="author-name">@${authorName}</div>
@@ -1382,24 +1362,8 @@
 
                 if (error) throw error;
 
-                // Separate query for user profiles
-                const { data: profiles } = await supabase
-                    .from('user_profiles')
-                    .select('email, username, full_name, avatar_url');
-
-                // Match comments with user profiles by email
-                const commentsWithProfiles = (comments || []).map(comment => {
-                    const userProfile = profiles?.find(profile => 
-                        profile.email === comment.author_email
-                    );
-                    return {
-                        ...comment,
-                        user_profiles: userProfile || null
-                    };
-                });
-
-                console.log(`Loaded ${commentsWithProfiles?.length || 0} comments for post ${postId}`);
-                displayComments(postId, commentsWithProfiles);
+                console.log(`Loaded ${comments?.length || 0} comments for post ${postId}`);
+                displayComments(postId, comments || []);
 
             } catch (error) {
                 console.error('Error loading comments:', error);
@@ -1427,8 +1391,7 @@
         }
 
         function createCommentHTML(comment) {
-            const author = comment.user_profiles || {};
-            const authorName = author.username || author.full_name || 'Unknown User';
+            const authorName = comment.author_name || 'Unknown User';
             const timeAgo = formatTimeAgo(comment.created_at);
             
             return `
@@ -1805,23 +1768,7 @@
 
                 if (error) throw error;
 
-                // Separate query for user profiles
-                const { data: profiles } = await supabase
-                    .from('user_profiles')
-                    .select('email, username, full_name, avatar_url');
-
-                // Match comments with user profiles by email
-                const commentsWithProfiles = (comments || []).map(comment => {
-                    const userProfile = profiles?.find(profile => 
-                        profile.email === comment.author_email
-                    );
-                    return {
-                        ...comment,
-                        user_profiles: userProfile || null
-                    };
-                });
-
-                displayComments(postId, commentsWithProfiles, false); // false = don't show "more comments" button
+                displayComments(postId, comments || [], false); // false = don't show "more comments" button
 
             } catch (error) {
                 console.error('Error loading all comments:', error);
@@ -1864,23 +1811,7 @@
 
                 if (error) throw error;
 
-                // Separate query for user profiles
-                const { data: profiles } = await supabase
-                    .from('user_profiles')
-                    .select('email, username, full_name, avatar_url');
-
-                // Match comments with user profiles by email
-                const commentsWithProfiles = (comments || []).map(comment => {
-                    const userProfile = profiles?.find(profile => 
-                        profile.email === comment.author_email
-                    );
-                    return {
-                        ...comment,
-                        user_profiles: userProfile || null
-                    };
-                });
-
-                displayComments(postId, commentsWithProfiles);
+                displayComments(postId, comments || []);
 
             } catch (error) {
                 console.error('Error loading filtered comments:', error);
