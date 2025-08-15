@@ -1688,6 +1688,34 @@ async function loadPosts() {
                 loadPostLikes(post.id);
                 loadPostComments(post.id);
             });
+            
+            // Setup Enter key event listeners for comment inputs
+            setupCommentKeyHandlers();
+        }
+        
+        // Setup Enter key functionality for comment inputs
+        function setupCommentKeyHandlers() {
+            // Setup for regular comment inputs
+            document.querySelectorAll('.comment-input').forEach(input => {
+                // Remove existing listeners to prevent duplicates
+                input.removeEventListener('keydown', handleCommentKeydown);
+                input.addEventListener('keydown', handleCommentKeydown);
+            });
+        }
+        
+        // Handle keydown events for comment inputs
+        function handleCommentKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                
+                // Extract post ID from input ID
+                const inputId = event.target.id;
+                const isModal = inputId.includes('modal-comment-input');
+                const postId = inputId.replace(isModal ? 'modal-comment-input-' : 'comment-input-', '');
+                
+                // Submit the comment
+                addComment(postId, isModal);
+            }
         }
 
         async function getMediaHtml(post) {
@@ -2641,6 +2669,9 @@ async function loadPosts() {
 
             document.getElementById('postModal').classList.add('active');
             loadPostCommentsForModal(post.id);
+            
+            // Setup Enter key handler for modal comment input
+            setupCommentKeyHandlers();
         }
 
         // Close post modal
