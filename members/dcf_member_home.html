@@ -2241,7 +2241,7 @@ async function loadPosts() {
             const isMainVertical = mainImageOrientation === 'post-image-vertical';
             
             const clickHandler = `onclick="event.stopPropagation(); openPhotoExperience('${postId}')"`;
-            const overlayClickHandler = (index) => `onclick="event.stopPropagation(); swapImages('${postId}', 0, ${index})"`;
+            const overlayClickHandler = (index) => `onclick="event.stopPropagation(); openPhotoExperience('${postId}', ${index})"`;
             
             // PRIORITY LOADING: First 3 posts get immediate loading, rest get lazy loading
             const isHighPriority = postIndex < 3;
@@ -3468,7 +3468,7 @@ async function loadPosts() {
             img.src = imageUrl;
         }
 
-        function openPhotoExperience(postId) {
+        function openPhotoExperience(postId, startIndex = 0) {
             const post = posts.find(p => p.id === postId);
             if (!post || !post.media_url) return;
 
@@ -3480,15 +3480,15 @@ async function loadPosts() {
                 if (!types.some(type => type === 'image')) return;
 
                 currentPhotoPost = post;
-                currentPhotoIndex = 0;
+                currentPhotoIndex = Math.max(0, Math.min(startIndex, urls.length - 1)); // Ensure valid index
                 
                 const experience = document.getElementById('photoExperience');
                 const counter = document.getElementById('photoCounter');
                 const progressBar = document.getElementById('progressBar');
                 
-                // Update UI elements first
-                counter.textContent = `1 / ${urls.length}`;
-                progressBar.style.width = `${(1 / urls.length) * 100}%`;
+                // Update UI elements with correct starting position
+                counter.textContent = `${currentPhotoIndex + 1} / ${urls.length}`;
+                progressBar.style.width = `${((currentPhotoIndex + 1) / urls.length) * 100}%`;
                 
                 // Update post info
                 document.getElementById('photoAuthor').textContent = post.author_name;
@@ -3501,8 +3501,8 @@ async function loadPosts() {
                 experience.classList.add('active');
                 document.body.style.overflow = 'hidden';
                 
-                // Load initial photo with proper state management
-                loadPhotoWithStates(urls[0], () => {
+                // Load photo at specified index with proper state management
+                loadPhotoWithStates(urls[currentPhotoIndex], () => {
                     // Update navigation visibility after image loads
                     updatePhotoNavigation();
                 });
