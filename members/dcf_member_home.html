@@ -941,6 +941,50 @@
             color: white !important;
         }
 
+        /* TOP COMMENTS DISPLAY UNDER POSTS */
+        .post-top-comments {
+            margin-top: 1rem;
+            padding: 0.75rem 0;
+            border-top: 1px solid #f8f9fa;
+        }
+        
+        .top-comment {
+            padding: 8px 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .top-comment-author {
+            font-weight: 600;
+            color: #007bff;
+            margin-right: 6px;
+        }
+        
+        .top-comment-text {
+            color: #333;
+        }
+        
+        .top-comment-likes {
+            color: #666;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: 500;
+        }
+        
+        .more-comments-link {
+            color: #007bff;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        .more-comments-link:hover {
+            text-decoration: underline;
+        }
+        
         .comments-section {
             margin-top: 1rem;
             padding-top: 1rem;
@@ -2034,6 +2078,11 @@ async function loadPosts() {
                         </div>
                     ` : ''}
                     
+                    <!-- Top 3 Comments Display Under Post -->
+                    <div class="post-top-comments" id="top-comments-${post.id}">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                    
                     <div class="post-actions">
                         <button class="post-action" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
                             <span id="like-icon-${post.id}">🤍</span>
@@ -2097,6 +2146,7 @@ async function loadPosts() {
             posts.forEach(post => {
                 loadPostLikes(post.id);
                 loadPostComments(post.id);
+                loadTopComments(post.id); // Load top 3 comments under each post
             });
             
             // Setup Enter key event listeners for comment inputs
@@ -2879,6 +2929,93 @@ async function loadPosts() {
 
             } catch (error) {
                 console.error('Error loading comments:', error);
+            }
+        }
+        
+        // LOAD TOP 3 COMMENTS UNDER EACH POST
+        async function loadTopComments(postId) {
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) return;
+                
+                // Get top 3 comments with like counts
+                const { data: comments, error } = await supabase
+                    .from('post_comments')
+                    .select(`
+                        *,
+                        comment_likes(count)
+                    `)
+                    .eq('post_id', postId)
+                    .is('parent_id', null) // Only root comments, not replies
+                    .limit(3);
+                
+                if (error) {
+                    console.warn('Error loading top comments:', error);
+                    return;
+                }
+                
+                if (!comments || comments.length === 0) {
+                    return; // No comments to display
+                }
+                
+                // Get usernames for comment authors
+                const authorEmails = [...new Set(comments.map(c => c.author_email))];
+                const { data: profiles } = await supabase
+                    .from('user_profiles')
+                    .select('email, username')
+                    .in('email', authorEmails);
+                
+                // Process comments with usernames and like counts
+                const processedComments = comments.map(comment => {
+                    const profile = profiles?.find(p => p.email === comment.author_email);
+                    const likeCount = comment.comment_likes?.[0]?.count || 0;
+                    return {
+                        ...comment,
+                        username: profile?.username,
+                        like_count: likeCount
+                    };
+                });
+                
+                // Sort by like count descending, then by created_at descending
+                processedComments.sort((a, b) => {
+                    if (a.like_count !== b.like_count) {
+                        return b.like_count - a.like_count; // Most liked first
+                    }
+                    return new Date(b.created_at) - new Date(a.created_at); // Then newest
+                });
+                
+                // Display comments under the post
+                const topCommentsContainer = document.getElementById(`top-comments-${postId}`);
+                if (topCommentsContainer) {
+                    const commentsHtml = processedComments.map(comment => {
+                        const displayName = comment.username ? `@${comment.username}` : comment.author_name;
+                        const likesText = comment.like_count > 0 ? `<span class="top-comment-likes">${comment.like_count} ${comment.like_count === 1 ? 'like' : 'likes'}</span>` : '';
+                        
+                        return `
+                            <div class="top-comment">
+                                <span class="top-comment-author">${displayName}</span>
+                                <span class="top-comment-text">${convertUrlsToLinks(comment.content)}</span>
+                                ${likesText}
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // Check if there are more comments
+                    const { count: totalComments } = await supabase
+                        .from('post_comments')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('post_id', postId)
+                        .is('parent_id', null);
+                    
+                    const moreCommentsLink = totalComments > 3 
+                        ? `<a href="#" class="more-comments-link" onclick="event.preventDefault(); toggleComments('${postId}');">View ${totalComments - 3} more comments</a>`
+                        : '';
+                    
+                    topCommentsContainer.innerHTML = commentsHtml + moreCommentsLink;
+                }
+                
+            } catch (error) {
+                console.error('Error loading top comments:', error);
             }
         }
         
