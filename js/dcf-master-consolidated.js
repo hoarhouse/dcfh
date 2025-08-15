@@ -500,8 +500,10 @@ async function confirmLogout() {
 }
 
 // =============================================================================
-// 7. PAGE TYPE DETECTION AND PUBLIC PAGE HANDLING
+// 7. UNIVERSAL AUTHENTICATION HANDLING - ALL PAGES TREATED EQUALLY
 // =============================================================================
+// Note: Page type detection disabled - all pages get universal auth handling
+/*
 function getPageType() {
     const path = window.location.pathname.toLowerCase();
     const filename = path.split('/').pop();
@@ -546,6 +548,7 @@ function handlePublicPageAuth() {
         updateNavForAuthState(false);
     }
 }
+*/
 
 function updateNavForAuthState(isLoggedIn) {
     const navActions = document.querySelector('.nav-actions') || document.querySelector('.user-menu');
@@ -1237,18 +1240,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Update user info for all pages
         await updateUserInfo();
         
-        // Handle page-specific logic
-        const pageType = getPageType();
-        console.log('DEBUG: pageType:', pageType);
-        if (pageType === 'public') {
-            handlePublicPageAuth();
-        } else {
-            // Add notification bell to member pages
-            addNotificationBellToMemberPages();
+        // Handle universal authentication UI - all pages get same treatment
+        // Ensure avatar is clickable for all authenticated users
+        const avatar = document.getElementById('userAvatar');
+        if (avatar && !avatar.onclick) {
+            avatar.setAttribute('onclick', 'toggleUserMenu()');
+            avatar.style.cursor = 'pointer';
         }
         
-        // Initialize quick actions
-        initializeQuickActions();
+        // Add notification bell to all pages where user is logged in
+        addNotificationBellToMemberPages();
         
         // Initialize footer
         setTimeout(initializeFooter, 50);
