@@ -179,7 +179,9 @@ async function updateUserInfo() {
     // Get current session
     const { data: { session } } = await window.masterSupabase.auth.getSession();
     if (!session?.user) {
-        console.log('No user session found');
+        console.log('No user session found - user is logged out');
+        // Don't return - this is normal for logged-out users
+        // The main initialization will handle the logged-out state
         return;
     }
     
@@ -1240,16 +1242,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Update user info for all pages
         await updateUserInfo();
         
-        // Handle universal authentication UI - all pages get same treatment
-        // Ensure avatar is clickable for all authenticated users
-        const avatar = document.getElementById('userAvatar');
-        if (avatar && !avatar.onclick) {
-            avatar.setAttribute('onclick', 'toggleUserMenu()');
-            avatar.style.cursor = 'pointer';
-        }
+        // Check authentication state and handle UI accordingly
+        const currentUser = window.dcfAuth?.getCurrentUser?.() || null;
         
-        // Add notification bell to all pages where user is logged in
-        addNotificationBellToMemberPages();
+        if (currentUser) {
+            // User is logged in - ensure avatar is clickable and add notifications
+            const avatar = document.getElementById('userAvatar');
+            if (avatar && !avatar.onclick) {
+                avatar.setAttribute('onclick', 'toggleUserMenu()');
+                avatar.style.cursor = 'pointer';
+            }
+            addNotificationBellToMemberPages();
+        } else {
+            // User is NOT logged in - show login/signup buttons
+            updateNavForAuthState(false);
+        }
         
         // Initialize footer
         setTimeout(initializeFooter, 50);
