@@ -2009,49 +2009,30 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // BATCH-BASED PROGRESSIVE LOADING
-        console.time('Total Posts Load');
+        // EMERGENCY SIMPLE LOAD - RESTORE WORKING FUNCTIONALITY
+        console.time('Simple Posts Load');
         
-        // Get total post count first
-        const { count: totalPosts } = await supabase
+        const { data: posts_data, error: postsError } = await supabase
             .from('posts')
-            .select('*', { count: 'exact', head: true });
+            .select('*')
+            .order('created_at', { ascending: false });
         
-        console.log(`DEBUG: Total posts to load: ${totalPosts}`);
+        if (postsError) {
+            console.error('Supabase posts error:', postsError);
+            throw new Error(`Database error: ${postsError.message}`);
+        }
         
-        // Cache user profiles for all batches
-        const profilePromise = supabase
-            .from('user_profiles')
-            .select('email, username, name');
+        posts = posts_data || [];
+        originalPosts = [...posts];
         
-        // Initialize containers
-        posts = [];
-        originalPosts = [];
-        const container = document.getElementById('postsContainer');
-        container.innerHTML = '';
+        console.log('DEBUG: Posts loaded:', posts?.length || 0);
+        console.timeEnd('Simple Posts Load');
+        
+        // Display posts immediately with basic functionality
+        await displaySimplePosts();
         
         const loadingElement = document.getElementById('loadingState');
         if (loadingElement) loadingElement.style.display = 'none';
-        
-        // Load posts in batches of 10
-        const BATCH_SIZE = 10;
-        const totalBatches = Math.ceil(totalPosts / BATCH_SIZE);
-        
-        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-            const offset = batchIndex * BATCH_SIZE;
-            console.time(`Batch ${batchIndex + 1} Processing`);
-            
-            await processBatch(supabase, offset, BATCH_SIZE, profilePromise, batchIndex);
-            
-            console.timeEnd(`Batch ${batchIndex + 1} Processing`);
-            
-            // Small delay between batches for smooth experience
-            if (batchIndex < totalBatches - 1) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
-        
-        console.timeEnd('Total Posts Load');
     } catch (error) {
         console.error('Error loading posts:', error);
         const loadingElement = document.getElementById('loadingState');
@@ -2072,8 +2053,8 @@ async function loadPosts() {
 }
 
         // Display posts in the feed
-        // PHASE 1: FAST BASIC POST DISPLAY - NO COMPLEX FEATURES
-        async function displayBasicPosts() {
+        // EMERGENCY SIMPLE POST DISPLAY - WORKING FUNCTIONALITY ONLY
+        async function displaySimplePosts() {
             const container = document.getElementById('postsContainer');
             
             if (posts.length === 0) {
@@ -2086,10 +2067,10 @@ async function loadPosts() {
                 return;
             }
 
-            // Render basic posts synchronously for speed
+            // Render posts with ONLY working features
             const postsHtml = posts.map((post, index) => {
                 const username = post.author_email?.split('@')[0] || 'user';
-                const basicMediaHtml = post.media_url ? getBasicMediaHtml(post) : '';
+                const simpleMediaHtml = post.media_url ? getSimpleMediaHtml(post) : '';
                 
                 return `
                 <div class="post" data-post-id="${post.id}">
@@ -2104,14 +2085,14 @@ async function loadPosts() {
                     ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
                     
                     ${post.media_url ? `
-                        <div class="post-media" id="media-${post.id}">
-                            ${basicMediaHtml}
+                        <div class="post-media">
+                            ${simpleMediaHtml}
                         </div>
                     ` : ''}
                     
-                    <!-- Loading placeholder for comments -->
+                    <!-- Simple comments placeholder -->
                     <div class="post-top-comments" id="top-comments-${post.id}">
-                        <div class="comments-loading">Loading comments...</div>
+                        <!-- Comments will load after posts -->
                     </div>
                     
                     <div class="post-actions">
@@ -2172,6 +2153,46 @@ async function loadPosts() {
             }).join('');
 
             container.innerHTML = postsHtml;
+            
+            // Load basic interactions after render
+            setTimeout(() => {
+                posts.forEach(post => {
+                    loadPostLikes(post.id);
+                    loadTopComments(post.id);
+                });
+            }, 100);
+        }
+        
+        // SIMPLE MEDIA HTML - NO COMPLEX FEATURES
+        function getSimpleMediaHtml(post) {
+            // Just display the image/video as-is
+            if (!post.media_url) return '';
+            
+            // Handle single media URL (no JSON parsing)
+            if (post.media_type === 'image') {
+                return `<img src="${post.media_url}" alt="Post media" class="clickable-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openSimplePhoto('${post.id}', '${post.media_url}')" style="width: 100%; border-radius: 8px;">`;
+            } else if (post.media_type === 'video') {
+                return `<video src="${post.media_url}" controls style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
+            } else {
+                // Fallback for any complex media - just show first URL
+                return `<img src="${post.media_url}" alt="Post media" class="post-image-horizontal" loading="lazy" style="width: 100%; border-radius: 8px;">`;
+            }
+        }
+        
+        // SIMPLE PHOTO MODAL
+        function openSimplePhoto(postId, imageUrl) {
+            // Simple image modal without complex features
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.9); z-index: 9999; display: flex; 
+                align-items: center; justify-content: center; cursor: pointer;
+            `;
+            modal.innerHTML = `
+                <img src="${imageUrl}" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+            `;
+            modal.onclick = () => modal.remove();
+            document.body.appendChild(modal);
         }
         
         // BASIC MEDIA HTML - NO COMPLEX OVERLAYS INITIALLY
