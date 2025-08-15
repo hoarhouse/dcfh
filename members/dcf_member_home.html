@@ -2078,21 +2078,30 @@ async function loadPosts() {
         
         console.log('DEBUG: Posts loaded:', posts?.length || 0);
         
-        // COMPREHENSIVE MEDIA_URL DIAGNOSIS
-        console.log('=== MEDIA_URL DIAGNOSIS ===');
+        // CRITICAL GITHUB URL DIAGNOSTIC - DEEP TRACE
+        console.log('🚨 === GITHUB URL DIAGNOSTIC - DEEP TRACE ===');
+        console.log('🚨 Current window.location:', window.location.href);
+        console.log('🚨 Document base URL:', document.baseURI);
+        console.log('🚨 Document location origin:', document.location.origin);
+        
         posts.slice(0, 5).forEach((post, index) => {
-            console.log(`Post ${index + 1}:`);
-            console.log('  ID:', post.id);
-            console.log('  media_url RAW:', post.media_url);
-            console.log('  media_url TYPE:', typeof post.media_url);
-            console.log('  media_type RAW:', post.media_type);
-            console.log('  media_type TYPE:', typeof post.media_type);
-            console.log('  media_url length:', post.media_url?.length);
-            console.log('  media_url starts with [:', post.media_url?.startsWith('['));
-            console.log('  media_url starts with http:', post.media_url?.startsWith('http'));
-            console.log('  ---');
+            console.log(`🚨 Post ${index + 1} COMPLETE ANALYSIS:`);
+            console.log('  📍 Post ID:', post.id);
+            console.log('  📍 media_url RAW DATABASE VALUE:', JSON.stringify(post.media_url));
+            console.log('  📍 media_url TYPE:', typeof post.media_url);
+            console.log('  📍 media_url LENGTH:', post.media_url?.length);
+            console.log('  📍 media_url FIRST 100 CHARS:', post.media_url?.substring(0, 100));
+            console.log('  📍 media_url CONTAINS GITHUB:', post.media_url?.includes('github'));
+            console.log('  📍 media_url CONTAINS SUPABASE:', post.media_url?.includes('supabase'));
+            console.log('  📍 media_url STARTS WITH HTTP:', post.media_url?.startsWith('http'));
+            console.log('  📍 media_url STARTS WITH [:', post.media_url?.startsWith('['));
+            console.log('  📍 media_url STARTS WITH /:', post.media_url?.startsWith('/'));
+            console.log('  📍 media_url IS RELATIVE PATH:', !post.media_url?.startsWith('http') && !post.media_url?.startsWith('['));
+            console.log('  📍 media_type RAW:', JSON.stringify(post.media_type));
+            console.log('  📍 FULL POST OBJECT:', JSON.stringify(post, null, 2));
+            console.log('  🔥 ---END POST ANALYSIS--- 🔥');
         });
-        console.log('=== END DIAGNOSIS ===');
+        console.log('🚨 === END GITHUB URL DIAGNOSTIC ===');
         console.timeEnd('Optimized Posts Load');
         
         // Start background loading after first batch is displayed
@@ -2264,11 +2273,13 @@ async function loadPosts() {
         function getComprehensiveMediaHtml(post) {
             if (!post.media_url) return '';
             
-            console.log(`Processing media for post ${post.id}:`, {
-                media_url: post.media_url,
-                media_type: post.media_type,
-                url_type: typeof post.media_url
-            });
+            console.log(`🔍 PROCESSING MEDIA FOR POST ${post.id}:`);
+            console.log('  📍 INPUT media_url:', JSON.stringify(post.media_url));
+            console.log('  📍 INPUT media_type:', JSON.stringify(post.media_type));
+            console.log('  📍 INPUT url_type:', typeof post.media_url);
+            console.log('  📍 CONTAINS GITHUB?:', post.media_url?.includes('github'));
+            console.log('  📍 CONTAINS SUPABASE?:', post.media_url?.includes('supabase'));
+            console.log('  📍 IS RELATIVE PATH?:', !post.media_url?.startsWith('http') && !post.media_url?.startsWith('['));
             
             try {
                 let urls = [];
@@ -2303,10 +2314,19 @@ async function loadPosts() {
                     types = [String(post.media_type) || 'image'];
                 }
                 
-                console.log('Parsed URLs:', urls);
-                console.log('Parsed types:', types);
+                console.log('  🔎 PARSED URLs:', JSON.stringify(urls));
+                console.log('  🔎 PARSED types:', JSON.stringify(types));
                 
-                // STEP 2: Validate URLs
+                // CRITICAL: Check each parsed URL for GitHub paths
+                urls.forEach((url, idx) => {
+                    console.log(`  🚨 URL ${idx}:`, JSON.stringify(url));
+                    console.log(`  🚨 URL ${idx} contains github:`, url?.includes('github'));
+                    console.log(`  🚨 URL ${idx} contains supabase:`, url?.includes('supabase'));
+                    console.log(`  🚨 URL ${idx} is relative:`, !url?.startsWith('http'));
+                    console.log(`  🚨 URL ${idx} will become:`, url?.startsWith('http') ? url : `RELATIVE -> ${document.location.origin}/${url}`);
+                });
+                
+                // STEP 2: Validate URLs WITH GITHUB DETECTION
                 const validUrls = urls.filter(url => {
                     const isValid = url && 
                                    typeof url === 'string' && 
@@ -2314,16 +2334,35 @@ async function loadPosts() {
                                    !url.includes('undefined') && 
                                    !url.includes('null') &&
                                    (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:'));
+                    
+                    console.log(`  🔍 VALIDATING URL:`, JSON.stringify(url));
+                    console.log(`  🔍 URL IS VALID:`, isValid);
+                    console.log(`  🔍 URL CONTAINS GITHUB:`, url?.includes('github'));
+                    
                     if (!isValid) {
-                        console.warn('Invalid URL filtered out:', url);
+                        console.warn('  ⚠️ INVALID URL FILTERED OUT:', JSON.stringify(url));
+                    } else if (url?.includes('github')) {
+                        console.error('  🚨 GITHUB URL DETECTED IN DATABASE:', JSON.stringify(url));
                     }
+                    
                     return isValid;
                 });
                 
                 if (validUrls.length === 0) {
-                    console.warn('No valid URLs found for post', post.id);
+                    console.warn('  ⚠️ NO VALID URLs FOUND FOR POST', post.id);
+                    console.warn('  ⚠️ ORIGINAL media_url was:', JSON.stringify(post.media_url));
                     return '';
                 }
+                
+                console.log('  ✅ FINAL VALID URLs FOR RENDERING:', JSON.stringify(validUrls));
+                
+                // CRITICAL: Final check for GitHub URLs before rendering
+                validUrls.forEach((url, idx) => {
+                    if (url.includes('github')) {
+                        console.error(`  🚨 FINAL URL ${idx} CONTAINS GITHUB:`, JSON.stringify(url));
+                        console.error('  🚨 THIS WILL CAUSE GITHUB URL REQUEST!');
+                    }
+                });
                 
                 // STEP 3: Generate appropriate HTML
                 if (validUrls.length === 1) {
@@ -2332,14 +2371,24 @@ async function loadPosts() {
                     const type = types[0] || 'image';
                     
                     if (type === 'image') {
+                        console.log(`  🖼️ CREATING IMG TAG WITH SRC:`, JSON.stringify(url));
+                        if (url.includes('github')) {
+                            console.error('  🚨 CREATING IMG TAG WITH GITHUB URL!');
+                        }
                         return `<img src="${url}" alt="Post media" class="clickable-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openPhotoModal('${post.id}', 0)" style="width: 100%; border-radius: 8px;">`;
                     } else {
+                        console.log(`  🎥 CREATING VIDEO TAG WITH SRC:`, JSON.stringify(url));
                         return `<video src="${url}" controls style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
                     }
                 } else {
                     // Multiple media items - create simple collage
                     const mainUrl = validUrls[0];
                     const remainingCount = validUrls.length - 1;
+                    
+                    console.log(`  🖼️ CREATING MULTI-IMAGE COLLAGE WITH MAIN URL:`, JSON.stringify(mainUrl));
+                    if (mainUrl.includes('github')) {
+                        console.error('  🚨 MULTI-IMAGE COLLAGE USING GITHUB URL!');
+                    }
                     
                     return `
                         <div class="simple-collage" onclick="event.stopPropagation(); openPhotoModal('${post.id}', 0)" style="position: relative; cursor: pointer;">
@@ -3459,6 +3508,18 @@ async function loadPosts() {
                             .from('media')
                             .getPublicUrl(fileName);
 
+                        console.log(`🚨 UPLOAD DIAGNOSTIC - File ${i + 1}:`);
+                        console.log('  📎 Upload fileName:', fileName);
+                        console.log('  📎 Upload data:', uploadData);
+                        console.log('  📎 URL data:', urlData);
+                        console.log('  📎 Public URL:', JSON.stringify(urlData.publicUrl));
+                        console.log('  📎 URL contains github:', urlData.publicUrl?.includes('github'));
+                        console.log('  📎 URL contains supabase:', urlData.publicUrl?.includes('supabase'));
+                        
+                        if (urlData.publicUrl?.includes('github')) {
+                            console.error('  🚨 SUPABASE RETURNED GITHUB URL!');
+                        }
+
                         mediaUrls.push(urlData.publicUrl);
                         mediaTypes.push(file.type.startsWith('image/') ? 'image' : 'video');
                     }
@@ -3475,6 +3536,19 @@ async function loadPosts() {
                     throw new Error('Supabase client not available');
                 }
 
+                console.log(`🚨 DATABASE INSERT DIAGNOSTIC:`);
+                console.log('  📎 mediaUrls array:', JSON.stringify(mediaUrls));
+                console.log('  📎 mediaTypes array:', JSON.stringify(mediaTypes));
+                console.log('  📎 JSON.stringify(mediaUrls):', JSON.stringify(JSON.stringify(mediaUrls)));
+                console.log('  📎 Will save to database as media_url:', JSON.stringify(mediaUrls));
+                
+                // Check if any GitHub URLs are going to database
+                mediaUrls.forEach((url, idx) => {
+                    if (url?.includes('github')) {
+                        console.error(`  🚨 GITHUB URL GOING TO DATABASE[${idx}]:`, JSON.stringify(url));
+                    }
+                });
+                
                 const { data: insertedPostArray, error: insertError } = await supabase
                     .from('posts')
                     .insert({
