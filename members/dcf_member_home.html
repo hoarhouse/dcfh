@@ -2009,26 +2009,96 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // EMERGENCY SIMPLE LOAD - RESTORE WORKING FUNCTIONALITY
-        console.time('Simple Posts Load');
+        // OPTIMIZED PROGRESSIVE LOAD - FAST FIRST BATCH + BACKGROUND LOADING
+        console.time('Optimized Posts Load');
         
-        const { data: posts_data, error: postsError } = await supabase
+        // Load first 10 posts immediately for fast display
+        const { data: firstBatch, error: firstError } = await supabase
             .from('posts')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(10);
         
-        if (postsError) {
-            console.error('Supabase posts error:', postsError);
-            throw new Error(`Database error: ${postsError.message}`);
+        if (firstError) {
+            console.error('Supabase first batch error:', firstError);
+            throw new Error(`Database error: ${firstError.message}`);
         }
+        
+        // Show first batch immediately
+        posts = firstBatch || [];
+        originalPosts = [...posts];
+        
+        console.log('DEBUG: First batch loaded:', posts?.length || 0);
+        
+        // Load remaining posts in background
+        const loadRemainingPosts = async () => {
+            try {
+                const { data: remainingPosts, error: remainingError } = await supabase
+                    .from('posts')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .range(10, 1000); // Load posts 11-1000
+                
+                if (!remainingError && remainingPosts && remainingPosts.length > 0) {
+                    console.log('DEBUG: Background batch loaded:', remainingPosts.length);
+                    
+                    // Add to posts arrays
+                    posts.push(...remainingPosts);
+                    originalPosts.push(...remainingPosts);
+                    
+                    // Render additional posts
+                    const container = document.getElementById('postsContainer');
+                    const additionalHtml = remainingPosts.map(post => {
+                        const username = post.author_email?.split('@')[0] || 'user';
+                        const mediaHtml = post.media_url ? getComprehensiveMediaHtml(post) : '';
+                        
+                        return createPostHtml(post, username, mediaHtml);
+                    }).join('');
+                    
+                    container.insertAdjacentHTML('beforeend', additionalHtml);
+                    
+                    // Load interactions for new posts
+                    remainingPosts.forEach(post => {
+                        loadPostLikes(post.id);
+                        loadTopComments(post.id);
+                    });
+                    
+                    // Enhance media for multi-image posts
+                    setTimeout(() => {
+                        enhanceMultiImagePostsForBatch(remainingPosts);
+                    }, 200);
+                }
+            } catch (error) {
+                console.warn('Error loading remaining posts:', error);
+            }
+        };
         
         posts = posts_data || [];
         originalPosts = [...posts];
         
         console.log('DEBUG: Posts loaded:', posts?.length || 0);
-        console.timeEnd('Simple Posts Load');
         
-        // Display posts immediately with basic functionality
+        // COMPREHENSIVE MEDIA_URL DIAGNOSIS
+        console.log('=== MEDIA_URL DIAGNOSIS ===');
+        posts.slice(0, 5).forEach((post, index) => {
+            console.log(`Post ${index + 1}:`);
+            console.log('  ID:', post.id);
+            console.log('  media_url RAW:', post.media_url);
+            console.log('  media_url TYPE:', typeof post.media_url);
+            console.log('  media_type RAW:', post.media_type);
+            console.log('  media_type TYPE:', typeof post.media_type);
+            console.log('  media_url length:', post.media_url?.length);
+            console.log('  media_url starts with [:', post.media_url?.startsWith('['));
+            console.log('  media_url starts with http:', post.media_url?.startsWith('http'));
+            console.log('  ---');
+        });
+        console.log('=== END DIAGNOSIS ===');
+        console.timeEnd('Optimized Posts Load');
+        
+        // Start background loading after first batch is displayed
+        setTimeout(loadRemainingPosts, 1000);
+        
+        // Display first batch immediately with comprehensive functionality
         await displaySimplePosts();
         
         const loadingElement = document.getElementById('loadingState');
@@ -2067,132 +2137,496 @@ async function loadPosts() {
                 return;
             }
 
-            // Render posts with ONLY working features
+            // Render posts with comprehensive features
             const postsHtml = posts.map((post, index) => {
                 const username = post.author_email?.split('@')[0] || 'user';
-                const simpleMediaHtml = post.media_url ? getSimpleMediaHtml(post) : '';
+                const mediaHtml = post.media_url ? getComprehensiveMediaHtml(post) : '';
                 
-                return `
-                <div class="post" data-post-id="${post.id}">
-                    <div class="post-header">
-                        <div class="post-avatar">${generateInitials(username)}</div>
-                        <div class="post-author">
-                            <div class="post-author-name">@${username}</div>
-                            <div class="post-time">${formatTime(post.created_at)}</div>
-                        </div>
-                    </div>
-                    
-                    ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
-                    
-                    ${post.media_url ? `
-                        <div class="post-media">
-                            ${simpleMediaHtml}
-                        </div>
-                    ` : ''}
-                    
-                    <!-- Simple comments placeholder -->
-                    <div class="post-top-comments" id="top-comments-${post.id}">
-                        <!-- Comments will load after posts -->
-                    </div>
-                    
-                    <div class="post-actions">
-                        <button class="post-action" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
-                            <span id="like-icon-${post.id}">🤍</span>
-                            <span id="like-count-${post.id}">0</span> likes
-                        </button>
-                        <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
-                            💬 <span id="comment-count-${post.id}">0</span> comments
-                        </button>
-                        <button class="post-action" onclick="event.stopPropagation(); copyPostLink('${post.id}')">
-                            🔗 Link
-                        </button>
-                        <button class="post-action share-button" id="share-btn-${post.id}" onclick="event.stopPropagation(); sharePost('${post.id}', this);">
-                            Share
-                        </button>
-                        ${post.author_email === window.dcfAuth?.getCurrentUser()?.email ? `
-                            <button class="post-action" onclick="event.stopPropagation(); editPost('${post.id}')">
-                                ✏️ Edit
-                            </button>
-                            <button class="post-action" onclick="event.stopPropagation(); deletePost('${post.id}')">
-                                🗑️ Delete
-                            </button>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                        <!-- Smart Comment Filter Controls -->
-                        <div class="comment-filter-section">
-                            <select class="comment-filter-dropdown" id="comment-filter-${post.id}" onchange="applyCommentFilter('${post.id}')">
-                                <option value="priority">Top Comments</option>
-                                <option value="most-liked">Most Liked</option>
-                                <option value="latest">Latest</option>
-                                <option value="oldest">Oldest</option>
-                                <option value="all">All Comments</option>
-                            </select>
-                            <span class="comment-count-display" id="comment-total-${post.id}">0 comments</span>
-                        </div>
-                        
-                        <!-- Initial Top 3 Comments Display -->
-                        <div id="comments-preview-${post.id}"></div>
-                        
-                        <!-- More Comments Section (Initially Hidden) -->
-                        <div id="comments-expanded-${post.id}" style="display: none;"></div>
-                        
-                        <!-- More Comments Toggle -->
-                        <div class="more-comments-toggle" id="more-comments-btn-${post.id}" style="display: none;">
-                            <button class="btn-link" onclick="toggleMoreComments('${post.id}')">View More Comments</button>
-                        </div>
-                        
-                        <div class="comment-input-section">
-                            <textarea class="comment-input" id="comment-input-${post.id}" placeholder="Write a comment..." rows="1"></textarea>
-                            <button class="comment-submit" onclick="addComment('${post.id}')">Post</button>
-                        </div>
-                    </div>
-                </div>
-            `;
+                return createPostHtml(post, username, mediaHtml);
             }).join('');
 
             container.innerHTML = postsHtml;
             
-            // Load basic interactions after render
+            // Load interactions and enhance media progressively
             setTimeout(() => {
                 posts.forEach(post => {
                     loadPostLikes(post.id);
                     loadTopComments(post.id);
                 });
+                
+                // Progressive enhancement - upgrade to overlay system for multi-image posts
+                setTimeout(() => {
+                    enhanceMultiImagePosts();
+                }, 500);
             }, 100);
         }
         
-        // SIMPLE MEDIA HTML - NO COMPLEX FEATURES
-        function getSimpleMediaHtml(post) {
-            // Just display the image/video as-is
+        // CREATE POST HTML - REUSABLE FUNCTION
+        function createPostHtml(post, username, mediaHtml) {
+                
+            return `
+            <div class="post" data-post-id="${post.id}">
+                <div class="post-header">
+                    <div class="post-avatar">${generateInitials(username)}</div>
+                    <div class="post-author">
+                        <div class="post-author-name">@${username}</div>
+                        <div class="post-time">${formatTime(post.created_at)}</div>
+                    </div>
+                </div>
+                
+                ${post.content ? `<div class="post-content">${convertUrlsToLinks(post.content)}</div>` : ''}
+                
+                ${post.media_url ? `
+                    <div class="post-media">
+                        ${mediaHtml}
+                    </div>
+                ` : ''}
+                
+                <!-- Comments section -->
+                <div class="post-top-comments" id="top-comments-${post.id}">
+                    <!-- Comments will load after posts -->
+                </div>
+                
+                <div class="post-actions">
+                    <button class="post-action" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
+                        <span id="like-icon-${post.id}">🤍</span>
+                        <span id="like-count-${post.id}">0</span> likes
+                    </button>
+                    <button class="post-action" onclick="event.stopPropagation(); toggleComments('${post.id}')">
+                        💬 <span id="comment-count-${post.id}">0</span> comments
+                    </button>
+                    <button class="post-action" onclick="event.stopPropagation(); copyPostLink('${post.id}')">
+                        🔗 Link
+                    </button>
+                    <button class="post-action share-button" id="share-btn-${post.id}" onclick="event.stopPropagation(); sharePost('${post.id}', this);">
+                        Share
+                    </button>
+                    ${post.author_email === window.dcfAuth?.getCurrentUser()?.email ? `
+                        <button class="post-action" onclick="event.stopPropagation(); editPost('${post.id}')">
+                            ✏️ Edit
+                        </button>
+                        <button class="post-action" onclick="event.stopPropagation(); deletePost('${post.id}')">
+                            🗑️ Delete
+                        </button>
+                    ` : ''}
+                </div>
+                
+                <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                    <!-- Smart Comment Filter Controls -->
+                    <div class="comment-filter-section">
+                        <select class="comment-filter-dropdown" id="comment-filter-${post.id}" onchange="applyCommentFilter('${post.id}')">
+                            <option value="priority">Top Comments</option>
+                            <option value="most-liked">Most Liked</option>
+                            <option value="latest">Latest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="all">All Comments</option>
+                        </select>
+                        <span class="comment-count-display" id="comment-total-${post.id}">0 comments</span>
+                    </div>
+                    
+                    <!-- Initial Top 3 Comments Display -->
+                    <div id="comments-preview-${post.id}"></div>
+                    
+                    <!-- More Comments Section (Initially Hidden) -->
+                    <div id="comments-expanded-${post.id}" style="display: none;"></div>
+                    
+                    <!-- More Comments Toggle -->
+                    <div class="more-comments-toggle" id="more-comments-btn-${post.id}" style="display: none;">
+                        <button class="btn-link" onclick="toggleMoreComments('${post.id}')">View More Comments</button>
+                    </div>
+                    
+                    <div class="comment-input-section">
+                        <textarea class="comment-input" id="comment-input-${post.id}" placeholder="Write a comment..." rows="1"></textarea>
+                        <button class="comment-submit" onclick="addComment('${post.id}')">Post</button>
+                    </div>
+                </div>
+            </div>
+        `;
+            }).join('');
+
+            container.innerHTML = postsHtml;
+            
+            // Load interactions and enhance media progressively
+            setTimeout(() => {
+                posts.forEach(post => {
+                    loadPostLikes(post.id);
+                    loadTopComments(post.id);
+                });
+                
+                // Progressive enhancement - upgrade to overlay system for multi-image posts
+                setTimeout(() => {
+                    enhanceMultiImagePosts();
+                }, 500);
+            }, 100);
+        }
+        
+        // COMPREHENSIVE MEDIA PROCESSING - HANDLES ALL FORMATS
+        function getComprehensiveMediaHtml(post) {
             if (!post.media_url) return '';
             
-            // Handle single media URL (no JSON parsing)
-            if (post.media_type === 'image') {
-                return `<img src="${post.media_url}" alt="Post media" class="clickable-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openSimplePhoto('${post.id}', '${post.media_url}')" style="width: 100%; border-radius: 8px;">`;
-            } else if (post.media_type === 'video') {
-                return `<video src="${post.media_url}" controls style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
-            } else {
-                // Fallback for any complex media - just show first URL
-                return `<img src="${post.media_url}" alt="Post media" class="post-image-horizontal" loading="lazy" style="width: 100%; border-radius: 8px;">`;
+            console.log(`Processing media for post ${post.id}:`, {
+                media_url: post.media_url,
+                media_type: post.media_type,
+                url_type: typeof post.media_url
+            });
+            
+            try {
+                let urls = [];
+                let types = [];
+                
+                // STEP 1: Parse media_url based on actual format
+                if (typeof post.media_url === 'string') {
+                    if (post.media_url.startsWith('[') || post.media_url.startsWith('{')) {
+                        // JSON string format
+                        console.log('Detected JSON string format');
+                        urls = JSON.parse(post.media_url);
+                        types = post.media_type ? JSON.parse(post.media_type) : ['image'];
+                    } else if (post.media_url.includes(',')) {
+                        // Comma-separated format
+                        console.log('Detected comma-separated format');
+                        urls = post.media_url.split(',').map(url => url.trim());
+                        types = post.media_type ? post.media_type.split(',').map(type => type.trim()) : ['image'];
+                    } else {
+                        // Single URL string
+                        console.log('Detected single URL format');
+                        urls = [post.media_url];
+                        types = [post.media_type || 'image'];
+                    }
+                } else if (Array.isArray(post.media_url)) {
+                    // Already an array
+                    console.log('Detected array format');
+                    urls = post.media_url;
+                    types = Array.isArray(post.media_type) ? post.media_type : [post.media_type || 'image'];
+                } else {
+                    console.log('Unknown format, fallback');
+                    urls = [String(post.media_url)];
+                    types = [String(post.media_type) || 'image'];
+                }
+                
+                console.log('Parsed URLs:', urls);
+                console.log('Parsed types:', types);
+                
+                // STEP 2: Validate URLs
+                const validUrls = urls.filter(url => {
+                    const isValid = url && 
+                                   typeof url === 'string' && 
+                                   url.length > 0 && 
+                                   !url.includes('undefined') && 
+                                   !url.includes('null') &&
+                                   (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:'));
+                    if (!isValid) {
+                        console.warn('Invalid URL filtered out:', url);
+                    }
+                    return isValid;
+                });
+                
+                if (validUrls.length === 0) {
+                    console.warn('No valid URLs found for post', post.id);
+                    return '';
+                }
+                
+                // STEP 3: Generate appropriate HTML
+                if (validUrls.length === 1) {
+                    // Single media item
+                    const url = validUrls[0];
+                    const type = types[0] || 'image';
+                    
+                    if (type === 'image') {
+                        return `<img src="${url}" alt="Post media" class="clickable-image post-image-horizontal" loading="lazy" onclick="event.stopPropagation(); openPhotoModal('${post.id}', 0)" style="width: 100%; border-radius: 8px;">`;
+                    } else {
+                        return `<video src="${url}" controls style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px;"></video>`;
+                    }
+                } else {
+                    // Multiple media items - create simple collage
+                    const mainUrl = validUrls[0];
+                    const remainingCount = validUrls.length - 1;
+                    
+                    return `
+                        <div class="simple-collage" onclick="event.stopPropagation(); openPhotoModal('${post.id}', 0)" style="position: relative; cursor: pointer;">
+                            <img src="${mainUrl}" alt="Post media" class="post-image-horizontal" loading="lazy" style="width: 100%; border-radius: 8px;">
+                            <div class="image-count-badge" style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 6px 10px; border-radius: 15px; font-size: 13px; font-weight: 600;">+${remainingCount}</div>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error processing media for post', post.id, error);
+                
+                // Emergency fallback - try to show something
+                const fallbackUrl = String(post.media_url).split(',')[0];
+                if (fallbackUrl && !fallbackUrl.includes('undefined')) {
+                    return `<img src="${fallbackUrl}" alt="Post media" class="post-image-horizontal" loading="lazy" style="width: 100%; border-radius: 8px;">`;
+                }
+                return '';
             }
         }
         
-        // SIMPLE PHOTO MODAL
-        function openSimplePhoto(postId, imageUrl) {
-            // Simple image modal without complex features
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                background: rgba(0,0,0,0.9); z-index: 9999; display: flex; 
-                align-items: center; justify-content: center; cursor: pointer;
+        // COMPREHENSIVE PHOTO MODAL WITH NAVIGATION
+        function openPhotoModal(postId, startIndex = 0) {
+            const post = posts.find(p => p.id === postId);
+            if (!post || !post.media_url) return;
+            
+            try {
+                // Parse URLs using same logic as media display
+                let urls = [];
+                
+                if (typeof post.media_url === 'string') {
+                    if (post.media_url.startsWith('[') || post.media_url.startsWith('{')) {
+                        urls = JSON.parse(post.media_url);
+                    } else if (post.media_url.includes(',')) {
+                        urls = post.media_url.split(',').map(url => url.trim());
+                    } else {
+                        urls = [post.media_url];
+                    }
+                } else if (Array.isArray(post.media_url)) {
+                    urls = post.media_url;
+                } else {
+                    urls = [String(post.media_url)];
+                }
+                
+                // Filter valid URLs
+                const validUrls = urls.filter(url => 
+                    url && 
+                    typeof url === 'string' && 
+                    url.length > 0 && 
+                    !url.includes('undefined') && 
+                    !url.includes('null') &&
+                    (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:'))
+                );
+                
+                if (validUrls.length === 0) {
+                    console.warn('No valid URLs for modal');
+                    return;
+                }
+                
+                let currentIndex = Math.max(0, Math.min(startIndex, validUrls.length - 1));
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(0,0,0,0.95); z-index: 9999; display: flex; 
+                    align-items: center; justify-content: center;
+                `;
+                
+                // Create image container
+                const imageContainer = document.createElement('div');
+                imageContainer.style.cssText = `
+                    position: relative; max-width: 90%; max-height: 90%; 
+                    display: flex; align-items: center; justify-content: center;
+                `;
+                
+                // Create main image
+                const img = document.createElement('img');
+                img.style.cssText = `max-width: 100%; max-height: 100%; object-fit: contain;`;
+                
+                // Create navigation (if multiple images)
+                let prevBtn, nextBtn, counter;
+                if (validUrls.length > 1) {
+                    prevBtn = document.createElement('button');
+                    prevBtn.innerHTML = '◀';
+                    prevBtn.style.cssText = `
+                        position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+                        background: rgba(255,255,255,0.2); border: none; color: white;
+                        font-size: 24px; padding: 15px 20px; border-radius: 50%;
+                        cursor: pointer; backdrop-filter: blur(10px);
+                    `;
+                    
+                    nextBtn = document.createElement('button');
+                    nextBtn.innerHTML = '▶';
+                    nextBtn.style.cssText = `
+                        position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+                        background: rgba(255,255,255,0.2); border: none; color: white;
+                        font-size: 24px; padding: 15px 20px; border-radius: 50%;
+                        cursor: pointer; backdrop-filter: blur(10px);
+                    `;
+                    
+                    counter = document.createElement('div');
+                    counter.style.cssText = `
+                        position: absolute; top: 20px; right: 20px;
+                        background: rgba(0,0,0,0.7); color: white;
+                        padding: 10px 15px; border-radius: 20px; font-size: 14px;
+                    `;
+                }
+                
+                // Close button
+                const closeBtn = document.createElement('button');
+                closeBtn.innerHTML = '✕';
+                closeBtn.style.cssText = `
+                    position: absolute; top: 20px; left: 20px;
+                    background: rgba(255,255,255,0.2); border: none; color: white;
+                    font-size: 20px; padding: 10px 15px; border-radius: 50%;
+                    cursor: pointer; backdrop-filter: blur(10px);
+                `;
+                
+                // Update image function
+                function updateImage() {
+                    img.src = validUrls[currentIndex];
+                    if (counter) {
+                        counter.textContent = `${currentIndex + 1} / ${validUrls.length}`;
+                    }
+                }
+                
+                // Navigation handlers
+                if (prevBtn) {
+                    prevBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        currentIndex = currentIndex > 0 ? currentIndex - 1 : validUrls.length - 1;
+                        updateImage();
+                    };
+                    
+                    nextBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        currentIndex = currentIndex < validUrls.length - 1 ? currentIndex + 1 : 0;
+                        updateImage();
+                    };
+                }
+                
+                // Close handlers
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    modal.remove();
+                };
+                modal.onclick = () => modal.remove();
+                imageContainer.onclick = (e) => e.stopPropagation();
+                
+                // Keyboard navigation
+                const keyHandler = (e) => {
+                    if (e.key === 'Escape') modal.remove();
+                    if (e.key === 'ArrowLeft' && prevBtn) prevBtn.click();
+                    if (e.key === 'ArrowRight' && nextBtn) nextBtn.click();
+                };
+                document.addEventListener('keydown', keyHandler);
+                modal.addEventListener('remove', () => {
+                    document.removeEventListener('keydown', keyHandler);
+                });
+                
+                // Build modal
+                imageContainer.appendChild(img);
+                imageContainer.appendChild(closeBtn);
+                if (prevBtn) {
+                    imageContainer.appendChild(prevBtn);
+                    imageContainer.appendChild(nextBtn);
+                    imageContainer.appendChild(counter);
+                }
+                modal.appendChild(imageContainer);
+                
+                // Show modal
+                updateImage();
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                console.error('Error opening photo modal:', error);
+            }
+        }
+        
+        // PROGRESSIVE ENHANCEMENT: UPGRADE MULTI-IMAGE POSTS TO OVERLAY SYSTEM
+        function enhanceMultiImagePosts() {
+            console.log('Starting progressive enhancement for multi-image posts');
+            
+            posts.forEach(post => {
+                if (!post.media_url) return;
+                
+                try {
+                    // Parse URLs to check if multiple images
+                    let urls = [];
+                    
+                    if (typeof post.media_url === 'string') {
+                        if (post.media_url.startsWith('[') || post.media_url.startsWith('{')) {
+                            urls = JSON.parse(post.media_url);
+                        } else if (post.media_url.includes(',')) {
+                            urls = post.media_url.split(',').map(url => url.trim());
+                        } else {
+                            urls = [post.media_url];
+                        }
+                    } else if (Array.isArray(post.media_url)) {
+                        urls = post.media_url;
+                    } else {
+                        urls = [String(post.media_url)];
+                    }
+                    
+                    // Filter valid URLs
+                    const validUrls = urls.filter(url => 
+                        url && 
+                        typeof url === 'string' && 
+                        url.length > 0 && 
+                        !url.includes('undefined') && 
+                        !url.includes('null') &&
+                        (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:'))
+                    );
+                    
+                    // Only enhance if multiple valid URLs
+                    if (validUrls.length > 1) {
+                        const mediaContainer = document.querySelector(`[data-post-id="${post.id}"] .post-media`);
+                        if (mediaContainer) {
+                            console.log(`Enhancing post ${post.id} with ${validUrls.length} images`);
+                            
+                            // Create elegant overlay collage
+                            const overlayHtml = createElegantOverlayCollage(post.id, validUrls);
+                            mediaContainer.innerHTML = overlayHtml;
+                            
+                            // Initialize lazy loading for overlays
+                            initializeLazyOverlays();
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.warn(`Error enhancing post ${post.id}:`, error);
+                }
+            });
+        }
+        
+        // CREATE ELEGANT OVERLAY COLLAGE
+        function createElegantOverlayCollage(postId, urls) {
+            const mainUrl = urls[0];
+            const overlayUrls = urls.slice(1);
+            
+            // Determine layout based on number of images
+            let overlayHtml = '';
+            
+            overlayUrls.forEach((url, index) => {
+                const overlayIndex = index + 1;
+                let positionClass = '';
+                
+                if (urls.length === 2) {
+                    positionClass = 'group-bottom-right-1';
+                } else if (urls.length === 3) {
+                    positionClass = index === 0 ? 'group-top-left-1' : 'group-top-left-2';
+                } else if (urls.length === 4) {
+                    const positions = ['group-bottom-strip-1', 'group-bottom-strip-2', 'group-bottom-strip-3'];
+                    positionClass = positions[index] || 'group-bottom-strip-1';
+                } else if (urls.length === 5) {
+                    const positions = ['group-right-col-1', 'group-right-col-2', 'group-right-col-3', 'group-right-col-4'];
+                    positionClass = positions[index] || 'group-right-col-1';
+                } else {
+                    // 6+ images: mixed layout
+                    const positions = ['group-bottom-strip-1', 'group-bottom-strip-2', 'group-bottom-strip-3', 'group-bottom-strip-4', 'group-top-left-1'];
+                    positionClass = positions[index] || 'group-bottom-strip-1';
+                }
+                
+                overlayHtml += `
+                    <img data-src="${url}" alt="Secondary image" 
+                         class="image-overlay overlay-secondary ${positionClass}" 
+                         onclick="event.stopPropagation(); openPhotoModal('${postId}', ${overlayIndex})" 
+                         style="opacity: 0; transition: opacity 0.3s ease;">
+                `;
+            });
+            
+            // Add count indicator for 6+ images
+            let countIndicator = '';
+            if (urls.length > 5) {
+                const additionalCount = urls.length - 5;
+                countIndicator = `data-count="${additionalCount}"`;
+            }
+            
+            return `
+                <div class="main-image-collage" ${countIndicator} onclick="event.stopPropagation(); openPhotoModal('${postId}', 0)">
+                    <img src="${mainUrl}" alt="Main image" class="primary-image post-image post-image-horizontal" style="width: 100%; border-radius: 8px;">
+                    <div class="overlay-container">
+                        ${overlayHtml}
+                    </div>
+                </div>
             `;
-            modal.innerHTML = `
-                <img src="${imageUrl}" style="max-width: 90%; max-height: 90%; object-fit: contain;">
-            `;
-            modal.onclick = () => modal.remove();
-            document.body.appendChild(modal);
         }
         
         // BASIC MEDIA HTML - NO COMPLEX OVERLAYS INITIALLY
