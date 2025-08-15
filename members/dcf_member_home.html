@@ -799,6 +799,37 @@
             margin-top: 0.05rem;
         }
 
+        .comment-actions-inline {
+            display: inline;
+            margin-left: 0.5rem;
+        }
+
+        .comment-actions-inline button {
+            display: inline-block;
+            margin-right: 0.5rem;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .comment-actions-inline button:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .comment-actions-inline .comment-like-btn {
+            display: inline-block;
+        }
+
+        .comment-actions-inline .comment-like-btn.liked {
+            color: #dc3545;
+        }
+
         .comment-like-btn {
             display: flex;
             align-items: center;
@@ -1168,6 +1199,16 @@
                 gap: 0.6rem;
             }
 
+            .comment-actions-inline {
+                margin-left: 0.3rem;
+            }
+
+            .comment-actions-inline button {
+                font-size: 0.75rem;
+                margin-right: 0.3rem;
+                padding: 0.05rem 0.2rem;
+            }
+
             .comment-author {
                 font-size: 0.8rem;
             }
@@ -1472,11 +1513,11 @@
 
         async function createPostHTML(post) {
             const authorName = post.author_name || 'Unknown User';
-            // Use EXACT SAME logic as working dropdown: get username from database ONLY
+            // Use EXACT SAME logic as working dropdown: database first, then dynamic fallback
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
-            let profileUsername = 'user'; // DEFAULT - don't use currentUser.username which is "previewcapital"
+            let profileUsername = currentUser?.username; // DYNAMIC fallback like dropdown
             
-            // Get username from database EXACTLY like working dropdown - REQUIRED, no fallback to wrong value
+            // Get username from database EXACTLY like working dropdown
             if (window.masterSupabase && currentUser?.email) {
                 try {
                     const { data: profile } = await window.masterSupabase
@@ -1492,7 +1533,7 @@
                 }
             }
             
-            const authorUsername = profileUsername;
+            const authorUsername = profileUsername || currentUser?.username || 'Unknown';
             const authorInitials = getInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
@@ -1769,11 +1810,11 @@
 
         async function createCommentHTML(comment) {
             const authorName = comment.author_name || 'Unknown User';
-            // Use EXACT SAME logic as working dropdown: get username from database ONLY
+            // Use EXACT SAME logic as working dropdown: database first, then dynamic fallback
             const currentUser = window.dcfAuth?.getCurrentUser?.() || getCurrentUser?.();
-            let profileUsername = 'user'; // DEFAULT - don't use currentUser.username which is "previewcapital"
+            let profileUsername = currentUser?.username; // DYNAMIC fallback like dropdown
             
-            // Get username from database EXACTLY like working dropdown - REQUIRED, no fallback to wrong value
+            // Get username from database EXACTLY like working dropdown
             if (window.masterSupabase && currentUser?.email) {
                 try {
                     const { data: profile } = await window.masterSupabase
@@ -1789,7 +1830,7 @@
                 }
             }
             
-            const authorUsername = profileUsername;
+            const authorUsername = profileUsername || currentUser?.username || 'Unknown';
             const timeAgo = formatTimeAgo(comment.created_at);
             const authorInitials = getInitials(authorName);
             
@@ -1828,17 +1869,18 @@
                                 <span class="comment-author">@${authorUsername}</span>
                                 <span class="comment-time">• ${timeAgo} •</span>
                             </div>
-                            <span class="comment-text">${linkifyText(comment.content)}</span>
+                            <span class="comment-text">${linkifyText(comment.content)} 
+                                <span class="comment-actions-inline">
+                                    <button class="comment-like-btn ${comment.user_liked ? 'liked' : ''}" 
+                                            onclick="toggleCommentLike('${comment.id}', this)">
+                                        ❤️ ${comment.like_count || 0}
+                                    </button>
+                                    <button class="reply-btn" onclick="showReplyForm('${comment.id}')">💬 Reply</button>
+                                    <button class="comment-edit-btn" onclick="editComment('${comment.id}')">✏️ Edit</button>
+                                    <button class="comment-delete-btn" onclick="deleteComment('${comment.id}')">🗑️ Delete</button>
+                                </span>
+                            </span>
                         </div>
-                    </div>
-                    <div class="comment-actions">
-                        <button class="comment-like-btn ${comment.user_liked ? 'liked' : ''}" 
-                                onclick="toggleCommentLike('${comment.id}', this)">
-                            ❤️ ${comment.like_count || 0}
-                        </button>
-                        <button class="reply-btn" onclick="showReplyForm('${comment.id}')">💬 Reply</button>
-                        <button class="comment-edit-btn" onclick="editComment('${comment.id}')">✏️ Edit</button>
-                        <button class="comment-delete-btn" onclick="deleteComment('${comment.id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `;
