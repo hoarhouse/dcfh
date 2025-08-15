@@ -1398,22 +1398,36 @@ async function loadPosts() {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('DEBUG: Current session:', !!session);
         
-        // Load posts with username from user_profiles
-        const { data: posts_data, error } = await supabase
+        // Load posts separately from user profiles (no foreign key exists)
+        const { data: posts_data, error: postsError } = await supabase
             .from('posts')
-            .select(`
-                *,
-                user_profiles!posts_author_email_fkey(username, name)
-            `)
+            .select('*')
             .order('created_at', { ascending: false });
         
-        if (error) {
-            console.error('Supabase posts error:', error);
-            throw new Error(`Database error: ${error.message}`);
+        if (postsError) {
+            console.error('Supabase posts error:', postsError);
+            throw new Error(`Database error: ${postsError.message}`);
         }
         
-        console.log('DEBUG: Posts loaded:', posts_data?.length || 0);
-        posts = posts_data || [];
+        // Get user profiles to match usernames by email
+        const { data: profiles_data, error: profilesError } = await supabase
+            .from('user_profiles')
+            .select('email, username, name');
+        
+        if (profilesError) {
+            console.warn('Could not load user profiles:', profilesError);
+        }
+        
+        // Match posts with user profiles by email
+        posts = (posts_data || []).map(post => {
+            const profile = profiles_data?.find(p => p.email === post.author_email);
+            return {
+                ...post,
+                user_profiles: profile ? { username: profile.username, name: profile.name } : null
+            };
+        });
+        
+        console.log('DEBUG: Posts loaded:', posts?.length || 0);
         originalPosts = [...posts]; // Store original posts for filtering
         displayPosts();
         
