@@ -281,12 +281,12 @@ function addNavigationItems() {
     const basePath = getCorrectBasePath();
     
     const navigationItems = [
-        { href: basePath + 'dcf_member_home.html', icon: '🏠', text: 'My Feed' },
-        { href: basePath + 'dcf_member_profile.html', icon: '👤', text: 'My Profile' },
-        { href: basePath + 'dcf_members_directory.html', icon: '👥', text: 'My Connections' },
-        { href: basePath + 'dcf_projects_home.html', icon: '📋', text: 'My Projects' },
-        { href: basePath + 'dcf_events_calendar.html', icon: '📅', text: 'My Events' },
-        { href: basePath + 'dcf_personal_analytics.html', icon: '📊', text: 'My Stats' }
+        { href: basePath + 'members/dcf_member_home.html', icon: '🏠', text: 'My Feed' },
+        { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
+        { href: basePath + 'members/dcf_members_directory.html', icon: '👥', text: 'My Connections' },
+        { href: basePath + 'projects/dcf_projects_home.html', icon: '📋', text: 'My Projects' },
+        { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
+        { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' }
     ];
     
     const navSection = document.createElement('div');
