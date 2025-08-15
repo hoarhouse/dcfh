@@ -28,6 +28,18 @@
 - NO external API simulation
 - If external system doesn't exist, don't create fake version
 
+### 5. SUPABASE-ONLY DATA STORAGE - ABSOLUTE REQUIREMENT
+- ALL data is stored in Supabase (database tables + storage buckets)
+- NEVER create GitHub-based storage paths
+- NEVER use GitHub URLs for images, files, or data
+- GitHub is ONLY for code hosting, NEVER for data storage
+- Database tables: All in Supabase PostgreSQL
+- Images/files: Supabase storage buckets only
+- User uploads: Supabase storage buckets only
+- Correct image URL format: https://[project-id].supabase.co/storage/v1/object/public/[bucket]/[filename]
+- NO exceptions - everything goes to Supabase
+- When unsure about storage: ASK before assuming storage location
+
 ## ⚠️ MANDATORY WARNINGS
 Show these before ANY dangerous operations:
 - 🚨 WARNING: This will modify working authentication systems
@@ -35,6 +47,7 @@ Show these before ANY dangerous operations:
 - 🚨 WARNING: This will modify master-consolidated.js
 - 🚨 WARNING: This will add data that isn't from database/user input
 - 🚨 WARNING: This will change navigation or profile systems
+- 🚨 WARNING: This will use non-Supabase storage for data/images
 
 ## ✅ ONLY ALLOWED ACTIONS:
 1. Fix specific broken functionality mentioned in prompt
@@ -42,6 +55,7 @@ Show these before ANY dangerous operations:
 3. Preserve all working systems exactly as they are
 4. Add only what is explicitly requested
 5. Ask for clarification if requirements are unclear
+6. Store ALL data in Supabase database tables and storage buckets exclusively
 
 ## 🛑 VIOLATION PROTOCOL:
 IF ANY RULE IS VIOLATED:
