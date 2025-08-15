@@ -2082,6 +2082,11 @@ async function loadPosts() {
                     commentsList.innerHTML = rootComments.map(comment => 
                         renderComment(comment, repliesMap, postId, 0)
                     ).join('');
+                    
+                    // Load likes for all comments (including replies)
+                    commentsWithUsernames.forEach(comment => {
+                        loadCommentLikes(comment.id);
+                    });
                 }
 
             } catch (error) {
@@ -2102,6 +2107,10 @@ async function loadPosts() {
                         <div class="comment-author">${displayName}</div>
                         <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
                         <div class="comment-actions">
+                            <span class="comment-action" onclick="toggleCommentLike('${comment.id}')" id="comment-like-btn-${comment.id}">
+                                <span id="comment-like-icon-${comment.id}">🤍</span>
+                                <span id="comment-like-count-${comment.id}">0</span>
+                            </span>
                             <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
                             <span class="comment-time">${formatTime(comment.created_at)}</span>
                         </div>
@@ -2171,6 +2180,90 @@ async function loadPosts() {
                 if (replyBox.classList.contains('active')) {
                     document.getElementById(`reply-input-${commentId}`).focus();
                 }
+            }
+        }
+        
+        // Load comment likes
+        async function loadCommentLikes(commentId) {
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const { data, error } = await supabase
+                    .from('comment_likes')
+                    .select('*')
+                    .eq('comment_id', commentId);
+
+                if (error) throw error;
+
+                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
+                const userLiked = data.some(like => like.user_email === currentUserEmail);
+                
+                const likeIcon = document.getElementById(`comment-like-icon-${commentId}`);
+                const likeCount = document.getElementById(`comment-like-count-${commentId}`);
+                const likeBtn = document.getElementById(`comment-like-btn-${commentId}`);
+                
+                if (likeIcon) likeIcon.textContent = userLiked ? '❤️' : '🤍';
+                if (likeCount) likeCount.textContent = data.length;
+                if (likeBtn) likeBtn.classList.toggle('liked', userLiked);
+
+            } catch (error) {
+                console.error('Error loading comment likes:', error);
+            }
+        }
+        
+        // Toggle comment like
+        async function toggleCommentLike(commentId) {
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
+                const currentUserName = window.dcfAuth?.getCurrentUser()?.name;
+                
+                // Check if user already liked this comment
+                const { data: existingLike, error: checkError } = await supabase
+                    .from('comment_likes')
+                    .select('*')
+                    .eq('comment_id', commentId)
+                    .eq('user_email', currentUserEmail)
+                    .single();
+                
+                if (checkError && checkError.code !== 'PGRST116') {
+                    throw checkError;
+                }
+                
+                if (existingLike) {
+                    // Unlike - remove the like
+                    const { error: deleteError } = await supabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_email', currentUserEmail);
+                    
+                    if (deleteError) throw deleteError;
+                } else {
+                    // Like - add a new like
+                    const { error: insertError } = await supabase
+                        .from('comment_likes')
+                        .insert({
+                            comment_id: commentId,
+                            user_email: currentUserEmail,
+                            user_name: currentUserName
+                        });
+                    
+                    if (insertError) throw insertError;
+                }
+                
+                loadCommentLikes(commentId);
+                
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+                showMessage('Failed to like comment', 'error');
             }
         }
         
