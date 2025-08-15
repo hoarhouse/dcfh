@@ -542,6 +542,49 @@
             color: #666;
             font-size: 0.9rem;
             line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .comment-actions {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #999;
+        }
+        
+        .comment-action {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .comment-action:hover {
+            color: #333;
+        }
+        
+        .comment-replies {
+            margin-left: 44px;
+            margin-top: 0.5rem;
+            border-left: 2px solid #e5e5e5;
+            padding-left: 1rem;
+        }
+        
+        .reply-input-box {
+            display: none;
+            margin-top: 0.5rem;
+            margin-left: 44px;
+        }
+        
+        .reply-input-box.active {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .reply-input-box input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            font-size: 0.85rem;
         }
 
         .comment-input-section {
@@ -1955,7 +1998,7 @@ async function loadPosts() {
             }
         }
 
-        // Load post comments (flat structure)
+        // Load post comments with threading support
         async function loadPostComments(postId) {
             try {
                 const supabase = getSupabaseClient();
@@ -1979,20 +2022,49 @@ async function loadPosts() {
 
                 const commentsList = document.getElementById(`comments-list-${postId}`);
                 if (commentsList) {
-                    commentsList.innerHTML = data.map(comment => `
-                        <div class="comment">
-                            <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
-                            <div class="comment-content">
-                                <div class="comment-author">@${comment.username || comment.author_name}</div>
-                                <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
-                            </div>
-                        </div>
-                    `).join('');
+                    // Build threaded comment structure
+                    const rootComments = data.filter(c => !c.parent_id);
+                    const repliesMap = {};
+                    data.filter(c => c.parent_id).forEach(reply => {
+                        if (!repliesMap[reply.parent_id]) repliesMap[reply.parent_id] = [];
+                        repliesMap[reply.parent_id].push(reply);
+                    });
+                    
+                    commentsList.innerHTML = rootComments.map(comment => 
+                        renderComment(comment, repliesMap, postId)
+                    ).join('');
                 }
 
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
+        }
+        
+        // Render comment with replies
+        function renderComment(comment, repliesMap, postId) {
+            const replies = repliesMap[comment.id] || [];
+            return `
+                <div class="comment" data-comment-id="${comment.id}">
+                    <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">@${comment.username || comment.author_name}</div>
+                        <div class="comment-text">${convertUrlsToLinks(comment.content)}</div>
+                        <div class="comment-actions">
+                            <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
+                            <span class="comment-time">${formatTime(comment.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="reply-input-box" id="reply-box-${comment.id}">
+                    <input type="text" placeholder="Write a reply..." id="reply-input-${comment.id}" onkeypress="if(event.key==='Enter') submitReply('${comment.id}', '${postId}')">
+                    <button class="btn btn-primary btn-small" onclick="submitReply('${comment.id}', '${postId}')">Reply</button>
+                </div>
+                ${replies.length > 0 ? `
+                    <div class="comment-replies">
+                        ${replies.map(reply => renderComment(reply, repliesMap, postId)).join('')}
+                    </div>
+                ` : ''}
+            `;
         }
 
         // Add comment to post
@@ -2040,6 +2112,57 @@ async function loadPosts() {
             const commentsSection = document.getElementById(`comments-${postId}`);
             if (commentsSection) {
                 commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        // Toggle reply box
+        function toggleReplyBox(commentId, postId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            if (replyBox) {
+                replyBox.classList.toggle('active');
+                if (replyBox.classList.contains('active')) {
+                    document.getElementById(`reply-input-${commentId}`).focus();
+                }
+            }
+        }
+        
+        // Submit reply to comment
+        async function submitReply(parentId, postId) {
+            const replyInput = document.getElementById(`reply-input-${parentId}`);
+            const content = replyInput.value.trim();
+            
+            if (!content) return;
+            
+            try {
+                const supabase = getSupabaseClient();
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const currentUserEmail = window.dcfAuth?.getCurrentUser()?.email;
+                const currentUserName = window.dcfAuth?.getCurrentUser()?.name;
+                const currentUsername = window.dcfAuth?.getCurrentUser()?.username;
+                
+                const { error } = await supabase
+                    .from('post_comments')
+                    .insert({
+                        post_id: postId,
+                        content: content,
+                        author_email: currentUserEmail,
+                        author_name: currentUserName,
+                        username: currentUsername || currentUserEmail?.split('@')[0],
+                        parent_id: parentId
+                    });
+                
+                if (error) throw error;
+                
+                replyInput.value = '';
+                toggleReplyBox(parentId, postId);
+                loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error adding reply:', error);
+                showMessage('Failed to add reply', 'error');
             }
         }
         
