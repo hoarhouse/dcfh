@@ -797,6 +797,103 @@
             transform: scale(0.95);
         }
         
+        /* SMART COMMENT DISPLAY SYSTEM STYLES */
+        .comment-filter-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+        
+        .comment-filter-dropdown {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .comment-filter-dropdown:hover {
+            border-color: #007bff;
+        }
+        
+        .comment-count-display {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        /* Priority Comment Visual Hierarchy */
+        .comment.priority-comment {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            border-left: 3px solid #007bff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+        }
+        
+        .comment.priority-comment .comment-author {
+            color: #007bff;
+            font-weight: 600;
+        }
+        
+        .comment-like-count {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+        
+        .comment-like-count.high-likes {
+            background: #ffecb3;
+            color: #f57c00;
+        }
+        
+        .more-comments-toggle {
+            text-align: center;
+            padding: 12px 0;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 16px;
+        }
+        
+        .btn-link {
+            background: none;
+            border: none;
+            color: #007bff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-link:hover {
+            background: #f8f9ff;
+            color: #0056b3;
+        }
+        
+        /* Expanded Comments Styling */
+        #comments-expanded-${post.id} .comment {
+            border-bottom: 1px solid #f5f5f5;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        
+        #comments-expanded-${post.id} .comment:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
         @keyframes shimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
@@ -1962,7 +2059,29 @@ async function loadPosts() {
                     </div>
                     
                     <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                        <div id="comments-list-${post.id}"></div>
+                        <!-- Smart Comment Filter Controls -->
+                        <div class="comment-filter-section">
+                            <select class="comment-filter-dropdown" id="comment-filter-${post.id}" onchange="applyCommentFilter('${post.id}')">
+                                <option value="priority">Top Comments</option>
+                                <option value="most-liked">Most Liked</option>
+                                <option value="latest">Latest</option>
+                                <option value="oldest">Oldest</option>
+                                <option value="all">All Comments</option>
+                            </select>
+                            <span class="comment-count-display" id="comment-total-${post.id}">0 comments</span>
+                        </div>
+                        
+                        <!-- Initial Top 3 Comments Display -->
+                        <div id="comments-preview-${post.id}"></div>
+                        
+                        <!-- More Comments Section (Initially Hidden) -->
+                        <div id="comments-expanded-${post.id}" style="display: none;"></div>
+                        
+                        <!-- More Comments Toggle -->
+                        <div class="more-comments-toggle" id="more-comments-btn-${post.id}" style="display: none;">
+                            <button class="btn-link" onclick="toggleMoreComments('${post.id}')">View More Comments</button>
+                        </div>
+                        
                         <div class="comment-input-section">
                             <textarea class="comment-input" id="comment-input-${post.id}" placeholder="Write a comment..." rows="1"></textarea>
                             <button class="comment-submit" onclick="addComment('${post.id}')">Post</button>
@@ -2698,12 +2817,15 @@ async function loadPosts() {
                     throw new Error('Supabase client not available');
                 }
                 
-                // Get comments
+                // Get comments with like counts for smart sorting
                 const { data, error } = await supabase
                     .from('post_comments')
-                    .select('*')
+                    .select(`
+                        *,
+                        comment_likes(count)
+                    `)
                     .eq('post_id', postId)
-                    .order('created_at', { ascending: true });
+                    .order('created_at', { ascending: false });
 
                 if (error) throw error;
 
@@ -2723,58 +2845,135 @@ async function loadPosts() {
                 console.log('DEBUG: Comment profiles loaded:', profiles);
                 console.log('DEBUG: Author emails:', authorEmails);
                 
-                // Match comments with usernames
+                // Process comments with usernames and like counts
                 const commentsWithUsernames = data.map(comment => {
                     const profile = profiles?.find(p => p.email === comment.author_email);
+                    const likeCount = comment.comment_likes?.[0]?.count || 0;
                     console.log(`DEBUG: For email ${comment.author_email}, found profile:`, profile);
                     return {
                         ...comment,
-                        username: profile?.username
+                        username: profile?.username,
+                        like_count: likeCount
                     };
                 });
 
+                // Store comments globally for filtering
+                if (!window.postComments) window.postComments = {};
+                window.postComments[postId] = commentsWithUsernames;
+
                 const commentCount = document.getElementById(`comment-count-${postId}`);
                 if (commentCount) commentCount.textContent = commentsWithUsernames.length;
+                
+                const commentTotal = document.getElementById(`comment-total-${postId}`);
+                if (commentTotal) {
+                    const count = commentsWithUsernames.length;
+                    commentTotal.textContent = `${count} comment${count !== 1 ? 's' : ''}`;
+                }
                 
                 // Store stats for filtering
                 if (!postStats[postId]) postStats[postId] = {};
                 postStats[postId].comments = commentsWithUsernames.length;
 
-                const commentsList = document.getElementById(`comments-list-${postId}`);
-                if (commentsList) {
-                    // Build threaded comment structure
-                    const rootComments = commentsWithUsernames.filter(c => !c.parent_id);
-                    const repliesMap = {};
-                    commentsWithUsernames.filter(c => c.parent_id).forEach(reply => {
-                        if (!repliesMap[reply.parent_id]) repliesMap[reply.parent_id] = [];
-                        repliesMap[reply.parent_id].push(reply);
-                    });
-                    
-                    commentsList.innerHTML = rootComments.map(comment => 
-                        renderComment(comment, repliesMap, postId, 0)
-                    ).join('');
-                    
-                    // Load likes for all comments (including replies)
-                    commentsWithUsernames.forEach(comment => {
-                        loadCommentLikes(comment.id);
-                    });
-                }
+                // Apply initial smart comment display (priority sorting)
+                displaySmartComments(postId, 'priority');
 
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
         }
         
-        // Render comment with replies and proper nesting levels
-        function renderComment(comment, repliesMap, postId, level = 0) {
+        // SMART COMMENT DISPLAY SYSTEM
+        function displaySmartComments(postId, filterType = 'priority') {
+            const comments = window.postComments[postId] || [];
+            if (comments.length === 0) return;
+            
+            // Build threaded comment structure
+            const rootComments = comments.filter(c => !c.parent_id);
+            const repliesMap = {};
+            comments.filter(c => c.parent_id).forEach(reply => {
+                if (!repliesMap[reply.parent_id]) repliesMap[reply.parent_id] = [];
+                repliesMap[reply.parent_id].push(reply);
+            });
+            
+            // Apply sorting based on filter type
+            let sortedComments = [...rootComments];
+            
+            switch (filterType) {
+                case 'priority':
+                    // Top 3: Most liked, then latest
+                    sortedComments.sort((a, b) => {
+                        if (a.like_count !== b.like_count) {
+                            return b.like_count - a.like_count; // Most liked first
+                        }
+                        return new Date(b.created_at) - new Date(a.created_at); // Then newest
+                    });
+                    break;
+                case 'most-liked':
+                    sortedComments.sort((a, b) => b.like_count - a.like_count);
+                    break;
+                case 'latest':
+                    sortedComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    break;
+                case 'oldest':
+                    sortedComments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    break;
+                case 'all':
+                    // Show all with priority sorting
+                    sortedComments.sort((a, b) => {
+                        if (a.like_count !== b.like_count) {
+                            return b.like_count - a.like_count;
+                        }
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
+                    break;
+            }
+            
+            // Display initial 3 comments
+            const previewComments = sortedComments.slice(0, 3);
+            const remainingComments = sortedComments.slice(3);
+            
+            const previewContainer = document.getElementById(`comments-preview-${postId}`);
+            const expandedContainer = document.getElementById(`comments-expanded-${postId}`);
+            const moreButton = document.getElementById(`more-comments-btn-${postId}`);
+            
+            if (previewContainer) {
+                previewContainer.innerHTML = previewComments.map((comment, index) => 
+                    renderComment(comment, repliesMap, postId, 0, index < 3 && filterType === 'priority')
+                ).join('');
+            }
+            
+            if (expandedContainer) {
+                expandedContainer.innerHTML = remainingComments.map(comment => 
+                    renderComment(comment, repliesMap, postId, 0, false)
+                ).join('');
+                expandedContainer.style.display = 'none';
+            }
+            
+            // Show/hide more comments button
+            if (moreButton) {
+                moreButton.style.display = remainingComments.length > 0 ? 'block' : 'none';
+                const button = moreButton.querySelector('button');
+                if (button) {
+                    button.textContent = `View ${remainingComments.length} More Comments`;
+                }
+            }
+            
+            // Load likes for all comments
+            comments.forEach(comment => {
+                loadCommentLikes(comment.id);
+            });
+        }
+        
+        // Enhanced comment rendering with priority highlighting
+        function renderComment(comment, repliesMap, postId, level = 0, isPriority = false) {
             const replies = repliesMap[comment.id] || [];
             const levelClass = `comment-level-${Math.min(level, 3)}`;
-            // Use actual username from database, not email prefix
+            const priorityClass = isPriority ? 'priority-comment' : '';
             const displayName = comment.username ? `@${comment.username}` : comment.author_name;
-            console.log(`DEBUG: Comment ${comment.id} - username: "${comment.username}", displayName: "${displayName}"`);
+            const likeCountClass = comment.like_count > 5 ? 'high-likes' : '';
             
             return `
-                <div class="comment ${levelClass}" data-comment-id="${comment.id}">
+                <div class="comment ${levelClass} ${priorityClass}" data-comment-id="${comment.id}">
                     <div class="comment-avatar">${generateInitials(comment.author_name)}</div>
                     <div class="comment-content">
                         <div class="comment-author">${displayName}</div>
@@ -2782,7 +2981,7 @@ async function loadPosts() {
                         <div class="comment-actions">
                             <span class="comment-action" onclick="toggleCommentLike('${comment.id}')" id="comment-like-btn-${comment.id}">
                                 <span id="comment-like-icon-${comment.id}">🤍</span>
-                                <span id="comment-like-count-${comment.id}">0</span>
+                                <span id="comment-like-count-${comment.id}" class="comment-like-count ${likeCountClass}">${comment.like_count || 0}</span>
                             </span>
                             <span class="comment-action" onclick="toggleReplyBox('${comment.id}', '${postId}')">Reply</span>
                             ${comment.author_email === (window.dcfAuth?.getCurrentUser()?.email) ? `
@@ -2796,8 +2995,35 @@ async function loadPosts() {
                     <input type="text" placeholder="Write a reply..." id="reply-input-${comment.id}" onkeypress="if(event.key==='Enter') submitReply('${comment.id}', '${postId}')">
                     <button class="btn btn-primary btn-small" onclick="submitReply('${comment.id}', '${postId}')">Reply</button>
                 </div>
-                ${replies.length > 0 ? replies.map(reply => renderComment(reply, repliesMap, postId, level + 1)).join('') : ''}
+                ${replies.length > 0 ? replies.map(reply => renderComment(reply, repliesMap, postId, level + 1, false)).join('') : ''}
             `;
+        }
+        
+        // Apply comment filter
+        function applyCommentFilter(postId) {
+            const filterSelect = document.getElementById(`comment-filter-${postId}`);
+            const filterType = filterSelect.value;
+            displaySmartComments(postId, filterType);
+        }
+        
+        // Toggle more comments visibility
+        function toggleMoreComments(postId) {
+            const expandedContainer = document.getElementById(`comments-expanded-${postId}`);
+            const moreButton = document.getElementById(`more-comments-btn-${postId}`);
+            
+            if (expandedContainer && moreButton) {
+                const isVisible = expandedContainer.style.display !== 'none';
+                expandedContainer.style.display = isVisible ? 'none' : 'block';
+                
+                const button = moreButton.querySelector('button');
+                if (button) {
+                    const comments = window.postComments[postId] || [];
+                    const remainingCount = Math.max(0, comments.filter(c => !c.parent_id).length - 3);
+                    button.textContent = isVisible 
+                        ? `View ${remainingCount} More Comments` 
+                        : 'Show Less Comments';
+                }
+            }
         }
 
         // Add comment to post
@@ -2832,6 +3058,12 @@ async function loadPosts() {
                     loadPostCommentsForModal(postId);
                 } else {
                     loadPostComments(postId);
+                    // Refresh smart display after adding comment
+                    setTimeout(() => {
+                        const filterSelect = document.getElementById(`comment-filter-${postId}`);
+                        const filterType = filterSelect ? filterSelect.value : 'priority';
+                        displaySmartComments(postId, filterType);
+                    }, 500);
                 }
 
             } catch (error) {
