@@ -1137,7 +1137,19 @@
 
                 const { data: posts, error } = await query;
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Posts query error:', error);
+                    throw error;
+                }
+                
+                console.log('Posts loaded successfully:', posts?.length || 0, 'posts');
+                
+                if (posts && posts.length > 0) {
+                    console.log('Sample post data:', posts[0]);
+                    if (posts[0].media_url) {
+                        console.log('Media URL format:', typeof posts[0].media_url, posts[0].media_url);
+                    }
+                }
 
                 // Separate query for user profiles
                 const { data: profiles } = await supabase
@@ -1197,8 +1209,8 @@
             
             // Smart image display based on media content
             let mediaHTML = '';
-            if (post.media_urls) {
-                mediaHTML = createSmartImageDisplay(post.media_urls, post.id);
+            if (post.media_url) {
+                mediaHTML = createSmartImageDisplay(post.media_url, post.id);
             }
 
             return `
@@ -1253,8 +1265,8 @@
             `;
         }
 
-        function createSmartImageDisplay(mediaUrls, postId) {
-            const images = parseMediaUrls(mediaUrls);
+        function createSmartImageDisplay(mediaUrl, postId) {
+            const images = parseMediaUrls(mediaUrl);
             
             if (images.length === 0) return '';
             
@@ -1267,22 +1279,29 @@
             }
         }
 
-        function parseMediaUrls(mediaUrls) {
-            if (!mediaUrls) return [];
+        function parseMediaUrls(mediaUrl) {
+            if (!mediaUrl) return [];
             
             try {
                 // Handle JSON array
-                if (mediaUrls.startsWith('[')) {
-                    return JSON.parse(mediaUrls);
+                if (typeof mediaUrl === 'string' && mediaUrl.startsWith('[')) {
+                    return JSON.parse(mediaUrl);
+                }
+                // Handle actual array (already parsed by Supabase)
+                if (Array.isArray(mediaUrl)) {
+                    return mediaUrl;
                 }
                 // Handle comma-separated string
-                if (mediaUrls.includes(',')) {
-                    return mediaUrls.split(',').map(url => url.trim()).filter(url => url);
+                if (typeof mediaUrl === 'string' && mediaUrl.includes(',')) {
+                    return mediaUrl.split(',').map(url => url.trim()).filter(url => url);
                 }
                 // Single URL
-                return [mediaUrls];
+                if (typeof mediaUrl === 'string') {
+                    return [mediaUrl];
+                }
+                return [];
             } catch (error) {
-                console.error('Error parsing media URLs:', error);
+                console.error('Error parsing media URLs:', error, mediaUrl);
                 return [];
             }
         }
@@ -1351,10 +1370,9 @@
             
             try {
                 const { data: comments, error } = await supabase
-                    .from('comments')
+                    .from('post_comments')
                     .select('*')
                     .eq('post_id', postId)
-                    .eq('status', 'active')
                     .order('like_count', { ascending: false })
                     .limit(3);
 
@@ -1376,6 +1394,7 @@
                     };
                 });
 
+                console.log(`Loaded ${commentsWithProfiles?.length || 0} comments for post ${postId}`);
                 displayComments(postId, commentsWithProfiles);
 
             } catch (error) {
@@ -1448,12 +1467,11 @@
             
             try {
                 const { error } = await supabase
-                    .from('comments')
+                    .from('post_comments')
                     .insert([{
                         post_id: postId,
                         user_id: currentUser.id,
-                        content: content,
-                        status: 'active'
+                        content: content
                     }]);
 
                 if (error) throw error;
@@ -1543,8 +1561,8 @@
         function openCollageModal(postId, imageIndex) {
             // For now, just open the image modal with the main image
             const post = allPostsCache.find(p => p.id === postId);
-            if (post && post.media_urls) {
-                const images = parseMediaUrls(post.media_urls);
+            if (post && post.media_url) {
+                const images = parseMediaUrls(post.media_url);
                 if (images[imageIndex]) {
                     openImageModal(images[imageIndex]);
                 }
@@ -1687,10 +1705,9 @@
             
             try {
                 const { data: comments, error } = await supabase
-                    .from('comments')
+                    .from('post_comments')
                     .select('id')
-                    .eq('post_id', postId)
-                    .eq('status', 'active');
+                    .eq('post_id', postId);
 
                 if (error) throw error;
 
@@ -1774,10 +1791,9 @@
             
             try {
                 const { data: comments, error } = await supabase
-                    .from('comments')
+                    .from('post_comments')
                     .select('*')
                     .eq('post_id', postId)
-                    .eq('status', 'active')
                     .order('like_count', { ascending: false });
 
                 if (error) throw error;
@@ -1820,10 +1836,9 @@
             
             try {
                 let query = supabase
-                    .from('comments')
+                    .from('post_comments')
                     .select('*')
                     .eq('post_id', postId)
-                    .eq('status', 'active')
                     .limit(3);
 
                 // Apply sorting based on filter type
