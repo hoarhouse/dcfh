@@ -1529,8 +1529,16 @@
             if (!currentUser) return false;
             
             // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
-            return (event.organizer_id && currentUser.id && event.organizer_id === currentUser.id) ||
+            const isCreator = (event.organizer_id && currentUser.id && event.organizer_id === currentUser.id) ||
                    (event.contact_email && currentUser.email && event.contact_email === currentUser.email);
+            
+            console.log('🔍 CREATOR DEBUG: event.organizer_id:', event.organizer_id);
+            console.log('🔍 CREATOR DEBUG: currentUser.id:', currentUser?.id);
+            console.log('🔍 CREATOR DEBUG: event.contact_email:', event.contact_email);
+            console.log('🔍 CREATOR DEBUG: currentUser.email:', currentUser?.email);
+            console.log('🔍 CREATOR DEBUG: isCreator result:', isCreator);
+            
+            return isCreator;
         }
 
         async function initializePage() {
@@ -1540,6 +1548,11 @@
                     'https://atzommnkkwzgbktuzjti.supabase.co',
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
                 );
+
+                // Debug auth state at page load
+                console.log('🔍 AUTH DEBUG: Page load - dcfUser:', window.dcfUser);
+                console.log('🔍 AUTH DEBUG: Page load - isLoggedIn:', window.dcfUser?.isLoggedIn);
+                console.log('🔍 AUTH DEBUG: Page load - profile:', window.dcfUser?.profile);
 
                 // Get event ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1554,7 +1567,9 @@
                 await loadEvent(eventId);
                 
                 // Check if user is logged in (from auth state)
+                console.log('🔍 AUTH DEBUG: dcfUser state:', window.dcfUser);
                 const currentUser = getCurrentUser();
+                console.log('🔍 AUTH DEBUG: getCurrentUser result:', currentUser);
                 if (currentUser) {
                     await checkRegistrationStatus(eventId);
                 }
@@ -2356,13 +2371,15 @@
                     socialData.userLiked = false;
                 } else {
                     // Add like
+                    const likeData = {
+                        event_id: currentEvent.id,
+                        user_email: userEmail,
+                        user_name: currentUser.name || currentUser.username || 'Anonymous'
+                    };
+                    console.log('🔍 DB DEBUG: Inserting like data:', likeData);
                     await supabase
                         .from('event_likes')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: userEmail,
-                            user_name: currentUser.name || currentUser.username || 'Anonymous'
-                        }]);
+                        .insert([likeData]);
 
                     socialData.likes++;
                     socialData.userLiked = true;
@@ -2395,13 +2412,15 @@
                     socialData.userFollowing = false;
                 } else {
                     // Follow
+                    const followData = {
+                        event_id: currentEvent.id,
+                        user_email: userEmail,
+                        user_name: currentUser.name || currentUser.username || 'Anonymous'
+                    };
+                    console.log('🔍 DB DEBUG: Inserting follow data:', followData);
                     await supabase
                         .from('event_follows')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: userEmail,
-                            user_name: currentUser.name || currentUser.username || 'Anonymous'
-                        }]);
+                        .insert([followData]);
 
                     socialData.follows++;
                     socialData.userFollowing = true;
