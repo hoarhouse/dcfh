@@ -2600,6 +2600,35 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                     
                     if (error) throw error;
                     
+                    // Get task details before deletion for activity logging
+                    const { data: taskToDelete } = await supabase
+                        .from('project_tasks')
+                        .select('title')
+                        .eq('id', taskId)
+                        .single();
+
+                    // Log activity for task deletion
+                    const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                    const currentEmail = currentUser?.email || 'anonymous';
+
+                    // Get user_id from user_profiles
+                    const { data: userProfile } = await supabase
+                        .from('user_profiles')
+                        .select('id, username')
+                        .eq('email', currentEmail)
+                        .single();
+
+                    await supabase
+                        .from('project_activity')
+                        .insert([{
+                            project_id: getProjectIdFromUrl(),
+                            user_email: currentEmail,
+                            user_name: userProfile?.username || 'user',
+                            user_id: userProfile?.id || null,
+                            action_type: 'task_deleted',
+                            action_description: `Deleted task: ${taskToDelete?.title || 'Unknown task'}`
+                        }]);
+                    
                     console.log('Task deleted successfully');
                     
                     // Reload tasks
