@@ -145,7 +145,11 @@ function updateUserInterface() {
     }
     
     // Generate initials
+    console.log('🔍 DEBUG - User Profile Data:', user.profile);
+    console.log('🔍 DEBUG - Profile Name:', user.profile.name);
+    console.log('🔍 DEBUG - Profile Username:', user.profile.username);
     const initials = generateInitials(user.profile.name);
+    console.log('🔍 DEBUG - Generated Initials:', initials);
     console.log('🔤 Generated initials:', initials);
     
     // Update main avatar
@@ -1345,6 +1349,7 @@ window.focusSearchResources = focusSearchResources;
 window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
+window.generateInitials = generateInitials;
 
 // =============================================================================
 // 17. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
