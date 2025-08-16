@@ -1113,7 +1113,7 @@
             const startIndex = (page - 1) * PROJECTS_PER_PAGE;
             const endIndex = startIndex + PROJECTS_PER_PAGE - 1;
             
-            let url = `https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*&order=created_at.desc&limit=${PROJECTS_PER_PAGE}&offset=${startIndex}`;
+            let url = `https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*,author:user_profiles!author_id(id,email,username,name)&order=created_at.desc&limit=${PROJECTS_PER_PAGE}&offset=${startIndex}`;
             
             // Apply filters to URL
             if (filters.status) {
@@ -1216,7 +1216,7 @@
                     <div class="project-icon">📋</div>
                     <div class="project-info">
                         <h3 class="project-title">${escapeHtml(project.title)}</h3>
-                        <p class="project-meta" data-author-email="${project.author_email}">Led by @${project.author_username || project.author_name.toLowerCase().replace(/[^a-z0-9]/g, '_')} • ${escapeHtml(project.location || 'Global')}</p>
+                        <p class="project-meta" data-author-id="${project.author_id}" data-author-email="${project.author?.email || project.author_email}">Led by @${project.author?.username || project.author_username || (project.author?.name || project.author_name)?.toLowerCase().replace(/[^a-z0-9]/g, '_')} • ${escapeHtml(project.location || 'Global')}</p>
                     </div>
                 </div>
                 <span class="status-badge ${statusClass}">${project.status}</span>
@@ -1238,7 +1238,7 @@
             <div class="project-footer">
                 <div class="project-members">
                     <div class="member-avatars">
-                        <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                        <div class="member-avatar">${generateInitials(project.author?.name || project.author_name)}</div>
                     </div>
                     <span class="member-count">1 member • ${timeAgo}</span>
                 </div>
@@ -1671,7 +1671,7 @@
     // Update sidebar stats with real data
     async function updateStats() {
         try {
-            const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*&order=created_at.desc', {
+            const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*,author:user_profiles!author_id(id,email,username,name)&order=created_at.desc', {
     headers: {
         'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
         'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
@@ -1685,10 +1685,12 @@
             
             // Get current user's projects  
 const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+const currentUserId = currentUser ? currentUser.id : null;
 const currentUserEmail = currentUser ? currentUser.email : null;
-const currentUserName = currentUser ? currentUser.name : '';
 const myProjects = allProjects.filter(project => 
-    project.author_email === currentUserEmail || project.author_name === currentUserName
+    project.author_id === currentUserId || 
+    (project.author && project.author.email === currentUserEmail) ||
+    project.author_email === currentUserEmail
 );
             
             // Get active projects
@@ -1804,7 +1806,7 @@ if (tabName === 'my') {
             
             // Get the actual project details
             const projectIds = followedData.map(f => f.project_id);
-            const projectsResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?id=in.(${projectIds.join(',')})&order=created_at.desc`, {
+            const projectsResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*,author:user_profiles!author_id(id,email,username,name)&id=in.(${projectIds.join(',')})&order=created_at.desc`, {
                 headers: {
                     'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
                     'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
@@ -1844,15 +1846,15 @@ if (tabName === 'my') {
     async function loadMyProjectsReal() {
         const container = document.getElementById('myProjectsContainer');
         const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
-        const currentUserEmail = currentUser ? currentUser.email : null;
+        const currentUserId = currentUser ? currentUser.id : null;
         
-        if (!currentUserEmail) {
+        if (!currentUserId) {
             container.innerHTML = '<div class="empty-state"><h3>Please log in to view your projects</h3></div>';
             return;
         }
         
         try {
-            const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?author_email=eq.${currentUserEmail}&order=created_at.desc`, {
+            const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*,author:user_profiles!author_id(id,email,username,name)&author_id=eq.${currentUser.id}&order=created_at.desc`, {
                 headers: {
                     'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
                     'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
@@ -1892,7 +1894,7 @@ if (tabName === 'my') {
                     <div class="project-footer">
                         <div class="project-members">
                             <div class="member-avatars">
-                                <div class="member-avatar">${generateInitials(project.author_name)}</div>
+                                <div class="member-avatar">${generateInitials(project.author?.name || project.author_name)}</div>
                             </div>
                             <span class="member-count">1 member</span>
                         </div>
@@ -2016,15 +2018,21 @@ if (tabName === 'my') {
         
         if (!currentUser) return false;
         
-        // Check by email first (most reliable)
-        if (project.author_email && currentUser.email && 
-            project.author_email.toLowerCase() === currentUser.email.toLowerCase()) {
+        // Check by author_id first (most reliable)
+        if (project.author_id && currentUser.id && 
+            project.author_id === currentUser.id) {
             return true;
         }
         
-        // Check by username as fallback
-        if (project.author_username && currentUser.username && 
-            project.author_username.toLowerCase() === currentUser.username.toLowerCase()) {
+        // Fallback: Check by email from joined author data
+        if (project.author && project.author.email && currentUser.email && 
+            project.author.email.toLowerCase() === currentUser.email.toLowerCase()) {
+            return true;
+        }
+        
+        // Fallback: Check by username from joined author data
+        if (project.author && project.author.username && currentUser.username && 
+            project.author.username.toLowerCase() === currentUser.username.toLowerCase()) {
             return true;
         }
         
@@ -2071,12 +2079,19 @@ if (tabName === 'my') {
                 // Get project data from the DOM to check ownership
                 let isOwner = false;
                 if (projectCard) {
-                    const authorMeta = projectCard.querySelector('.project-meta[data-author-email]');
+                    const authorMeta = projectCard.querySelector('.project-meta[data-author-id]');
                     if (authorMeta) {
+                        const authorId = authorMeta.getAttribute('data-author-id');
                         const authorEmail = authorMeta.getAttribute('data-author-email');
                         const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
-                        isOwner = currentUser && currentUser.email && 
-                                 authorEmail && authorEmail.toLowerCase() === currentUser.email.toLowerCase();
+                        
+                        // Check by author_id first (most reliable)
+                        isOwner = currentUser && currentUser.id && authorId && currentUser.id === authorId;
+                        
+                        // Fallback to email if author_id not available
+                        if (!isOwner && currentUser && currentUser.email && authorEmail) {
+                            isOwner = authorEmail.toLowerCase() === currentUser.email.toLowerCase();
+                        }
                     }
                 }
                 
