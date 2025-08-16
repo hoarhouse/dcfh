@@ -6,7 +6,6 @@
     <title>Project Details - DCF Hungary</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
     <style>
         * {
@@ -789,7 +788,7 @@
                 <div class="sidebar">
                     <div class="card">
                         <h3 class="card-title">Quick Actions</h3>
-                        <!-- Quick Actions will be inserted here by dcf-master-consolidated.js -->
+                        <!-- Quick Actions will be inserted here by dcf-unified-auth.js -->
                     </div>
 
                     <div class="join-project-card">
@@ -925,15 +924,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             return urlParams.get('id');
         }
 
-        // Generate initials from name
-        function generateInitials(name) {
-            if (!name) return 'U';
-            const parts = name.split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            }
-            return name.substring(0, 2).toUpperCase();
-        }
+        // generateInitials function now provided by dcf-unified-auth.js
 
         // Format date
         function formatDate(dateString) {
@@ -1027,10 +1018,10 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             document.getElementById('projectDescription').textContent = project.description;
             
             // Add Manage Project button dynamically for project owner
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             const projectActions = document.querySelector('.project-actions');
-            const currentUserName = localStorage.getItem('dcf_user_name') || '';
+            const currentUserName = window.getCurrentUser()?.name || window.getCurrentUser()?.username || 'User' || '';
 if (projectActions && (currentUserEmail === project.author_email || currentUserName === project.author_name)) {
                 // Hide join/follow buttons for project owner
                 const followBtn = document.getElementById('followBtn');
@@ -1407,7 +1398,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 // File count is now handled by loadProjectStats()
 
                 // Get current user email for delete permissions
-                const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
                 
                 // Display files with thumbnails and view functionality
@@ -1646,8 +1637,8 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 
                 // Log activity
                 const projectId = getProjectIdFromUrl();
-                const currentUser = localStorage.getItem('dcf_user_name') || 'User';
-                const currentEmail = localStorage.getItem('dcf_user_email') || 'user@dcfhungary.org';
+                const currentUser = window.getCurrentUser()?.name || window.getCurrentUser()?.username || 'User' || 'User';
+                const currentEmail = window.getCurrentUser()?.email || 'anonymous';
                 
                 const activityType = newStatus === 'completed' ? 'task_completed' : 'task_updated';
                 const activityDescription = newStatus === 'completed' 
@@ -1707,7 +1698,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
         // =============================================================================
 
         async function followProject(projectId, projectTitle) {
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             const userName = currentUser ? currentUser.name : null;
             
@@ -1745,7 +1736,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
         }
 
         async function unfollowProject(projectId, projectTitle) {
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             
             try {
@@ -1784,7 +1775,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
         }
 
         async function joinProjectRequest(projectId, projectTitle) {
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             const userName = currentUser ? currentUser.name : null;
             
@@ -1856,7 +1847,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
 
         // Check user's follow and join status for this project
         async function checkUserProjectStatus() {
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             const projectId = getProjectIdFromUrl();
             
