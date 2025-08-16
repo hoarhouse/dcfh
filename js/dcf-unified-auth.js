@@ -791,7 +791,209 @@ function toggleNotificationDropdown(event) {
     // Initialize notification system if not already done
     if (!window.notificationSystem && window.dcfSupabase) {
         window.notificationSystem = new NotificationSystem(window.dcfSupabase);
-        window.notificationSystem.updateNotificationBadge();
+    }
+    
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) {
+        createNotificationDropdown();
+    }
+    
+    if (window.notificationDropdownOpen) {
+        closeNotificationDropdown();
+    } else {
+        openNotificationDropdown();
+    }
+}
+
+function createNotificationDropdown() {
+    const bell = document.querySelector('.notification-bell');
+    if (!bell) return;
+    
+    const dropdownHTML = `
+        <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-dropdown-header">
+                <h3 class="notification-dropdown-title">Notifications</h3>
+                <button class="mark-all-read-btn" onclick="markAllNotificationsRead()">Mark All Read</button>
+            </div>
+            <div class="notification-dropdown-content" id="notificationDropdownContent">
+                <div class="notification-loading">Loading notifications...</div>
+            </div>
+            <div class="notification-dropdown-footer">
+                <a href="#" class="view-all-notifications">View All Notifications</a>
+            </div>
+        </div>
+    `;
+    
+    bell.style.position = 'relative';
+    bell.insertAdjacentHTML('afterend', dropdownHTML);
+    addNotificationDropdownCSS();
+}
+
+async function openNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    
+    dropdown.classList.add('active');
+    window.notificationDropdownOpen = true;
+    
+    // Load notifications
+    await loadNotifications();
+    
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', handleNotificationDocumentClick, true);
+    }, 10);
+}
+
+function closeNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    
+    dropdown.classList.remove('active');
+    window.notificationDropdownOpen = false;
+    document.removeEventListener('click', handleNotificationDocumentClick, true);
+}
+
+function handleNotificationDocumentClick(event) {
+    const notificationBell = document.querySelector('.notification-bell');
+    const dropdown = document.getElementById('notificationDropdown');
+    
+    if (notificationBell && dropdown && 
+        !notificationBell.contains(event.target) && 
+        !dropdown.contains(event.target)) {
+        closeNotificationDropdown();
+    }
+}
+
+async function loadNotifications() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    const supabase = window.dcfSupabase;
+    const container = document.getElementById('notificationDropdownContent');
+    
+    try {
+        container.innerHTML = '<div class="notification-loading">Loading notifications...</div>';
+        
+        const { data: notifications, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('recipient_email', currentUser.email)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="no-notifications">No notifications yet</div>';
+            return;
+        }
+
+        container.innerHTML = notifications.map(notification => createNotificationHTML(notification)).join('');
+
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        container.innerHTML = '<div class="notification-error">Failed to load notifications</div>';
+    }
+}
+
+function createNotificationHTML(notification) {
+    const timeAgo = formatTimeAgo(notification.created_at);
+    const isUnread = !notification.is_read;
+    
+    return `
+        <div class="notification-item ${isUnread ? 'unread' : 'read'}" onclick="handleNotificationClick('${notification.id}', '${notification.related_type}', '${notification.related_id}')">
+            <div class="notification-icon">
+                ${getNotificationIcon(notification.type)}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-time">${timeAgo}</div>
+            </div>
+            ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+        </div>
+    `;
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'post_like': '❤️',
+        'post_comment': '💬',
+        'connection_request': '🤝',
+        'event_invite': '📅',
+        'project_invite': '📋'
+    };
+    return icons[type] || '🔔';
+}
+
+async function handleNotificationClick(notificationId, relatedType, relatedId) {
+    // Mark as read
+    await markNotificationRead(notificationId);
+    
+    // Navigate to related content
+    if (relatedType === 'post') {
+        // Navigate to post or scroll to it
+        console.log('Navigate to post:', relatedId);
+    } else if (relatedType === 'connection') {
+        // Navigate to connections page
+        console.log('Navigate to connection:', relatedId);
+    }
+    
+    closeNotificationDropdown();
+}
+
+async function markNotificationRead(notificationId) {
+    const supabase = window.dcfSupabase;
+    
+    try {
+        await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId);
+            
+        // Update badge count
+        if (window.notificationSystem) {
+            window.notificationSystem.updateNotificationBadge();
+        }
+        
+        // Update the notification item visually
+        const notificationItem = document.querySelector(`[onclick*="${notificationId}"]`);
+        if (notificationItem) {
+            notificationItem.classList.remove('unread');
+            notificationItem.classList.add('read');
+            const dot = notificationItem.querySelector('.notification-unread-dot');
+            if (dot) dot.remove();
+        }
+        
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+async function markAllNotificationsRead() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    const supabase = window.dcfSupabase;
+    
+    try {
+        await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('recipient_email', currentUser.email)
+            .eq('is_read', false);
+            
+        // Reload notifications
+        await loadNotifications();
+        
+        // Update badge
+        if (window.notificationSystem) {
+            window.notificationSystem.updateNotificationBadge();
+        }
+        
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
     }
 }
 
@@ -826,6 +1028,185 @@ function addNotificationCSS() {
             font-size: 0.7rem; 
             font-weight: 600; 
             border: 2px solid white; 
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function addNotificationDropdownCSS() {
+    if (document.querySelector('#notificationDropdownCSS')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'notificationDropdownCSS';
+    style.textContent = `
+        .notification-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            width: 380px;
+            max-height: 500px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .notification-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .notification-dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            background: #f8f9fa;
+        }
+        
+        .notification-dropdown-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        
+        .mark-all-read-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .mark-all-read-btn:hover {
+            color: #333;
+            background: #e9ecef;
+        }
+        
+        .notification-dropdown-content {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .notification-item.unread {
+            background: #f0f8ff;
+            border-left: 3px solid #007bff;
+        }
+        
+        .notification-item.unread:hover {
+            background: #e6f3ff;
+        }
+        
+        .notification-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .notification-message {
+            color: #666;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .notification-time {
+            color: #999;
+            font-size: 0.75rem;
+        }
+        
+        .notification-unread-dot {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 8px;
+            height: 8px;
+            background: #007bff;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .notification-dropdown-footer {
+            padding: 0.75rem 1.5rem;
+            border-top: 1px solid #f0f0f0;
+            background: #f8f9fa;
+            text-align: center;
+        }
+        
+        .view-all-notifications {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        
+        .view-all-notifications:hover {
+            color: #333;
+        }
+        
+        .notification-loading, .no-notifications, .notification-error {
+            padding: 2rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .notification-error {
+            color: #dc3545;
+        }
+        
+        @media (max-width: 480px) {
+            .notification-dropdown {
+                width: 320px;
+                right: -20px;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -920,6 +1301,10 @@ window.handleLogout = handleLogout;
 window.closeLogoutModal = closeLogoutModal;
 window.confirmLogout = confirmLogout;
 window.toggleNotificationDropdown = toggleNotificationDropdown;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.handleNotificationClick = handleNotificationClick;
+window.markNotificationRead = markNotificationRead;
+window.closeNotificationDropdown = closeNotificationDropdown;
 window.getCurrentUser = getCurrentUser;
 window.isUserLoggedIn = isUserLoggedIn;
 window.getUserEmail = getUserEmail;
