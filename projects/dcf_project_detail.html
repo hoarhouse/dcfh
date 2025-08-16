@@ -963,7 +963,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             try {
                 const { data: project, error } = await supabase
                     .from('projects')
-                    .select('*')
+                    .select(`*, author:user_profiles!author_id(id,email,username,name)`)
                     .eq('id', projectId)
                     .single();
 
@@ -1022,7 +1022,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             const currentUserEmail = currentUser ? currentUser.email : null;
             const projectActions = document.querySelector('.project-actions');
             const currentUserName = window.getCurrentUser()?.name || window.getCurrentUser()?.username || 'User' || '';
-if (projectActions && (currentUserEmail === project.author_email || currentUserName === project.author_name)) {
+if (projectActions && (currentUser?.id === project.author_id)) {
                 // Hide join/follow buttons for project owner
                 const followBtn = document.getElementById('followBtn');
                 const joinBtn = document.getElementById('joinBtn');
@@ -1160,12 +1160,12 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 }
 
                 // Start with project owner
-                const authorInitials = generateInitials(project.author_name);
+                const authorInitials = generateInitials(project.author?.name || project.author?.username || 'Project Creator');
                 let teamHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
                         <div class="member-info">
-                            <div class="member-name">${project.author_name || 'Project Creator'}</div>
+                            <div class="member-name">${project.author?.name || project.author?.username || 'Project Creator' || 'Project Creator'}</div>
                             <div class="member-role">Project Lead</div>
                         </div>
                         <span class="member-badge leader">Leader</span>
@@ -1209,12 +1209,12 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
             } catch (error) {
                 console.error('Error loading team:', error);
                 // Fallback to just showing project owner
-                const authorInitials = generateInitials(project.author_name);
+                const authorInitials = generateInitials(project.author?.name || project.author?.username || 'Project Creator');
                 teamContainer.innerHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
                         <div class="member-info">
-                           <div class="member-name">@${project.author_name || 'Project Creator'}</div>
+                           <div class="member-name">@${project.author?.name || project.author?.username || 'Project Creator' || 'Project Creator'}</div>
                             <div class="member-role">Project Lead</div>
                         </div>
                         <span class="member-badge leader">Leader</span>
@@ -1887,7 +1887,7 @@ if (projectActions && (currentUserEmail === project.author_email || currentUserN
                 const requestData = await requestResponse.json();
                 
                 // Check if user owns this project
-                if (window.currentProject && userEmail === window.currentProject.author_email) {
+                if (window.currentProject && currentUser?.id === window.currentProject.author_id) {
                     updateJoinButton('owner');
                 } else if (memberData && memberData.length > 0) {
                     updateJoinButton('member');
