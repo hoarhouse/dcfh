@@ -749,8 +749,9 @@
                         </div>
                     </div>
                     <div class="project-actions">
-                        <button class="btn btn-secondary" id="followBtn">⭐ Follow</button>
-                        <button class="btn btn-primary" id="joinBtn">🤝 Join Project</button>
+                        <button class="btn btn-secondary" id="followBtn" style="display: none;">⭐ Follow</button>
+                        <button class="btn btn-primary" id="joinBtn" style="display: none;">🤝 Join Project</button>
+                        <button class="btn btn-primary" id="manageBtn" style="display: none;" onclick="window.location.href='dcf_project_manage.html?id=' + getProjectIdFromUrl()">⚙️ Manage Project</button>
                     </div>
                 </div>
 
@@ -794,7 +795,7 @@
                     <div class="join-project-card">
                         <h3>Join This Project</h3>
                         <p>Help advance this important initiative</p>
-                        <button class="btn" onclick="joinProject()">🤝 Join Now</button>
+                        <button class="btn" onclick="joinProjectRequest(getProjectIdFromUrl(), window.currentProject?.title)">🤝 Join Now</button>
                     </div>
 
                     <div class="sidebar-card">
@@ -1043,25 +1044,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             console.log('🔍 DEBUG - Ownership Check Result:', currentUser?.id === project.author_id);
             console.log('🔍 DEBUG - ID Types:', typeof currentUser?.id, 'vs', typeof project.author_id);
             
-if (projectActions && (currentUser?.id === project.author_id)) {
-                // Hide join/follow buttons for project owner
-                const followBtn = document.getElementById('followBtn');
-                const joinBtn = document.getElementById('joinBtn');
-                const joinProjectCard = document.querySelector('.join-project-card');
-                if (followBtn) followBtn.style.display = 'none';
-                if (joinBtn) joinBtn.style.display = 'none';
-                if (joinProjectCard) joinProjectCard.style.display = 'none';
-                
-                // Add manage button if it doesn't exist
-                if (!document.getElementById('manageBtn')) {
-                    const manageBtn = document.createElement('button');
-                    manageBtn.id = 'manageBtn';
-                    manageBtn.className = 'btn btn-primary';
-                    manageBtn.innerHTML = '⚙️ Manage Project';
-                    manageBtn.onclick = manageProject;
-                    projectActions.appendChild(manageBtn);
-                }
-            }
+// Ownership logic now handled by updateJoinButton() after auth loads
 
             // Update tags
             const tagsContainer = document.getElementById('projectTags');
@@ -1839,8 +1822,12 @@ if (projectActions && (currentUser?.id === project.author_id)) {
             
             switch(userStatus) {
                 case 'owner':
+                    const followBtn = document.getElementById('followBtn');
+                    const manageBtn = document.getElementById('manageBtn');
+                    if (followBtn) followBtn.style.display = 'none';
                     if (joinBtn) joinBtn.style.display = 'none';
                     if (joinCard) joinCard.style.display = 'none';
+                    if (manageBtn) manageBtn.style.display = 'inline-block';
                     break;
                 case 'member':
                     joinBtn.textContent = '✓ Member';
@@ -1859,6 +1846,12 @@ if (projectActions && (currentUser?.id === project.author_id)) {
                     }
                     break;
                 default:
+                    const followBtn2 = document.getElementById('followBtn');
+                    const manageBtn2 = document.getElementById('manageBtn');
+                    if (followBtn2) followBtn2.style.display = 'inline-block';
+                    if (joinBtn) joinBtn.style.display = 'inline-block';
+                    if (joinCard) joinCard.style.display = 'block';
+                    if (manageBtn2) manageBtn2.style.display = 'none';
                     joinBtn.textContent = '🤝 Join Project';
                     joinBtn.className = 'btn btn-primary';
                     joinBtn.disabled = false;
