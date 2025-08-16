@@ -134,7 +134,7 @@
             transition: all 0.2s ease;
             box-sizing: border-box;
             overflow: hidden;
-            /* Content controlled by master-consolidated.js */
+            /* Content controlled by dcf-unified-auth.js */
         }
 
         .user-avatar:hover {
@@ -1174,8 +1174,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/supabase-auth.js"></script>
-    <script src="../js/dcf-master-consolidated.js"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body>
@@ -1189,7 +1188,7 @@
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="user-avatar" onclick="window.toggleUserMenu()" id="userAvatar"></div>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
@@ -1286,7 +1285,7 @@
         async function initializeManagePage() {
             try {
                 // Initialize Supabase
-                supabase = window.masterSupabase || window.supabase.createClient(
+                supabase = window.dcfSupabase || window.supabase.createClient(
                     'https://atzommnkkwzgbktuzjti.supabase.co',
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
                 );
@@ -1294,17 +1293,9 @@
                 // Check authentication
                 console.log('🔍 DEBUG: Checking auth in event manage page...');
                 
-                // Try to get current user from improved auth system
-                let authUser = null;
-                if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
-                    authUser = window.dcfAuth.getCurrentUser();
-                    console.log('🔍 DEBUG: dcfAuth.getCurrentUser result:', authUser);
-                } else if (typeof getCurrentUser === 'function') {
-                    authUser = getCurrentUser();
-                    console.log('🔍 DEBUG: getCurrentUser result:', authUser);
-                } else {
-                    console.log('🔍 DEBUG: No getCurrentUser function available');
-                }
+                // Get current user from unified auth system
+                const authUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                console.log('🔍 DEBUG: getCurrentUser result:', authUser);
                 
                 // Also check Supabase session directly
                 const { data: { session } } = await supabase.auth.getSession();
@@ -1987,7 +1978,7 @@
         }
 
         async function removeCurrentImage(eventId, imageUrl, element) {
-            const confirmed = await showConfirm('Remove this image from the event?', 'Remove Image');
+            const confirmed = confirm('Remove this image from the event?');
             if (!confirmed) return;
             
             element.closest('.current-image').remove();
@@ -2007,43 +1998,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function editEvent(eventId) {
-            // Check if we have a URL parameter for this event
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetEventId = urlParams.get('id');
-            
-            // Close any other open edit forms
-            document.querySelectorAll('.edit-modal.active').forEach(modal => {
-                modal.classList.remove('active');
-            });
-
-            // Initialize edit state for this event
-            editModalStates[eventId] = {
-                currentStep: 1,
-                visibility: allEvents.find(e => e.id === eventId)?.visibility || 'public',
-                eventType: allEvents.find(e => e.id === eventId)?.event_type || 'online',
-                duration: allEvents.find(e => e.id === eventId)?.duration_hours || 1,
-                requiresRegistration: allEvents.find(e => e.id === eventId)?.requires_registration !== false,
-                newImages: []
-            };
-
-            // Open this edit modal
-            const editModal = document.getElementById(`edit-modal-${eventId}`);
-            editModal.classList.add('active');
-            editingEventId = eventId;
-
-            // If this event was specified in URL, auto-open the edit modal
-            if (targetEventId === eventId) {
-                // Remove the URL parameter to clean up the URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-
-            // Initialize file upload handler for this modal
-            initializeEditFileUpload(eventId);
-
-            // Show first step
-            showEditStep(eventId, 1);
-        }
+        // editEvent function defined above at line 1781
 
         function cancelEdit(eventId) {
             const editModal = document.getElementById(`edit-modal-${eventId}`);
@@ -2298,12 +2253,12 @@
             if (!event) return;
 
             // This would integrate with your email system
-            showAlert(`Email functionality would send updates to all ${event.attendee_count || 0} registered attendees.`, 'info', 'Email Attendees');
+            alert(`Email functionality would send updates to all ${event.attendee_count || 0} registered attendees.`);
         }
 
         function exportAttendees(eventId) {
             // This would export attendee list as CSV
-            showAlert('Attendee export functionality would download a CSV file with registration details.', 'info', 'Export Attendees');
+            alert('Attendee export functionality would download a CSV file with registration details.');
         }
 
         function showEditMessage(eventId, message, type) {
@@ -2340,7 +2295,7 @@
 
         function exportEventData() {
             if (allEvents.length === 0) {
-                showAlert('No events to export', 'warning');
+                alert('No events to export');
                 return;
             }
 
