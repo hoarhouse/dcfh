@@ -955,6 +955,12 @@ const supabase = window.masterSupabase || window.supabase.createClient(
         async function loadProject() {
             const projectId = getProjectIdFromUrl();
             
+            // 🔍 DEBUG LOGGING - Auth System Status
+            console.log('🔍 DEBUG - Auth System Check');
+            console.log('🔍 DEBUG - window.getCurrentUser exists:', typeof window.getCurrentUser);
+            console.log('🔍 DEBUG - Current User on Load:', window.getCurrentUser());
+            console.log('🔍 DEBUG - Project ID:', projectId);
+            
             if (!projectId) {
                 showError();
                 return;
@@ -966,6 +972,11 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                     .select(`*, author:user_profiles!author_id(id,email,username,name)`)
                     .eq('id', projectId)
                     .single();
+
+                // 🔍 DEBUG LOGGING - Query Results
+                console.log('🔍 DEBUG - Query Error:', error);
+                console.log('🔍 DEBUG - Raw Project Data:', project);
+                console.log('🔍 DEBUG - Author JOIN Data:', project?.author);
 
                 if (error || !project) {
                     showError();
@@ -1022,6 +1033,16 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             const currentUserEmail = currentUser ? currentUser.email : null;
             const projectActions = document.querySelector('.project-actions');
             const currentUserName = window.getCurrentUser()?.name || window.getCurrentUser()?.username || 'User' || '';
+            
+            // 🔍 DEBUG LOGGING - Ownership Detection
+            console.log('🔍 DEBUG - Current User:', currentUser);
+            console.log('🔍 DEBUG - Current User ID:', currentUser?.id);
+            console.log('🔍 DEBUG - Project Object:', project);
+            console.log('🔍 DEBUG - Project Author ID:', project.author_id);
+            console.log('🔍 DEBUG - Project Author Object:', project.author);
+            console.log('🔍 DEBUG - Ownership Check Result:', currentUser?.id === project.author_id);
+            console.log('🔍 DEBUG - ID Types:', typeof currentUser?.id, 'vs', typeof project.author_id);
+            
 if (projectActions && (currentUser?.id === project.author_id)) {
                 // Hide join/follow buttons for project owner
                 const followBtn = document.getElementById('followBtn');
@@ -1887,6 +1908,11 @@ if (projectActions && (currentUser?.id === project.author_id)) {
                 const requestData = await requestResponse.json();
                 
                 // Check if user owns this project
+                console.log('🔍 DEBUG - Status Check - Current User:', currentUser);
+                console.log('🔍 DEBUG - Status Check - currentProject:', window.currentProject);
+                console.log('🔍 DEBUG - Status Check - Author ID:', window.currentProject?.author_id);
+                console.log('🔍 DEBUG - Status Check - Ownership Result:', currentUser?.id === window.currentProject?.author_id);
+                
                 if (window.currentProject && currentUser?.id === window.currentProject.author_id) {
                     updateJoinButton('owner');
                 } else if (memberData && memberData.length > 0) {
