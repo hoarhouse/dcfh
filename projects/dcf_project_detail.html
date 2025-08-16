@@ -1936,21 +1936,56 @@ if (projectActions && (currentUser?.id === project.author_id)) {
             }
         }
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-           // Auth handled by master consolidated script
+        // Wait for auth system to be ready
+        async function waitForAuth() {
+            let attempts = 0;
+            const maxAttempts = 20; // 10 seconds max wait
+            
+            while (attempts < maxAttempts) {
+                if (window.getCurrentUser && typeof window.getCurrentUser === 'function') {
+                    const user = window.getCurrentUser();
+                    console.log('🔍 DEBUG - Auth Ready Check - Attempt:', attempts + 1, 'User:', user);
+                    
+                    if (user && user.id) {
+                        console.log('✅ Auth system ready with user:', user.id);
+                        return true;
+                    }
+                }
+                
+                console.log('⏳ Waiting for auth system... attempt', attempts + 1);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            console.log('⚠️ Auth system timeout - proceeding without auth');
+            return false;
+        }
 
-            // Load project data
-            loadProject();
-
-            // Check user's current follow/join status and update buttons
-            checkUserProjectStatus();
+        // Initialize page with auth timing fix
+        async function initializePage() {
+            console.log('🚀 Starting page initialization...');
+            
+            // Load project data first (doesn't need auth)
+            await loadProject();
+            
+            // Wait for auth system to be ready
+            await waitForAuth();
+            
+            // Now check user status with auth ready
+            await checkUserProjectStatus();
             
             // Update join card button
             const joinCardBtn = document.querySelector('.join-project-card button');
             if (joinCardBtn) {
                 joinCardBtn.onclick = () => joinProjectRequest(getProjectIdFromUrl(), window.currentProject?.title);
             }
+            
+            console.log('✅ Page initialization complete');
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
         });
     </script>
     </body>
