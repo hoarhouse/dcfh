@@ -925,7 +925,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             return urlParams.get('id');
         }
 
-        // generateInitials function now provided by dcf-unified-auth.js
+        // All avatar initials now use global window.generateInitials from dcf-unified-auth.js
 
         // Format date
         function formatDate(dateString) {
@@ -1163,19 +1163,9 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                     console.error('Error loading team members:', error);
                 }
 
-                // Start with project owner
                 const authorName = project.author?.username || project.author?.name || 'Project Creator';
-                const cleanAuthorName = authorName.replace(/^(Prof\.|Dr\.|Mr\.|Ms\.|Mrs\.)\s+/i, '');
-                
-                // 🔍 DEBUG - Initial Generation
-                console.log('🔍 DEBUG - Author Data:', project.author);
-                console.log('🔍 DEBUG - Author Username:', project.author?.username);
-                console.log('🔍 DEBUG - Author Name:', project.author?.name);
-                console.log('🔍 DEBUG - Selected authorName:', authorName);
-                console.log('🔍 DEBUG - Clean authorName:', cleanAuthorName);
-                console.log('🔍 DEBUG - Generated Initials:', generateInitials(cleanAuthorName));
-                
-                const authorInitials = generateInitials(cleanAuthorName);
+                // Start with project owner - Use unified auth function
+                const authorInitials = window.generateInitials ? window.generateInitials(project.author?.name) : 'U';
                 let teamHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
@@ -1190,7 +1180,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 // Add actual team members
                 if (members && members.length > 0) {
                     members.forEach(member => {
-                        const memberInitials = generateInitials(member.user_profile?.username || member.user_name);
+                        const memberInitials = window.generateInitials ? window.generateInitials(member.user_profile?.username || member.user_name) : 'U';
                         const roleText = member.role === 'admin' ? 'Admin' : 
                                        member.role === 'contributor' ? 'Contributor' : 'Member';
                         const badgeClass = member.role === 'admin' ? 'leader' : 
@@ -1223,10 +1213,8 @@ const supabase = window.masterSupabase || window.supabase.createClient(
 
             } catch (error) {
                 console.error('Error loading team:', error);
-                // Fallback to just showing project owner
-                const authorName2 = project.author?.username || project.author?.name || 'Project Creator';
-                const cleanAuthorName2 = authorName2.replace(/^(Prof\.|Dr\.|Mr\.|Ms\.|Mrs\.)\s+/i, '');
-                const authorInitials = generateInitials(cleanAuthorName2);
+                // Fallback to just showing project owner - Use unified auth function
+                const authorInitials = window.generateInitials ? window.generateInitials(project.author?.name) : 'U';
                 teamContainer.innerHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
@@ -1274,8 +1262,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 let activityHTML = '';
                 activities.forEach(activity => {
                     const timeAgo = getTimeAgo(activity.created_at);
-                    const cleanName = activity.user_name.replace(/^(Prof\.|Dr\.|Mr\.|Ms\.|Mrs\.)\s+/i, '');
-                    const userInitials = generateInitials(cleanName);
+                    const userInitials = window.generateInitials ? window.generateInitials(activity.user_name) : 'U';
                     
                     // Get activity icon based on type
                     let icon = '📝';
