@@ -134,7 +134,7 @@
             transition: all 0.2s ease;
             box-sizing: border-box;
             overflow: hidden;
-            /* Content controlled by master-consolidated.js */
+            /* Content controlled by dcf-unified-auth.js */
         }
 
         .user-avatar:hover {
@@ -702,8 +702,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/supabase-auth.js"></script>
-    <script src="../js/dcf-master-consolidated.js"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body class="dcf-public-page">
@@ -1282,20 +1281,14 @@
                 submitBtn.textContent = 'Creating Event...';
                 submitBtn.disabled = true;
 
-                // Initialize Supabase if needed
-                if (!window.masterSupabase) {
-                    window.initializeSupabase();
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                // Use unified auth's Supabase client
+                const supabase = window.dcfSupabase;
+                if (!supabase) {
+                    throw new Error('Supabase client not initialized');
                 }
-                const supabase = window.masterSupabase;
 
-                // Get current user from improved auth system
-                let currentUser = null;
-                if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
-                    currentUser = window.dcfAuth.getCurrentUser();
-                } else if (typeof getCurrentUser === 'function') {
-                    currentUser = getCurrentUser();
-                }
+                // Get current user from unified auth system
+                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
                 
                 if (!currentUser) {
                     throw new Error('You must be logged in to create events');
@@ -1389,21 +1382,13 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🔍 DEBUG: Checking auth in create event page...');
             
-            // Try to get current user from improved auth system
-            let currentUser = null;
-            if (window.dcfAuth && typeof window.dcfAuth.getCurrentUser === 'function') {
-                currentUser = window.dcfAuth.getCurrentUser();
-                console.log('🔍 DEBUG: dcfAuth.getCurrentUser result:', currentUser);
-            } else if (typeof getCurrentUser === 'function') {
-                currentUser = getCurrentUser();
-                console.log('🔍 DEBUG: getCurrentUser result:', currentUser);
-            } else {
-                console.log('🔍 DEBUG: No getCurrentUser function available');
-            }
+            // Get current user from unified auth system
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            console.log('🔍 DEBUG: getCurrentUser result:', currentUser);
             
             // Also check Supabase session directly
-            if (window.authSupabase) {
-                const { data: { session } } = await window.authSupabase.auth.getSession();
+            if (window.dcfSupabase) {
+                const { data: { session } } = await window.dcfSupabase.auth.getSession();
                 console.log('🔍 DEBUG: Supabase session:', session);
                 
                 if (!currentUser && !session?.user) {
