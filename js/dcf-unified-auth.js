@@ -373,8 +373,14 @@ function getCorrectBasePath() {
 }
 
 function populateTopNavigation() {
+    console.log('🚀 populateTopNavigation() called');
+    
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
-    if (!navMenu) return;
+    console.log('🔍 DEBUG NAV: navMenu element found:', !!navMenu);
+    if (!navMenu) {
+        console.log('❌ DEBUG NAV: No navMenu element found');
+        return;
+    }
     
     // Only populate if empty
     navMenu.innerHTML = '';
@@ -382,10 +388,15 @@ function populateTopNavigation() {
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
     
+    console.log('🔍 DEBUG NAV: window.dcfUser:', window.dcfUser);
+    console.log('🔍 DEBUG NAV: User login status:', window.dcfUser?.isLoggedIn);
+    console.log('🔍 DEBUG NAV: Navigation type:', window.dcfUser?.isLoggedIn ? 'member' : 'public');
+    
     let navItems;
     
     // Check if user is logged in
     if (window.dcfUser?.isLoggedIn) {
+        console.log('✅ DEBUG NAV: Using member navigation');
         // Member navigation
         navItems = [
             { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
@@ -395,6 +406,7 @@ function populateTopNavigation() {
             { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' }
         ];
     } else {
+        console.log('✅ DEBUG NAV: Using public navigation');
         // Public navigation
         navItems = [
             { href: basePath + 'public/dcf_about.html', text: 'About' },
@@ -405,6 +417,7 @@ function populateTopNavigation() {
         ];
     }
     
+    console.log('🔍 DEBUG NAV: navItems:', navItems);
     console.log('DEBUG TOP NAV - basePath:', basePath);
     console.log('DEBUG TOP NAV - navItems:', navItems);
     console.log('DEBUG TOP NAV - isLoggedIn:', window.dcfUser?.isLoggedIn);
