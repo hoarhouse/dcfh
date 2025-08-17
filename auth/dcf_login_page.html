@@ -644,14 +644,28 @@
        });
 
         // Check authentication status and handle page initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            // CRITICAL: Redirect logged-in users immediately
-            if (window.isUserLoggedIn && window.isUserLoggedIn()) {
-                window.location.href = '../members/dcf_member_home.html';
-                return;
+        document.addEventListener('DOMContentLoaded', async function() {
+            // CRITICAL: Wait for unified auth to initialize before checking status
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max wait
+            
+            // Wait for unified auth to be ready
+            while (attempts < maxAttempts) {
+                if (window.dcfUser && window.isUserLoggedIn) {
+                    // Auth system is ready, now check login status
+                    if (window.isUserLoggedIn()) {
+                        window.location.href = '../members/dcf_member_home.html';
+                        return;
+                    }
+                    break; // Auth ready, user not logged in, continue with login page
+                }
+                
+                // Wait 100ms and try again
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
             }
             
-            // Auto-focus email field for login
+            // Auto-focus email field for login (only if staying on login page)
             document.getElementById('email').focus();
         });
     </script>
