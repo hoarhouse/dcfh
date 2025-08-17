@@ -1329,6 +1329,41 @@ async function initializeDCF() {
 }
 
 // =============================================================================
+// 13. USERNAME VALIDATION
+// =============================================================================
+
+async function validateUsername(username) {
+    if (!username || username.length < 3 || username.length > 30) {
+        return { valid: false, message: 'Username must be 3-30 characters long' };
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return { valid: false, message: 'Username can only contain letters, numbers, and underscores' };
+    }
+    
+    if (!window.dcfSupabase) {
+        console.error('Supabase client not initialized');
+        return { valid: false, message: 'Unable to validate username' };
+    }
+    
+    try {
+        const { data } = await window.dcfSupabase
+            .from('user_profiles')
+            .select('username')
+            .eq('username', username.toLowerCase())
+            .single();
+        
+        if (data) {
+            return { valid: false, message: 'Username is already taken' };
+        }
+        
+        return { valid: true, message: 'Username is available' };
+    } catch (error) {
+        return { valid: true, message: 'Username is available' };
+    }
+}
+
+// =============================================================================
 // 14. GLOBAL EXPORTS
 // =============================================================================
 window.toggleUserMenu = toggleUserMenu;
@@ -1345,6 +1380,7 @@ window.isUserLoggedIn = isUserLoggedIn;
 window.getUserEmail = getUserEmail;
 window.getUserName = getUserName;
 window.getUserId = getUserId;
+window.validateUsername = validateUsername;
 window.initializeDCF = initializeDCF;
 window.focusSearchProjects = focusSearchProjects;
 window.exploreJoinableProjects = exploreJoinableProjects;

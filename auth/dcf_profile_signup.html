@@ -815,8 +815,7 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/supabase-auth.js"></script>
-<script src="../js/dcf-master-consolidated.js"></script>
+<script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body class="dcf-public-page">
@@ -832,7 +831,7 @@
             <div class="user-menu">
                 <!-- Notification bell will be inserted here by master JS -->
                 <div class="user-dropdown">
-                    <div class="user-avatar" id="userAvatar" onclick="toggleUserMenu()"></div>
+                    <div class="user-avatar" id="userAvatar"></div>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
@@ -846,6 +845,12 @@
             </div>
         </nav>
     </header>
+
+    <div style="text-align: center; padding: 1rem; background: white; border-bottom: 1px solid #e5e5e5;">
+        <a href="dcf_login_page.html" style="color: #666; text-decoration: none; font-size: 0.9rem;">
+            Already a member? <span style="color: #000; font-weight: 600;">Sign in here</span>
+        </a>
+    </div>
 
     <main class="main-container">
         <div class="progress-bar">
@@ -1270,7 +1275,7 @@
                 userData.email = document.getElementById('email').value;
                 userData.username = document.getElementById('username').value;
                 userData.password = document.getElementById('password').value;
-userData.location = document.getElementById('country').value;
+                userData.country = document.getElementById('country').value;
                 
                 goToStep(2);
             } catch (error) {
@@ -1566,12 +1571,11 @@ userData.location = document.getElementById('country').value;
                 submitBtn.textContent = 'Creating Account...';
                 submitBtn.disabled = true;
 
-                // Supabase configuration
-                if (!window.masterSupabase) {
-    window.initializeSupabase();
-    await new Promise(resolve => setTimeout(resolve, 200));
-}
-const supabase = window.masterSupabase;
+                // Use unified auth Supabase client
+                const supabase = window.dcfSupabase;
+                if (!supabase) {
+                    throw new Error('Supabase client not initialized');
+                }
 
                 // Step 1: Create the auth user with Supabase Auth
                 const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -1690,12 +1694,11 @@ const supabase = window.masterSupabase;
                 return { valid: false, message: 'Please enter a valid email address' };
             }
             
-            // Check if email is already registered
-            if (!window.masterSupabase) {
-                window.initializeSupabase();
-                await new Promise(resolve => setTimeout(resolve, 200));
+            // Check if email is already registered  
+            const supabase = window.dcfSupabase;
+            if (!supabase) {
+                return { valid: true, message: 'Email is available' };
             }
-            const supabase = window.masterSupabase;
             
             try {
                 const { data, error } = await supabase
