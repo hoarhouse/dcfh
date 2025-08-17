@@ -794,7 +794,7 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/dcf-master-consolidated.js"></script>
+<script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body>
@@ -809,7 +809,7 @@
             </ul>
             <div class="user-menu">
     <div class="user-dropdown">
-        <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>        <div class="dropdown-menu" id="userDropdown">
+        <div class="user-avatar" id="userAvatar"></div>        <div class="dropdown-menu" id="userDropdown">
             <div class="dropdown-header">
                 <div class="dropdown-avatar"></div>
                 <div class="dropdown-info">
@@ -1476,7 +1476,7 @@
             const searchName = await showPrompt('Enter a name for this saved search:', '', 'Save Search');
             if (searchName) {
                 showAlert(`Search saved as "${searchName}"`, 'success', 'Search Saved');
-                // In a real implementation, this would save to backend/localStorage
+                // In a real implementation, this would save to backend database
             }
         }
 
@@ -1512,7 +1512,8 @@
                     selectDateRange(document.querySelector('.date-option[onclick*="week"]'), 'week');
                     break;
                 case 'my-activity':
-                    document.getElementById('authorName').value = localStorage.getItem('dcf_user_name') || '';
+                    const currentUser = window.getCurrentUser();
+                    document.getElementById('authorName').value = currentUser?.name || '';
                     break;
                 case 'recent-updates':
                     document.getElementById('sortBy').value = 'date-newest';
@@ -1559,70 +1560,14 @@
             }
    });
 
-        // User menu functionality
-        let isDropdownOpen = false;
-
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = getOrCreateOverlay();
-            
-            if (isDropdownOpen) {
-                closeUserMenu();
-            } else {
-                openUserMenu();
-            }
-        }
-
-        function openUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = getOrCreateOverlay();
-            
-            dropdown.classList.add('active');
-            overlay.classList.add('active');
-            isDropdownOpen = true;
-            
-            // updateUserDropdownInfo(); - removed, handled by master JS
-        }
-
-        function closeUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            const overlay = document.querySelector('.dropdown-overlay');
-            
-            dropdown.classList.remove('active');
-            if (overlay) overlay.classList.remove('active');
-            isDropdownOpen = false;
-        }
-
-        function getOrCreateOverlay() {
-            let overlay = document.querySelector('.dropdown-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'dropdown-overlay';
-                overlay.onclick = closeUserMenu;
-                document.body.appendChild(overlay);
-            }
-            return overlay;
-        }
-
-        // updateUserDropdownInfo function removed - handled by master JS
-
-        function generateInitials(name) {
-            if (!name) return 'SJ';
-            const parts = name.split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            }
-            return name.substring(0, 2).toUpperCase();
-        }
-
-        // Logout function removed - now using global handleLogout() from dcf-master-consolidated.js
+        // User menu functionality handled by unified auth system
 
        // Initialize user menu on page load
         document.addEventListener('DOMContentLoaded', function() {
             // updateUserDropdownInfo(); - removed, handled by master JS
 
             // Check if user is logged in
-            const isLoggedIn = localStorage.getItem('dcf_user_logged_in');
+            const isLoggedIn = window.isUserLoggedIn();
             if (isLoggedIn !== 'true') {
                 // DISABLED: alert('Please log in to access member pages.');
                 window.location.href = '../auth/dcf_login_page.html';
