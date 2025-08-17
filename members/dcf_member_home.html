@@ -3168,82 +3168,17 @@
         }
 
         // POST SUBMISSION
-        async function submitPost() {
-            console.log('🚀 submitPost() called');
-            
+        function submitPost() {
+            console.log('Post function called');
             const textarea = document.getElementById('postContent');
             const content = textarea.value.trim();
-            
-            console.log('📝 Post content:', content);
-            
-            if (!content && mediaFiles.length === 0) {
-                alert('❌ Please add some content or media to your post');
+            if (!content) {
+                alert('Please enter some content');
                 return;
             }
-            
-            if (content.length > 2000) {
-                alert('❌ Post content is too long (max 2000 characters)');
-                return;
-            }
-            
-            if (!currentUser) {
-                alert('❌ Please log in to create posts');
-                return;
-            }
-            
-            const postBtn = document.getElementById('submitPostBtn');
-            
-            // Show loading state
-            postBtn.disabled = true;
-            postBtn.textContent = 'Posting...';
-            
-            try {
-                console.log('🚀 SUBMITTING POST:', { content, files: mediaFiles.length, user: currentUser });
-                
-                // Upload media files
-                let mediaUrls = [];
-                if (mediaFiles.length > 0) {
-                    mediaUrls = await uploadWithProgress(mediaFiles);
-                }
-                
-                // Create post in database
-                const supabase = window.authSupabase || window.masterSupabase;
-                const { data, error } = await supabase
-                    .from('posts')
-                    .insert({
-                        content: content,
-                        media_url: JSON.stringify(mediaUrls),
-                        media_type: determineMediaType(mediaUrls),
-                        username: currentUser.username,
-                        author_id: currentUser.id,
-                        status: 'active',
-                        like_count: 0,
-                        comment_count: 0,
-                        view_count: 0
-                    })
-                    .select(`*, user_profiles(username, name, avatar_url)`)
-                    .single();
-                
-                if (error) throw error;
-                
-                console.log('✅ POST CREATED:', data);
-                
-                // Add to feed with optimistic UI
-                feedPosts.unshift(data);
-                renderFeed();
-                
-                // Clear form
-                clearPostForm();
-                showSuccess('Post created successfully!');
-                
-            } catch (error) {
-                console.error('❌ POST CREATION FAILED:', error);
-                showError(`Failed to create post: ${error.message}`);
-            } finally {
-                // Reset button state
-                postBtn.disabled = false;
-                postBtn.textContent = 'Post';
-            }
+            alert('Post submitted: ' + content);
+            textarea.value = '';
+            updateCharCounter(textarea);
         }
 
         function determineMediaType(urls) {
