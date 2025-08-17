@@ -245,19 +245,14 @@
             margin: 0 auto;
         }
 
-        /* OPEN POST BOX STYLING */
-        .open-post-box {
+        /* SIMPLE POST BOX STYLING */
+        .simple-post-box {
             background: white;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid #dbdbdb;
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-
-        .open-post-box:hover {
-            border-color: #0095f6;
-            box-shadow: 0 4px 16px rgba(0, 149, 246, 0.1);
+            margin-bottom: 20px;
         }
 
         .post-creator {
@@ -315,47 +310,31 @@
             color: #fd1d1d;
         }
 
-        /* MEDIA UPLOAD ZONE */
-        .media-upload-zone {
-            border: 2px dashed #dbdbdb;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s ease;
-            margin: 20px 0;
-            background: #fafafa;
-        }
-
-        .media-upload-zone.drag-over {
-            border-color: #0095f6;
-            background: #e8f4ff;
-            transform: scale(1.02);
-        }
-
-        #mediaInput {
-            display: none;
-        }
-
-        .upload-prompt {
+        /* SIMPLE ACTIONS */
+        .simple-post-actions {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            cursor: pointer;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #efefef;
         }
 
-        .upload-icon {
-            font-size: 32px;
-        }
-
-        .upload-text {
-            font-size: 16px;
-            color: #262626;
+        .add-media-btn {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
             font-weight: 500;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .upload-limit {
-            font-size: 12px;
-            color: #8e8e8e;
+        .add-media-btn:hover {
+            background: #e9ecef;
+            border-color: #dee2e6;
         }
 
         .media-preview-grid {
@@ -1777,8 +1756,8 @@
 
         <!-- WORLD-CLASS SOCIAL MEDIA FEED -->
         <div class="feed-container">
-            <!-- OPEN POST BOX - Always Visible -->
-            <div class="open-post-box">
+            <!-- SIMPLE POST BOX -->
+            <div class="simple-post-box">
                 <div class="post-creator">
                     <div class="user-avatar" id="postBoxAvatar">U</div>
                     <div class="post-input-area">
@@ -1786,36 +1765,26 @@
                             id="postContent"
                             placeholder="What's on your mind?" 
                             maxlength="2000"
-                            rows="1"
-                            oninput="autoResize(this); updateCharCounter(this)"
+                            rows="3"
+                            oninput="updateCharCounter(this)"
                         ></textarea>
                         <div class="char-counter" id="charCounter">0/2000</div>
                     </div>
                 </div>
                 
-                <div class="media-upload-zone" 
-                     ondrop="handleDrop(event)" 
-                     ondragover="handleDragOver(event)"
-                     ondragleave="handleDragLeave(event)">
-                    <input type="file" id="mediaInput" multiple accept="image/jpeg,image/png,image/gif,image/webp,video/mp4" onchange="handleFileSelect(event)">
-                    <div class="upload-prompt">
-                        <span class="upload-icon">📷</span>
-                        <span class="upload-text">Drag photos/videos here or click to upload</span>
-                        <span class="upload-limit">Max 4 images or 1 video • 10MB each</span>
-                    </div>
-                    <div class="media-preview-grid" id="mediaPreviewGrid"></div>
-                </div>
+                <!-- HIDDEN FILE INPUT -->
+                <input type="file" id="mediaInput" multiple accept="image/jpeg,image/png,image/gif,image/webp,video/mp4" onchange="handleMediaSelect(event)" style="display: none;">
                 
-                <div class="post-actions">
-                    <button class="media-btn" onclick="triggerFileSelect()">
-                        <span class="btn-icon">📷</span>
-                        Photo/Video
+                <!-- MEDIA PREVIEW GRID -->
+                <div class="media-preview-grid" id="mediaPreviewGrid" style="display: none;"></div>
+                
+                <!-- SIMPLE ACTIONS -->
+                <div class="simple-post-actions">
+                    <button class="add-media-btn" onclick="selectMedia()">
+                        📷 Add Media
                     </button>
                     <button class="post-btn" id="submitPostBtn" onclick="submitPost()" disabled>
-                        <span class="btn-text">Post</span>
-                        <div class="btn-loading" style="display: none;">
-                            <div class="loading-spinner"></div>
-                        </div>
+                        Post
                     </button>
                 </div>
             </div>
@@ -3065,36 +3034,13 @@
             textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
         }
 
-        // DRAG & DROP SYSTEM
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            document.querySelector('.media-upload-zone').classList.add('drag-over');
-        }
-
-        function handleDragLeave(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            document.querySelector('.media-upload-zone').classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const zone = document.querySelector('.media-upload-zone');
-            zone.classList.remove('drag-over');
-            
-            const files = Array.from(e.dataTransfer.files);
-            handleFileSelect({ target: { files } });
-        }
-
-        function triggerFileSelect() {
+        // SIMPLE MEDIA SELECTION
+        function selectMedia() {
             document.getElementById('mediaInput').click();
         }
 
-        // FILE HANDLING & VALIDATION
-        function handleFileSelect(e) {
+        // HANDLE MEDIA SELECTION
+        function handleMediaSelect(e) {
             const files = Array.from(e.target.files);
             
             const validationResult = validateFiles(files);
@@ -3141,10 +3087,12 @@
             const grid = document.getElementById('mediaPreviewGrid');
             
             if (mediaFiles.length === 0) {
+                grid.style.display = 'none';
                 grid.innerHTML = '';
                 return;
             }
             
+            grid.style.display = 'grid';
             grid.innerHTML = mediaFiles.map((file, index) => {
                 const isVideo = file.type.startsWith('video/');
                 const url = URL.createObjectURL(file);
@@ -3239,13 +3187,10 @@
             }
             
             const postBtn = document.getElementById('submitPostBtn');
-            const btnText = postBtn.querySelector('.btn-text');
-            const btnLoading = postBtn.querySelector('.btn-loading');
             
             // Show loading state
             postBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'block';
+            postBtn.textContent = 'Posting...';
             
             try {
                 console.log('🚀 SUBMITTING POST:', { content, files: mediaFiles.length });
@@ -3292,8 +3237,7 @@
             } finally {
                 // Reset button state
                 postBtn.disabled = false;
-                btnText.style.display = 'block';
-                btnLoading.style.display = 'none';
+                postBtn.textContent = 'Post';
             }
         }
 
