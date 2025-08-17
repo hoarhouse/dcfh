@@ -413,7 +413,8 @@ function populateTopNavigation() {
             { href: basePath + 'public/dcf_contact.html', text: 'Contact' },
             { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
             { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
-            { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' }
+            { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
+            { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter' }
         ];
     }
     
