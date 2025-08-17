@@ -1526,8 +1526,37 @@
                 
                 // Now run the rest of the page logic
                 await initializePage();
+                
+                // SYSTEMATIC UPDATE: Update all user-dependent elements
+                if (currentUser && currentEvent) {
+                    updateAllUserElements(currentUser, currentEvent);
+                } else {
+                    console.log('⚠️ SYSTEMATIC UPDATE: Skipped - missing currentUser or currentEvent');
+                }
             }, 1000); // Wait 1 second for auth to load
         });
+
+        // SYSTEMATIC USER RECOGNITION: Master update function
+        function updateAllUserElements(currentUser, event) {
+            console.log('🔄 SYSTEMATIC UPDATE: Updating all user elements with:', currentUser);
+            
+            // Update organizer box with ownership recognition
+            updateOrganizerBox(currentUser, event);
+            
+            // Apply consistent avatar styling to all elements
+            updateAllAvatarStyling();
+            
+            // Re-render comments with proper styling and URL linking
+            if (event) loadComments(event.id);
+            
+            // Update registration card (already working)
+            renderRegistrationCard(event);
+            
+            // Update comment form avatar
+            updateCommentFormAvatar(currentUser);
+            
+            console.log('✅ SYSTEMATIC UPDATE: All user elements updated');
+        }
 
         // Add event ownership check function
         function isEventOwner(event) {
@@ -1884,6 +1913,70 @@
                     <button class="btn btn-secondary" onclick="inviteColleagues()">📧 Invite Colleagues</button>
                 </div>
             `;
+        }
+
+        // SYSTEMATIC USER RECOGNITION: Organizer box with ownership detection
+        function updateOrganizerBox(currentUser, event) {
+            const organizerCard = document.getElementById('organizerCard');
+            
+            if (currentUser && isEventOwner(event)) {
+                organizerCard.innerHTML = `
+                    <h3 class="sidebar-title">Organized By</h3>
+                    <div class="organizer-card owner-card">
+                        <div class="organizer-avatar" style="background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; font-weight: 600;">
+                            ${window.generateInitials(currentUser.name || currentUser.username)}
+                        </div>
+                        <div class="organizer-info">
+                            <div class="organizer-name">You</div>
+                            <div class="organizer-title">Event Organizer</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.location.href='dcf_event_manage.html?id=${event.id}'">
+                        ⚙️ Manage Event
+                    </button>
+                `;
+            } else {
+                // Keep existing static organizer display
+                organizerCard.innerHTML = `
+                    <h3 class="sidebar-title">Organized By</h3>
+                    <div class="organizer-card">
+                        <div class="organizer-avatar" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600;">OR</div>
+                        <div class="organizer-info">
+                            <div class="organizer-name">Event Organizer</div>
+                            <div class="organizer-title">DCF Community Member</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="contactOrganizer()">📧 Contact Organizer</button>
+                `;
+            }
+        }
+
+        // SYSTEMATIC USER RECOGNITION: Consistent avatar styling
+        function updateAllAvatarStyling() {
+            // Apply consistent dark gradient to all avatars
+            const allAvatars = document.querySelectorAll('.user-avatar-small, .organizer-avatar, .commenter-avatar');
+            allAvatars.forEach(avatar => {
+                avatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                avatar.style.color = 'white';
+                avatar.style.fontWeight = '600';
+            });
+        }
+
+        // SYSTEMATIC USER RECOGNITION: Update comment form avatar
+        function updateCommentFormAvatar(currentUser) {
+            const userAvatar = document.getElementById('commentUserAvatar');
+            if (userAvatar && currentUser) {
+                userAvatar.textContent = window.generateInitials(currentUser.name || currentUser.username);
+                userAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                userAvatar.style.color = 'white';
+                userAvatar.style.fontWeight = '600';
+            }
+        }
+
+        // SYSTEMATIC USER RECOGNITION: URL auto-linking function
+        function linkifyText(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #1976d2; text-decoration: underline;">$1</a>');
         }
 
         function renderOrganizerCard(event) {
@@ -2502,12 +2595,15 @@
             }
         }
 
-        async function loadComments() {
+        async function loadComments(eventId) {
             try {
+                const targetEventId = eventId || currentEvent?.id;
+                if (!targetEventId) return;
+                
                 const { data: comments, error } = await supabase
                     .from('event_comments')
                     .select('*')
-                    .eq('event_id', currentEvent.id)
+                    .eq('event_id', targetEventId)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -2528,14 +2624,16 @@
             }
 
             commentsList.innerHTML = eventComments.map(comment => `
-                <div class="comment-item">
-                    <div class="user-avatar-small">${window.generateInitials(comment.user_name)}</div>
+                <div class="comment-item" data-comment-id="${comment.id}">
+                    <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600;">
+                        ${window.generateInitials(comment.user_name)}
+                    </div>
                     <div class="comment-content">
                         <div class="comment-header">
-                            <span class="comment-author">${comment.user_name}</span>
+                            <span class="comment-author">@${comment.user_name}</span>
                             <span class="comment-time">${formatTimeAgo(comment.created_at)}</span>
                         </div>
-                        <div class="comment-text">${comment.comment_text}</div>
+                        <div class="comment-text">${linkifyText(comment.comment_text)}</div>
                         <div class="comment-actions-inline">
                             <button class="comment-action-btn" onclick="likeComment('${comment.id}')">👍 Like</button>
                             <button class="comment-action-btn" onclick="replyToComment('${comment.id}')">💬 Reply</button>
@@ -2682,8 +2780,57 @@
         }
 
         function replyToComment(commentId) {
-            // Implement comment reply functionality
-            console.log('Reply to comment:', commentId);
+            console.log('Replying to comment:', commentId);
+            
+            // Find the comment element
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (!commentElement) return;
+            
+            // Toggle or create reply form
+            let replyForm = commentElement.querySelector('.reply-form');
+            if (replyForm) {
+                replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+            } else {
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('Please log in to reply');
+                    return;
+                }
+                
+                replyForm = document.createElement('div');
+                replyForm.className = 'reply-form';
+                replyForm.innerHTML = `
+                    <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                        <textarea placeholder="Write a reply..." rows="2" style="width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 8px;"></textarea>
+                        <div style="margin-top: 8px;">
+                            <button onclick="submitReply('${commentId}', this)" class="btn btn-small btn-primary">Reply</button>
+                            <button onclick="cancelReply(this)" class="btn btn-small btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                commentElement.appendChild(replyForm);
+            }
+        }
+
+        function submitReply(commentId, buttonElement) {
+            const replyForm = buttonElement.closest('.reply-form');
+            const textarea = replyForm.querySelector('textarea');
+            const replyText = textarea.value.trim();
+            
+            if (!replyText) {
+                alert('Please enter a reply');
+                return;
+            }
+            
+            console.log('Submitting reply to comment:', commentId, 'Reply:', replyText);
+            // TODO: Implement actual reply submission to database
+            alert('Reply functionality coming soon!');
+            cancelReply(buttonElement);
+        }
+
+        function cancelReply(buttonElement) {
+            const replyForm = buttonElement.closest('.reply-form');
+            replyForm.remove();
         }
 
         // Update the existing initializePage function to load social data
