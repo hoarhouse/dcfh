@@ -1018,33 +1018,37 @@
 
         // Load organizer info
         async function loadOrganizerInfo(organizerId, contactEmail) {
+            console.log('🔍 DEBUG - Loading organizer:', { organizerId, contactEmail });
+            
             try {
                 let organizerData = null;
                 
-                // Only query if organizerId is not null/undefined
                 if (organizerId) {
-                    const { data: organizer } = await supabase
+                    console.log('🔍 DEBUG - Querying organizer_id:', organizerId);
+                    const { data: organizer, error } = await supabase
                         .from('user_profiles')
                         .select('*')
                         .eq('id', organizerId)
                         .maybeSingle();
                     
+                    console.log('🔍 DEBUG - Query result:', { organizer, error });
                     organizerData = organizer;
                 }
 
-                // Use fallback data if no organizer found or organizerId was null
                 if (!organizerData) {
-                    organizerData = {
-                        name: 'Event Organizer',
-                        username: 'organizer',
-                        email: contactEmail || 'No contact provided'
-                    };
+                    console.log('🔍 DEBUG - No organizer data found, hiding section');
+                    document.querySelector('.card:has(#organizerInfo)').style.display = 'none';
+                    return;
                 }
 
+                console.log('🔍 DEBUG - Using organizer data:', organizerData);
+                
                 // Update organizer UI
                 const initials = window.generateInitials ? window.generateInitials(organizerData.name) : 'O';
-                document.getElementById('organizerName').textContent = `@${organizerData.username || 'organizer'}`;
-                document.getElementById('organizerEmail').textContent = organizerData.email || 'No contact provided';
+                console.log('🔍 DEBUG - Generated initials:', initials);
+                
+                document.getElementById('organizerName').textContent = `@${organizerData.username}`;
+                document.getElementById('organizerEmail').textContent = organizerData.email;
                 document.getElementById('organizerAvatar').textContent = initials;
 
                 // Show manage controls only if current user is the actual organizer
@@ -1060,12 +1064,8 @@
                 }
 
             } catch (error) {
-                console.error('Error loading organizer:', error);
-                // Fallback UI
-                document.getElementById('organizerName').textContent = '@organizer';
-                document.getElementById('organizerEmail').textContent = contactEmail || 'No contact provided';
-                document.getElementById('organizerAvatar').textContent = 'O';
-                checkUserEventStatus();
+                console.error('🚨 ERROR - Organizer lookup failed:', error);
+                document.querySelector('.card:has(#organizerInfo)').style.display = 'none';
             }
         }
 
