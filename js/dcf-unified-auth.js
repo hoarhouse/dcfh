@@ -1296,6 +1296,13 @@ async function initializeDCF() {
         // Initialize authentication
         const isLoggedIn = await initializeAuth();
         
+        // Check for page protection
+        if (document.body.classList.contains('dcf-public-page') && isLoggedIn) {
+            console.log('🔒 Redirecting logged-in user from public auth page');
+            window.location.href = getCorrectBasePath() + 'members/dcf_member_home.html';
+            return;
+        }
+        
         // Update UI based on auth state
         updateUserInterface();
         
