@@ -403,7 +403,7 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/supabase-auth.js"></script>
+<script src="../js/dcf-unified-auth.js"></script>
 <body class="dcf-public-page">
     <header class="header">
         <nav class="nav-container">
@@ -499,8 +499,8 @@
     e.preventDefault();
     console.log('PREVENTED DEFAULT - CONTINUING');
             
-            // Use the global auth Supabase client
-            const supabase = window.authSupabase;
+            // Use the unified auth Supabase client
+            const supabase = window.dcfSupabase;
             if (!supabase) {
                 console.error('Supabase not initialized');
                 return;
@@ -554,18 +554,11 @@
                 }
                 
                 if (data.user) {
-                    // Success - let Supabase handle everything
+                    // Success - unified auth handles all state management
                     document.getElementById('successMessage').style.display = 'block';
                     setTimeout(() => {
-                    // Store auth data that dcfAuth expects
-localStorage.setItem('dcf_user_logged_in', 'true');
-localStorage.setItem('dcf_user_name', userData?.name || data.user.email);
-localStorage.setItem('dcf_user_email', data.user.email);
-localStorage.setItem('dcf_user_id', data.user.id);
-localStorage.setItem('dcf_auth_provider', 'supabase');
-
-window.location.href = '../members/dcf_member_home.html';
-}, 1000);
+                        window.location.href = '../members/dcf_member_home.html';
+                    }, 1000);
                 } else {
                     throw new Error('Login failed');
                 }
@@ -622,7 +615,7 @@ window.location.href = '../members/dcf_member_home.html';
             
             try {
                 // Use Supabase password reset
-                const { error } = await window.authSupabase.auth.resetPasswordForEmail(resetEmail, {
+                const { error } = await window.dcfSupabase.auth.resetPasswordForEmail(resetEmail, {
                     redirectTo: window.location.origin + '/dcf_reset_password.html'
                 });
                 
@@ -650,17 +643,15 @@ window.location.href = '../members/dcf_member_home.html';
             }
        });
 
-        // Auto-fill form if coming from signup
+        // Check authentication status and handle page initialization
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user just signed up
-            const justSignedUp = sessionStorage.getItem('dcf_just_signed_up');
-            if (justSignedUp) {
-                sessionStorage.removeItem('dcf_just_signed_up');
-                document.getElementById('successMessage').textContent = 'Account created successfully! Please sign in.';
-                document.getElementById('successMessage').style.display = 'block';
+            // CRITICAL: Redirect logged-in users immediately
+            if (window.isUserLoggedIn && window.isUserLoggedIn()) {
+                window.location.href = '../members/dcf_member_home.html';
+                return;
             }
             
-            // Auto-focus email field
+            // Auto-focus email field for login
             document.getElementById('email').focus();
         });
     </script>
