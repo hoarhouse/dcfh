@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Details - DCF Hungary</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -80,27 +83,6 @@
             gap: 1rem;
         }
 
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #000, #333);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-        }
-
-        .user-avatar:hover {
-            transform: scale(1.05);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
         .user-dropdown {
             position: relative;
         }
@@ -135,18 +117,44 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .user-avatar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
         .dropdown-avatar {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, #000, #333);
+            min-width: 48px;
+            min-height: 48px;
             border-radius: 50%;
+            background: linear-gradient(135deg, #000, #333);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
             flex-shrink: 0;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .dropdown-info {
@@ -222,71 +230,73 @@
             padding: 0 2rem;
         }
 
-        .event-hero {
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: #666;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: #333;
+        }
+
+        .event-header {
             background: white;
             border-radius: 12px;
+            padding: 2rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
             margin-bottom: 2rem;
         }
 
-        .event-banner {
-            height: 300px;
-            background: linear-gradient(135deg, #000, #333);
+        .event-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .event-title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .event-icon {
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 3rem;
-            position: relative;
-        }
-
-        .event-content {
-            padding: 2rem;
-        }
-
-        .event-header {
-            display: flex;
-            justify-content: between;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-            gap: 2rem;
-        }
-
-        .event-info {
-            flex: 1;
+            font-size: 1.8rem;
         }
 
         .event-title {
             font-size: 2.5rem;
             font-weight: 700;
             color: #333;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
-        .event-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
+        .event-subtitle {
             color: #666;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .meta-icon {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .event-actions {
             display: flex;
-            flex-direction: column;
             gap: 1rem;
-            min-width: 200px;
+            align-items: center;
         }
 
         .btn {
@@ -299,10 +309,8 @@
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 0.5rem;
             font-weight: 600;
-            text-align: center;
         }
 
         .btn-primary {
@@ -328,43 +336,121 @@
         .btn.liked {
             background: #dc3545;
             color: white;
+            border-color: #dc3545;
         }
 
         .btn.following {
             background: #28a745;
             color: white;
+            border-color: #28a745;
         }
 
         .btn.registered {
             background: #007bff;
             color: white;
+            border-color: #007bff;
         }
 
-        .event-description {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 2rem;
-        }
-
-        .event-details {
+        .event-meta {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 2rem;
             margin-bottom: 2rem;
         }
 
-        .details-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
+        .meta-item {
+            text-align: center;
         }
 
-        .section-title {
-            font-size: 1.3rem;
+        .meta-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .meta-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .event-description {
+            color: #666;
+            line-height: 1.7;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
             font-weight: 600;
             color: #333;
             margin-bottom: 1rem;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e5e5;
+            background: white;
+            border-radius: 12px 12px 0 0;
+            padding: 0 1.5rem;
+        }
+
+        .tab-btn {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #333;
+            border-bottom-color: #333;
+        }
+
+        .tab-btn:hover {
+            color: #333;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .organizer-info {
@@ -401,51 +487,31 @@
             font-size: 0.9rem;
         }
 
-        .comments-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .comments-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid #e5e5e5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .comment-form {
-            padding: 1.5rem;
-            border-bottom: 1px solid #e5e5e5;
-        }
-
-        .comment-input {
-            width: 100%;
-            min-height: 100px;
+        .stat-card {
+            text-align: center;
             padding: 1rem;
-            border: 2px solid #e5e5e5;
+            background: #f8f9fa;
             border-radius: 8px;
-            font-family: inherit;
-            font-size: 1rem;
-            resize: vertical;
-            margin-bottom: 1rem;
         }
 
-        .comment-input:focus {
-            outline: none;
-            border-color: #333;
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
         }
 
-        .comment-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .comments-list {
-            padding: 1.5rem;
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .comment {
@@ -503,28 +569,44 @@
             margin-bottom: 0.5rem;
         }
 
-        .comment-actions-bar {
-            display: flex;
-            gap: 1rem;
+        .comment-form {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e5e5;
         }
 
-        .comment-btn {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 0.9rem;
-            cursor: pointer;
+        .comment-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .comment-actions {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            transition: all 0.2s ease;
         }
 
-        .comment-btn:hover {
-            background: #f0f0f0;
-            color: #333;
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 3rem;
+            color: #dc3545;
         }
 
         .empty-state {
@@ -538,34 +620,17 @@
             margin-bottom: 1rem;
         }
 
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-
-        .error {
-            text-align: center;
-            padding: 2rem;
-            color: #dc3545;
-            background: #fee;
-            border-radius: 8px;
-            margin: 1rem 0;
-        }
-
         @media (max-width: 1024px) {
-            .event-details {
+            .content-wrapper {
                 grid-template-columns: 1fr;
             }
 
-            .event-header {
-                flex-direction: column;
-                align-items: stretch;
+            .sidebar {
+                order: 2;
             }
 
-            .event-actions {
-                flex-direction: row;
-                min-width: auto;
+            .main-content {
+                order: 1;
             }
         }
 
@@ -574,22 +639,29 @@
                 padding: 0 1rem;
             }
 
-            .event-title {
-                font-size: 2rem;
+            .event-header-top {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .event-title-section {
+                flex-direction: column;
+                text-align: center;
             }
 
             .event-meta {
-                flex-direction: column;
-                gap: 1rem;
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .nav-menu {
                 display: none;
             }
+
+            .content-tabs {
+                overflow-x: auto;
+            }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body>
@@ -597,9 +669,9 @@
         <nav class="nav-container">
             <a href="../index.html" class="logo">
                 <div class="logo-icon"></div>
-                Domus Communis Foundation Hungary
+                Domus Communis Foundation
             </a>
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="navMenu">
                 <li><a href="../members/dcf_member_home.html">Home</a></li>
                 <li><a href="../members/dcf_members_directory.html">Members</a></li>
                 <li><a href="../members/dcf_projects_home.html">Projects</a></li>
@@ -608,41 +680,16 @@
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
-                            <div class="dropdown-avatar">SJ</div>
+                            <div class="dropdown-avatar"></div>
                             <div class="dropdown-info">
-                                <div class="dropdown-name" id="dropdownUserName">@username</div>
-                                <div class="dropdown-email" id="dropdownUserEmail">user@email.com</div>
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
-                        <a href="../members/dcf_member_profile.html" class="dropdown-item">
-                            <span class="dropdown-icon">👤</span>
-                            My Profile
-                        </a>
-                        <a href="../members/dcf_members_directory.html" class="dropdown-item">
-                            <span class="dropdown-icon">👥</span>
-                            My Connections
-                        </a>
-                        <a href="../members/dcf_projects_home.html" class="dropdown-item">
-                            <span class="dropdown-icon">📋</span>
-                            My Projects
-                        </a>
-                        <a href="../events/dcf_events_calendar.html" class="dropdown-item">
-                            <span class="dropdown-icon">📅</span>
-                            My Events
-                        </a>
-                        <a href="../members/dcf_personal_analytics.html" class="dropdown-item">
-                            <span class="dropdown-icon">📊</span>
-                            My Stats
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <button onclick="handleLogout()" class="dropdown-item logout-btn">
-                            <span class="dropdown-icon">🚪</span>
-                            Sign Out
-                        </button>
                     </div>
                 </div>
             </div>
@@ -650,114 +697,176 @@
     </header>
 
     <main class="main-container">
-        <!-- Event Hero Section -->
-        <div class="event-hero">
-            <div class="event-banner" id="eventBanner">
-                📅
-            </div>
-            <div class="event-content">
-                <div class="event-header">
-                    <div class="event-info">
-                        <h1 class="event-title" id="eventTitle">Loading...</h1>
-                        <div class="event-meta" id="eventMeta">
-                            <div class="meta-item">
-                                <span class="meta-icon">📅</span>
-                                <span id="eventDate">Loading...</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">🕒</span>
-                                <span id="eventTime">Loading...</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">📍</span>
-                                <span id="eventLocation">Loading...</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">👥</span>
-                                <span id="eventAttendees">Loading...</span>
-                            </div>
+        <div class="breadcrumb">
+            <a href="dcf_events_calendar.html">Events</a>
+            <span>→</span>
+            <span id="breadcrumbEventTitle">Loading...</span>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <h2>Loading event details...</h2>
+        </div>
+
+        <div id="errorState" class="error" style="display: none;">
+            <h2>Event not found</h2>
+            <p>The event you're looking for doesn't exist or has been removed.</p>
+            <a href="dcf_events_calendar.html" class="btn btn-primary">← Back to Events</a>
+        </div>
+
+        <div id="eventContent" style="display: none;">
+            <div class="event-header">
+                <div class="event-header-top">
+                    <div class="event-title-section">
+                        <div class="event-icon" id="eventIcon">📅</div>
+                        <div>
+                            <h1 class="event-title" id="eventTitle">Loading...</h1>
+                            <p class="event-subtitle" id="eventSubtitle">Loading event details...</p>
                         </div>
                     </div>
                     <div class="event-actions">
-                        <button class="btn btn-primary" id="registerBtn" onclick="toggleRegistration()">
-                            📝 Register
-                        </button>
-                        <button class="btn btn-secondary" id="likeBtn" onclick="toggleLike()">
-                            ❤️ Like
-                        </button>
-                        <button class="btn btn-secondary" id="followBtn" onclick="toggleFollow()">
-                            👁️ Follow
-                        </button>
-                        <button class="btn btn-secondary" onclick="shareEvent()">
-                            📤 Share
-                        </button>
+                        <button class="btn btn-secondary" id="followBtn" style="display: none;">⭐ Follow</button>
+                        <button class="btn btn-secondary" id="likeBtn" style="display: none;">🤍 Like</button>
+                        <button class="btn btn-primary" id="registerBtn" style="display: none;">📝 Register</button>
+                        <button class="btn btn-primary" id="manageBtn" style="display: none; background-color: #dc3545; border-color: #dc3545;" onclick="window.location.href='dcf_event_manage.html?id=' + getEventIdFromUrl()">⚙️ Manage Event</button>
                     </div>
                 </div>
+
+                <div class="event-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Date</div>
+                        <div class="meta-value" id="eventDate">Loading...</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Time</div>
+                        <div class="meta-value" id="eventTime">Loading...</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Location</div>
+                        <div class="meta-value" id="eventLocation">Loading...</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Attendees</div>
+                        <div class="meta-value" id="eventAttendees">Loading...</div>
+                    </div>
+                </div>
+
                 <div class="event-description" id="eventDescription">
                     Loading event description...
                 </div>
             </div>
-        </div>
 
-        <!-- Event Details Grid -->
-        <div class="event-details">
-            <div class="details-section">
-                <h2 class="section-title">Event Details</h2>
-                <div id="eventDetailsContent">
-                    Loading details...
-                </div>
-            </div>
-            <div class="details-section">
-                <h2 class="section-title">Organizer</h2>
-                <div class="organizer-info" id="organizerInfo">
-                    <div class="organizer-avatar" id="organizerAvatar">O</div>
-                    <div class="organizer-details">
-                        <h4 id="organizerName">Loading...</h4>
-                        <p id="organizerEmail">Loading...</p>
+            <div class="content-wrapper">
+                <div class="sidebar">
+                    <div class="card">
+                        <h3 class="card-title">Quick Actions</h3>
+                        <!-- Quick Actions will be inserted here by dcf-unified-auth.js -->
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Event Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="registeredCount">0</div>
+                                <div class="stat-label">Registered</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="likesCount">0</div>
+                                <div class="stat-label">Likes</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="followersCount">0</div>
+                                <div class="stat-label">Followers</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="commentsCount">0</div>
+                                <div class="stat-label">Comments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Organizer</h3>
+                        <div class="organizer-info" id="organizerInfo">
+                            <div class="organizer-avatar" id="organizerAvatar">O</div>
+                            <div class="organizer-details">
+                                <h4 id="organizerName">Loading...</h4>
+                                <p id="organizerEmail">Loading...</p>
+                            </div>
+                        </div>
+                        <div id="organizerControls" style="display: none;">
+                            <a href="dcf_event_manage.html" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                                ⚙️ Manage Event
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div id="organizerControls" style="display: none;">
-                    <a href="dcf_event_manage.html" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                        ⚙️ Manage Event
-                    </a>
-                </div>
-            </div>
-        </div>
 
-        <!-- Comments Section -->
-        <div class="comments-section">
-            <div class="comments-header">
-                <h2 class="section-title">Discussion</h2>
-                <span id="commentCount">0 comments</span>
-            </div>
-            
-            <div class="comment-form" id="commentForm">
-                <textarea 
-                    class="comment-input" 
-                    id="commentInput" 
-                    placeholder="Share your thoughts about this event..."
-                    rows="3"
-                ></textarea>
-                <div class="comment-actions">
-                    <div></div>
-                    <button class="btn btn-primary" onclick="addComment()">
-                        💬 Post Comment
-                    </button>
-                </div>
-            </div>
+                <div class="main-content">
+                    <div class="content-tabs">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('discussion')">Discussion</button>
+                        <button class="tab-btn" onclick="switchTab('attendees')">Attendees</button>
+                    </div>
 
-            <div class="comments-list" id="commentsList">
-                <div class="loading">
-                    Loading comments...
+                    <!-- Overview Tab -->
+                    <div class="tab-content active" id="overview">
+                        <h2 style="margin-bottom: 1.5rem;">Event Details</h2>
+                        <div id="eventDetailsContent">
+                            Loading details...
+                        </div>
+                    </div>
+
+                    <!-- Discussion Tab -->
+                    <div class="tab-content" id="discussion">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2>Discussion</h2>
+                            <span id="commentCount">0 comments</span>
+                        </div>
+                        
+                        <div class="comment-form" id="commentForm">
+                            <textarea 
+                                class="comment-input" 
+                                id="commentInput" 
+                                placeholder="Share your thoughts about this event..."
+                                rows="3"
+                            ></textarea>
+                            <div class="comment-actions">
+                                <div></div>
+                                <button class="btn btn-primary" onclick="addComment()">
+                                    💬 Post Comment
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="commentsList">
+                            <div class="loading">
+                                Loading comments...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendees Tab -->
+                    <div class="tab-content" id="attendees">
+                        <h2 style="margin-bottom: 1.5rem;">Event Attendees</h2>
+                        <div id="attendeesList">
+                            <div class="loading">
+                                Loading attendees...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // ========================================
-        // GLOBAL VARIABLES
-        // ========================================
+        // Initialize Supabase using unified auth pattern
+        const supabase = window.dcfSupabase || window.supabase.createClient(
+            'https://atzommnkkwzgbktuzjti.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
+        );
+
+        // Global variables
         let currentEvent = null;
         let currentUser = null;
         let isRegistered = false;
@@ -765,99 +874,112 @@
         let isFollowing = false;
         let comments = [];
 
-        // ========================================
-        // INITIALIZATION
-        // ========================================
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🔄 Page loading...');
-            
-            // Wait for auth to initialize
-            await waitForAuth();
-            
-            // Get event ID from URL
-            const eventId = getEventIdFromUrl();
-            if (!eventId) {
-                showError('Event not found');
-                return;
-            }
-            
-            // Load event data and comments
-            await loadEventData(eventId);
-            await loadComments(eventId);
-            await loadUserStates(eventId);
-        });
-
-        async function waitForAuth() {
-            let attempts = 0;
-            while (attempts < 50) {
-                if (window.getCurrentUser && window.getCurrentUser()) {
-                    currentUser = window.getCurrentUser();
-                    console.log('✅ Auth ready, user:', currentUser.username);
-                    return;
-                }
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            console.log('⚠️ Auth timeout, proceeding without user');
-        }
-
+        // Get event ID from URL
         function getEventIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('id');
         }
 
-        // ========================================
-        // EVENT DATA LOADING
-        // ========================================
-        async function loadEventData(eventId) {
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Format time ago
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load event data
+        async function loadEvent() {
+            const eventId = getEventIdFromUrl();
+            
+            console.log('🔍 DEBUG - Loading event ID:', eventId);
+            console.log('🔍 DEBUG - Current User:', window.getCurrentUser());
+            
+            if (!eventId) {
+                showError();
+                return;
+            }
+
             try {
-                console.log('📅 Loading event data for:', eventId);
-                
-                const { data: event, error } = await window.dcfSupabase
+                const { data: event, error } = await supabase
                     .from('events')
                     .select('*')
                     .eq('id', eventId)
                     .single();
 
-                if (error) {
-                    console.error('❌ Error loading event:', error);
-                    showError('Failed to load event data');
+                console.log('🔍 DEBUG - Event query error:', error);
+                console.log('🔍 DEBUG - Event data:', event);
+
+                if (error || !event) {
+                    showError();
                     return;
                 }
 
-                if (!event) {
-                    showError('Event not found');
-                    return;
-                }
-
-                currentEvent = event;
-                console.log('✅ Event loaded:', event.title);
-                
-                // Update UI with event data
-                updateEventUI(event);
-                
-                // Load organizer info
-                await loadOrganizerInfo(event.organizer_id, event.contact_email);
+                displayEvent(event);
+                loadEventStats(eventId);
+                loadComments(eventId);
+                loadAttendees(eventId);
                 
             } catch (error) {
-                console.error('❌ Error in loadEventData:', error);
-                showError('Failed to load event');
+                console.error('Error loading event:', error);
+                showError();
             }
         }
 
-        function updateEventUI(event) {
-            // Title and basic info
-            document.getElementById('eventTitle').textContent = event.title;
-            document.getElementById('eventDescription').textContent = event.description || 'No description available.';
+        // Display event data
+        function displayEvent(event) {
+            currentEvent = event;
             
-            // Meta information
+            // Hide loading, show content
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('eventContent').style.display = 'block';
+
+            // Update page title
+            document.title = `${event.title} - DCF Hungary`;
+
+            // Update breadcrumb
+            document.getElementById('breadcrumbEventTitle').textContent = event.title;
+
+            // Update event header
+            document.getElementById('eventIcon').textContent = '📅';
+            document.getElementById('eventTitle').textContent = event.title;
+            document.getElementById('eventSubtitle').textContent = event.description || 'Event details';
+
+            // Update meta information
             const eventDate = new Date(event.event_date);
-            document.getElementById('eventDate').textContent = eventDate.toLocaleDateString();
+            document.getElementById('eventDate').textContent = formatDate(event.event_date);
             document.getElementById('eventTime').textContent = event.start_time || 'Time TBD';
             document.getElementById('eventLocation').textContent = event.location || 'Location TBD';
             document.getElementById('eventAttendees').textContent = `${event.max_attendees || 'Unlimited'} max`;
+
+            // Update description
+            document.getElementById('eventDescription').textContent = event.description || 'No description provided.';
             
-            // Event details content
+            // Update event details content
             const detailsContent = document.getElementById('eventDetailsContent');
             detailsContent.innerHTML = `
                 <div style="margin-bottom: 1rem;">
@@ -882,172 +1004,331 @@
                 </div>
                 ` : ''}
             `;
+
+            // Load organizer info
+            loadOrganizerInfo(event.organizer_id, event.contact_email);
         }
 
+        // Load organizer info
         async function loadOrganizerInfo(organizerId, contactEmail) {
             try {
-                // Try to get organizer from user_profiles
-                const { data: organizer, error } = await window.dcfSupabase
+                const { data: organizer } = await supabase
                     .from('user_profiles')
                     .select('*')
                     .eq('id', organizerId)
-                    .single();
+                    .maybeSingle();
 
+                let organizerData;
                 if (organizer) {
-                    updateOrganizerUI(organizer);
+                    organizerData = organizer;
                 } else {
-                    // Fallback to contact email
-                    updateOrganizerUI({
+                    organizerData = {
                         name: 'Event Organizer',
+                        username: 'organizer',
                         email: contactEmail || 'No contact provided'
-                    });
+                    };
                 }
 
+                // Update organizer UI
+                const initials = window.generateInitials ? window.generateInitials(organizerData.name) : 'O';
+                document.getElementById('organizerName').textContent = `@${organizerData.username || 'organizer'}`;
+                document.getElementById('organizerEmail').textContent = organizerData.email;
+                document.getElementById('organizerAvatar').textContent = initials;
+
                 // Show manage controls if current user is organizer
+                const currentUser = window.getCurrentUser();
                 if (currentUser && (currentUser.id === organizerId || currentUser.email === contactEmail)) {
                     document.getElementById('organizerControls').style.display = 'block';
+                    updateActionButtons('owner');
+                } else {
+                    checkUserEventStatus();
                 }
 
             } catch (error) {
-                console.error('❌ Error loading organizer:', error);
-                updateOrganizerUI({
-                    name: 'Event Organizer',
-                    email: 'No contact provided'
-                });
+                console.error('Error loading organizer:', error);
+                document.getElementById('organizerName').textContent = '@organizer';
+                document.getElementById('organizerEmail').textContent = 'No contact provided';
+                document.getElementById('organizerAvatar').textContent = 'O';
             }
         }
 
-        function updateOrganizerUI(organizer) {
-            const initials = generateInitials(organizer.name || 'Event Organizer');
-            
-            document.getElementById('organizerName').textContent = organizer.name || 'Event Organizer';
-            document.getElementById('organizerEmail').textContent = organizer.email || 'No contact provided';
-            document.getElementById('organizerAvatar').textContent = initials;
+        // Load event statistics
+        async function loadEventStats(eventId) {
+            try {
+                // Get registration count
+                const { data: registrations } = await supabase
+                    .from('event_registrations')
+                    .select('id')
+                    .eq('event_id', eventId);
+                
+                const registrationCount = registrations ? registrations.length : 0;
+
+                // Get likes count
+                const { data: likes } = await supabase
+                    .from('event_likes')
+                    .select('id')
+                    .eq('event_id', eventId);
+                
+                const likesCount = likes ? likes.length : 0;
+
+                // Get followers count
+                const { data: followers } = await supabase
+                    .from('event_follows')
+                    .select('id')
+                    .eq('event_id', eventId);
+                
+                const followersCount = followers ? followers.length : 0;
+
+                // Get comments count (will be updated by loadComments)
+                const { data: eventComments } = await supabase
+                    .from('event_comments')
+                    .select('id')
+                    .eq('event_id', eventId);
+                
+                const commentsCount = eventComments ? eventComments.length : 0;
+
+                // Update stats display
+                document.getElementById('registeredCount').textContent = registrationCount;
+                document.getElementById('likesCount').textContent = likesCount;
+                document.getElementById('followersCount').textContent = followersCount;
+                document.getElementById('commentsCount').textContent = commentsCount;
+
+            } catch (error) {
+                console.error('Error loading event stats:', error);
+            }
         }
 
-        // ========================================
-        // USER STATES (REGISTRATION, LIKES, FOLLOWS)
-        // ========================================
-        async function loadUserStates(eventId) {
+        // Check user's status for this event
+        async function checkUserEventStatus() {
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
-                console.log('ℹ️ No user logged in, skipping state loading');
+                updateActionButtons('guest');
+                return;
+            }
+
+            const eventId = getEventIdFromUrl();
+            
+            try {
+                // Check registration
+                const { data: registration } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('attendee_email', currentUser.email)
+                    .maybeSingle();
+                
+                isRegistered = !!registration;
+
+                // Check like
+                const { data: like } = await supabase
+                    .from('event_likes')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('user_email', currentUser.email)
+                    .maybeSingle();
+                
+                isLiked = !!like;
+
+                // Check follow
+                const { data: follow } = await supabase
+                    .from('event_follows')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('user_email', currentUser.email)
+                    .maybeSingle();
+                
+                isFollowing = !!follow;
+
+                updateActionButtons('user');
+
+            } catch (error) {
+                console.error('Error checking user status:', error);
+                updateActionButtons('user');
+            }
+        }
+
+        // Update action buttons based on user status
+        function updateActionButtons(userType) {
+            const followBtn = document.getElementById('followBtn');
+            const likeBtn = document.getElementById('likeBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const manageBtn = document.getElementById('manageBtn');
+
+            if (userType === 'owner') {
+                followBtn.style.display = 'none';
+                likeBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                manageBtn.style.display = 'inline-flex';
+            } else if (userType === 'guest') {
+                followBtn.style.display = 'none';
+                likeBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                manageBtn.style.display = 'none';
+            } else {
+                followBtn.style.display = 'inline-flex';
+                likeBtn.style.display = 'inline-flex';
+                registerBtn.style.display = 'inline-flex';
+                manageBtn.style.display = 'none';
+
+                // Update button states
+                if (isRegistered) {
+                    registerBtn.textContent = '✅ Registered';
+                    registerBtn.className = 'btn registered';
+                } else {
+                    registerBtn.textContent = '📝 Register';
+                    registerBtn.className = 'btn btn-primary';
+                }
+
+                if (isLiked) {
+                    likeBtn.textContent = '❤️ Liked';
+                    likeBtn.className = 'btn liked';
+                } else {
+                    likeBtn.textContent = '🤍 Like';
+                    likeBtn.className = 'btn btn-secondary';
+                }
+
+                if (isFollowing) {
+                    followBtn.textContent = '👁️ Following';
+                    followBtn.className = 'btn following';
+                } else {
+                    followBtn.textContent = '👁️ Follow';
+                    followBtn.className = 'btn btn-secondary';
+                }
+
+                // Set onclick handlers
+                registerBtn.onclick = toggleRegistration;
+                likeBtn.onclick = toggleLike;
+                followBtn.onclick = toggleFollow;
+            }
+        }
+
+        // Event action functions
+        async function toggleRegistration() {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to register for events');
                 return;
             }
 
             try {
-                console.log('🔄 Loading user states for event:', eventId);
-                
-                // Check registration status - handle errors gracefully
-                try {
-                    const { data: registration } = await window.dcfSupabase
+                if (isRegistered) {
+                    await supabase
                         .from('event_registrations')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('attendee_email', currentUser.email)
-                        .maybeSingle();
+                        .delete()
+                        .eq('event_id', currentEvent.id)
+                        .eq('attendee_email', currentUser.email);
                     
-                    isRegistered = !!registration;
-                } catch (error) {
-                    console.log('ℹ️ Registration check failed, defaulting to false');
                     isRegistered = false;
-                }
-
-                // Check like status - handle errors gracefully
-                try {
-                    const { data: like } = await window.dcfSupabase
-                        .from('event_likes')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('user_email', currentUser.email)
-                        .maybeSingle();
+                } else {
+                    await supabase
+                        .from('event_registrations')
+                        .insert([{
+                            event_id: currentEvent.id,
+                            user_id: currentUser.id,
+                            attendee_name: currentUser.name,
+                            attendee_email: currentUser.email,
+                            status: 'registered'
+                        }]);
                     
-                    isLiked = !!like;
-                } catch (error) {
-                    console.log('ℹ️ Like check failed, defaulting to false');
-                    isLiked = false;
+                    isRegistered = true;
                 }
-
-                // Check follow status - handle errors gracefully
-                try {
-                    const { data: follow } = await window.dcfSupabase
-                        .from('event_follows')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('user_email', currentUser.email)
-                        .maybeSingle();
-                    
-                    isFollowing = !!follow;
-                } catch (error) {
-                    console.log('ℹ️ Follow check failed, defaulting to false');
-                    isFollowing = false;
-                }
-
-                // Update button states
-                updateButtonStates();
                 
-                console.log('✅ User states loaded:', { isRegistered, isLiked, isFollowing });
-
+                updateActionButtons('user');
+                loadEventStats(currentEvent.id);
+                
             } catch (error) {
-                console.error('❌ Error loading user states:', error);
-                // Continue with default states
-                updateButtonStates();
+                console.error('Error toggling registration:', error);
+                alert('Failed to update registration. Please try again.');
             }
         }
 
-        function updateButtonStates() {
-            const registerBtn = document.getElementById('registerBtn');
-            const likeBtn = document.getElementById('likeBtn');
-            const followBtn = document.getElementById('followBtn');
-
-            // Update registration button
-            if (isRegistered) {
-                registerBtn.textContent = '✅ Registered';
-                registerBtn.classList.remove('btn-primary');
-                registerBtn.classList.add('registered');
-            } else {
-                registerBtn.textContent = '📝 Register';
-                registerBtn.classList.add('btn-primary');
-                registerBtn.classList.remove('registered');
+        async function toggleLike() {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to like events');
+                return;
             }
 
-            // Update like button
-            if (isLiked) {
-                likeBtn.textContent = '❤️ Liked';
-                likeBtn.classList.remove('btn-secondary');
-                likeBtn.classList.add('liked');
-            } else {
-                likeBtn.textContent = '🤍 Like';
-                likeBtn.classList.add('btn-secondary');
-                likeBtn.classList.remove('liked');
-            }
-
-            // Update follow button
-            if (isFollowing) {
-                followBtn.textContent = '👁️ Following';
-                followBtn.classList.remove('btn-secondary');
-                followBtn.classList.add('following');
-            } else {
-                followBtn.textContent = '👁️ Follow';
-                followBtn.classList.add('btn-secondary');
-                followBtn.classList.remove('following');
+            try {
+                if (isLiked) {
+                    await supabase
+                        .from('event_likes')
+                        .delete()
+                        .eq('event_id', currentEvent.id)
+                        .eq('user_email', currentUser.email);
+                    
+                    isLiked = false;
+                } else {
+                    await supabase
+                        .from('event_likes')
+                        .insert([{
+                            event_id: currentEvent.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.name
+                        }]);
+                    
+                    isLiked = true;
+                }
+                
+                updateActionButtons('user');
+                loadEventStats(currentEvent.id);
+                
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                alert('Failed to update like. Please try again.');
             }
         }
 
-        // ========================================
-        // COMMENTS SYSTEM
-        // ========================================
+        async function toggleFollow() {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to follow events');
+                return;
+            }
+
+            try {
+                if (isFollowing) {
+                    await supabase
+                        .from('event_follows')
+                        .delete()
+                        .eq('event_id', currentEvent.id)
+                        .eq('user_email', currentUser.email);
+                    
+                    isFollowing = false;
+                } else {
+                    await supabase
+                        .from('event_follows')
+                        .insert([{
+                            event_id: currentEvent.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.name
+                        }]);
+                    
+                    isFollowing = true;
+                }
+                
+                updateActionButtons('user');
+                loadEventStats(currentEvent.id);
+                
+            } catch (error) {
+                console.error('Error toggling follow:', error);
+                alert('Failed to update follow. Please try again.');
+            }
+        }
+
+        // Load comments
         async function loadComments(eventId) {
             try {
                 console.log('💬 Loading comments for event:', eventId);
                 
-                const { data: eventComments, error } = await window.dcfSupabase
+                const { data: eventComments, error } = await supabase
                     .from('event_comments')
                     .select('*')
                     .eq('event_id', eventId)
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    console.error('❌ Error loading comments:', error);
+                    console.error('Error loading comments:', error);
                     showCommentsError('Failed to load comments');
                     return;
                 }
@@ -1062,26 +1343,25 @@
                 renderComments();
                 
             } catch (error) {
-                console.error('❌ Error in loadComments:', error);
+                console.error('Error in loadComments:', error);
                 showCommentsError('Failed to load comments');
             }
         }
 
+        // Enhance comments with usernames
         async function enhanceCommentsWithUsernames() {
             for (const comment of comments) {
                 try {
-                    // Get username from user_profiles using email
-                    const { data: profile } = await window.dcfSupabase
+                    const { data: profile } = await supabase
                         .from('user_profiles')
                         .select('username, name')
                         .eq('email', comment.user_email)
-                        .single();
+                        .maybeSingle();
 
                     if (profile) {
                         comment.display_username = profile.username;
                         comment.display_name = profile.name;
                     } else {
-                        // Fallback to email prefix
                         comment.display_username = comment.user_email.split('@')[0];
                         comment.display_name = comment.user_name;
                     }
@@ -1093,6 +1373,7 @@
             }
         }
 
+        // Render comments
         function renderComments() {
             const commentsList = document.getElementById('commentsList');
             const commentCount = document.getElementById('commentCount');
@@ -1112,7 +1393,7 @@
 
             const commentsHTML = comments.map(comment => {
                 const timeAgo = formatTimeAgo(new Date(comment.created_at));
-                const authorInitials = generateInitials(comment.display_name || comment.user_name);
+                const authorInitials = window.generateInitials ? window.generateInitials(comment.display_name || comment.user_name) : 'U';
                 
                 return `
                     <div class="comment">
@@ -1123,14 +1404,6 @@
                                 <span class="comment-time">${timeAgo}</span>
                             </div>
                             <div class="comment-text">${escapeHtml(comment.comment_text)}</div>
-                            <div class="comment-actions-bar">
-                                <button class="comment-btn" onclick="likeComment('${comment.id}')">
-                                    👍 Like
-                                </button>
-                                <button class="comment-btn" onclick="replyToComment('${comment.id}')">
-                                    💬 Reply
-                                </button>
-                            </div>
                         </div>
                     </div>
                 `;
@@ -1139,7 +1412,9 @@
             commentsList.innerHTML = commentsHTML;
         }
 
+        // Add comment
         async function addComment() {
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to comment');
                 return;
@@ -1156,7 +1431,7 @@
             try {
                 console.log('💬 Adding comment...');
                 
-                const { data, error } = await window.dcfSupabase
+                const { data, error } = await supabase
                     .from('event_comments')
                     .insert([{
                         event_id: currentEvent.id,
@@ -1168,7 +1443,7 @@
                     .single();
 
                 if (error) {
-                    console.error('❌ Error adding comment:', error);
+                    console.error('Error adding comment:', error);
                     alert('Failed to add comment. Please try again.');
                     return;
                 }
@@ -1181,201 +1456,90 @@
                 // Reload comments
                 await loadComments(currentEvent.id);
                 
+                // Update stats
+                loadEventStats(currentEvent.id);
+                
             } catch (error) {
-                console.error('❌ Error in addComment:', error);
+                console.error('Error in addComment:', error);
                 alert('Failed to add comment. Please try again.');
             }
         }
 
-        // ========================================
-        // EVENT ACTIONS
-        // ========================================
-        async function toggleRegistration() {
-            if (!currentUser) {
-                alert('Please log in to register for events');
-                return;
-            }
-
+        // Load attendees
+        async function loadAttendees(eventId) {
             try {
-                if (isRegistered) {
-                    // Unregister
-                    await window.dcfSupabase
-                        .from('event_registrations')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('attendee_email', currentUser.email);
-                    
-                    isRegistered = false;
-                    console.log('✅ Unregistered from event');
-                } else {
-                    // Register
-                    await window.dcfSupabase
-                        .from('event_registrations')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_id: currentUser.id,
-                            attendee_name: currentUser.name,
-                            attendee_email: currentUser.email,
-                            status: 'registered'
-                        }]);
-                    
-                    isRegistered = true;
-                    console.log('✅ Registered for event');
+                const { data: registrations, error } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                const attendeesList = document.getElementById('attendeesList');
+                
+                if (error || !registrations || registrations.length === 0) {
+                    attendeesList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No attendees yet</h3>
+                            <p>Be the first to register for this event!</p>
+                        </div>
+                    `;
+                    return;
                 }
-                
-                updateButtonStates();
-                
+
+                // Display attendees
+                const attendeesHTML = registrations.map(registration => {
+                    const initials = window.generateInitials ? window.generateInitials(registration.attendee_name) : 'A';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #000, #333); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${initials}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${registration.attendee_name}</div>
+                                <div style="color: #666; font-size: 0.9rem;">Registered ${formatTimeAgo(new Date(registration.created_at))}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                attendeesList.innerHTML = attendeesHTML;
+
             } catch (error) {
-                console.error('❌ Error toggling registration:', error);
-                alert('Failed to update registration. Please try again.');
+                console.error('Error loading attendees:', error);
+                const attendeesList = document.getElementById('attendeesList');
+                attendeesList.innerHTML = `
+                    <div class="error">
+                        <p>Error loading attendees. Please try again later.</p>
+                    </div>
+                `;
             }
         }
 
-        async function toggleLike() {
-            if (!currentUser) {
-                alert('Please log in to like events');
-                return;
-            }
-
-            try {
-                if (isLiked) {
-                    // Unlike
-                    await window.dcfSupabase
-                        .from('event_likes')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', currentUser.email);
-                    
-                    isLiked = false;
-                    console.log('✅ Unliked event');
-                } else {
-                    // Like
-                    await window.dcfSupabase
-                        .from('event_likes')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: currentUser.email,
-                            user_name: currentUser.name
-                        }]);
-                    
-                    isLiked = true;
-                    console.log('✅ Liked event');
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load content when tabs are clicked
+            const eventId = getEventIdFromUrl();
+            if (eventId) {
+                if (tabName === 'discussion') {
+                    loadComments(eventId);
+                } else if (tabName === 'attendees') {
+                    loadAttendees(eventId);
                 }
-                
-                updateButtonStates();
-                
-            } catch (error) {
-                console.error('❌ Error toggling like:', error);
-                alert('Failed to update like. Please try again.');
             }
         }
 
-        async function toggleFollow() {
-            if (!currentUser) {
-                alert('Please log in to follow events');
-                return;
-            }
-
-            try {
-                if (isFollowing) {
-                    // Unfollow
-                    await window.dcfSupabase
-                        .from('event_follows')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', currentUser.email);
-                    
-                    isFollowing = false;
-                    console.log('✅ Unfollowed event');
-                } else {
-                    // Follow
-                    await window.dcfSupabase
-                        .from('event_follows')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: currentUser.email,
-                            user_name: currentUser.name
-                        }]);
-                    
-                    isFollowing = true;
-                    console.log('✅ Followed event');
-                }
-                
-                updateButtonStates();
-                
-            } catch (error) {
-                console.error('❌ Error toggling follow:', error);
-                alert('Failed to update follow. Please try again.');
-            }
-        }
-
-        function shareEvent() {
-            if (navigator.share) {
-                navigator.share({
-                    title: currentEvent.title,
-                    text: currentEvent.description,
-                    url: window.location.href
-                });
-            } else {
-                // Fallback: copy to clipboard
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    alert('Event link copied to clipboard!');
-                }).catch(() => {
-                    alert('Event URL: ' + window.location.href);
-                });
-            }
-        }
-
-        // ========================================
-        // UTILITY FUNCTIONS
-        // ========================================
-        function generateInitials(name) {
-            if (!name || typeof name !== 'string') return 'U';
-            
-            // Remove titles and clean up
-            const cleanName = name.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
-            const parts = cleanName.split(' ').filter(part => part.length > 0);
-            
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-            } else if (parts.length === 1) {
-                return parts[0].substring(0, 2).toUpperCase();
-            }
-            
-            return 'U';
-        }
-
-        function formatTimeAgo(date) {
-            const now = new Date();
-            const diff = now - date;
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-
-            if (minutes < 1) return 'just now';
-            if (minutes < 60) return `${minutes}m ago`;
-            if (hours < 24) return `${hours}h ago`;
-            if (days < 7) return `${days}d ago`;
-            return date.toLocaleDateString();
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function showError(message) {
-            const main = document.querySelector('.main-container');
-            main.innerHTML = `
-                <div class="error">
-                    <h2>Error</h2>
-                    <p>${message}</p>
-                    <a href="dcf_events_calendar.html" class="btn btn-primary" style="margin-top: 1rem;">
-                        ← Back to Events
-                    </a>
-                </div>
-            `;
+        // Error handling
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
         }
 
         function showCommentsError(message) {
@@ -1387,16 +1551,38 @@
             `;
         }
 
-        // Placeholder functions for comment actions
-        function likeComment(commentId) {
-            console.log('Like comment:', commentId);
-            // TODO: Implement comment liking
+        // Wait for auth system
+        async function waitForAuth() {
+            let attempts = 0;
+            while (attempts < 50) {
+                if (window.getCurrentUser && window.getCurrentUser()) {
+                    currentUser = window.getCurrentUser();
+                    console.log('✅ Auth ready, user:', currentUser.username);
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            console.log('⚠️ Auth timeout, proceeding without user');
         }
 
-        function replyToComment(commentId) {
-            console.log('Reply to comment:', commentId);
-            // TODO: Implement comment replies
+        // Initialize page
+        async function initializePage() {
+            console.log('🚀 Starting page initialization...');
+            
+            // Wait for auth to initialize
+            await waitForAuth();
+            
+            // Load event data
+            await loadEvent();
+            
+            console.log('✅ Page initialization complete');
         }
+
+        // Start initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
     </script>
 </body>
 </html>
