@@ -681,140 +681,483 @@ function initializeFooter() {
     const footerHTML = `
     <footer class="site-footer">
         <div class="footer-container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <div class="footer-logo-icon"></div>
-                    <span class="footer-logo-text">DCF Hungary</span>
-                </div>
-                <div class="footer-newsletter">
-                    <h4>Stay Connected</h4>
-                    <p>Get updates on our latest initiatives and events</p>
-                    <div class="newsletter-form">
-                        <input type="email" id="footerNewsletterEmail" placeholder="Enter your email" class="newsletter-input" onkeydown="if(event.key==='Enter') subscribeNewsletter()">
-                        <button onclick="subscribeNewsletter()" class="newsletter-btn">Subscribe</button>
+            <!-- Main Footer Content -->
+            <div class="footer-main">
+                <!-- Column 1: Brand & Mission -->
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="footer-logo-icon"></div>
+                        <span class="footer-logo-text">DCF Hungary</span>
+                    </div>
+                    <p class="footer-mission">
+                        Advancing ethical AI development and promoting human dignity in technology through 
+                        collaborative research, education, and global initiatives.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link" aria-label="LinkedIn">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Twitter">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="GitHub">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
                     </div>
                 </div>
-                <div class="footer-links">
-                    <a href="${basePath}index.html">Home</a>
-                    <a href="${basePath}public/dcf_about.html">About</a>
-                    <a href="${basePath}public/dcf_contact.html">Contact</a>
-                    <a href="${basePath}auth/dcf_login_page.html">Login</a>
-                    <a href="${basePath}auth/dcf_profile_signup.html">Join</a>
+
+                <!-- Column 2: Navigation -->
+                <div class="footer-navigation">
+                    <h4 class="footer-heading">Navigation</h4>
+                    <nav class="footer-nav">
+                        <a href="${basePath}index.html" class="footer-link">Home</a>
+                        <a href="${basePath}public/dcf_about.html" class="footer-link">About Us</a>
+                        <a href="${basePath}public/dcf_events_public.html" class="footer-link">Events</a>
+                        <a href="${basePath}public/dcf_projects_public.html" class="footer-link">Projects</a>
+                        <a href="${basePath}public/dcf_resources_public.html" class="footer-link">Resources</a>
+                        <a href="${basePath}public/dcf_newsletter.html" class="footer-link">Newsletter</a>
+                    </nav>
+                </div>
+
+                <!-- Column 3: Newsletter -->
+                <div class="footer-newsletter">
+                    <h4 class="footer-heading">Stay Informed</h4>
+                    <p class="newsletter-description">
+                        Get the latest updates on our AI ethics initiatives, research findings, and global events.
+                    </p>
+                    <div class="newsletter-form">
+                        <div class="newsletter-input-wrapper">
+                            <input 
+                                type="email" 
+                                id="footerNewsletterEmail" 
+                                placeholder="Enter your email address" 
+                                class="newsletter-input" 
+                                onkeydown="if(event.key==='Enter') subscribeNewsletter()"
+                            >
+                            <button onclick="subscribeNewsletter()" class="newsletter-btn">
+                                Subscribe
+                            </button>
+                        </div>
+                        <p class="newsletter-privacy">
+                            We respect your privacy. Unsubscribe at any time.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Column 4: Contact & Legal -->
+                <div class="footer-contact">
+                    <h4 class="footer-heading">Get in Touch</h4>
+                    <div class="contact-info">
+                        <a href="${basePath}public/dcf_contact.html" class="contact-link">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                            Contact Us
+                        </a>
+                        <a href="${basePath}auth/dcf_profile_signup.html" class="contact-link">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            Join Our Mission
+                        </a>
+                        <a href="${basePath}auth/dcf_login_page.html" class="contact-link">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>
+                            </svg>
+                            Member Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p class="copyright">
+                        © ${new Date().getFullYear()} Domus Communis Foundation Hungary. All rights reserved.
+                    </p>
+                    <div class="footer-legal">
+                        <a href="#" class="legal-link">Privacy Policy</a>
+                        <a href="#" class="legal-link">Terms of Service</a>
+                        <a href="#" class="legal-link">Cookie Policy</a>
+                    </div>
                 </div>
             </div>
         </div>
     </footer>
 
     <style>
-    .site-footer { background: #f8f9fa; border-top: 1px solid #e5e5e5; padding: 1.5rem 0; margin-top: 3rem; }
-    .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
-    .footer-content { display: flex; justify-content: space-between; align-items: center; }
-    .footer-logo { display: flex; align-items: center; }
-    .footer-logo-icon { width: 24px; height: 24px; background: #333; border-radius: 50%; margin-right: 0.5rem; }
-    .footer-logo-text { font-size: 1.1rem; font-weight: 600; color: #333; }
-    .footer-newsletter { 
-        background: rgba(248, 249, 250, 0.8); 
-        border: 1px solid rgba(229, 229, 229, 0.6); 
-        border-radius: 8px; 
-        padding: 1.5rem; 
-        text-align: center; 
-        max-width: 320px; 
-        backdrop-filter: blur(10px);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    /* Foundation Footer Styling */
+    .site-footer {
+        background: linear-gradient(135deg, #f8fafb 0%, #f1f5f9 100%);
+        border-top: 1px solid #e2e8f0;
+        margin-top: 4rem;
+        color: #334155;
     }
-    .footer-newsletter h4 { 
-        color: #1a1a1a; 
-        margin-bottom: 0.75rem; 
-        font-size: 1.1rem; 
-        font-weight: 600; 
+
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    /* Main Footer Grid */
+    .footer-main {
+        display: grid;
+        grid-template-columns: 1fr 200px 280px 200px;
+        gap: 3rem;
+        padding: 3rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Brand Section */
+    .footer-brand {
+        max-width: 300px;
+    }
+
+    .footer-logo {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .footer-logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        border-radius: 8px;
+        margin-right: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .footer-logo-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
         letter-spacing: -0.025em;
     }
-    .footer-newsletter p { 
-        color: #64748b; 
-        margin-bottom: 1.25rem; 
-        font-size: 0.875rem; 
-        line-height: 1.5; 
+
+    .footer-mission {
+        color: #64748b;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
         font-weight: 400;
     }
-    .newsletter-form { 
-        display: flex; 
-        gap: 0.75rem; 
-        align-items: stretch;
+
+    .footer-social {
+        display: flex;
+        gap: 0.75rem;
     }
-    .newsletter-input { 
-        flex: 1; 
-        padding: 0.75rem 1rem; 
-        border: 1px solid #e2e8f0; 
-        border-radius: 6px; 
-        font-size: 0.875rem; 
-        outline: none; 
-        transition: all 0.2s ease; 
+
+    .social-link {
+        width: 40px;
+        height: 40px;
         background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .social-link:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
         color: #334155;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Navigation Section */
+    .footer-navigation {
+    }
+
+    .footer-heading {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        letter-spacing: -0.025em;
+    }
+
+    .footer-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .footer-link {
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 400;
+        padding: 0.25rem 0;
+        transition: color 0.2s ease;
+    }
+
+    .footer-link:hover {
+        color: #1e293b;
+    }
+
+    /* Newsletter Section */
+    .footer-newsletter {
+    }
+
+    .newsletter-description {
+        color: #64748b;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
         font-weight: 400;
     }
-    .newsletter-input:focus { 
-        border-color: #64748b; 
-        box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+
+    .newsletter-form {
+        margin-bottom: 1rem;
+    }
+
+    .newsletter-input-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .newsletter-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        outline: none;
+        transition: all 0.2s ease;
+        background: white;
+        color: #374151;
+        font-weight: 400;
+    }
+
+    .newsletter-input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         transform: translateY(-1px);
     }
+
     .newsletter-input::placeholder {
-        color: #94a3b8;
+        color: #9ca3af;
         font-weight: 400;
     }
-    .newsletter-btn { 
-        padding: 0.75rem 1.25rem; 
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%); 
-        color: white; 
-        border: none; 
-        border-radius: 6px; 
-        cursor: pointer; 
-        font-size: 0.875rem; 
-        font-weight: 500; 
-        transition: all 0.2s ease; 
+
+    .newsletter-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
         letter-spacing: 0.025em;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
     }
-    .newsletter-btn:hover { 
-        background: linear-gradient(135deg, #334155 0%, #475569 100%); 
+
+    .newsletter-btn:hover {
+        background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
     }
+
     .newsletter-btn:active {
         transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
     }
-    .newsletter-btn:disabled { 
-        background: #cbd5e1; 
-        cursor: not-allowed; 
+
+    .newsletter-btn:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
         transform: none;
         box-shadow: none;
-        color: #94a3b8;
+        color: #9ca3af;
     }
-    .footer-links { display: flex; gap: 2rem; }
-    .footer-links a { color: #666; text-decoration: none; font-size: 0.9rem; transition: color 0.2s ease; }
-    .footer-links a:hover { color: #333; }
-    @media (max-width: 768px) { 
-        .footer-content { flex-direction: column; gap: 2rem; align-items: center; } 
-        .footer-links { gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
-        .footer-newsletter { 
-            max-width: 100%; 
-            margin: 0 auto;
-            padding: 1.25rem;
+
+    .newsletter-privacy {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-align: center;
+        font-weight: 400;
+        margin: 0;
+    }
+
+    /* Contact Section */
+    .footer-contact {
+    }
+
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .contact-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 400;
+        padding: 0.5rem 0;
+        transition: all 0.2s ease;
+        border-radius: 6px;
+    }
+
+    .contact-link:hover {
+        color: #1e293b;
+        background: rgba(241, 245, 249, 0.8);
+        padding-left: 0.5rem;
+    }
+
+    .contact-link svg {
+        flex-shrink: 0;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+
+    .contact-link:hover svg {
+        opacity: 1;
+    }
+
+    /* Footer Bottom */
+    .footer-bottom {
+        padding: 1.5rem 0;
+        background: rgba(248, 250, 252, 0.8);
+    }
+
+    .footer-bottom-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .copyright {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 400;
+        margin: 0;
+    }
+
+    .footer-legal {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .legal-link {
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 400;
+        transition: color 0.2s ease;
+    }
+
+    .legal-link:hover {
+        color: #1e293b;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .footer-main {
+            grid-template-columns: 1fr 200px 250px;
+            gap: 2.5rem;
         }
-        .newsletter-form { 
-            flex-direction: column; 
-            gap: 0.75rem;
+        
+        .footer-contact {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
         }
-        .newsletter-input {
-            width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .footer-container {
+            padding: 0 1rem;
+        }
+
+        .footer-main {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            padding: 2rem 0;
             text-align: center;
         }
-        .newsletter-btn { 
-            width: 100%; 
-            padding: 0.875rem 1.25rem;
-            font-size: 0.9rem;
+
+        .footer-brand {
+            max-width: none;
+        }
+
+        .footer-logo {
+            justify-content: center;
+        }
+
+        .footer-social {
+            justify-content: center;
+        }
+
+        .footer-nav {
+            align-items: center;
+        }
+
+        .newsletter-input-wrapper {
+            flex-direction: column;
+        }
+
+        .contact-info {
+            align-items: center;
+        }
+
+        .contact-link {
+            justify-content: center;
+            width: fit-content;
+        }
+
+        .footer-bottom-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .footer-legal {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .footer-main {
+            padding: 1.5rem 0;
+        }
+
+        .footer-social {
+            gap: 0.5rem;
+        }
+
+        .social-link {
+            width: 36px;
+            height: 36px;
+        }
+
+        .footer-legal {
+            gap: 1rem;
         }
     }
     </style>
