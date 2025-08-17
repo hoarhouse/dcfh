@@ -2585,18 +2585,32 @@
                 const targetEventId = eventId || currentEvent?.id;
                 if (!targetEventId) return;
                 
+                // Step 1: Query event_comments table normally
                 const { data: comments, error } = await supabase
                     .from('event_comments')
-                    .select(`
-                        *,
-                        user_profiles!inner(username, name)
-                    `)
+                    .select('*')
                     .eq('event_id', targetEventId)
                     .order('created_at', { ascending: false });
-
+                    
                 if (error) throw error;
+                
+                // Step 2: For each comment, lookup username from user_profiles
+                const commentsWithUsernames = await Promise.all(
+                    (comments || []).map(async (comment) => {
+                        const { data: userProfile } = await supabase
+                            .from('user_profiles')
+                            .select('username')
+                            .eq('email', comment.user_email)
+                            .single();
+                        
+                        return {
+                            ...comment,
+                            username: userProfile?.username || comment.user_email.split('@')[0]
+                        };
+                    })
+                );
 
-                eventComments = comments || [];
+                eventComments = commentsWithUsernames;
                 renderComments();
             } catch (error) {
                 console.error('Error loading comments:', error);
@@ -2614,11 +2628,11 @@
             commentsList.innerHTML = eventComments.map(comment => `
                 <div class="comment-item" data-comment-id="${comment.id}" style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
                     <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0;">
-                        ${window.generateInitials(comment.user_profiles.username)}
+                        ${window.generateInitials(comment.username)}
                     </div>
                     <div class="comment-content" style="flex: 1; min-width: 0;">
                         <div class="comment-text" style="word-wrap: break-word;">
-                            <strong>@${comment.user_profiles.username}</strong> ${linkifyText(comment.comment_text)}
+                            <strong>@${comment.username}</strong> ${linkifyText(comment.comment_text)}
                         </div>
                     </div>
                     <div class="comment-actions-inline" style="display: flex; gap: 8px; flex-shrink: 0;">
