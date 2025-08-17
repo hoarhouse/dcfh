@@ -753,8 +753,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/supabase-auth.js"></script>
-    <script src="../js/dcf-master-consolidated.js"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
 </head>
 
 <body>
@@ -768,7 +767,7 @@
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
-                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="user-avatar" id="userAvatar"></div>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-avatar"></div>
@@ -935,7 +934,7 @@
 
         async function loadResources() {
             try {
-                const supabase = window.authSupabase || window.masterSupabase;
+                const supabase = window.dcfSupabase;
                 const { data: resources, error } = await supabase
                     .from('resources')
                     .select(`
@@ -965,8 +964,8 @@
 
         async function loadStats() {
             try {
-                const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
-                const supabase = window.authSupabase || window.masterSupabase;
+                const currentUser = window.getCurrentUser();
+                const supabase = window.dcfSupabase;
                 
                 // Total resources
                 const { count: totalCount } = await supabase
@@ -1005,7 +1004,7 @@
                 let myBookmarksCount = 0;
                 
                 if (currentUser) {
-                    const supabase = window.authSupabase || window.masterSupabase;
+                    const supabase = window.dcfSupabase;
                     const { count: contributionsCount } = await supabase
                         .from('resources')
                         .select('*', { count: 'exact', head: true })
@@ -1238,7 +1237,7 @@
         async function toggleBookmark(event, resourceId) {
             event.stopPropagation();
             
-            const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 showAlert('Please log in to bookmark resources', 'warning', 'Login Required');
                 return;
@@ -1248,7 +1247,7 @@
                 const isBookmarked = bookmarkedResources.has(resourceId);
                 
                 if (isBookmarked) {
-                    const supabase = window.authSupabase || window.masterSupabase;
+                    const supabase = window.dcfSupabase;
                     await supabase
                         .from('resource_bookmarks')
                         .delete()
@@ -1259,7 +1258,7 @@
                     event.target.textContent = '🔖 Save';
                     event.target.classList.remove('share-button');
                 } else {
-                    const supabase = window.authSupabase || window.masterSupabase;
+                    const supabase = window.dcfSupabase;
                     await supabase
                         .from('resource_bookmarks')
                         .insert({
@@ -1286,14 +1285,14 @@
             event.stopPropagation();
             
             try {
-                const currentUser = window.dcfAuth && window.dcfAuth.getCurrentUser ? window.dcfAuth.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
                 const resource = allResources.find(r => r.id === resourceId);
                 
                 if (!resource) return;
 
                 // Record download analytics
                 if (currentUser) {
-                    const supabase = window.authSupabase || window.masterSupabase;
+                    const supabase = window.dcfSupabase;
                     await supabase
                         .from('resource_analytics')
                         .insert({
@@ -1304,7 +1303,7 @@
                 }
 
                 // Increment download count
-                const supabase = window.authSupabase || window.masterSupabase;
+                const supabase = window.dcfSupabase;
                 await supabase
                     .from('resources')
                     .update({ 
