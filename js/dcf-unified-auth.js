@@ -686,6 +686,14 @@ function initializeFooter() {
                     <div class="footer-logo-icon"></div>
                     <span class="footer-logo-text">DCF Hungary</span>
                 </div>
+                <div class="footer-newsletter">
+                    <h4>Stay Connected</h4>
+                    <p>Get updates on our latest initiatives and events</p>
+                    <div class="newsletter-form">
+                        <input type="email" id="footerNewsletterEmail" placeholder="Enter your email" class="newsletter-input">
+                        <button onclick="subscribeNewsletter()" class="newsletter-btn">Subscribe</button>
+                    </div>
+                </div>
                 <div class="footer-links">
                     <a href="${basePath}index.html">Home</a>
                     <a href="${basePath}public/dcf_about.html">About</a>
@@ -704,10 +712,25 @@ function initializeFooter() {
     .footer-logo { display: flex; align-items: center; }
     .footer-logo-icon { width: 24px; height: 24px; background: #333; border-radius: 50%; margin-right: 0.5rem; }
     .footer-logo-text { font-size: 1.1rem; font-weight: 600; color: #333; }
+    .footer-newsletter { text-align: center; max-width: 300px; }
+    .footer-newsletter h4 { color: #333; margin-bottom: 0.5rem; font-size: 1rem; font-weight: 600; }
+    .footer-newsletter p { color: #666; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.4; }
+    .newsletter-form { display: flex; gap: 0.5rem; }
+    .newsletter-input { flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; outline: none; transition: border-color 0.3s ease; }
+    .newsletter-input:focus { border-color: #000; }
+    .newsletter-btn { padding: 0.5rem 1rem; background: #000; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.3s ease; }
+    .newsletter-btn:hover { background: #333; }
+    .newsletter-btn:disabled { background: #ccc; cursor: not-allowed; }
     .footer-links { display: flex; gap: 2rem; }
     .footer-links a { color: #666; text-decoration: none; font-size: 0.9rem; transition: color 0.2s ease; }
     .footer-links a:hover { color: #333; }
-    @media (max-width: 768px) { .footer-content { flex-direction: column; gap: 1rem; } .footer-links { gap: 1.5rem; } }
+    @media (max-width: 768px) { 
+        .footer-content { flex-direction: column; gap: 1.5rem; } 
+        .footer-links { gap: 1.5rem; }
+        .footer-newsletter { max-width: 100%; }
+        .newsletter-form { flex-direction: column; }
+        .newsletter-btn { width: 100%; }
+    }
     </style>
     `;
 
