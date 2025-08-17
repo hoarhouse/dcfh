@@ -1983,7 +1983,7 @@
         function updateCommentFormAvatar(currentUser) {
             const userAvatar = document.getElementById('commentUserAvatar');
             if (userAvatar && currentUser) {
-                userAvatar.textContent = window.generateInitials(currentUser.username || currentUser.name || currentUser.email.split('@')[0]);
+                userAvatar.textContent = window.generateInitials(currentUser.name || currentUser.email.split('@')[0]);
                 userAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
                 userAvatar.style.color = 'white';
                 userAvatar.style.fontWeight = '600';
@@ -2606,13 +2606,14 @@
                     (comments || []).map(async (comment) => {
                         const { data: userProfile } = await supabase
                             .from('user_profiles')
-                            .select('username')
+                            .select('username, name')
                             .eq('email', comment.user_email)
                             .single();
                         
                         return {
                             ...comment,
-                            username: userProfile?.username || comment.user_email.split('@')[0]
+                            username: userProfile?.username || comment.user_email.split('@')[0],
+                            name: userProfile?.name || comment.user_email.split('@')[0]
                         };
                     })
                 );
@@ -2635,7 +2636,7 @@
             commentsList.innerHTML = eventComments.map(comment => `
                 <div class="comment-item" data-comment-id="${comment.id}" style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
                     <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0;">
-                        ${window.generateInitials(comment.username)}
+                        ${window.generateInitials(comment.name)}
                     </div>
                     <div class="comment-content" style="flex: 1; min-width: 0;">
                         <div class="comment-text" style="word-wrap: break-word;">
@@ -2820,7 +2821,7 @@
             replyForm.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0;">
-                        ${window.generateInitials(currentUser.username || currentUser.email.split('@')[0])}
+                        ${window.generateInitials(currentUser.name || currentUser.email.split('@')[0])}
                     </div>
                     <input 
                         type="text"
