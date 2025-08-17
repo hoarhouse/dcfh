@@ -191,7 +191,7 @@
             color: #333;
         }
 
-        .user-avatar {
+        .post-avatar {
             width: 42px;
             height: 42px;
             border-radius: 50%;
@@ -202,7 +202,6 @@
             color: white;
             font-weight: 600;
             font-size: 16px;
-            cursor: pointer;
         }
 
         .main-container {
@@ -582,7 +581,7 @@
         <!-- Post Creation Box -->
         <div class="post-box">
             <div class="post-creator">
-                <div class="user-avatar" id="postAvatar"></div>
+                <div class="post-avatar" id="postAvatar"></div>
                 <textarea 
                     id="postContent"
                     class="post-input"
@@ -609,10 +608,7 @@
         // ACTUAL WORKING SOCIAL MEDIA FEED - NO BULLSHIT PLACEHOLDERS
         // =============================================================================
 
-        // Supabase Configuration
-        const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-
+        // Use Supabase client from unified auth system - no duplicate declarations needed
         let supabase = null;
         let currentUser = null;
         let posts = [];
@@ -625,8 +621,8 @@
             setTimeout(async () => {
                 try {
                     // Use existing Supabase client from unified auth
-                    supabase = window.dcfSupabase || window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    console.log('✅ Supabase initialized');
+                    supabase = window.dcfSupabase || window.authSupabase || window.masterSupabase;
+                    console.log('✅ Supabase client from unified auth');
 
                     // Get user from unified auth system
                     await initializeUser();
@@ -648,7 +644,7 @@
         // =============================================================================
 
         async function initializeUser() {
-            // Use the unified auth system's current user
+            // Use the unified auth system's current user - DON'T TOUCH THE NAV AVATAR
             currentUser = window.getCurrentUser();
             
             if (!currentUser) {
@@ -657,7 +653,7 @@
                     currentUser = window.getCurrentUser();
                     if (currentUser) {
                         console.log('✅ User from unified auth:', currentUser);
-                        updateUserDisplay();
+                        updatePostBoxOnly();
                     } else {
                         // Fallback demo user
                         currentUser = {
@@ -667,19 +663,19 @@
                             name: 'Demo User'
                         };
                         console.log('✅ Demo user created:', currentUser);
-                        updateUserDisplay();
+                        updatePostBoxOnly();
                     }
                 }, 1000);
             } else {
                 console.log('✅ User already available:', currentUser);
-                updateUserDisplay();
+                updatePostBoxOnly();
             }
         }
 
-        function updateUserDisplay() {
+        function updatePostBoxOnly() {
             if (!currentUser) return;
             
-            // Only update the post avatar - let unified auth handle the nav avatar
+            // ONLY update the post box avatar - NEVER touch the nav avatar
             const postAvatar = document.getElementById('postAvatar');
             if (postAvatar) {
                 const initials = getUserInitials(currentUser.name || currentUser.username);
