@@ -3004,39 +3004,55 @@
         
         // POST BOX SETUP
         function setupPostBox() {
+            console.log('🎯 Setting up post box...');
+            
             const avatar = document.getElementById('postBoxAvatar');
             if (avatar && currentUser) {
-                avatar.textContent = getUserInitials(currentUser.username || currentUser.name || 'U');
+                const initials = getUserInitials(currentUser.username || currentUser.name || 'U');
+                avatar.textContent = initials;
+                console.log('✅ Avatar set to:', initials);
             }
             
             const content = document.getElementById('postContent');
             if (content && currentUser) {
                 content.placeholder = `What's on your mind, ${currentUser.name || currentUser.username}?`;
+                console.log('✅ Placeholder set for user:', currentUser.name);
+            }
+            
+            // Initialize character counter
+            if (content) {
+                updateCharCounter(content);
             }
         }
 
-        // CHARACTER COUNTER & AUTO RESIZE
+        // CHARACTER COUNTER & POST BUTTON LOGIC
         function updateCharCounter(textarea) {
+            const count = textarea.value.length;
             const counter = document.getElementById('charCounter');
-            const length = textarea.value.length;
-            const max = 2000;
+            counter.textContent = `${count}/2000`;
             
-            counter.textContent = `${length}/${max}`;
-            counter.className = length > max * 0.9 ? 'char-counter warning' : 'char-counter';
+            // Add warning class if near limit
+            if (count > 1800) {
+                counter.className = 'char-counter warning';
+            } else {
+                counter.className = 'char-counter';
+            }
             
+            // Enable/disable post button
             const postBtn = document.getElementById('submitPostBtn');
-            const hasContent = length > 0 || mediaFiles.length > 0;
-            postBtn.disabled = !hasContent || length > max;
-        }
-
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            const hasContent = count > 0 || mediaFiles.length > 0;
+            postBtn.disabled = !hasContent || count > 2000;
         }
 
         // SIMPLE MEDIA SELECTION
         function selectMedia() {
-            document.getElementById('mediaInput').click();
+            console.log('📷 Opening file picker...');
+            const input = document.getElementById('mediaInput');
+            if (input) {
+                input.click();
+            } else {
+                console.error('❌ Media input not found!');
+            }
         }
 
         // HANDLE MEDIA SELECTION
@@ -3169,20 +3185,25 @@
 
         // POST SUBMISSION
         async function submitPost() {
-            const content = document.getElementById('postContent').value.trim();
+            console.log('🚀 submitPost() called');
+            
+            const textarea = document.getElementById('postContent');
+            const content = textarea.value.trim();
+            
+            console.log('📝 Post content:', content);
             
             if (!content && mediaFiles.length === 0) {
-                showError('Please add some content or media to your post');
+                alert('❌ Please add some content or media to your post');
                 return;
             }
             
             if (content.length > 2000) {
-                showError('Post content is too long (max 2000 characters)');
+                alert('❌ Post content is too long (max 2000 characters)');
                 return;
             }
             
             if (!currentUser) {
-                showError('Please log in to create posts');
+                alert('❌ Please log in to create posts');
                 return;
             }
             
@@ -3193,7 +3214,7 @@
             postBtn.textContent = 'Posting...';
             
             try {
-                console.log('🚀 SUBMITTING POST:', { content, files: mediaFiles.length });
+                console.log('🚀 SUBMITTING POST:', { content, files: mediaFiles.length, user: currentUser });
                 
                 // Upload media files
                 let mediaUrls = [];
@@ -3254,11 +3275,12 @@
         }
 
         function clearPostForm() {
-            document.getElementById('postContent').value = '';
-            document.getElementById('postContent').style.height = 'auto';
+            console.log('🧹 Clearing post form...');
+            const textarea = document.getElementById('postContent');
+            textarea.value = '';
             mediaFiles = [];
             renderMediaPreviews();
-            updateCharCounter(document.getElementById('postContent'));
+            updateCharCounter(textarea);
         }
 
         // SORTING SYSTEM
@@ -3504,13 +3526,13 @@
         }
 
         function showError(message) {
-            // Simple error display - can be enhanced with toast notifications
+            console.error('❌ ERROR:', message);
             alert(`❌ ${message}`);
         }
 
         function showSuccess(message) {
-            // Simple success display - can be enhanced with toast notifications
-            console.log(`✅ ${message}`);
+            console.log('✅ SUCCESS:', message);
+            alert(`✅ ${message}`);
         }
 
         function getUserInitials(name) {
