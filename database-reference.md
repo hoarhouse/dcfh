@@ -700,18 +700,20 @@
         function updatePostBoxOnly() {
             if (!currentUser) return;
             
-            // ONLY update the post box avatar - NEVER touch the nav avatar
+            // ONLY update the post box avatar - get initials from dropdown avatar
             const postAvatar = document.getElementById('postAvatar');
-            if (postAvatar) {
-                const initials = getUserInitials(currentUser.name || currentUser.username);
-                postAvatar.textContent = initials;
+            const dropdownAvatar = document.querySelector('.dropdown-avatar');
+            if (postAvatar && dropdownAvatar) {
+                // Copy the initials from the dropdown avatar that unified auth sets
+                postAvatar.textContent = dropdownAvatar.textContent;
             }
             
             const postInput = document.getElementById('postContent');
             if (postInput) {
-                // Show @username in placeholder
-                const username = currentUser.username || 'user';
-                postInput.placeholder = `What's on your mind, @${username}?`;
+                // Get username from the dropdown that unified auth populates
+                const dropdownName = document.getElementById('dropdownUserName');
+                const username = dropdownName ? dropdownName.textContent : '@user';
+                postInput.placeholder = `What's on your mind, ${username}?`;
             }
         }
 
