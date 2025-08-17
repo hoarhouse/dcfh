@@ -210,10 +210,21 @@ function showLoggedOutState() {
     const userMenu = document.querySelector('.user-menu');
     if (userMenu) {
         const basePath = getCorrectBasePath();
-        userMenu.innerHTML = `
-            <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
-            <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
-        `;
+        const currentPage = window.location.pathname;
+        const isSignupPage = currentPage.includes('dcf_profile_signup.html');
+        
+        if (isSignupPage) {
+            // Signup page: only show login option
+            userMenu.innerHTML = `
+                <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Already a member? Sign In</a>
+            `;
+        } else {
+            // Other pages: show both login and join
+            userMenu.innerHTML = `
+                <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
+                <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
+            `;
+        }
     }
 }
 
