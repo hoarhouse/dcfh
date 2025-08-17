@@ -644,50 +644,49 @@
        });
 
         // Check authentication status and handle page initialization
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🔍 DEBUG: Starting login page redirect check');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DEBUG: Setting up auth completion listener');
             
-            // CRITICAL: Wait for unified auth to initialize before checking status
-            let attempts = 0;
-            const maxAttempts = 50; // 5 seconds max wait
+            // Check if auth is already complete
+            if (window.dcfUser && window.dcfUser.isLoggedIn !== undefined) {
+                console.log('🔍 DEBUG: Auth already complete, checking status immediately');
+                checkLoginAndRedirect();
+                return;
+            }
             
-            // Wait for unified auth to be ready
-            while (attempts < maxAttempts) {
-                console.log(`🔍 DEBUG: Attempt ${attempts + 1}/${maxAttempts}`);
+            // Listen for auth initialization completion
+            let authCheckInterval = setInterval(() => {
+                console.log('🔍 DEBUG: Polling for auth completion...');
                 console.log('🔍 DEBUG: window.dcfUser:', window.dcfUser);
-                console.log('🔍 DEBUG: window.isUserLoggedIn:', window.isUserLoggedIn);
+                console.log('🔍 DEBUG: window.dcfUser.isLoggedIn:', window.dcfUser?.isLoggedIn);
                 
-                if (window.dcfUser && window.isUserLoggedIn) {
-                    console.log('🔍 DEBUG: Auth system detected as ready');
-                    console.log('🔍 DEBUG: window.dcfUser.isLoggedIn:', window.dcfUser.isLoggedIn);
-                    console.log('🔍 DEBUG: isUserLoggedIn() result:', window.isUserLoggedIn());
-                    
-                    // Auth system is ready, now check login status
-                    if (window.isUserLoggedIn()) {
-                        console.log('🔍 DEBUG: User is logged in - redirecting to member home');
-                        window.location.href = '../members/dcf_member_home.html';
-                        return;
-                    } else {
-                        console.log('🔍 DEBUG: User is not logged in - staying on login page');
-                    }
-                    break; // Auth ready, user not logged in, continue with login page
+                if (window.dcfUser && window.dcfUser.isLoggedIn !== undefined) {
+                    console.log('🔍 DEBUG: Auth initialization complete, checking status');
+                    clearInterval(authCheckInterval);
+                    checkLoginAndRedirect();
                 }
-                
-                // Wait 100ms and try again
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
+            }, 100);
             
-            if (attempts >= maxAttempts) {
-                console.log('🔍 DEBUG: Auth initialization timeout - proceeding with login page');
-                console.log('🔍 DEBUG: Final state - window.dcfUser:', window.dcfUser);
-                console.log('🔍 DEBUG: Final state - window.isUserLoggedIn:', window.isUserLoggedIn);
-            }
-            
-            console.log('🔍 DEBUG: Focusing email field');
-            // Auto-focus email field for login (only if staying on login page)
-            document.getElementById('email').focus();
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                clearInterval(authCheckInterval);
+                console.log('🔍 DEBUG: Auth timeout - focusing email field');
+                document.getElementById('email').focus();
+            }, 10000);
         });
+
+        function checkLoginAndRedirect() {
+            console.log('🔍 DEBUG: window.dcfUser:', window.dcfUser);
+            console.log('🔍 DEBUG: window.isUserLoggedIn:', window.isUserLoggedIn);
+            
+            if (window.isUserLoggedIn && window.isUserLoggedIn()) {
+                console.log('🔍 DEBUG: User is logged in - redirecting to member home');
+                window.location.href = '../members/dcf_member_home.html';
+            } else {
+                console.log('🔍 DEBUG: User not logged in - staying on login page');
+                document.getElementById('email').focus();
+            }
+        }
     </script>
 
 </body>
