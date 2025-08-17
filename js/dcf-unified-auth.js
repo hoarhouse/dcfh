@@ -659,8 +659,8 @@ function initializeFooter() {
                 </div>
                 <div class="footer-links">
                     <a href="${basePath}index.html">Home</a>
-                    <a href="${basePath}dcf_about.html">About</a>
-                    <a href="${basePath}dcf_contact.html">Contact</a>
+                    <a href="${basePath}public/dcf_about.html">About</a>
+                    <a href="${basePath}public/dcf_contact.html">Contact</a>
                     <a href="${basePath}auth/dcf_login_page.html">Login</a>
                     <a href="${basePath}auth/dcf_profile_signup.html">Join</a>
                 </div>
