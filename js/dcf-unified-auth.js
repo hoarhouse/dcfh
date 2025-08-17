@@ -712,24 +712,110 @@ function initializeFooter() {
     .footer-logo { display: flex; align-items: center; }
     .footer-logo-icon { width: 24px; height: 24px; background: #333; border-radius: 50%; margin-right: 0.5rem; }
     .footer-logo-text { font-size: 1.1rem; font-weight: 600; color: #333; }
-    .footer-newsletter { text-align: center; max-width: 300px; }
-    .footer-newsletter h4 { color: #333; margin-bottom: 0.5rem; font-size: 1rem; font-weight: 600; }
-    .footer-newsletter p { color: #666; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.4; }
-    .newsletter-form { display: flex; gap: 0.5rem; }
-    .newsletter-input { flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; outline: none; transition: border-color 0.3s ease; }
-    .newsletter-input:focus { border-color: #000; }
-    .newsletter-btn { padding: 0.5rem 1rem; background: #000; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.3s ease; }
-    .newsletter-btn:hover { background: #333; }
-    .newsletter-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .footer-newsletter { 
+        background: rgba(248, 249, 250, 0.8); 
+        border: 1px solid rgba(229, 229, 229, 0.6); 
+        border-radius: 8px; 
+        padding: 1.5rem; 
+        text-align: center; 
+        max-width: 320px; 
+        backdrop-filter: blur(10px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .footer-newsletter h4 { 
+        color: #1a1a1a; 
+        margin-bottom: 0.75rem; 
+        font-size: 1.1rem; 
+        font-weight: 600; 
+        letter-spacing: -0.025em;
+    }
+    .footer-newsletter p { 
+        color: #64748b; 
+        margin-bottom: 1.25rem; 
+        font-size: 0.875rem; 
+        line-height: 1.5; 
+        font-weight: 400;
+    }
+    .newsletter-form { 
+        display: flex; 
+        gap: 0.75rem; 
+        align-items: stretch;
+    }
+    .newsletter-input { 
+        flex: 1; 
+        padding: 0.75rem 1rem; 
+        border: 1px solid #e2e8f0; 
+        border-radius: 6px; 
+        font-size: 0.875rem; 
+        outline: none; 
+        transition: all 0.2s ease; 
+        background: white;
+        color: #334155;
+        font-weight: 400;
+    }
+    .newsletter-input:focus { 
+        border-color: #64748b; 
+        box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+        transform: translateY(-1px);
+    }
+    .newsletter-input::placeholder {
+        color: #94a3b8;
+        font-weight: 400;
+    }
+    .newsletter-btn { 
+        padding: 0.75rem 1.25rem; 
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%); 
+        color: white; 
+        border: none; 
+        border-radius: 6px; 
+        cursor: pointer; 
+        font-size: 0.875rem; 
+        font-weight: 500; 
+        transition: all 0.2s ease; 
+        letter-spacing: 0.025em;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+    }
+    .newsletter-btn:hover { 
+        background: linear-gradient(135deg, #334155 0%, #475569 100%); 
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    .newsletter-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .newsletter-btn:disabled { 
+        background: #cbd5e1; 
+        cursor: not-allowed; 
+        transform: none;
+        box-shadow: none;
+        color: #94a3b8;
+    }
     .footer-links { display: flex; gap: 2rem; }
     .footer-links a { color: #666; text-decoration: none; font-size: 0.9rem; transition: color 0.2s ease; }
     .footer-links a:hover { color: #333; }
     @media (max-width: 768px) { 
-        .footer-content { flex-direction: column; gap: 1.5rem; } 
-        .footer-links { gap: 1.5rem; }
-        .footer-newsletter { max-width: 100%; }
-        .newsletter-form { flex-direction: column; }
-        .newsletter-btn { width: 100%; }
+        .footer-content { flex-direction: column; gap: 2rem; align-items: center; } 
+        .footer-links { gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+        .footer-newsletter { 
+            max-width: 100%; 
+            margin: 0 auto;
+            padding: 1.25rem;
+        }
+        .newsletter-form { 
+            flex-direction: column; 
+            gap: 0.75rem;
+        }
+        .newsletter-input {
+            width: 100%;
+            text-align: center;
+        }
+        .newsletter-btn { 
+            width: 100%; 
+            padding: 0.875rem 1.25rem;
+            font-size: 0.9rem;
+        }
     }
     </style>
     `;
