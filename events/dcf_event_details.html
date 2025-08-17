@@ -1660,24 +1660,9 @@
             const currentUser = getCurrentUser();
             if (!currentUser) return;
             
-            const userEmail = currentUser.email;
-
-            try {
-                const { data: registration, error } = await supabase
-                    .from('event_registrations')
-                    .select('*')
-                    .eq('event_id', eventId)
-                    .eq('attendee_email', userEmail)
-                    .single();
-
-                if (!error && registration) {
-                    userRegistration = registration;
-                    updateRegistrationUI(true);
-                }
-            } catch (error) {
-                // No registration found - this is expected for unregistered users
-                console.log('No registration found for user');
-            }
+            // Skip registration check - table doesn't exist
+            console.log('Registration functionality disabled - table does not exist');
+            return;
         }
 
         function renderEventDetails(event) {
@@ -2024,27 +2009,13 @@
         }
 
         async function loadAttendeeCount(eventId) {
-            try {
-                const { count, error } = await supabase
-                    .from('event_registrations')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('event_id', eventId)
-                    .eq('status', 'registered');
-
-                if (error) throw error;
-
-                const attendeeCount = count || 0;
-                const attendeeCountEl = document.getElementById('attendeeCount');
-                const sidebarAttendeeCountEl = document.getElementById('sidebarAttendeeCount');
-                
-                if (attendeeCountEl) attendeeCountEl.textContent = `${attendeeCount} registered`;
-                if (sidebarAttendeeCountEl) sidebarAttendeeCountEl.textContent = attendeeCount;
-
-            } catch (error) {
-                console.error('Error loading attendee count:', error);
-                const attendeeCountEl = document.getElementById('attendeeCount');
-                if (attendeeCountEl) attendeeCountEl.textContent = 'Registration info unavailable';
-            }
+            // Skip attendee count - table doesn't exist
+            console.log('Attendee count disabled - table does not exist');
+            const attendeeCountEl = document.getElementById('attendeeCount');
+            const sidebarAttendeeCountEl = document.getElementById('sidebarAttendeeCount');
+            
+            if (attendeeCountEl) attendeeCountEl.textContent = 'Registration coming soon';
+            if (sidebarAttendeeCountEl) sidebarAttendeeCountEl.textContent = '0';
         }
 
         // Registration functions
@@ -2392,15 +2363,8 @@
         // Social interaction functions
         async function loadSocialData(eventId) {
             try {
-                // Load likes
-                const { count: likesCount } = await supabase
-                    .from('event_likes')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('event_id', eventId)
-                    .catch(err => {
-                        console.log('🔧 EVENT_LIKES count query error:', err);
-                        return { count: 0 };
-                    });
+                // Skip likes (table doesn't exist)
+                const likesCount = 0;
 
                 // Load comments
                 const { count: commentsCount } = await supabase
@@ -2414,15 +2378,8 @@
                     .select('*', { count: 'exact', head: true })
                     .eq('event_id', eventId);
 
-                // Load follows
-                const { count: followsCount } = await supabase
-                    .from('event_follows')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('event_id', eventId)
-                    .catch(err => {
-                        console.log('🔧 EVENT_FOLLOWS count query error:', err);
-                        return { count: 0 };
-                    });
+                // Skip follows (table doesn't exist)
+                const followsCount = 0;
 
                 socialData.likes = likesCount || 0;
                 socialData.comments = commentsCount || 0;
@@ -2433,27 +2390,11 @@
                 const currentUser = getCurrentUser();
                 if (currentUser) {
                     const userEmail = currentUser.email;
-                    const { data: userLike } = await supabase
-                        .from('event_likes')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('user_email', userEmail)
-                        .single()
-                        .catch(err => {
-                            console.log('🔧 EVENT_LIKES user query error:', err);
-                            return { data: null, error: null };
-                        });
+                    // Skip user likes (table doesn't exist)
+                    const userLike = null;
 
-                    const { data: userFollow } = await supabase
-                        .from('event_follows')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('user_email', userEmail)
-                        .single()
-                        .catch(err => {
-                            console.log('🔧 EVENT_FOLLOWS user query error:', err);
-                            return { data: null, error: null };
-                        });
+                    // Skip user follows (table doesn't exist)
+                    const userFollow = null;
 
                     socialData.userLiked = !!userLike;
                     socialData.userFollowing = !!userFollow;
@@ -2510,19 +2451,10 @@
             try {
                 const userEmail = currentUser.email;
                 if (socialData.userLiked) {
-                    // Remove like
-                    await supabase
-                        .from('event_likes')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', userEmail)
-                        .catch(err => {
-                            console.log('🔧 EVENT_LIKES delete error:', err);
-                            throw err;
-                        });
-
-                    socialData.likes--;
-                    socialData.userLiked = false;
+                    // Skip database delete - table doesn't exist
+                    console.log('Like functionality disabled - table does not exist');
+                    alert('Like functionality coming soon!');
+                    return;
                 } else {
                     // Add like
                     const likeData = {
@@ -2530,72 +2462,22 @@
                         user_email: userEmail,
                         user_name: currentUser.name || currentUser.username || 'Anonymous'
                     };
-                    console.log('🔍 DB DEBUG: Inserting like data:', likeData);
-                    await supabase
-                        .from('event_likes')
-                        .insert([likeData])
-                        .catch(err => {
-                            console.log('🔧 EVENT_LIKES insert error:', err);
-                            throw err;
-                        });
-
-                    socialData.likes++;
-                    socialData.userLiked = true;
+                    // Skip database insert - table doesn't exist
+                    console.log('Like functionality disabled - table does not exist');
+                    alert('Like functionality coming soon!');
+                    return;
                 }
 
                 updateSocialUI();
             } catch (error) {
                 console.error('Error toggling like:', error);
+                alert('Like functionality temporarily unavailable');
             }
         }
 
         async function toggleFollow() {
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
-                redirectToLogin();
-                return;
-            }
-
-            try {
-                const userEmail = currentUser.email;
-                if (socialData.userFollowing) {
-                    // Unfollow
-                    await supabase
-                        .from('event_follows')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', userEmail)
-                        .catch(err => {
-                            console.log('🔧 EVENT_FOLLOWS delete error:', err);
-                            throw err;
-                        });
-
-                    socialData.follows--;
-                    socialData.userFollowing = false;
-                } else {
-                    // Follow
-                    const followData = {
-                        event_id: currentEvent.id,
-                        user_email: userEmail,
-                        user_name: currentUser.name || currentUser.username || 'Anonymous'
-                    };
-                    console.log('🔍 DB DEBUG: Inserting follow data:', followData);
-                    await supabase
-                        .from('event_follows')
-                        .insert([followData])
-                        .catch(err => {
-                            console.log('🔧 EVENT_FOLLOWS insert error:', err);
-                            throw err;
-                        });
-
-                    socialData.follows++;
-                    socialData.userFollowing = true;
-                }
-
-                updateSocialUI();
-            } catch (error) {
-                console.error('Error toggling follow:', error);
-            }
+            console.log('Follow functionality disabled - table does not exist');
+            alert('Follow functionality coming soon!');
         }
 
         function toggleComments() {
