@@ -1440,7 +1440,7 @@
                             <div class="user-avatar-small" id="commentUserAvatar">U</div>
                         </div>
                         <div class="comment-input-area">
-                            <textarea id="commentInput" class="comment-textarea" placeholder="Share your thoughts about this event..." onkeydown="handleMainCommentKeydown(event)"></textarea>
+                            <textarea id="commentInput" class="comment-textarea" rows="1" placeholder="Share your thoughts about this event..." onkeydown="handleMainCommentKeydown(event)"></textarea>
                             <div class="comment-actions">
                                 <button class="btn btn-secondary btn-small" onclick="cancelComment()">Cancel</button>
                                 <button class="btn btn-primary btn-small" onclick="submitComment()">Post Comment</button>
@@ -1538,6 +1538,11 @@
                 
                 // Now run the rest of the page logic
                 await initializePage();
+                
+                // ENSURE COMMENTS LOAD AUTOMATICALLY
+                if (currentEvent) {
+                    await loadComments(currentEvent.id);
+                }
                 
                 // SYSTEMATIC UPDATE: Update all user-dependent elements
                 if (currentUser && currentEvent) {
@@ -2636,27 +2641,25 @@
             }
 
             commentsList.innerHTML = eventComments.map(comment => `
-                <div class="comment-item" data-comment-id="${comment.id}">
-                    <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600;">
-                        ${window.generateInitials(comment.user_name)}
+                <div class="comment-item" data-comment-id="${comment.id}" style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0;">
+                        ${window.generateInitials(comment.user_email.split('@')[0])}
                     </div>
-                    <div class="comment-content">
-                        <div class="comment-header">
-                            <span class="comment-author">@${comment.user_name}</span>
-                            <span class="comment-time">${formatTimeAgo(comment.created_at)}</span>
+                    <div class="comment-content" style="flex: 1; min-width: 0;">
+                        <div class="comment-text" style="word-wrap: break-word;">
+                            <strong>@${comment.user_email.split('@')[0]}</strong> ${linkifyText(comment.comment_text)}
                         </div>
-                        <div class="comment-text">${linkifyText(comment.comment_text)}</div>
-                        <div class="comment-actions-inline">
-                            <button class="comment-action-btn" onclick="likeComment('${comment.id}')">👍 Like</button>
-                            <button class="comment-action-btn" onclick="replyToComment('${comment.id}')">💬 Reply</button>
-                            ${(() => {
-                                const currentUser = getCurrentUser();
-                                return currentUser && currentUser.email === comment.user_email ? `
-                                    <button class="comment-action-btn" onclick="editComment('${comment.id}')">✏️ Edit</button>
-                                    <button class="comment-action-btn" onclick="deleteComment('${comment.id}')">🗑️ Delete</button>
-                                ` : '';
-                            })()}
-                        </div>
+                    </div>
+                    <div class="comment-actions-inline" style="display: flex; gap: 8px; flex-shrink: 0;">
+                        <button class="comment-action-btn" onclick="likeComment('${comment.id}')" style="background: none; border: none; color: #666; font-size: 0.8rem; cursor: pointer;">👍</button>
+                        <button class="comment-action-btn" onclick="replyToComment('${comment.id}')" style="background: none; border: none; color: #666; font-size: 0.8rem; cursor: pointer;">💬</button>
+                        ${(() => {
+                            const currentUser = getCurrentUser();
+                            return currentUser && currentUser.email === comment.user_email ? `
+                                <button class="comment-action-btn" onclick="editComment('${comment.id}')" style="background: none; border: none; color: #666; font-size: 0.8rem; cursor: pointer;">✏️</button>
+                                <button class="comment-action-btn" onclick="deleteComment('${comment.id}')" style="background: none; border: none; color: #666; font-size: 0.8rem; cursor: pointer;">🗑️</button>
+                            ` : '';
+                        })()}
                     </div>
                 </div>
             `).join('');
@@ -2679,7 +2682,7 @@
                     .insert([{
                         event_id: currentEvent.id,
                         user_email: userEmail,
-                        user_name: currentUser.name || currentUser.username || 'Anonymous',
+                        user_name: currentUser.email.split('@')[0],
                         comment_text: commentText
                     }])
                     .select()
@@ -2802,12 +2805,8 @@
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
             
             // Remove any existing reply forms first
-            const existingReply = commentElement.querySelector('.reply-form');
-            if (existingReply) {
-                existingReply.remove();
-                return;
-            }
-
+            document.querySelectorAll('.reply-form').forEach(form => form.remove());
+            
             const currentUser = getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to reply');
@@ -2818,46 +2817,41 @@
             const replyForm = document.createElement('div');
             replyForm.className = 'reply-form';
             replyForm.style.cssText = `
-                margin-top: 12px;
-                margin-left: 40px;
-                padding: 12px;
+                margin: 8px 0 8px 38px;
+                padding: 8px;
                 background: #f8f9fa;
                 border-left: 3px solid #007bff;
-                border-radius: 8px;
+                border-radius: 6px;
+                width: calc(100% - 38px);
             `;
             
             replyForm.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 10px;">
-                    <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
-                        ${window.generateInitials(currentUser.name || currentUser.username)}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="user-avatar-small" style="background: linear-gradient(135deg, #000, #333); color: white; font-weight: 600; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0;">
+                        ${window.generateInitials(currentUser.email.split('@')[0])}
                     </div>
-                    <div style="flex: 1;">
-                        <textarea 
-                            placeholder="Write a reply..." 
-                            rows="2" 
-                            style="width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 8px; resize: vertical;"
-                            onkeydown="handleReplyKeydown(event, '${commentId}', this)"
-                        ></textarea>
-                        <div style="margin-top: 8px; display: flex; gap: 8px;">
-                            <button onclick="submitReply('${commentId}', this)" class="btn btn-small btn-primary">Reply</button>
-                            <button onclick="cancelReply(this)" class="btn btn-small btn-secondary">Cancel</button>
-                        </div>
-                    </div>
+                    <input 
+                        type="text"
+                        placeholder="Write a reply..." 
+                        style="flex: 1; border: 1px solid #ddd; border-radius: 4px; padding: 6px 8px; font-size: 0.9rem;"
+                        onkeydown="handleReplyKeydown(event, '${commentId}', this)"
+                    />
+                    <button onclick="submitReply('${commentId}', this)" class="btn btn-small btn-primary" style="padding: 4px 8px; font-size: 0.8rem;">Reply</button>
                 </div>
             `;
             
-            // Append AFTER the comment (nested under it)
-            commentElement.appendChild(replyForm);
+            // Insert AFTER the comment element (as next sibling)
+            commentElement.parentNode.insertBefore(replyForm, commentElement.nextSibling);
             
-            // Focus the textarea
-            const textarea = replyForm.querySelector('textarea');
-            textarea.focus();
+            // Focus the input
+            const input = replyForm.querySelector('input');
+            input.focus();
         }
 
         function submitReply(commentId, buttonElement) {
             const replyForm = buttonElement.closest('.reply-form');
-            const textarea = replyForm.querySelector('textarea');
-            const replyText = textarea.value.trim();
+            const input = replyForm.querySelector('input');
+            const replyText = input.value.trim();
             
             if (!replyText) {
                 alert('Please enter a reply');
