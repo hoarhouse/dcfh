@@ -690,7 +690,7 @@ function initializeFooter() {
                     <h4>Stay Connected</h4>
                     <p>Get updates on our latest initiatives and events</p>
                     <div class="newsletter-form">
-                        <input type="email" id="footerNewsletterEmail" placeholder="Enter your email" class="newsletter-input">
+                        <input type="email" id="footerNewsletterEmail" placeholder="Enter your email" class="newsletter-input" onkeydown="if(event.key==='Enter') subscribeNewsletter()">
                         <button onclick="subscribeNewsletter()" class="newsletter-btn">Subscribe</button>
                     </div>
                 </div>
@@ -735,6 +735,104 @@ function initializeFooter() {
     `;
 
     document.body.insertAdjacentHTML('beforeend', footerHTML);
+}
+
+// =============================================================================
+// 9.1. NEWSLETTER SUBSCRIPTION FUNCTIONALITY
+// =============================================================================
+async function subscribeNewsletter() {
+    const emailInput = document.getElementById('footerNewsletterEmail');
+    const subscribeBtn = document.querySelector('.newsletter-btn');
+    
+    if (!emailInput || !subscribeBtn) {
+        console.error('Newsletter elements not found');
+        return;
+    }
+    
+    const email = emailInput.value.trim();
+    
+    // Validate email
+    if (!email) {
+        showAlert('Please enter your email address.', 'warning', 'Email Required');
+        emailInput.focus();
+        return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert('Please enter a valid email address.', 'warning', 'Invalid Email');
+        emailInput.focus();
+        return;
+    }
+    
+    // Disable button during submission
+    subscribeBtn.disabled = true;
+    subscribeBtn.textContent = 'Subscribing...';
+    
+    try {
+        // Check if Supabase is available
+        if (!window.dcfSupabase) {
+            throw new Error('Database connection not available');
+        }
+        
+        // Check if email already exists
+        const { data: existingSubscriber } = await window.dcfSupabase
+            .from('newsletter_subscribers')
+            .select('email')
+            .eq('email', email.toLowerCase())
+            .single();
+            
+        if (existingSubscriber) {
+            showAlert('You are already subscribed to our newsletter!', 'info', 'Already Subscribed');
+            emailInput.value = '';
+            return;
+        }
+        
+        // Insert new subscriber
+        const { error } = await window.dcfSupabase
+            .from('newsletter_subscribers')
+            .insert({
+                email: email.toLowerCase(),
+                subscribed_at: new Date().toISOString(),
+                status: 'active',
+                source: 'footer_form'
+            });
+            
+        if (error) {
+            // Handle specific Supabase errors
+            if (error.code === '42P01') {
+                throw new Error('Newsletter service temporarily unavailable');
+            }
+            throw error;
+        }
+        
+        // Success
+        showAlert('Thank you for subscribing! You\'ll receive updates on our latest initiatives and events.', 'success', 'Successfully Subscribed');
+        emailInput.value = '';
+        
+        console.log('✅ Newsletter subscription successful for:', email);
+        
+    } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        
+        // User-friendly error messages
+        let errorMessage = 'Unable to subscribe at this time. Please try again later.';
+        
+        if (error.message.includes('not available') || error.message.includes('temporarily unavailable')) {
+            errorMessage = 'Newsletter service is temporarily unavailable. Please try again later.';
+        } else if (error.message.includes('duplicate') || error.message.includes('already exists')) {
+            errorMessage = 'You are already subscribed to our newsletter!';
+            emailInput.value = '';
+        }
+        
+        showAlert(errorMessage, 'error', 'Subscription Failed');
+        
+    } finally {
+        // Re-enable button
+        subscribeBtn.disabled = false;
+        subscribeBtn.textContent = 'Subscribe';
+    }
 }
 
 // =============================================================================
@@ -1456,6 +1554,7 @@ window.viewMyContributions = viewMyContributions;
 window.viewBookmarks = viewBookmarks;
 window.showComingSoon = showComingSoon;
 window.generateInitials = generateInitials;
+window.subscribeNewsletter = subscribeNewsletter;
 
 // =============================================================================
 // 17. STANDARDIZED ALERT SYSTEM
