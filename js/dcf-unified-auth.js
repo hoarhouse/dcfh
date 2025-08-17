@@ -382,21 +382,36 @@ function populateTopNavigation() {
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
     
-    // Member navigation
-    const memberNav = [
-        { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
-        { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
-        { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
-        { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
-        { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' }
-    ];
+    let navItems;
+    
+    // Check if user is logged in
+    if (window.dcfUser?.isLoggedIn) {
+        // Member navigation
+        navItems = [
+            { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
+            { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
+            { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
+            { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
+            { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' }
+        ];
+    } else {
+        // Public navigation
+        navItems = [
+            { href: basePath + 'public/dcf_about.html', text: 'About' },
+            { href: basePath + 'public/dcf_contact.html', text: 'Contact' },
+            { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
+            { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
+            { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' }
+        ];
+    }
     
     console.log('DEBUG TOP NAV - basePath:', basePath);
-    console.log('DEBUG TOP NAV - memberNav:', memberNav);
+    console.log('DEBUG TOP NAV - navItems:', navItems);
+    console.log('DEBUG TOP NAV - isLoggedIn:', window.dcfUser?.isLoggedIn);
     
-    const navItems = memberNav.filter(item => item.href !== currentPage);
+    const filteredNavItems = navItems.filter(item => item.href !== currentPage);
     
-    navItems.forEach(item => {
+    filteredNavItems.forEach(item => {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.href = item.href;
