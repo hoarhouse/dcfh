@@ -1,4 +1,89 @@
-<!DOCTYPE html>
+// Load event statistics
+        async function loadEventStats(eventId) {
+            try {
+                // Get registration count - use simpler query to avoid RLS issues
+                let registrationCount = 0;
+                try {
+                    const { data: registrations, error: regError } = await supabase
+                        .from('event_registrations')
+                        .select('id')
+                        .eq('event_id', eventId);
+                    
+                    if (regError) {
+                        console.log('⚠️ Registration query failed:', regError.message);
+                    } else {
+                        registrationCount = registrations ? registrations.length : 0;
+                    }
+                } catch (regCatchError) {
+                    console.log('⚠️ Registration count failed:', regCatchError.message);
+                }
+
+                // Get likes count
+                let likesCount = 0;
+                try {
+                    const { data: likes, error: likeError } = await supabase
+                        .from('event_likes')
+                        .select('id')
+                        .eq('event_id', eventId);
+                    
+                    if (likeError) {
+                        console.log('⚠️ Likes query failed:', likeError.message);
+                    } else {
+                        likesCount = likes ? likes.length : 0;
+                    }
+                } catch (likeCatchError) {
+                    console.log('⚠️ Likes count failed:', likeCatchError.message);
+                }
+
+                // Get followers count
+                let followersCount = 0;
+                try {
+                    const { data: followers, error: followError } = await supabase
+                        .from('event_follows')
+                        .select('id')
+                        .eq('event_id', eventId);
+                    
+                    if (followError) {
+                        console.log('⚠️ Follows query failed:', followError.message);
+                    } else {
+                        followersCount = followers ? followers.length : 0;
+                    }
+                } catch (followCatchError) {
+                    console.log('⚠️ Followers count failed:', followCatchError.message);
+                }
+
+                // Get comments count
+                let commentsCount = 0;
+                try {
+                    const { data: eventComments, error: commentError } = await supabase
+                        .from('event_comments')
+                        .select('id')
+                        .eq('event_id', eventId);
+                    
+                    if (commentError) {
+                        console.log('⚠️ Comments query failed:', commentError.message);
+                    } else {
+                        commentsCount = eventComments ? eventComments.length : 0;
+                    }
+                } catch (commentCatchError) {
+                    console.log('⚠️ Comments count failed:', commentCatchError.message);
+                }
+
+                // Update stats display with whatever we got (even if 0)
+                document.getElementById('registeredCount').textContent = registrationCount;
+                document.getElementById('likesCount').textContent = likesCount;
+                document.getElementById('followersCount').textContent = followersCount;
+                document.getElementById('commentsCount').textContent = commentsCount;
+
+            } catch (error) {
+                console.error('Error loading event stats:', error);
+                // Set all to 0 if major failure
+                document.getElementById('registeredCount').textContent = '0';
+                document.getElementById('likesCount').textContent = '0';
+                document.getElementById('followersCount').textContent = '0';
+                document.getElementById('commentsCount').textContent = '0';
+            }
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1012,16 +1097,21 @@
         // Load organizer info
         async function loadOrganizerInfo(organizerId, contactEmail) {
             try {
-                const { data: organizer } = await supabase
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', organizerId)
-                    .maybeSingle();
-
-                let organizerData;
-                if (organizer) {
+                let organizerData = null;
+                
+                // Only query if organizerId is not null/undefined
+                if (organizerId) {
+                    const { data: organizer } = await supabase
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', organizerId)
+                        .maybeSingle();
+                    
                     organizerData = organizer;
-                } else {
+                }
+
+                // Use fallback data if no organizer found or organizerId was null
+                if (!organizerData) {
                     organizerData = {
                         name: 'Event Organizer',
                         username: 'organizer',
@@ -1032,12 +1122,15 @@
                 // Update organizer UI
                 const initials = window.generateInitials ? window.generateInitials(organizerData.name) : 'O';
                 document.getElementById('organizerName').textContent = `@${organizerData.username || 'organizer'}`;
-                document.getElementById('organizerEmail').textContent = organizerData.email;
+                document.getElementById('organizerEmail').textContent = organizerData.email || 'No contact provided';
                 document.getElementById('organizerAvatar').textContent = initials;
 
-                // Show manage controls if current user is organizer
+                // Show manage controls only if current user is the actual organizer
                 const currentUser = window.getCurrentUser();
-                if (currentUser && (currentUser.id === organizerId || currentUser.email === contactEmail)) {
+                if (currentUser && organizerId && currentUser.id === organizerId) {
+                    document.getElementById('organizerControls').style.display = 'block';
+                    updateActionButtons('owner');
+                } else if (currentUser && contactEmail && currentUser.email === contactEmail) {
                     document.getElementById('organizerControls').style.display = 'block';
                     updateActionButtons('owner');
                 } else {
@@ -1046,9 +1139,11 @@
 
             } catch (error) {
                 console.error('Error loading organizer:', error);
+                // Fallback UI
                 document.getElementById('organizerName').textContent = '@organizer';
-                document.getElementById('organizerEmail').textContent = 'No contact provided';
+                document.getElementById('organizerEmail').textContent = contactEmail || 'No contact provided';
                 document.getElementById('organizerAvatar').textContent = 'O';
+                checkUserEventStatus();
             }
         }
 
@@ -1472,11 +1567,22 @@
                     .from('event_registrations')
                     .select('*')
                     .eq('event_id', eventId)
-                    .order('created_at', { ascending: false });
+                    .order('registered_at', { ascending: false });
 
                 const attendeesList = document.getElementById('attendeesList');
                 
-                if (error || !registrations || registrations.length === 0) {
+                if (error) {
+                    console.log('⚠️ Attendees query failed:', error.message);
+                    attendeesList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Unable to load attendees</h3>
+                            <p>Registration data is not available.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (!registrations || registrations.length === 0) {
                     attendeesList.innerHTML = `
                         <div class="empty-state">
                             <h3>No attendees yet</h3>
@@ -1488,14 +1594,15 @@
 
                 // Display attendees
                 const attendeesHTML = registrations.map(registration => {
-                    const initials = window.generateInitials ? window.generateInitials(registration.attendee_name) : 'A';
+                    const initials = window.generateInitials ? window.generateInitials(registration.attendee_name || 'Attendee') : 'A';
+                    const registeredTime = registration.registered_at ? formatTimeAgo(new Date(registration.registered_at)) : 'recently';
                     
                     return `
                         <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 1rem;">
                             <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #000, #333); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${initials}</div>
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${registration.attendee_name}</div>
-                                <div style="color: #666; font-size: 0.9rem;">Registered ${formatTimeAgo(new Date(registration.created_at))}</div>
+                                <div style="font-weight: 600; color: #333; margin-bottom: 0.25rem;">${registration.attendee_name || 'Anonymous Attendee'}</div>
+                                <div style="color: #666; font-size: 0.9rem;">Registered ${registeredTime}</div>
                             </div>
                         </div>
                     `;
