@@ -1981,7 +1981,11 @@
                     .select('*')
                     .eq('event_id', currentEvent.id)
                     .eq('attendee_email', userEmail)
-                    .single();
+                    .single()
+                    .catch(err => {
+                        console.log('🔧 EVENT_REGISTRATIONS query error (expected for new registrations):', err);
+                        return { data: null, error: null };
+                    });
 
                 if (existingReg) {
                     // Update existing registration
@@ -2282,7 +2286,11 @@
                 const { count: likesCount } = await supabase
                     .from('event_likes')
                     .select('*', { count: 'exact', head: true })
-                    .eq('event_id', eventId);
+                    .eq('event_id', eventId)
+                    .catch(err => {
+                        console.log('🔧 EVENT_LIKES count query error:', err);
+                        return { count: 0 };
+                    });
 
                 // Load comments
                 const { count: commentsCount } = await supabase
@@ -2300,7 +2308,11 @@
                 const { count: followsCount } = await supabase
                     .from('event_follows')
                     .select('*', { count: 'exact', head: true })
-                    .eq('event_id', eventId);
+                    .eq('event_id', eventId)
+                    .catch(err => {
+                        console.log('🔧 EVENT_FOLLOWS count query error:', err);
+                        return { count: 0 };
+                    });
 
                 socialData.likes = likesCount || 0;
                 socialData.comments = commentsCount || 0;
@@ -2316,14 +2328,22 @@
                         .select('*')
                         .eq('event_id', eventId)
                         .eq('user_email', userEmail)
-                        .single();
+                        .single()
+                        .catch(err => {
+                            console.log('🔧 EVENT_LIKES user query error:', err);
+                            return { data: null, error: null };
+                        });
 
                     const { data: userFollow } = await supabase
                         .from('event_follows')
                         .select('*')
                         .eq('event_id', eventId)
                         .eq('user_email', userEmail)
-                        .single();
+                        .single()
+                        .catch(err => {
+                            console.log('🔧 EVENT_FOLLOWS user query error:', err);
+                            return { data: null, error: null };
+                        });
 
                     socialData.userLiked = !!userLike;
                     socialData.userFollowing = !!userFollow;
@@ -2385,7 +2405,11 @@
                         .from('event_likes')
                         .delete()
                         .eq('event_id', currentEvent.id)
-                        .eq('user_email', userEmail);
+                        .eq('user_email', userEmail)
+                        .catch(err => {
+                            console.log('🔧 EVENT_LIKES delete error:', err);
+                            throw err;
+                        });
 
                     socialData.likes--;
                     socialData.userLiked = false;
@@ -2399,7 +2423,11 @@
                     console.log('🔍 DB DEBUG: Inserting like data:', likeData);
                     await supabase
                         .from('event_likes')
-                        .insert([likeData]);
+                        .insert([likeData])
+                        .catch(err => {
+                            console.log('🔧 EVENT_LIKES insert error:', err);
+                            throw err;
+                        });
 
                     socialData.likes++;
                     socialData.userLiked = true;
@@ -2426,7 +2454,11 @@
                         .from('event_follows')
                         .delete()
                         .eq('event_id', currentEvent.id)
-                        .eq('user_email', userEmail);
+                        .eq('user_email', userEmail)
+                        .catch(err => {
+                            console.log('🔧 EVENT_FOLLOWS delete error:', err);
+                            throw err;
+                        });
 
                     socialData.follows--;
                     socialData.userFollowing = false;
@@ -2440,7 +2472,11 @@
                     console.log('🔍 DB DEBUG: Inserting follow data:', followData);
                     await supabase
                         .from('event_follows')
-                        .insert([followData]);
+                        .insert([followData])
+                        .catch(err => {
+                            console.log('🔧 EVENT_FOLLOWS insert error:', err);
+                            throw err;
+                        });
 
                     socialData.follows++;
                     socialData.userFollowing = true;
