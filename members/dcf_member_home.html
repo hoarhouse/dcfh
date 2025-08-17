@@ -1615,12 +1615,15 @@
 
                 if (error) throw error;
 
-                // Process comments with @username format
-                const processedComments = (comments || []).map(comment => ({
-                    ...comment,
-                    username: comment.username?.startsWith('@') ? comment.username : `@${comment.username || 'user'}`,
-                    avatar: getUserInitials(comment.username || 'User')
-                }));
+                // Process comments with @username format - ENSURE ALL SHOW @username
+                const processedComments = (comments || []).map(comment => {
+                    const displayUsername = comment.username?.startsWith('@') ? comment.username : `@${comment.username || 'user'}`;
+                    return {
+                        ...comment,
+                        username: displayUsername,
+                        avatar: getUserInitials(comment.username || 'User')
+                    };
+                });
 
                 postCommentsState[postId].comments = processedComments;
                 renderComments(postId);
@@ -1751,25 +1754,42 @@
                 document.querySelector(`#reply-${parentId} .reply-input`) : 
                 document.getElementById(`comment-input-${postId}`);
             
-            if (!input) return;
+            if (!input) {
+                console.error('❌ COMMENT INPUT NOT FOUND:', { postId, parentId });
+                return;
+            }
             
             const content = input.value.trim();
-            if (!content) return;
+            if (!content) {
+                console.log('❌ EMPTY COMMENT CONTENT');
+                return;
+            }
             
             if (!currentUser) {
+                console.error('❌ USER NOT LOGGED IN:', currentUser);
                 alert('Please log in to comment');
                 return;
             }
 
             const supabase = window.authSupabase || window.masterSupabase;
+            if (!supabase) {
+                console.error('❌ SUPABASE NOT AVAILABLE');
+                alert('Database connection error. Please refresh the page.');
+                return;
+            }
+            
+            console.log('🚀 SUBMITTING COMMENT:', { postId, content, user: currentUser });
             
             try {
+                // Ensure username is stored without @ prefix (database stores clean username)
+                const cleanUsername = currentUser.username?.replace('@', '') || currentUser.name || 'user';
+                
                 const { data, error } = await supabase
                     .from('post_comments')
                     .insert({
                         post_id: postId,
                         content: content,
-                        username: currentUser.username,
+                        username: cleanUsername,
                         user_id: currentUser.id,
                         parent_id: parentId,
                         like_count: 0
@@ -1777,7 +1797,12 @@
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ DATABASE ERROR:', error);
+                    throw error;
+                }
+                
+                console.log('✅ COMMENT SAVED:', data);
 
                 // Clear input
                 input.value = '';
@@ -2049,8 +2074,19 @@
         // Get user initials for avatar
         function getUserInitials(name) {
             if (!name) return 'U';
-            const cleanName = name.replace('@', '');
-            return cleanName.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2);
+            const cleanName = name.replace('@', '').trim();
+            
+            // Handle full names like "Chris Hoar" -> "CH"
+            if (cleanName.includes(' ')) {
+                return cleanName.split(' ')
+                    .filter(word => word.length > 0)
+                    .map(word => word.charAt(0).toUpperCase())
+                    .join('')
+                    .slice(0, 2);
+            }
+            
+            // Handle single names like "chris" -> "CR" (first 2 chars)
+            return cleanName.toUpperCase().slice(0, 2);
         }
 
         async function toggleLike(postId, buttonElement) {
