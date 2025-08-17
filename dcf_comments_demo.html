@@ -689,6 +689,40 @@
         .liked {
             animation: likeAnimation 0.3s ease;
         }
+
+        /* Progressive Loading Button */
+        .expand-comments-btn {
+            width: 100%;
+            padding: 16px;
+            background: none;
+            border: none;
+            color: #8e8e8e;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            border-top: 1px solid #f2f2f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .expand-comments-btn:hover {
+            background: #fafafa;
+            color: #262626;
+        }
+
+        .expand-comments-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .expand-comments-btn.expanded svg {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
@@ -828,6 +862,9 @@
             email: 'chris@dcfhungary.org'
         };
 
+        // Progressive loading state
+        let showAllComments = false;
+
         // Mock comments data
         let mockComments = [
             {
@@ -951,11 +988,14 @@
             return makeMentionsClickable(makeLinksClickable(escapeHtml(text)));
         }
 
-        // Render comments
-        function renderComments() {
-            const commentsList = document.getElementById('commentsList');
-            
-            const commentsHtml = mockComments.map(comment => `
+        // Get sorted comments for display
+        function getSortedComments() {
+            return [...mockComments].sort((a, b) => b.likes - a.likes);
+        }
+
+        // Render individual comment
+        function renderComment(comment) {
+            return `
                 <div class="comment" id="comment-${comment.id}">
                     <div class="comment-avatar">${comment.avatar}</div>
                     <div class="comment-content">
@@ -1011,15 +1051,67 @@
                         ` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+        }
+
+        // Render comments with progressive loading
+        function renderComments() {
+            const commentsList = document.getElementById('commentsList');
+            const sortedComments = getSortedComments();
             
-            commentsList.innerHTML = commentsHtml;
+            let commentsToShow;
+            let showExpandButton = false;
+            
+            if (showAllComments) {
+                commentsToShow = sortedComments;
+            } else {
+                commentsToShow = sortedComments.slice(0, 2);
+                showExpandButton = sortedComments.length > 2;
+            }
+            
+            const commentsHtml = commentsToShow.map(comment => renderComment(comment)).join('');
+            
+            let expandButtonHtml = '';
+            if (showExpandButton) {
+                const remainingCount = sortedComments.length - 2;
+                expandButtonHtml = `
+                    <button class="expand-comments-btn" onclick="toggleCommentsExpansion()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        💬 See all comments (${sortedComments.length})
+                    </button>
+                `;
+            } else if (showAllComments && sortedComments.length > 2) {
+                expandButtonHtml = `
+                    <button class="expand-comments-btn expanded" onclick="toggleCommentsExpansion()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        Show fewer comments
+                    </button>
+                `;
+            }
+            
+            commentsList.innerHTML = commentsHtml + expandButtonHtml;
             
             // Update comments count
             const totalComments = mockComments.reduce((total, comment) => {
                 return total + 1 + (comment.replies ? comment.replies.length : 0);
             }, 0);
             document.getElementById('commentsCount').textContent = `${totalComments} Comments`;
+        }
+
+        // Toggle comments expansion
+        function toggleCommentsExpansion() {
+            showAllComments = !showAllComments;
+            renderComments();
+            
+            if (showAllComments) {
+                showNotification('Showing all comments', 'info');
+            } else {
+                showNotification('Showing top comments', 'info');
+            }
         }
 
         // Submit comment
@@ -1058,6 +1150,8 @@
                 // Clear main input
                 input.value = '';
                 document.querySelector('.comment-submit').disabled = true;
+                // Expand to show all comments when user posts
+                showAllComments = true;
             }
             
             // Re-render comments
@@ -1237,7 +1331,13 @@
             });
             event.target.classList.add('active');
             
-            // For demo purposes, just show a notification
+            // Expand to show filtered results
+            if (type !== 'all') {
+                showAllComments = true;
+            }
+            
+            // Re-render with filter
+            renderComments();
             showNotification(`Filtered by: ${type}`, 'info');
         }
 
