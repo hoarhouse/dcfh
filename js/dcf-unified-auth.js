@@ -159,15 +159,15 @@ async function initializeAuth() {
                         console.warn('⚠️ Session has expired');
                         console.log('💡 Recommendation: Please refresh page or re-login');
                         
-                        // Optional: Add a gentle notification (not forced)
-                        setTimeout(() => {
-                            const shouldRefresh = confirm('Your session has expired. Would you like to refresh the page to re-authenticate?');
-                            if (shouldRefresh) {
-                                window.location.reload();
-                            } else {
-                                console.log('ℹ️ User chose to continue with expired session');
-                            }
-                        }, 2000); // 2 second delay so user can finish what they're doing
+                        // TEMPORARILY DISABLED FOR TESTING
+                        // setTimeout(() => {
+                        //     const shouldRefresh = confirm('Your session has expired. Would you like to refresh the page to re-authenticate?');
+                        //     if (shouldRefresh) {
+                        //         window.location.reload();
+                        //     } else {
+                        //         console.log('ℹ️ User chose to continue with expired session');
+                        //     }
+                        // }, 2000); // 2 second delay so user can finish what they're doing
                         
                     } else if (expiryTime - now < 2 * 60 * 1000) { // Less than 2 minutes
                         console.warn('⚠️ Session expires in less than 2 minutes');
