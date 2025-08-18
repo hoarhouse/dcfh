@@ -136,7 +136,7 @@ async function updateUserInfo() {
         if (emailElement) emailElement.textContent = profile.email;
         
         // Generate initials
-        const initials = generateInitials(profile.name || profile.username || 'User');
+        const initials = generateInitials(profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || 'User');
         console.log('Generated initials:', initials);
         
         // Set avatars with profile picture
@@ -217,7 +217,7 @@ async function updateUserInfo() {
             if (emailElement) emailElement.textContent = currentUser.email;
             
             // Generate initials using database data
-            const initials = generateInitials(profileName || currentUser.username || 'User');
+            const initials = generateInitials(profileName || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.username || 'User');
             console.log('Generated initials:', initials);
             
             // Set avatars with database profile data
