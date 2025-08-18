@@ -102,7 +102,7 @@ async function initializeAuth() {
                 
                 // Gentle session monitoring - LOGS ONLY, NO REDIRECTS
                 if (session?.expires_at) {
-                    const expiryTime = new Date(session.expires_at);
+                    const expiryTime = new Date(session.expires_at * 1000);
                     const timeUntilExpiry = expiryTime.getTime() - Date.now();
                     console.log('⏰ Session expires in:', Math.round(timeUntilExpiry / (1000 * 60)), 'minutes');
                     
@@ -160,7 +160,7 @@ async function initializeAuth() {
                 
                 // Expired session handling - GENTLE, user choice
                 if (session?.expires_at) {
-                    const expiryTime = new Date(session.expires_at);
+                    const expiryTime = new Date(session.expires_at * 1000);
                     const now = new Date();
                     
                     if (expiryTime <= now) {
