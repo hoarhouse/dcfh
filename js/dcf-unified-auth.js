@@ -1899,66 +1899,9 @@ function getUserId() {
 // 13. INITIALIZATION - SINGLE ENTRY POINT
 // =============================================================================
 async function initializeDCF() {
-    console.log('🚀 Initializing DCF Authentication System...');
-    
-    try {
-        // Setup auth state listener
-        setupAuthStateListener();
-        
-        // Initialize authentication
-        const isLoggedIn = await initializeAuth();
-        
-        // Check for page protection
-        if (document.body.classList.contains('dcf-public-page') && isLoggedIn) {
-            console.log('🔒 Redirecting logged-in user from public auth page');
-            window.location.href = getCorrectBasePath() + 'members/dcf_member_home.html';
-            return;
-        }
-        
-        // PROTECT MEMBER-ONLY PAGES - DELAYED CHECK
-        const memberOnlyFolders = ['members/', 'projects/', 'resources/', 'events/', 'admin/'];
-        const currentPath = window.location.pathname;
-        const isAuthPage = currentPath.includes('/auth/');
-        const isPublicPage = currentPath.includes('/public/') || currentPath === '/' || currentPath.endsWith('index.html');
-        
-        // EMERGENCY - ABSOLUTELY NO REDIRECTS
-        /*
-        setTimeout(() => {
-            const userStillNotLoggedIn = !window.dcfUser?.isLoggedIn;
-            if (userStillNotLoggedIn && !isAuthPage && !isPublicPage) {
-                const isMemberOnlyPage = memberOnlyFolders.some(folder => currentPath.includes(folder));
-                if (isMemberOnlyPage) {
-                    console.log('🔒 Redirecting unauthorized user to login');
-                    window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
-                }
-            }
-        }, 1000);
-        */
-        console.log('🚨 All auth redirects disabled - pages accessible');
-        
-        // Update UI based on auth state
-        updateUserInterface();
-        
-        // Initialize components
-        populateTopNavigation();
-        initializeQuickActions();
-        initializeFooter();
-        
-        // Initialize notification system if logged in
-        if (isLoggedIn && window.dcfSupabase) {
-            window.notificationSystem = new NotificationSystem(window.dcfSupabase);
-            window.notificationSystem.updateNotificationBadge();
-        }
-        
-        console.log(`✅ DCF initialization complete. User logged in: ${isLoggedIn}`);
-        
-        return isLoggedIn;
-        
-    } catch (error) {
-        console.error('❌ DCF initialization failed:', error);
-        showLoggedOutState();
-        return false;
-    }
+    console.log('🚨 EMERGENCY: Auth system completely disabled');
+    // No auth checks, no redirects, no protection
+    return true;
 }
 
 // =============================================================================
