@@ -1921,7 +1921,8 @@ async function initializeDCF() {
         const isAuthPage = currentPath.includes('/auth/');
         const isPublicPage = currentPath.includes('/public/') || currentPath === '/' || currentPath.endsWith('index.html');
         
-        // Only check protection after auth has had time to initialize
+        // EMERGENCY - ABSOLUTELY NO REDIRECTS
+        /*
         setTimeout(() => {
             const userStillNotLoggedIn = !window.dcfUser?.isLoggedIn;
             if (userStillNotLoggedIn && !isAuthPage && !isPublicPage) {
@@ -1932,6 +1933,8 @@ async function initializeDCF() {
                 }
             }
         }, 1000);
+        */
+        console.log('🚨 All auth redirects disabled - pages accessible');
         
         // Update UI based on auth state
         updateUserInterface();
