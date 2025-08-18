@@ -15,7 +15,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // SINGLE CLIENT - PREVENT MULTIPLE INSTANCES
 if (!window.dcfSupabase) {
     if (typeof window !== 'undefined' && window.supabase) {
-        window.dcfSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.dcfSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window.localStorage
+  }
+});
         console.log('✅ Single Supabase client created');
     } else {
         console.error('❌ Supabase library not loaded');
