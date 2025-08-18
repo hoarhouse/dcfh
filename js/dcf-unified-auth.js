@@ -148,6 +148,31 @@ async function initializeAuth() {
                     console.warn('⚠️ Session cleanup error:', error.message);
                 }
                 
+                // Expired session handling - GENTLE, user choice
+                if (session?.expires_at) {
+                    const expiryTime = new Date(session.expires_at);
+                    const now = new Date();
+                    
+                    if (expiryTime <= now) {
+                        console.warn('⚠️ Session has expired');
+                        console.log('💡 Recommendation: Please refresh page or re-login');
+                        
+                        // Optional: Add a gentle notification (not forced)
+                        setTimeout(() => {
+                            const shouldRefresh = confirm('Your session has expired. Would you like to refresh the page to re-authenticate?');
+                            if (shouldRefresh) {
+                                window.location.reload();
+                            } else {
+                                console.log('ℹ️ User chose to continue with expired session');
+                            }
+                        }, 2000); // 2 second delay so user can finish what they're doing
+                        
+                    } else if (expiryTime - now < 2 * 60 * 1000) { // Less than 2 minutes
+                        console.warn('⚠️ Session expires in less than 2 minutes');
+                        console.log('💡 Automatic refresh will be attempted shortly');
+                    }
+                }
+                
                 return true;
                 
             } catch (profileError) {
