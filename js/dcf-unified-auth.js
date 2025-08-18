@@ -119,6 +119,35 @@ async function initializeAuth() {
                     }
                 }
                 
+                // Invalid session cleanup - GENTLE, non-disruptive  
+                try {
+                    if (session?.user?.id && !session.user.email) {
+                        console.warn('⚠️ Invalid session detected - missing email');
+                        console.log('💡 Recommendation: Refresh page if experiencing issues');
+                    }
+                    
+                    if (session?.access_token && session.access_token.length < 50) {
+                        console.warn('⚠️ Suspicious session token - may be corrupted');
+                        console.log('💡 Recommendation: Re-login if experiencing issues');
+                    }
+                    
+                    // Test session validity with actual API call
+                    if (session?.user?.id) {
+                        window.dcfSupabase.auth.getUser().then(result => {
+                            if (result.error) {
+                                console.warn('⚠️ Session validation failed:', result.error.message);
+                                console.log('💡 Session may be expired - consider refreshing');
+                            } else {
+                                console.log('✅ Session validation passed - all systems healthy');
+                            }
+                        }).catch(error => {
+                            console.warn('⚠️ Session validation error:', error.message);
+                        });
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Session cleanup error:', error.message);
+                }
+                
                 return true;
                 
             } catch (profileError) {
