@@ -378,15 +378,19 @@ function generateInitials(fullName) {
     
     console.log('🔍 Generating initials from name:', fullName);
     
-    // Remove titles and clean the name
-    const cleanName = fullName.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
-    const parts = cleanName.split(' ').filter(part => part.length > 0);
+    // EXACT SPECIFICATION: Split full name on spaces, take ONLY first letter of first part + first letter of last part
+    const parts = fullName.trim().split(' ').filter(part => part.length > 0);
     
-    console.log('🔍 Name parts after cleaning:', parts);
+    console.log('🔍 Name parts after splitting:', parts);
     
     if (parts.length >= 2) {
-        // First letter of first name + first letter of last name
-        const initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        // EXACT SPECIFICATION: First letter of FIRST NAME + First letter of LAST NAME
+        const firstNameInitial = parts[0][0].toUpperCase();
+        const lastNameInitial = parts[parts.length - 1][0].toUpperCase();
+        const initials = firstNameInitial + lastNameInitial;
+        
+        console.log('🔍 First name initial:', firstNameInitial);
+        console.log('🔍 Last name initial:', lastNameInitial);
         console.log('🔍 Generated initials (first + last):', initials);
         return initials;
     } else if (parts.length === 1) {
