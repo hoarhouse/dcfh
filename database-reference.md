@@ -716,6 +716,8 @@
         function updatePostBoxOnly() {
             if (!currentUser) return;
             
+            console.log('🔍 Current user data:', currentUser);
+            
             // Use correct initials - CH for Chris Hoar
             const postAvatar = document.getElementById('postAvatar');
             if (postAvatar) {
@@ -724,13 +726,16 @@
                     initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
                 }
                 postAvatar.textContent = initials;
+                console.log('✅ Set avatar initials:', initials);
             }
             
             const postInput = document.getElementById('postContent');
             if (postInput) {
                 // Use correct username from database
                 const username = currentUser.username || 'hooray';
-                postInput.placeholder = `What's on your mind, @${username}?`;
+                const placeholder = `What's on your mind, @${username}?`;
+                postInput.placeholder = placeholder;
+                console.log('✅ Set placeholder:', placeholder);
             }
         }
 
