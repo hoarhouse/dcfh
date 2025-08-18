@@ -970,7 +970,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             try {
                 const { data: project, error } = await supabase
                     .from('projects')
-                    .select(`*, author:user_profiles!author_id(id,email,username,name)`)
+                    .select(`*, author:user_profiles!author_id(id,email,username,first_name,last_name)`)
                     .eq('id', projectId)
                     .single();
 
@@ -1164,12 +1164,12 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 }
 
                 // Start with project owner - Use unified auth function
-                const authorInitials = window.generateInitials ? window.generateInitials(project.author?.name) : 'U';
+                const authorInitials = window.generateInitials ? window.generateInitials(`${project.author?.first_name || ''} ${project.author?.last_name || ''}`.trim() || project.author?.username) : 'U';
                 let teamHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
                         <div class="member-info">
-                            <div class="member-name">${project.author?.username || project.author?.name || 'Project Creator'}</div>
+                            <div class="member-name">${project.author?.username || `${project.author?.first_name || ''} ${project.author?.last_name || ''}`.trim() || 'Project Creator'}</div>
                             <div class="member-role">Project Lead</div>
                         </div>
                         <span class="member-badge leader">Leader</span>
@@ -1213,12 +1213,12 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             } catch (error) {
                 console.error('Error loading team:', error);
                 // Fallback to just showing project owner - Use unified auth function
-                const authorInitials = window.generateInitials ? window.generateInitials(project.author?.name) : 'U';
+                const authorInitials = window.generateInitials ? window.generateInitials(`${project.author?.first_name || ''} ${project.author?.last_name || ''}`.trim() || project.author?.username) : 'U';
                 teamContainer.innerHTML = `
                     <div class="team-member">
                         <div class="member-avatar">${authorInitials}</div>
                         <div class="member-info">
-                           <div class="member-name">@${project.author?.username || project.author?.name || 'Project Creator'}</div>
+                           <div class="member-name">@${project.author?.username || `${project.author?.first_name || ''} ${project.author?.last_name || ''}`.trim() || 'Project Creator'}</div>
                             <div class="member-role">Project Lead</div>
                         </div>
                         <span class="member-badge leader">Leader</span>
