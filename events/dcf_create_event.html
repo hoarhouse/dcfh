@@ -1281,21 +1281,21 @@
                 submitBtn.textContent = 'Creating Event...';
                 submitBtn.disabled = true;
 
-                // Use unified auth's Supabase client
-                const supabase = window.dcfSupabase;
-                if (!supabase) {
-                    throw new Error('Supabase client not initialized');
+                // Initialize Supabase if needed
+                if (!window.masterSupabase) {
+                    window.initializeSupabase();
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
+                const supabase = window.masterSupabase;
 
-                // Get current user from unified auth system
-                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
-                
-                if (!currentUser) {
+                // Get current user
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
                     throw new Error('You must be logged in to create events');
                 }
-                
-                // Also get the session for user id
-                const { data: { session } } = await supabase.auth.getSession();
+
+                // Get current user profile for additional data if needed
+                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
 
                 // Handle file uploads if any
                 let imageUrls = [];
