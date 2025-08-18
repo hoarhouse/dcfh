@@ -99,6 +99,24 @@ async function initializeAuth() {
                     if (timeUntilExpiry < 5 * 60 * 1000) { // 5 minutes
                         console.warn('⚠️ Session expiring soon - refresh recommended');
                     }
+                    
+                    // Optional session refresh - GENTLE, user can ignore
+                    if (timeUntilExpiry < 10 * 60 * 1000 && timeUntilExpiry > 0) { // 10 minutes
+                        console.log('🔄 Attempting session refresh...');
+                        try {
+                            window.dcfSupabase.auth.refreshSession().then(result => {
+                                if (result.data?.session) {
+                                    console.log('✅ Session refreshed successfully');
+                                    // Update global session data
+                                    window.dcfUser.session = result.data.session;
+                                }
+                            }).catch(error => {
+                                console.warn('⚠️ Session refresh failed:', error.message);
+                            });
+                        } catch (error) {
+                            console.warn('⚠️ Session refresh error:', error.message);
+                        }
+                    }
                 }
                 
                 return true;
