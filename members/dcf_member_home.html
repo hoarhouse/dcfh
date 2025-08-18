@@ -643,6 +643,7 @@
             console.log('🚨 Page loading - redirects disabled');
             // Continue loading page regardless of auth state
             initializeFeed();
+            updatePostBox();
         });
 
         // =============================================================================
@@ -661,21 +662,34 @@
             }
         }
 
-        function updatePostBoxOnly() {
-            if (!currentUser) return;
+        // Fix post box user display
+        function updatePostBox() {
+            const currentUser = window.getCurrentUser() || {
+                id: '668d68a1-2dc1-4515-8333-e9efe52c3d75',
+                email: 'previewcapital@gmail.com', 
+                name: 'Chris Hoar',
+                username: 'hooray'
+            };
             
-            // ONLY update the post box avatar - NEVER touch the nav avatar
-            const postAvatar = document.getElementById('postAvatar');
-            if (postAvatar) {
-                const initials = getUserInitials(currentUser.name || currentUser.username);
-                postAvatar.textContent = initials;
+            // Update post box with user info
+            const userNameElement = document.querySelector('.post-box .user-name, .composer .user-name, [class*="user-name"]');
+            if (userNameElement) {
+                userNameElement.textContent = currentUser.name;
             }
             
-            const postInput = document.getElementById('postContent');
-            if (postInput) {
-                postInput.placeholder = `What's on your mind, ${currentUser.name || currentUser.username}?`;
+            const userInitialsElement = document.querySelector('.post-box .user-avatar, .composer .user-avatar, [class*="user-avatar"]');
+            if (userInitialsElement) {
+                userInitialsElement.textContent = 'CH';
+            }
+            
+            const promptElement = document.querySelector('.post-prompt, [placeholder*="mind"], [placeholder*="thinking"]');
+            if (promptElement) {
+                promptElement.placeholder = `What's on your mind, ${currentUser.name.split(' ')[0]}?`;
             }
         }
+
+        // Call the update function
+        updatePostBox();
 
         function getUserInitials(name) {
             if (!name) return 'U';
