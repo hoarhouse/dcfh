@@ -638,59 +638,38 @@
         let currentUser = null;
         let posts = [];
 
-        // Initialize
+        // Wait for unified auth system to complete
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 INITIALIZING 100% WORKING FEED');
+            // Ensure auth is initialized
+            if (window.initializeDCF) {
+                await window.initializeDCF();
+            }
             
-            // Wait for unified auth to load first
-            setTimeout(async () => {
-                try {
-                    // Use existing Supabase client from unified auth
-                    supabase = window.dcfSupabase || window.authSupabase || window.masterSupabase;
-                    console.log('✅ Supabase client from unified auth');
-
-                    // Get user from unified auth system
-                    await initializeUser();
-                    
-                    // Load posts
-                    await loadPosts();
-                    
-                    console.log('✅ Feed fully loaded and functional');
-                    
-                } catch (error) {
-                    console.error('❌ Initialization failed:', error);
-                    showError('Failed to initialize. Please refresh the page.');
-                }
-            }, 1500);
+            // Get current user from unified auth
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                console.log('❌ No authenticated user, redirecting to login');
+                window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
+                return;
+            }
+            
+            console.log('✅ User authenticated:', currentUser.username);
+            initializeFeed();
         });
 
         // =============================================================================
         // USER MANAGEMENT
         // =============================================================================
 
-        async function initializeUser() {
-            // Use the unified auth system's current user - DON'T TOUCH THE NAV AVATAR
+        function initializeFeed() {
+            // Get Supabase client and current user
+            supabase = window.dcfSupabase;
             currentUser = window.getCurrentUser();
             
-            if (!currentUser) {
-                // Wait for the unified auth to initialize
-                setTimeout(async () => {
-                    currentUser = window.getCurrentUser();
-                    if (currentUser) {
-                        console.log('✅ User from unified auth:', currentUser);
-                        updatePostBoxOnly();
-                    } else {
-                        // If no user found, redirect to login - NO DEMO USERS
-                        if (!currentUser) {
-                            console.log('❌ No authenticated user, redirecting to login');
-                            window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
-                            return;
-                        }
-                    }
-                }, 1000);
-            } else {
-                console.log('✅ User already available:', currentUser);
+            if (currentUser) {
+                console.log('✅ User from unified auth:', currentUser);
                 updatePostBoxOnly();
+                loadPosts();
             }
         }
 
