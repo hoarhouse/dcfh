@@ -1899,9 +1899,53 @@ function getUserId() {
 // 13. INITIALIZATION - SINGLE ENTRY POINT
 // =============================================================================
 async function initializeDCF() {
-    console.log('🚨 EMERGENCY: Auth system completely disabled');
-    // No auth checks, no redirects, no protection
-    return true;
+    console.log('🚀 Initializing DCF Authentication System - REDIRECTS DISABLED...');
+    
+    try {
+        // Setup auth state listener
+        setupAuthStateListener();
+        
+        // Initialize authentication
+        const isLoggedIn = await initializeAuth();
+        
+        // ❌ REMOVED: Check for page protection redirect
+        // if (document.body.classList.contains('dcf-public-page') && isLoggedIn) {
+        //     console.log('🔒 Redirecting logged-in user from public auth page');
+        //     window.location.href = getCorrectBasePath() + 'members/dcf_member_home.html';
+        //     return;
+        // }
+        
+        // ❌ REMOVED: Member-only page protection and redirects
+        // const memberOnlyFolders = ['members/', 'projects/', 'resources/', 'events/', 'admin/'];
+        // const currentPath = window.location.pathname;
+        // const isAuthPage = currentPath.includes('/auth/');
+        // const isPublicPage = currentPath.includes('/public/') || currentPath === '/' || currentPath.endsWith('index.html');
+        
+        console.log('🚨 All auth redirects permanently disabled - pages accessible');
+        
+        // ✅ RESTORED: Update UI based on auth state
+        updateUserInterface();
+        
+        // ✅ RESTORED: Initialize components
+        populateTopNavigation();
+        initializeQuickActions();
+        initializeFooter();
+        
+        // ✅ RESTORED: Initialize notification system if logged in
+        if (isLoggedIn && window.dcfSupabase) {
+            window.notificationSystem = new NotificationSystem(window.dcfSupabase);
+            window.notificationSystem.updateNotificationBadge();
+        }
+        
+        console.log(`✅ DCF initialization complete. User logged in: ${isLoggedIn}`);
+        
+        return isLoggedIn;
+        
+    } catch (error) {
+        console.error('❌ DCF initialization failed:', error);
+        showLoggedOutState();
+        return false;
+    }
 }
 
 // =============================================================================
