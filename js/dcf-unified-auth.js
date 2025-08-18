@@ -60,7 +60,7 @@ async function initializeAuth() {
             // Get profile data - query by email since that's your setup
             const profilePromise = window.dcfSupabase
                 .from('user_profiles')
-                .select('name, username, email, avatar_url')
+                .select('first_name, last_name, username, email, avatar_url')
                 .eq('email', session.user.email)
                 .single();
                 
@@ -79,7 +79,7 @@ async function initializeAuth() {
                         id: session.user.id,
                         email: session.user.email,
                         // FIXED: Always use database fields, never fallback to email parsing
-                        name: profile?.name || 'Unknown User',
+                        name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown User',
                         username: profile?.username || 'unknown',
                         avatar_url: profile?.avatar_url || null
                     },
