@@ -669,7 +669,7 @@
         // =============================================================================
 
         async function initializeUser() {
-            // Use the unified auth system's current user - DON'T TOUCH THE NAV AVATAR
+            // Get user from unified auth system first
             currentUser = window.getCurrentUser();
             
             if (!currentUser) {
@@ -678,32 +678,48 @@
                     currentUser = window.getCurrentUser();
                     if (currentUser) {
                         console.log('✅ User from unified auth:', currentUser);
-                        updatePostBoxOnly();
-                    } else {
-                        // Fallback demo user
-                        currentUser = {
-                            id: 'demo-user-' + Date.now(),
-                            email: 'demo@dcfhungary.org',
-                            username: 'demo_user',
-                            name: 'Demo User'
-                        };
-                        console.log('✅ Demo user created:', currentUser);
+                        // Get full profile from database
+                        await loadFullUserProfile();
                         updatePostBoxOnly();
                     }
                 }, 1000);
             } else {
                 console.log('✅ User already available:', currentUser);
+                // Get full profile from database
+                await loadFullUserProfile();
                 updatePostBoxOnly();
+            }
+        }
+
+        async function loadFullUserProfile() {
+            if (!currentUser) return;
+            
+            try {
+                const supabase = window.dcfSupabase || window.authSupabase || window.masterSupabase;
+                const { data: profile, error } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', currentUser.email)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Merge database profile with current user
+                currentUser = { ...currentUser, ...profile };
+                console.log('✅ Full user profile loaded:', currentUser);
+                
+            } catch (error) {
+                console.error('❌ Failed to load user profile:', error);
             }
         }
 
         function updatePostBoxOnly() {
             if (!currentUser) return;
             
-            // Generate initials from first_name + last_name
+            // Use correct initials - CH for Chris Hoar
             const postAvatar = document.getElementById('postAvatar');
             if (postAvatar) {
-                let initials = 'CH'; // Your initials since first/last names might be null
+                let initials = 'CH'; // Default to your initials
                 if (currentUser.first_name && currentUser.last_name) {
                     initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
                 }
@@ -712,7 +728,7 @@
             
             const postInput = document.getElementById('postContent');
             if (postInput) {
-                // Use your correct username
+                // Use correct username from database
                 const username = currentUser.username || 'hooray';
                 postInput.placeholder = `What's on your mind, @${username}?`;
             }
