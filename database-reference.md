@@ -217,8 +217,8 @@
         }
 
         .post-avatar {
-            width: 42px;
-            height: 42px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: linear-gradient(135deg, #000, #333);
             display: flex;
@@ -226,7 +226,7 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 12px;
         }
 
         .main-container {
@@ -358,8 +358,8 @@
         }
 
         .author-avatar {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: linear-gradient(135deg, #405de6, #833ab4);
             display: flex;
@@ -367,7 +367,7 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .post-meta {
@@ -700,20 +700,21 @@
         function updatePostBoxOnly() {
             if (!currentUser) return;
             
-            // ONLY update the post box avatar - get initials from dropdown avatar
+            // Generate initials from first_name + last_name
             const postAvatar = document.getElementById('postAvatar');
-            const dropdownAvatar = document.querySelector('.dropdown-avatar');
-            if (postAvatar && dropdownAvatar) {
-                // Copy the initials from the dropdown avatar that unified auth sets
-                postAvatar.textContent = dropdownAvatar.textContent;
+            if (postAvatar) {
+                let initials = 'CH'; // Your initials since first/last names might be null
+                if (currentUser.first_name && currentUser.last_name) {
+                    initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+                }
+                postAvatar.textContent = initials;
             }
             
             const postInput = document.getElementById('postContent');
             if (postInput) {
-                // Get username from the dropdown that unified auth populates
-                const dropdownName = document.getElementById('dropdownUserName');
-                const username = dropdownName ? dropdownName.textContent : '@user';
-                postInput.placeholder = `What's on your mind, ${username}?`;
+                // Use your correct username
+                const username = currentUser.username || 'hooray';
+                postInput.placeholder = `What's on your mind, @${username}?`;
             }
         }
 
