@@ -57,7 +57,7 @@ async function initializeAuth() {
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
             
-            // Get profile data with timeout - FIXED QUERY
+            // Get profile data - query by email since that's your setup
             const profilePromise = window.dcfSupabase
                 .from('user_profiles')
                 .select('name, username, email, avatar_url')
@@ -71,32 +71,37 @@ async function initializeAuth() {
             try {
                 const { data: profile } = await Promise.race([profilePromise, profileTimeoutPromise]);
                 
+                console.log('🔍 RAW DATABASE PROFILE:', profile);
+                
                 window.dcfUser = {
                     isLoggedIn: true,
                     profile: {
                         id: session.user.id,
                         email: session.user.email,
-                        name: profile?.name || session.user.email?.split('@')[0] || 'User',
-                        username: profile?.username || session.user.email?.split('@')[0] || 'user',
+                        // FIXED: Always use database fields, never fallback to email parsing
+                        name: profile?.name || 'Unknown User',
+                        username: profile?.username || 'unknown',
                         avatar_url: profile?.avatar_url || null
                     },
                     session: session
                 };
                 
                 console.log('✅ User profile loaded:', window.dcfUser.profile);
+                console.log('✅ Username from DB:', window.dcfUser.profile.username);
+                console.log('✅ Name from DB:', window.dcfUser.profile.name);
                 return true;
                 
             } catch (profileError) {
-                console.log('⚠️ Profile fetch failed, using session data:', profileError.message);
+                console.log('⚠️ Profile fetch failed:', profileError.message);
                 
-                // Fallback to session data only
+                // Even in fallback, don't parse email for username
                 window.dcfUser = {
                     isLoggedIn: true,
                     profile: {
                         id: session.user.id,
                         email: session.user.email,
-                        name: session.user.email?.split('@')[0] || 'User',
-                        username: session.user.email?.split('@')[0] || 'user',
+                        name: 'Unknown User',
+                        username: 'unknown',
                         avatar_url: null
                     },
                     session: session
@@ -133,24 +138,23 @@ function updateUserInterface() {
     
     console.log('✅ Updating UI for logged-in user:', user.profile.username);
     
-    // Update dropdown info
+    // Update dropdown info - ALWAYS USE DATABASE USERNAME
     const nameElement = document.getElementById('dropdownUserName');
     const emailElement = document.getElementById('dropdownUserEmail');
     
     if (nameElement) {
+        // FIXED: Always show @username from database, never email
         nameElement.textContent = `@${user.profile.username}`;
     }
     if (emailElement) {
         emailElement.textContent = user.profile.email;
     }
     
-    // Generate initials
+    // FIXED: Generate initials from NAME field (first + last name), never email
     console.log('🔍 DEBUG - User Profile Data:', user.profile);
-    console.log('🔍 DEBUG - Profile Name:', user.profile.name);
-    console.log('🔍 DEBUG - Profile Username:', user.profile.username);
-    const initials = generateInitials(user.profile.name);
+    console.log('🔍 DEBUG - Profile Name for initials:', user.profile.name);
+    const initials = generateInitialsFromName(user.profile.name);
     console.log('🔍 DEBUG - Generated Initials:', initials);
-    console.log('🔤 Generated initials:', initials);
     
     // Update main avatar
     const avatarElement = document.getElementById('userAvatar');
@@ -228,19 +232,34 @@ function showLoggedOutState() {
     }
 }
 
-function generateInitials(name) {
-    if (!name || typeof name !== 'string') return 'U';
-    
-    const cleanName = name.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
-    const parts = cleanName.split(' ').filter(part => part.length > 0);
-    
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    } else if (parts.length === 1) {
-        return parts[0].substring(0, 2).toUpperCase();
+function generateInitialsFromName(fullName) {
+    if (!fullName || typeof fullName !== 'string') {
+        console.log('❌ No valid name provided for initials, using fallback');
+        return 'CH'; // Your fallback
     }
     
-    return 'U';
+    console.log('🔍 Generating initials from name:', fullName);
+    
+    // Remove titles and clean the name
+    const cleanName = fullName.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
+    const parts = cleanName.split(' ').filter(part => part.length > 0);
+    
+    console.log('🔍 Name parts after cleaning:', parts);
+    
+    if (parts.length >= 2) {
+        // First letter of first name + first letter of last name
+        const initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        console.log('🔍 Generated initials (first + last):', initials);
+        return initials;
+    } else if (parts.length === 1) {
+        // If only one name, use first two letters
+        const initials = parts[0].substring(0, 2).toUpperCase();
+        console.log('🔍 Generated initials (single name):', initials);
+        return initials;
+    }
+    
+    console.log('🔍 Fallback initials used');
+    return 'CH'; // Your fallback
 }
 
 // =============================================================================
