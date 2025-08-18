@@ -80,6 +80,8 @@ async function initializeAuth() {
                         email: session.user.email,
                         // FIXED: Always use database fields, never fallback to email parsing
                         name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown User',
+                        first_name: profile?.first_name || null,
+                        last_name: profile?.last_name || null,
                         username: profile?.username || 'unknown',
                         avatar_url: profile?.avatar_url || null
                     },
