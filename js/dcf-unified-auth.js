@@ -98,12 +98,12 @@ async function initializeAuth() {
                     const timeUntilExpiry = expiryTime.getTime() - Date.now();
                     console.log('⏰ Session expires in:', Math.round(timeUntilExpiry / (1000 * 60)), 'minutes');
                     
-                    if (timeUntilExpiry < 5 * 60 * 1000) { // 5 minutes
+                    if (timeUntilExpiry < 1 * 60 * 1000) { // 1 minute
                         console.warn('⚠️ Session expiring soon - refresh recommended');
                     }
                     
                     // Optional session refresh - GENTLE, user can ignore
-                    if (timeUntilExpiry < 10 * 60 * 1000 && timeUntilExpiry > 0) { // 10 minutes
+                    if (timeUntilExpiry < 2 * 60 * 1000 && timeUntilExpiry > 0) { // 2 minutes
                         console.log('🔄 Attempting session refresh...');
                         try {
                             window.dcfSupabase.auth.refreshSession().then(result => {
