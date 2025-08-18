@@ -153,7 +153,7 @@ function updateUserInterface() {
     // FIXED: Generate initials from NAME field (first + last name), never email
     console.log('🔍 DEBUG - User Profile Data:', user.profile);
     console.log('🔍 DEBUG - Profile Name for initials:', user.profile.name);
-    const initials = generateInitialsFromName(user.profile.name);
+    const initials = generateInitials(user.profile.name);
     console.log('🔍 DEBUG - Generated Initials:', initials);
     
     // Update main avatar
@@ -232,7 +232,7 @@ function showLoggedOutState() {
     }
 }
 
-function generateInitialsFromName(fullName) {
+function generateInitials(fullName) {
     if (!fullName || typeof fullName !== 'string') {
         console.log('❌ No valid name provided for initials, using fallback');
         return 'CH'; // Your fallback
