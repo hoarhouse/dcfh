@@ -233,6 +233,9 @@ function showLoggedOutState() {
 }
 
 function generateInitials(fullName) {
+    console.log('🔍 INITIALS DEBUG - Input fullName:', fullName);
+    console.log('🔍 INITIALS DEBUG - Type of fullName:', typeof fullName);
+    
     if (!fullName || typeof fullName !== 'string') {
         console.log('❌ No valid name provided for initials, using fallback');
         return 'CH'; // Your fallback
