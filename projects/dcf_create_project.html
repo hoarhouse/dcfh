@@ -1041,6 +1041,7 @@
 
                 // Handle file uploads if any
                 let fileUrls = [];
+                let uploadedFileDetails = []; // Track file details for DB records
                 if (uploadedFiles.length > 0) {
                     // Show upload progress
                     const uploadStatus = document.getElementById('uploadStatus');
@@ -1066,6 +1067,14 @@
                             .getPublicUrl(fileName);
                         
                         fileUrls.push(urlData.publicUrl);
+                        
+                        // Store file details for DB insertion
+                        uploadedFileDetails.push({
+                            originalName: file.name,
+                            storagePath: fileName,
+                            size: file.size,
+                            type: file.type || 'application/octet-stream'
+                        });
                     }
                     
                     uploadStatus.textContent = 'Files uploaded successfully!';
@@ -1099,6 +1108,32 @@
                 if (error) throw error;
 
                 console.log('Project created successfully:', data);
+                
+                // Now insert file records into project_files table
+                if (uploadedFileDetails.length > 0) {
+                    const fileRecords = uploadedFileDetails.map(fileDetail => ({
+                        project_id: data.id,
+                        file_name: fileDetail.originalName,
+                        file_path: fileDetail.storagePath,
+                        file_size: fileDetail.size,
+                        file_type: fileDetail.type,
+                        uploaded_by: session.user.email,
+                        uploaded_at: new Date().toISOString()
+                    }));
+                    
+                    // Insert all file records
+                    const { error: fileError } = await supabase
+                        .from('project_files')
+                        .insert(fileRecords);
+                    
+                    if (fileError) {
+                        console.error('Error saving file records:', fileError);
+                        // Don't throw - files are uploaded, just DB records failed
+                    } else {
+                        console.log('File records saved successfully:', fileRecords.length);
+                    }
+                }
+                
                 await showAlert('Project created successfully!', 'success');
                 
                 // Redirect to projects page after a short delay
