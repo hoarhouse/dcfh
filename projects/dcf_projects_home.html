@@ -1189,14 +1189,14 @@
         });
         
         // Check follow status and ownership for all displayed projects
-        console.log('🔍 displayProjects: About to call checkFollowStatus and checkJoinStatus');
+        console.log('🔍 displayProjects: About to call checkFollowStatus and waitForUserAndCheckStatus');
         checkFollowStatus();
-        console.log('🔍 displayProjects: Calling checkJoinStatus now...');
+        console.log('🔍 displayProjects: Calling waitForUserAndCheckStatus now...');
         
-        // Add small delay to ensure DOM is fully updated
+        // Wait for user authentication before checking ownership
         setTimeout(() => {
-            console.log('🔍 displayProjects: Calling checkJoinStatus after timeout...');
-            checkJoinStatus();
+            console.log('🔍 displayProjects: Starting user auth wait...');
+            waitForUserAndCheckStatus();
         }, 100);
         
         // Reinitialize image optimization for new content
@@ -2020,8 +2020,8 @@ const myProjects = allProjects.filter(project =>
             console.error('Error checking follow status:', error);
         }
         
-        // Also check join status for all projects
-        checkJoinStatus();
+        // Also check join status for all projects - wait for user auth
+        waitForUserAndCheckStatus();
     }
 
     // Check if current user owns the project (similar to Events isEventOwner function)
@@ -2049,6 +2049,23 @@ const myProjects = allProjects.filter(project =>
         }
         
         return false;
+    }
+
+    // Wait for user to be fully loaded before checking status
+    function waitForUserAndCheckStatus(attempt = 0) {
+        const maxAttempts = 25; // 5 seconds max wait time (25 * 200ms)
+        
+        if (window.getCurrentUser() && window.getCurrentUser().email) {
+            console.log('✅ User loaded, calling checkJoinStatus');
+            checkJoinStatus();
+        } else if (attempt < maxAttempts) {
+            console.log(`⏳ Waiting for user authentication... (attempt ${attempt + 1}/${maxAttempts})`);
+            setTimeout(() => waitForUserAndCheckStatus(attempt + 1), 200);
+        } else {
+            console.log('⚠️ Timeout waiting for user authentication - proceeding without user context');
+            // Still call checkJoinStatus in case user is not logged in but we want to show default buttons
+            checkJoinStatus();
+        }
     }
 
     // Check if user has joined or requested to join displayed projects
