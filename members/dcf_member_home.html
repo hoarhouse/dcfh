@@ -773,6 +773,12 @@
                     status: 'active'
                 };
                 
+                // Add media files if any
+                if (window.pendingMediaFiles && window.pendingMediaFiles.length > 0) {
+                    postData.media_urls = JSON.stringify(window.pendingMediaFiles.map(f => f.url));
+                    postData.media_types = JSON.stringify(window.pendingMediaFiles.map(f => f.type));
+                }
+                
                 console.log('📤 Saving post:', postData);
                 
                 // Save to Supabase
@@ -792,6 +798,11 @@
                 // Clear form
                 textarea.value = '';
                 updateCharCounter();
+                
+                // Clear pending media files
+                window.pendingMediaFiles = [];
+                const mediaPreview = document.querySelector('.media-preview');
+                if (mediaPreview) mediaPreview.remove();
                 
                 // Add to local posts array and refresh display
                 posts.unshift(data);
@@ -1167,8 +1178,112 @@
             }
         }
 
+        async function handleMediaUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = 'image/*,video/*';
+            input.style.display = 'none';
+            
+            input.onchange = async function(e) {
+                const files = Array.from(e.target.files);
+                if (files.length > 4) {
+                    showAlert('Maximum 4 files allowed', 'warning');
+                    return;
+                }
+                
+                if (files.length === 0) return;
+                
+                try {
+                    // Show upload progress
+                    const uploadBtn = document.querySelector('.media-upload-btn');
+                    if (uploadBtn) {
+                        uploadBtn.textContent = 'Uploading...';
+                        uploadBtn.disabled = true;
+                    }
+                    
+                    const uploadedFiles = [];
+                    
+                    for (const file of files) {
+                        // Generate unique filename
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                        
+                        // Upload to Supabase storage
+                        const { data, error } = await window.dcfSupabase.storage
+                            .from('media')
+                            .upload(fileName, file);
+                        
+                        if (error) throw error;
+                        
+                        // Get public URL
+                        const { data: { publicUrl } } = window.dcfSupabase.storage
+                            .from('media')
+                            .getPublicUrl(fileName);
+                        
+                        uploadedFiles.push({
+                            url: publicUrl,
+                            type: file.type.startsWith('image/') ? 'image' : 'video',
+                            name: file.name
+                        });
+                    }
+                    
+                    // Store uploaded files for post creation
+                    window.pendingMediaFiles = uploadedFiles;
+                    
+                    // Update UI to show selected files
+                    displaySelectedMedia(uploadedFiles);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showAlert('Upload failed: ' + error.message, 'error');
+                } finally {
+                    // Reset upload button
+                    const uploadBtn = document.querySelector('.media-upload-btn');
+                    if (uploadBtn) {
+                        uploadBtn.textContent = '📷';
+                        uploadBtn.disabled = false;
+                    }
+                }
+            };
+            
+            document.body.appendChild(input);
+            input.click();
+            document.body.removeChild(input);
+        }
+
+        function displaySelectedMedia(files) {
+            // Add preview of selected files to the post composer
+            const composer = document.querySelector('.post-composer, .create-post');
+            if (!composer) return;
+            
+            let mediaPreview = composer.querySelector('.media-preview');
+            if (!mediaPreview) {
+                mediaPreview = document.createElement('div');
+                mediaPreview.className = 'media-preview';
+                composer.appendChild(mediaPreview);
+            }
+            
+            mediaPreview.innerHTML = files.map((file, index) => `
+                <div class="media-item">
+                    ${file.type === 'image' ? 
+                        `<img src="${file.url}" alt="${file.name}" style="max-width: 100px; max-height: 100px; border-radius: 8px;">` :
+                        `<video src="${file.url}" style="max-width: 100px; max-height: 100px; border-radius: 8px;" controls></video>`
+                    }
+                    <button onclick="removeMediaFile(${index})" style="position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px;">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeMediaFile(index) {
+            if (window.pendingMediaFiles) {
+                window.pendingMediaFiles.splice(index, 1);
+                displaySelectedMedia(window.pendingMediaFiles);
+            }
+        }
+
         function selectMedia() {
-            showSuccess('Media upload feature coming soon!');
+            handleMediaUpload();
         }
 
         // =============================================================================
