@@ -1915,21 +1915,23 @@ async function initializeDCF() {
             return;
         }
         
-        // PROTECT MEMBER-ONLY PAGES
+        // PROTECT MEMBER-ONLY PAGES - DELAYED CHECK
         const memberOnlyFolders = ['members/', 'projects/', 'resources/', 'events/', 'admin/'];
         const currentPath = window.location.pathname;
         const isAuthPage = currentPath.includes('/auth/');
         const isPublicPage = currentPath.includes('/public/') || currentPath === '/' || currentPath.endsWith('index.html');
         
-        // If not logged in AND on a member-only page, redirect to login
-        if (!isLoggedIn && !isAuthPage && !isPublicPage) {
-            const isMemberOnlyPage = memberOnlyFolders.some(folder => currentPath.includes(folder));
-            if (isMemberOnlyPage) {
-                console.log('🔒 Redirecting unauthorized user to login');
-                window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
-                return;
+        // Only check protection after auth has had time to initialize
+        setTimeout(() => {
+            const userStillNotLoggedIn = !window.dcfUser?.isLoggedIn;
+            if (userStillNotLoggedIn && !isAuthPage && !isPublicPage) {
+                const isMemberOnlyPage = memberOnlyFolders.some(folder => currentPath.includes(folder));
+                if (isMemberOnlyPage) {
+                    console.log('🔒 Redirecting unauthorized user to login');
+                    window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
+                }
             }
-        }
+        }, 1000);
         
         // Update UI based on auth state
         updateUserInterface();
