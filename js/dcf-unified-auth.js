@@ -173,6 +173,47 @@ async function initializeAuth() {
                     }
                 }
                 
+                // Session corruption recovery - GENTLE cleanup
+                try {
+                    // Check for data inconsistencies
+                    if (window.dcfUser?.isLoggedIn && !window.dcfUser?.profile?.email) {
+                        console.warn('⚠️ Corrupted user data detected - missing profile email');
+                        console.log('💡 Attempting gentle data recovery...');
+                        
+                        // Try to refresh user data
+                        if (session?.user?.email) {
+                            console.log('🔄 Rebuilding user profile from session data...');
+                            window.dcfUser.profile = {
+                                ...window.dcfUser.profile,
+                                email: session.user.email,
+                                id: session.user.id
+                            };
+                            console.log('✅ User profile data recovered');
+                        }
+                    }
+                    
+                    // Check for mismatched user IDs
+                    if (window.dcfUser?.profile?.id && session?.user?.id && 
+                        window.dcfUser.profile.id !== session.user.id) {
+                        console.warn('⚠️ User ID mismatch detected between profile and session');
+                        console.log('💡 Synchronizing user data...');
+                        window.dcfUser.profile.id = session.user.id;
+                        console.log('✅ User ID synchronized');
+                    }
+                    
+                    // Check for authentication state inconsistency  
+                    if (session?.user && !window.dcfUser?.isLoggedIn) {
+                        console.warn('⚠️ Authentication state inconsistency detected');
+                        console.log('💡 Correcting authentication state...');
+                        window.dcfUser.isLoggedIn = true;
+                        console.log('✅ Authentication state corrected');
+                    }
+                    
+                } catch (recoveryError) {
+                    console.warn('⚠️ Session recovery error:', recoveryError.message);
+                    console.log('💡 Consider refreshing page if experiencing issues');
+                }
+                
                 return true;
                 
             } catch (profileError) {
