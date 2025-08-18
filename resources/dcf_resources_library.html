@@ -925,6 +925,24 @@
         let bookmarkedResources = new Set();
         let currentView = 'grid';
 
+        async function getUsernameFromEmail(email) {
+            if (!email) return 'unknown';
+            
+            try {
+                const supabase = window.dcfSupabase;
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('username')
+                    .eq('email', email)
+                    .single();
+                
+                return data?.username || 'unknown';
+            } catch (error) {
+                console.log('Could not find username for email:', email);
+                return 'unknown';
+            }
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function() {
             await loadResources();
@@ -952,7 +970,7 @@
                 allResources = resources || [];
                 filteredResources = [...allResources];
                 
-                displayResources();
+                await displayResources();
                 updateResourcesCount();
                 loadPopularCategories();
 
@@ -1042,7 +1060,7 @@
             }
         }
 
-        function displayResources() {
+        async function displayResources() {
             const container = document.getElementById('resourcesGrid');
             const loadingSpinner = document.getElementById('loadingSpinner');
             const emptyState = document.getElementById('emptyState');
@@ -1058,7 +1076,17 @@
             emptyState.style.display = 'none';
             container.style.display = 'grid';
 
-            container.innerHTML = filteredResources.map(resource => {
+            // Process resources with username lookup 
+            const processedResources = await Promise.all(filteredResources.map(async (resource) => {
+                let authorDisplay = resource.author_name;
+                if (!authorDisplay || !authorDisplay.startsWith('@')) {
+                    const username = await getUsernameFromEmail(resource.author_email);
+                    authorDisplay = `@${username}`;
+                }
+                return { ...resource, authorDisplay };
+            }));
+
+            container.innerHTML = processedResources.map(resource => {
                 const isBookmarked = bookmarkedResources.has(resource.id);
                 const createdDate = new Date(resource.created_at).toLocaleDateString();
                 
@@ -1069,7 +1097,7 @@
                             <div class="resource-info">
                                 <div class="resource-title">${resource.title}</div>
                                 <div class="resource-meta">${getResourceTypeLabel(resource.type)} • ${resource.language?.toUpperCase() || 'EN'}</div>
-                                <div class="resource-author">by ${resource.author_name.startsWith('@') ? resource.author_name : '@' + (resource.author_name || 'unknown')}</div>
+                                <div class="resource-author">by ${resource.authorDisplay}</div>
                             </div>
                         </div>
                         
@@ -1159,7 +1187,7 @@
             };
         }
 
-        function filterResources() {
+        async function filterResources() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
             const languageFilter = document.getElementById('languageFilter').value;
@@ -1192,7 +1220,7 @@
                 }
             });
 
-            displayResources();
+            await displayResources();
             updateResourcesCount();
         }
 
@@ -1208,12 +1236,12 @@
             }
         }
 
-        function clearFilters() {
+        async function clearFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('typeFilter').value = '';
             document.getElementById('languageFilter').value = '';
             document.getElementById('sortFilter').value = 'created_at';
-            filterResources();
+            await filterResources();
         }
 
         function focusSearch() {
@@ -1360,9 +1388,9 @@
             }
         }
 
-        function searchByCategory(category) {
+        async function searchByCategory(category) {
             document.getElementById('searchInput').value = category;
-            filterResources();
+            await filterResources();
             focusSearch();
         }
 
