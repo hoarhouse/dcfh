@@ -89,6 +89,18 @@ async function initializeAuth() {
                 console.log('✅ User profile loaded:', window.dcfUser.profile);
                 console.log('✅ Username from DB:', window.dcfUser.profile.username);
                 console.log('✅ Name from DB:', window.dcfUser.profile.name);
+                
+                // Gentle session monitoring - LOGS ONLY, NO REDIRECTS
+                if (session?.expires_at) {
+                    const expiryTime = new Date(session.expires_at);
+                    const timeUntilExpiry = expiryTime.getTime() - Date.now();
+                    console.log('⏰ Session expires in:', Math.round(timeUntilExpiry / (1000 * 60)), 'minutes');
+                    
+                    if (timeUntilExpiry < 5 * 60 * 1000) { // 5 minutes
+                        console.warn('⚠️ Session expiring soon - refresh recommended');
+                    }
+                }
+                
                 return true;
                 
             } catch (profileError) {
