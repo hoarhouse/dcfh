@@ -167,7 +167,7 @@
                 // Separate query for user profiles
                 const { data: profiles } = await supabase
                     .from('user_profiles')
-                    .select('email, username, name, avatar_url');
+                    .select('email, username, first_name, last_name, avatar_url');
 
                 // Match posts with user profiles by username
                 const postsWithProfiles = posts.map(post => {
@@ -216,7 +216,7 @@
 
         function createPostHTML(post) {
             const author = post.user_profiles || {};
-            const authorName = author.username || author.name || 'Unknown User';
+            const authorName = author.username || `${author.first_name || ''} ${author.last_name || ''}`.trim() || 'Unknown User';
             const authorInitials = getInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
@@ -1373,7 +1373,7 @@
                 
                 const { data: posts, error } = await supabase
                     .from('posts')
-                    .select(`*, user_profiles(username, name, avatar_url)`)
+                    .select(`*, user_profiles(username, first_name, last_name, avatar_url)`)
                     .eq('status', 'active')
                     .order(query, { ascending: order === 'asc' })
                     .range(page * postsPerPage, (page + 1) * postsPerPage - 1);
@@ -1423,7 +1423,7 @@
 
         function createPremiumPostHTML(post) {
             const author = post.user_profiles || {};
-            const authorName = author.username || author.name || 'Unknown User';
+            const authorName = author.username || `${author.first_name || ''} ${author.last_name || ''}`.trim() || 'Unknown User';
             const authorInitials = getUserInitials(authorName);
             const timeAgo = formatTimeAgo(post.created_at);
             
