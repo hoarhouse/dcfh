@@ -1211,6 +1211,18 @@
         // Calculate time ago
         const timeAgo = getTimeAgo(project.created_at);
         
+        // DEBUG: Log project data structure when creating card
+        console.log('🔍 Creating project card for:', project.title, {
+            author_id: project.author_id,
+            authorId: project.authorId,
+            user_id: project.user_id,
+            author_email: project.author_email,
+            author: project.author,
+            'project.author?.email': project.author?.email,
+            'project.author?.id': project.author?.id,
+            fullProjectData: project
+        });
+        
         card.innerHTML = `
             <div class="project-header">
                 <div style="display: flex; align-items: center;">
@@ -2073,12 +2085,28 @@ const myProjects = allProjects.filter(project =>
                         const authorId = authorMeta.getAttribute('data-author-id');
                         const authorEmail = authorMeta.getAttribute('data-author-email');
                         const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                        const projectTitle = projectCard.querySelector('.project-title')?.textContent || `Project ${projectId}`;
                         
-                        console.log(`🔍 Checking ownership for project ${projectId}:`, {
+                        // Create project object for debugging that matches expected structure
+                        const projectDebugData = {
+                            author_id: authorId,
+                            authorId: authorId // Check both field names
+                        };
+                        
+                        console.log('🔍 OWNERSHIP DEBUG for project:', projectTitle);
+                        console.log('🔍 Project author_id:', projectDebugData.author_id || projectDebugData.authorId);  
+                        console.log('🔍 Current user ID:', currentUser.id);
+                        console.log('🔍 IDs match?:', String(currentUser.id) === String(projectDebugData.author_id || projectDebugData.authorId));
+                        console.log('🔍 Button will be:', (String(currentUser.id) === String(projectDebugData.author_id || projectDebugData.authorId)) ? 'Manage' : 'Join');
+                        
+                        // Additional debugging info
+                        console.log('🔍 Raw data comparison:', {
                             authorId: authorId,
                             currentUserId: currentUser?.id,
                             authorEmail: authorEmail,
-                            currentUserEmail: currentUser?.email
+                            currentUserEmail: currentUser?.email,
+                            authorIdType: typeof authorId,
+                            currentUserIdType: typeof currentUser?.id
                         });
                         
                         // Check by author_id first (most reliable) - FIXED: ensure exact string comparison
@@ -2090,7 +2118,7 @@ const myProjects = allProjects.filter(project =>
                             isOwner = authorEmail.toLowerCase() === currentUser.email.toLowerCase();
                         }
                         
-                        console.log(`🎯 Project ${projectId} ownership result:`, isOwner);
+                        console.log(`🎯 Final ownership result for "${projectTitle}":`, isOwner);
                     }
                 }
                 
