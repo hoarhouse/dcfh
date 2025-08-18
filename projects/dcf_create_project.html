@@ -777,6 +777,7 @@
     <script>
         let currentStep = 1;
         let projectData = {};
+        let uploadedFiles = [];
 
         // Progress tracking
         function updateProgress() {
@@ -821,6 +822,147 @@
             });
         }
 
+        // File upload handling
+        async function handleFileUpload(files) {
+            const filePreview = document.getElementById('filePreview');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const uploadProgressFill = document.getElementById('uploadProgressFill');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            for (const file of Array.from(files)) {
+                // Check file type and size
+                const validTypes = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+                const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                
+                if (!validTypes.includes(fileExt)) {
+                    await showAlert(`File ${file.name} is not a valid document type. Supported: PDF, DOC, DOCX, PPT, PPTX`, 'error');
+                    continue;
+                }
+                
+                if (file.size > 10 * 1024 * 1024) {
+                    await showAlert(`File ${file.name} is too large (max 10MB)`, 'error');
+                    continue;
+                }
+                
+                // Show upload progress
+                uploadProgress.style.display = 'block';
+                uploadStatus.style.display = 'block';
+                uploadStatus.textContent = `Uploading ${file.name}...`;
+                uploadStatus.className = 'upload-status';
+                
+                // Simulate progress (in real implementation, this would track actual upload)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        uploadProgressFill.style.width = progress + '%';
+                    }
+                }, 100);
+                
+                // Add file to tracking array
+                const fileObj = {
+                    name: file.name,
+                    size: formatFileSize(file.size),
+                    data: file,
+                    id: Date.now() + Math.random()
+                };
+                
+                uploadedFiles.push(fileObj);
+                
+                // Clear progress simulation
+                clearInterval(progressInterval);
+                uploadProgressFill.style.width = '100%';
+                
+                // Create file element with preview
+                const fileElement = document.createElement('div');
+                fileElement.className = 'uploaded-file-item';
+                fileElement.id = `file-${fileObj.id}`;
+                fileElement.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    background: #f8f9fa;
+                    border-radius: 12px;
+                    border: 2px solid #e5e5e5;
+                `;
+                
+                fileElement.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #000, #333);
+                            border-radius: 8px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-size: 0.8rem;
+                            font-weight: 600;
+                        ">${fileExt.toUpperCase().replace('.', '')}</div>
+                        <div>
+                            <div style="font-weight: 600; color: #333;">${file.name}</div>
+                            <div style="font-size: 0.9rem; color: #666;">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button onclick="removeFile('${fileObj.id}')" style="
+                        background: #dc3545;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 0.5rem 1rem;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">Remove</button>
+                `;
+                
+                filePreview.appendChild(fileElement);
+                
+                // Update status
+                uploadStatus.textContent = `${file.name} uploaded successfully`;
+                uploadStatus.className = 'upload-status success';
+                
+                // Hide progress after a delay
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    uploadStatus.style.display = 'none';
+                    uploadProgressFill.style.width = '0%';
+                }, 2000);
+            }
+        }
+
+        function removeFile(fileId) {
+            // Remove from array
+            uploadedFiles = uploadedFiles.filter(file => file.id !== parseFloat(fileId));
+            
+            // Remove from DOM
+            const fileElement = document.getElementById(`file-${fileId}`);
+            if (fileElement) {
+                fileElement.remove();
+            }
+            
+            // Show status
+            const uploadStatus = document.getElementById('uploadStatus');
+            uploadStatus.textContent = 'File removed';
+            uploadStatus.className = 'upload-status';
+            uploadStatus.style.display = 'block';
+            
+            setTimeout(() => {
+                uploadStatus.style.display = 'none';
+            }, 2000);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         // Form submissions
         document.getElementById('basicForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -846,8 +988,35 @@
             e.preventDefault();
             
             projectData.additionalNotes = document.getElementById('additionalNotes').value;
+            projectData.files = uploadedFiles;
             
             submitProject();
+        });
+
+        // File input event listener
+        document.getElementById('projectFiles').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files);
+            // Reset input so same file can be selected again
+            this.value = '';
+        });
+
+        // Drag and drop functionality
+        const fileUploadArea = document.querySelector('.file-upload');
+        
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            handleFileUpload(e.dataTransfer.files);
         });
 
         async function submitProject() {
@@ -872,24 +1041,35 @@
 
                 // Handle file uploads if any
                 let fileUrls = [];
-                const files = document.getElementById('projectFiles').files;
-                for (let file of files) {
-                    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.name}`;
+                if (uploadedFiles.length > 0) {
+                    // Show upload progress
+                    const uploadStatus = document.getElementById('uploadStatus');
+                    uploadStatus.textContent = 'Uploading files to server...';
+                    uploadStatus.className = 'upload-status';
+                    uploadStatus.style.display = 'block';
                     
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('project-files')
-                        .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: true
-                        });
+                    for (let fileObj of uploadedFiles) {
+                        const file = fileObj.data;
+                        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.name}`;
+                        
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('project-files')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: true
+                            });
+                        
+                        if (uploadError) throw uploadError;
+                        
+                        const { data: urlData } = supabase.storage
+                            .from('project-files')
+                            .getPublicUrl(fileName);
+                        
+                        fileUrls.push(urlData.publicUrl);
+                    }
                     
-                    if (uploadError) throw uploadError;
-                    
-                    const { data: urlData } = supabase.storage
-                        .from('project-files')
-                        .getPublicUrl(fileName);
-                    
-                    fileUrls.push(urlData.publicUrl);
+                    uploadStatus.textContent = 'Files uploaded successfully!';
+                    uploadStatus.className = 'upload-status success';
                 }
 
                 // Insert project record
