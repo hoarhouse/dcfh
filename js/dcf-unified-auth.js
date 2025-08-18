@@ -285,10 +285,10 @@ function updateUserInterface() {
         emailElement.textContent = user.profile.email;
     }
     
-    // FIXED: Generate initials from NAME field (first + last name), never email
+    // FIXED: Generate initials from USERNAME field, first 2 letters uppercase
     console.log('🔍 DEBUG - User Profile Data:', user.profile);
-    console.log('🔍 DEBUG - Profile Name for initials:', user.profile.name);
-    const initials = generateInitials(user.profile.name);
+    console.log('🔍 DEBUG - Profile Username for initials:', user.profile.username);
+    const initials = generateInitials(user.profile.username);
     console.log('🔍 DEBUG - Generated Initials:', initials);
     
     // Update main avatar
@@ -367,41 +367,22 @@ function showLoggedOutState() {
     }
 }
 
-function generateInitials(fullName) {
-    console.log('🔍 INITIALS DEBUG - Input fullName:', fullName);
-    console.log('🔍 INITIALS DEBUG - Type of fullName:', typeof fullName);
+function generateInitials(username) {
+    console.log('🔍 INITIALS DEBUG - Input username:', username);
+    console.log('🔍 INITIALS DEBUG - Type of username:', typeof username);
     
-    if (!fullName || typeof fullName !== 'string') {
-        console.log('❌ No valid name provided for initials, using fallback');
-        return 'CH'; // Your fallback
+    if (!username || typeof username !== 'string') {
+        console.log('❌ No valid username provided for initials, using fallback');
+        return 'HO'; // Your fallback
     }
     
-    console.log('🔍 Generating initials from name:', fullName);
+    console.log('🔍 Generating initials from username:', username);
     
-    // EXACT SPECIFICATION: Split full name on spaces, take ONLY first letter of first part + first letter of last part
-    const parts = fullName.trim().split(' ').filter(part => part.length > 0);
+    // NEW SPECIFICATION: First 2 letters of username, uppercase
+    const initials = username.substring(0, 2).toUpperCase();
     
-    console.log('🔍 Name parts after splitting:', parts);
-    
-    if (parts.length >= 2) {
-        // EXACT SPECIFICATION: First letter of FIRST NAME + First letter of LAST NAME
-        const firstNameInitial = parts[0][0].toUpperCase();
-        const lastNameInitial = parts[parts.length - 1][0].toUpperCase();
-        const initials = firstNameInitial + lastNameInitial;
-        
-        console.log('🔍 First name initial:', firstNameInitial);
-        console.log('🔍 Last name initial:', lastNameInitial);
-        console.log('🔍 Generated initials (first + last):', initials);
-        return initials;
-    } else if (parts.length === 1) {
-        // If only one name, use first two letters
-        const initials = parts[0].substring(0, 2).toUpperCase();
-        console.log('🔍 Generated initials (single name):', initials);
-        return initials;
-    }
-    
-    console.log('🔍 Fallback initials used');
-    return 'CH'; // Your fallback
+    console.log('🔍 Generated initials from username:', initials);
+    return initials;
 }
 
 // =============================================================================
