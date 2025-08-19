@@ -809,7 +809,7 @@
         function updateTabCounts() {
             if (allEventsCache.length === 0) return;
             
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             const allEventsCount = allEventsCache.length;
             let myEventsCount = 0;
             
@@ -835,7 +835,7 @@
             let filteredEvents = allEventsCache;
             
             if (filterType === 'my') {
-                const currentUser = getCurrentUser();
+                const currentUser = window.getCurrentUser();
                 if (currentUser) {
                     filteredEvents = allEventsCache.filter(event => isEventOwner(event));
                 } else {
@@ -967,8 +967,8 @@
             async function loadEvents() {
                 attempts++;
                 
-                // Try both possible Supabase clients
-                const supabase = window.authSupabase || window.masterSupabase;
+                // Use unified auth client
+                const supabase = window.dcfSupabase;
                 
                 if (supabase && typeof supabase.from === 'function') {
                     console.log('Loading events with Supabase client...');
@@ -1014,11 +1014,11 @@
         });
 
         async function checkUserRegistrations(events) {
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             if (!currentUser) return events;
 
             try {
-                const supabase = window.authSupabase || window.masterSupabase;
+                const supabase = window.dcfSupabase;
                 const userEmail = currentUser.email;
                 
                 if (!supabase || !userEmail) return events;
@@ -1242,7 +1242,7 @@ ${registerButtonHtml}
         
         function showMyEventsEmptyState() {
             const container = document.getElementById('eventsContainer');
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             
             if (!currentUser) {
                 container.innerHTML = `
@@ -1266,7 +1266,7 @@ ${registerButtonHtml}
         }
 
         async function quickRegister(eventId, eventTitle, buttonElement) {
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 // EMERGENCY - NO REDIRECTS ALLOWED
                 console.log('🚨 Login required but redirects disabled');
@@ -1277,12 +1277,11 @@ ${registerButtonHtml}
                 buttonElement.textContent = 'Registering...';
                 buttonElement.disabled = true;
 
-                const supabase = window.authSupabase || window.masterSupabase || window.supabase.createClient(
-                    'https://atzommnkkwzgbktuzjti.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-                );
-
-                const { data: { user } } = await supabase.auth.getUser();
+                const supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    throw new Error('Database connection not available');
+                }
                 const userEmail = currentUser.email;
                 const userName = currentUser.name;
 
@@ -1394,7 +1393,7 @@ ${registerButtonHtml}
         }
 
         function toggleRegistrationOptions(eventId, buttonElement) {
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 // EMERGENCY - NO REDIRECTS ALLOWED
                 console.log('🚨 Login required but redirects disabled');
@@ -1422,13 +1421,12 @@ ${registerButtonHtml}
 
         async function selectRegistrationStatus(eventId, status, buttonElement) {
             try {
-                const supabase = window.authSupabase || window.masterSupabase || window.supabase.createClient(
-                    'https://atzommnkkwzgbktuzjti.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-                );
-
-                const { data: { user } } = await supabase.auth.getUser();
-                const currentUser = getCurrentUser();
+                const supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    throw new Error('Database connection not available');
+                }
+                const currentUser = window.getCurrentUser();
                 const userEmail = currentUser.email;
                 const userName = currentUser.name;
 
