@@ -753,8 +753,10 @@
                     <div class="file-upload" onclick="document.getElementById('resourceFile').click()">
                         <div class="file-upload-text">Click to upload or drag and drop your file</div>
                         <div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">
-                            Documents: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX (Max: 10MB)<br>
-                            Images: JPG, PNG, GIF, WEBP (Max: 4 images, 5MB each) • Videos: MP4, MOV, AVI, WEBM (Max: 50MB)
+                            Documents: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX (Max: 10MB each)<br>
+                            Images: JPG, PNG, GIF, WEBP (Max: 5MB each)<br>
+                            <strong>Upload Limits:</strong> Up to 4 files (documents + images) OR 1 video file only<br>
+                            Videos: MP4, MOV, AVI, WEBM (Max: 1 video, 50MB)
                         </div>
                         <input type="file" id="resourceFile" class="file-upload-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" multiple required>
                     </div>
@@ -947,6 +949,87 @@
             }
         });
 
+        function validateFileSelection(files) {
+            const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            const videoFiles = Array.from(files).filter(file => videoTypes.includes(file.type));
+            const nonVideoFiles = Array.from(files).filter(file => !videoTypes.includes(file.type));
+            
+            console.log('🔍 File validation:', {
+                totalFiles: files.length,
+                videoFiles: videoFiles.length,
+                nonVideoFiles: nonVideoFiles.length,
+                fileTypes: Array.from(files).map(f => f.type)
+            });
+            
+            // Rule 1: Only 1 video file allowed, and no other files with videos
+            if (videoFiles.length > 1) {
+                showUploadError('Only one video file can be uploaded at a time.');
+                return false;
+            }
+            
+            if (videoFiles.length === 1 && files.length > 1) {
+                showUploadError('Videos can only be uploaded one at a time. Please select only the video file.');
+                return false;
+            }
+            
+            // Rule 2: Up to 4 non-video files allowed
+            if (videoFiles.length === 0 && files.length > 4) {
+                showUploadError('Maximum 4 files allowed for images and documents.');
+                return false;
+            }
+            
+            // Rule 3: Check individual file size limits
+            for (const file of files) {
+                let maxSize;
+                let fileTypeLabel;
+                
+                if (file.type.startsWith('video/')) {
+                    maxSize = 50 * 1024 * 1024; // 50MB for videos
+                    fileTypeLabel = 'video';
+                } else if (file.type.startsWith('image/')) {
+                    maxSize = 5 * 1024 * 1024; // 5MB for images
+                    fileTypeLabel = 'image';
+                } else {
+                    maxSize = 10 * 1024 * 1024; // 10MB for documents
+                    fileTypeLabel = 'document';
+                }
+                
+                if (file.size > maxSize) {
+                    const sizeMB = Math.round(maxSize / (1024 * 1024));
+                    showUploadError(`${file.name} is too large. ${fileTypeLabel} files must be less than ${sizeMB}MB.`);
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function updateUploadGuidance(files = []) {
+            const guidanceDiv = document.querySelector('.file-upload div[style*="color: #888"]');
+            if (!guidanceDiv) return;
+            
+            const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            const hasVideo = Array.from(files).some(file => videoTypes.includes(file.type));
+            
+            let baseText = `Documents: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX (Max: 10MB each)<br>
+                            Images: JPG, PNG, GIF, WEBP (Max: 5MB each)<br>`;
+            
+            if (hasVideo) {
+                baseText += `<strong style="color: #dc3545;">Video Selected:</strong> Only 1 video file allowed per upload<br>
+                            Videos: MP4, MOV, AVI, WEBM (Max: 1 video, 50MB)`;
+            } else if (files.length > 0) {
+                const remaining = Math.max(0, 4 - files.length);
+                baseText += `<strong style="color: #28a745;">Current:</strong> ${files.length} file${files.length > 1 ? 's' : ''} selected${remaining > 0 ? `, ${remaining} more allowed` : ''}<br>
+                            <strong>Upload Limits:</strong> Up to 4 files (documents + images) OR 1 video file only<br>
+                            Videos: MP4, MOV, AVI, WEBM (Max: 1 video, 50MB)`;
+            } else {
+                baseText += `<strong>Upload Limits:</strong> Up to 4 files (documents + images) OR 1 video file only<br>
+                            Videos: MP4, MOV, AVI, WEBM (Max: 1 video, 50MB)`;
+            }
+            
+            guidanceDiv.innerHTML = baseText;
+        }
+
         function handleFileUpload(files) {
             // Reset UI
             const progressBar = document.getElementById('uploadProgress');
@@ -959,41 +1042,12 @@
             statusDiv.style.display = 'none';
             progressBar.style.display = 'none';
 
-            // Check if multiple files are images and validate count
-            const imageFiles = files.filter(file => file.type.startsWith('image/'));
-            const nonImageFiles = files.filter(file => !file.type.startsWith('image/'));
-            
-            // For multiple files, only allow images and max 4
-            if (files.length > 1) {
-                if (nonImageFiles.length > 0) {
-                    showUploadError('Multiple files can only be selected for images. Please select only image files or upload one file at a time.');
-                    return;
-                }
-                if (imageFiles.length > 4) {
-                    showUploadError('You can upload a maximum of 4 images at once.');
-                    return;
-                }
-            }
-            
-            // For single file, allow any type but check specific limits
-            if (files.length === 1 && nonImageFiles.length > 0) {
-                // Single non-image file validation (existing logic for videos/documents)
-                const file = files[0];
-                let maxSize;
-                if (file.type.startsWith('video/')) {
-                    maxSize = 50 * 1024 * 1024; // 50MB for videos
-                } else {
-                    maxSize = 10 * 1024 * 1024; // 10MB for documents
-                }
-                
-                if (file.size > maxSize) {
-                    const sizeMB = Math.round(maxSize / (1024 * 1024));
-                    showUploadError(`File size must be less than ${sizeMB}MB for this file type`);
-                    return;
-                }
+            // New file validation logic: up to 4 files except videos (max 1 video)
+            if (!validateFileSelection(files)) {
+                return;
             }
 
-            // Validate each file
+            // Validate file types (size validation is handled in validateFileSelection)
             const allowedTypes = [
                 // Document types
                 'application/pdf',
@@ -1020,15 +1074,6 @@
                     showUploadError('Please upload valid files (Documents, Images, or Videos)');
                     return;
                 }
-                
-                // Check image file size (5MB each)
-                if (file.type.startsWith('image/')) {
-                    const maxImageSize = 5 * 1024 * 1024; // 5MB
-                    if (file.size > maxImageSize) {
-                        showUploadError(`Each image must be less than 5MB. "${file.name}" is too large.`);
-                        return;
-                    }
-                }
             }
 
             try {
@@ -1043,6 +1088,7 @@
                 setTimeout(() => {
                     selectedFiles = files;
                     createFilePreview(files);
+                    updateUploadGuidance(files);
                     
                     statusDiv.className = 'upload-status success';
                     statusDiv.textContent = `✓ ${files.length} file${files.length > 1 ? 's' : ''} ready for upload`;
@@ -1212,6 +1258,7 @@
             document.getElementById('resourceFile').value = '';
             document.getElementById('uploadProgress').style.display = 'none';
             document.getElementById('uploadStatus').style.display = 'none';
+            updateUploadGuidance([]);
         }
         
         function removeFile(index) {
@@ -1226,6 +1273,7 @@
                     // Re-create multiple file preview with updated indices
                     createFilePreview(selectedFiles);
                 }
+                updateUploadGuidance(selectedFiles);
             } else {
                 // Remove the only file
                 removeAllFiles();
