@@ -1214,17 +1214,19 @@
         }
 
         // Step navigation
-        function goToStep(step) {
+        function goToStep(step, skipScroll = false) {
             document.getElementById(`step${currentStep}`).style.display = 'none';
             currentStep = step;
             document.getElementById(`step${currentStep}`).style.display = 'block';
             updateProgress();
             
-            // Scroll to top of the page to show the title
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            // Only scroll if not skipped (for error cases)
+            if (!skipScroll) {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
         }
 
         // Handle checkbox interactions
@@ -1583,8 +1585,10 @@
                 });
 
                 if (authError) {
-                    if (authError.message.includes('already registered')) {
-                        throw new Error('An account with this email already exists. Please try signing in instead.');
+                    if (authError.message.includes('already registered') || 
+                        authError.message.includes('User already registered') ||
+                        authError.code === 'user_already_exists') {
+                        throw new Error('EXISTING_EMAIL|An account with this email already exists. Please sign in instead of creating a new account.');
                     }
                     throw authError;
                 }
@@ -1682,6 +1686,25 @@
 
             } catch (error) {
                 console.error('Signup error:', error);
+                
+                // Handle existing email specifically
+                if (error.message.includes('EXISTING_EMAIL|')) {
+                    const cleanMessage = error.message.replace('EXISTING_EMAIL|', '');
+                    showAlert(cleanMessage, 'error', 'Account Already Exists');
+                    
+                    // Show redirect option after 2 seconds
+                    setTimeout(() => {
+                        if (confirm('Would you like to go to the sign-in page now?')) {
+                            window.location.href = 'dcf_login_page.html';
+                        }
+                    }, 2000);
+                    
+                    // Reset button
+                    const submitBtn = event.target;
+                    submitBtn.textContent = 'Join Community';
+                    submitBtn.disabled = false;
+                    return;
+                }
                 
                 // Handle username conflicts by returning to step 1
                 if (error.message.includes('username') && error.message.includes('already taken')) {
