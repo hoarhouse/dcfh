@@ -1284,39 +1284,29 @@
 
         async function initializeManagePage() {
             try {
-                // Initialize Supabase
-                supabase = window.dcfSupabase || window.supabase.createClient(
-                    'https://atzommnkkwzgbktuzjti.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-                );
-
-                // Check authentication
-                console.log('🔍 DEBUG: Checking auth in event manage page...');
+                // Use unified auth client exclusively
+                supabase = window.dcfSupabase;
                 
-                // Get current user from unified auth system
-                const authUser = window.getCurrentUser ? window.getCurrentUser() : null;
-                console.log('🔍 DEBUG: getCurrentUser result:', authUser);
-                
-                // Also check Supabase session directly
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log('🔍 DEBUG: Supabase session:', session);
-                
-                if (!authUser && !session?.user) {
-                    // EMERGENCY - ABSOLUTELY NO REDIRECTS
-                    console.log('🚨 Event page - all redirects disabled');
-                    // Page continues loading regardless of auth state
+                if (!supabase) {
+                    console.log('⚠️ Database connection not available');
+                    showNoAccessMessage();
                     return;
                 }
-                
-                console.log('🔍 DEBUG: Auth check passed, continuing...');
 
-                // Get current user from Supabase auth
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    currentUser = user || { id: authUser.id, email: authUser.email };
-                } catch (error) {
-                    console.log('Using auth user from getCurrentUser');
-                    currentUser = { id: authUser.id, email: authUser.email };
+                // Give unified auth system time to initialize
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Get current user through unified auth system only
+                const authUser = window.getCurrentUser?.();
+                console.log('🔍 DEBUG: Event management - user check:', authUser ? 'logged in' : 'no session');
+                
+                if (authUser) {
+                    currentUser = authUser;
+                    console.log('✅ User authenticated, loading management interface');
+                } else {
+                    console.log('ℹ️ No user session - showing limited access message');
+                    showNoAccessMessage();
+                    return;
                 }
 
                 await loadEvents();
@@ -1324,6 +1314,24 @@
             } catch (error) {
                 console.error('Error initializing manage page:', error);
                 showError('Failed to load event management dashboard');
+            }
+        }
+
+        function showNoAccessMessage() {
+            const container = document.getElementById('eventsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin: 2rem 0;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+                        <h3 style="margin-bottom: 1rem; color: #333;">Authentication Required</h3>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            Event management requires you to be logged in to access your events.
+                        </p>
+                        <a href="../auth/dcf_login_page.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: #333; color: white; text-decoration: none; border-radius: 6px;">
+                            Log In to Continue
+                        </a>
+                    </div>
+                `;
             }
         }
 
