@@ -1644,7 +1644,7 @@
             e.preventDefault();
             
             const projectId = getProjectIdFromUrl();
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             const editingTaskId = this.dataset.editingTaskId;
             
@@ -1681,7 +1681,7 @@
                     console.log('Task created successfully:', data);
                     
                     // Log activity for task creation
-                    const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                    const currentUser = window.getCurrentUser();
                 const currentEmail = currentUser?.email || 'anonymous';
                     
                     // Get user_id from user_profiles
@@ -1758,7 +1758,7 @@
                 console.log('Project settings updated successfully');
                 
                 // Log activity for project update
-                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
                 const currentEmail = currentUser?.email || 'anonymous';
                 
                 // Get user_id from user_profiles
@@ -2003,15 +2003,12 @@
             });
         });
 
-        // Initialize Supabase
-const supabase = window.masterSupabase || window.supabase.createClient(
-            'https://atzommnkkwzgbktuzjti.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-        );
+        // Use unified auth client exclusively  
+        const supabase = window.dcfSupabase;
 
         // Follow/Join system functions
         async function checkFollowStatus(projectId) {
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             if (!currentUserEmail) return false;
 
@@ -2029,7 +2026,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
         }
 
         async function toggleFollow(projectId) {
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             if (!currentUserEmail) return;
 
@@ -2433,7 +2430,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
 
             const projectId = getProjectIdFromUrl();
             // Get current user from unified auth system
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser?.email || 'anonymous';
             
             // Get username from user_profiles table
@@ -2534,10 +2531,118 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             }
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        // Wait for auth system to be ready
+        async function waitForAuth() {
+            let attempts = 0;
+            const maxAttempts = 10; // Reduced timeout for better UX
+            
+            while (attempts < maxAttempts) {
+                if (typeof window.getCurrentUser === 'function') {
+                    const user = window.getCurrentUser();
+                    console.log('🔍 Auth Ready Check - Attempt:', attempts + 1, 'User:', user ? 'logged in' : 'no session');
+                    
+                    if (user && user.id) {
+                        // User is authenticated
+                        return true;
+                    } else if (attempts > 3) {
+                        // After a few attempts, allow access check
+                        // This prevents infinite waiting if user is not logged in
+                        return false;
+                    }
+                }
+                
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Auth system didn't load in time, proceed with limited access
+            console.log('⚠️ Auth system timeout - proceeding with limited access');
+            return false;
+        }
+
+        // Check if user has project management access
+        async function checkProjectAccess() {
+            const projectId = getProjectIdFromUrl();
+            const currentUser = window.getCurrentUser();
+            
+            if (!currentUser || !currentUser.email) {
+                // No user session - show limited view
+                showNoAccessMessage();
+                return false;
+            }
+            
+            // Check if user is project owner or team member
+            try {
+                const { data: project, error } = await supabase
+                    .from('projects')
+                    .select('owner_email')
+                    .eq('id', projectId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Check if user is owner
+                if (project.owner_email === currentUser.email) {
+                    return true;
+                }
+                
+                // Check if user is team member
+                const { data: teamMember } = await supabase
+                    .from('project_team')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .eq('user_email', currentUser.email)
+                    .single();
+                
+                if (teamMember) {
+                    return true;
+                }
+                
+                // User doesn't have access
+                showNoAccessMessage();
+                return false;
+                
+            } catch (error) {
+                console.error('Error checking project access:', error);
+                showNoAccessMessage();
+                return false;
+            }
+        }
+
+        // Show no access message
+        function showNoAccessMessage() {
+            document.querySelector('.main-content').innerHTML = `
+                <div style="text-align: center; padding: 4rem 2rem;">
+                    <h2 style="color: #666; margin-bottom: 1rem;">Access Restricted</h2>
+                    <p style="color: #999; margin-bottom: 2rem;">You don't have permission to manage this project.</p>
+                    <a href="dcf_projects_home.html" class="btn btn-primary">Back to Projects</a>
+                </div>
+            `;
+        }
+
+        // Initialize with safe auth pattern
+        document.addEventListener('DOMContentLoaded', async function() {
             updateProgressBar();
-            loadProjectData();
+            
+            // Wait for auth system to be ready
+            const authReady = await waitForAuth();
+            
+            if (!authReady) {
+                console.log('⚠️ Auth not ready - checking access with delay');
+                // Give auth system one more chance with a delay
+                setTimeout(async () => {
+                    const hasAccess = await checkProjectAccess();
+                    if (hasAccess) {
+                        loadProjectData();
+                    }
+                }, 200);
+            } else {
+                // Auth is ready, check access immediately
+                const hasAccess = await checkProjectAccess();
+                if (hasAccess) {
+                    loadProjectData();
+                }
+            }
             
             // Setup file upload listener
             const manageFileInput = document.getElementById('manageFileUploadInput');
@@ -2608,7 +2713,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                         .single();
 
                     // Log activity for task deletion
-                    const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                    const currentUser = window.getCurrentUser();
                     const currentEmail = currentUser?.email || 'anonymous';
 
                     // Get user_id from user_profiles
@@ -2666,7 +2771,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 
                 // Log activity
                 const projectId = getProjectIdFromUrl();
-                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
                 const currentEmail = currentUser?.email || 'anonymous';
                 
                 // Get user_id from user_profiles
@@ -2704,7 +2809,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
         // User menu functionality handled by master JS
         // Load join requests for project owners
         async function loadJoinRequests(projectId) {
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             const joinRequestsList = document.getElementById('joinRequestsList');
             const joinRequestsSection = document.getElementById('joinRequestsSection');
@@ -2861,7 +2966,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 console.log('Join request approved successfully');
                 
                 // Log activity for join approval
-                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
                 const currentEmail = currentUser?.email || 'anonymous';
                 
                 // Get usernames for activity log
@@ -3197,7 +3302,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
 
         // Setup follow button based on user permissions
         async function setupFollowButton(project) {
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const currentUser = window.getCurrentUser();
             const currentUserEmail = currentUser ? currentUser.email : null;
             const followBtn = document.getElementById('followBtn');
             
@@ -3320,7 +3425,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 
                 // Log activity for role change
                 const projectId = getProjectIdFromUrl();
-                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                const currentUser = window.getCurrentUser();
                 const currentEmail = currentUser?.email || 'anonymous';
                 
                 const { data: userProfile } = await supabase
