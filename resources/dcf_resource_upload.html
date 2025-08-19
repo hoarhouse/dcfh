@@ -753,9 +753,10 @@
                     <div class="file-upload" onclick="document.getElementById('resourceFile').click()">
                         <div class="file-upload-text">Click to upload or drag and drop your file</div>
                         <div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">
-                            Supported: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX (Max: 10MB)
+                            Documents: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX (Max: 10MB)<br>
+                            Images: JPG, PNG, GIF, WEBP (Max: 5MB) • Videos: MP4, MOV, AVI, WEBM (Max: 50MB)
                         </div>
-                        <input type="file" id="resourceFile" class="file-upload-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" required>
+                        <input type="file" id="resourceFile" class="file-upload-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
                     </div>
                     <div class="upload-progress" id="uploadProgress">
                         <div class="upload-progress-fill" id="uploadProgressFill"></div>
@@ -957,25 +958,45 @@
             statusDiv.style.display = 'none';
             progressBar.style.display = 'none';
 
-            // Validate file
-            const maxSize = 10 * 1024 * 1024; // 10MB
+            // Validate file size based on type
+            let maxSize;
+            if (file.type.startsWith('image/')) {
+                maxSize = 5 * 1024 * 1024; // 5MB for images
+            } else if (file.type.startsWith('video/')) {
+                maxSize = 50 * 1024 * 1024; // 50MB for videos
+            } else {
+                maxSize = 10 * 1024 * 1024; // 10MB for documents
+            }
+            
             if (file.size > maxSize) {
-                showUploadError('File size must be less than 10MB');
+                const sizeMB = Math.round(maxSize / (1024 * 1024));
+                showUploadError(`File size must be less than ${sizeMB}MB for this file type`);
                 return;
             }
 
             const allowedTypes = [
+                // Document types
                 'application/pdf',
                 'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/vnd.ms-powerpoint',
                 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                // Image types
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                // Video types
+                'video/mp4',
+                'video/quicktime',
+                'video/x-msvideo',
+                'video/webm'
             ];
             
             if (!allowedTypes.includes(file.type)) {
-                showUploadError('Please upload a valid document file (PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX)');
+                showUploadError('Please upload a valid file (Documents, Images, or Videos)');
                 return;
             }
 
@@ -1029,18 +1050,82 @@
             const previewDiv = document.getElementById('filePreview');
             const fileSize = (file.size / 1024 / 1024).toFixed(2);
             
-            previewDiv.innerHTML = `
-                <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="font-size: 2rem;">📄</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; color: #333;">${file.name}</div>
-                            <div style="font-size: 0.9rem; color: #666;">${fileSize} MB • ${file.type.split('/')[1].toUpperCase()}</div>
+            // Check file type for appropriate preview
+            if (file.type.startsWith('image/')) {
+                // Create image thumbnail preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewDiv.innerHTML = `
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <img src="${e.target.result}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e5e5;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333;">${file.name}</div>
+                                    <div style="font-size: 0.9rem; color: #666;">${fileSize} MB • Image</div>
+                                </div>
+                                <button type="button" onclick="removeFile()" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.8rem;">Remove</button>
+                            </div>
                         </div>
-                        <button type="button" onclick="removeFile()" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.8rem;">Remove</button>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
+                // Create video preview with player
+                const videoUrl = URL.createObjectURL(file);
+                previewDiv.innerHTML = `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
+                        <video src="${videoUrl}" style="width: 100%; max-width: 400px; border-radius: 8px; margin-bottom: 1rem;" controls></video>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-weight: 600; color: #333;">${file.name}</div>
+                                <div style="font-size: 0.9rem; color: #666;">${fileSize} MB • Video</div>
+                            </div>
+                            <button type="button" onclick="removeFile()" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.8rem;">Remove</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                // Document preview (existing)
+                const fileIcon = getFileIcon(file.type);
+                previewDiv.innerHTML = `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 2rem;">${fileIcon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #333;">${file.name}</div>
+                                <div style="font-size: 0.9rem; color: #666;">${fileSize} MB • ${getFileTypeLabel(file.type)}</div>
+                            </div>
+                            <button type="button" onclick="removeFile()" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.8rem;">Remove</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function getFileIcon(fileType) {
+            const iconMap = {
+                'application/pdf': '📄',
+                'application/msword': '📝',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
+                'application/vnd.ms-powerpoint': '📊',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📊',
+                'application/vnd.ms-excel': '📈',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📈'
+            };
+            return iconMap[fileType] || '📎';
+        }
+
+        function getFileTypeLabel(fileType) {
+            const labelMap = {
+                'application/pdf': 'PDF',
+                'application/msword': 'DOC',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+                'application/vnd.ms-powerpoint': 'PPT',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+                'application/vnd.ms-excel': 'XLS',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX'
+            };
+            return labelMap[fileType] || 'Document';
         }
 
         function removeFile() {
@@ -1115,9 +1200,19 @@
 
             const fileSize = resourceData.file ? (resourceData.file.size / 1024 / 1024).toFixed(2) : '0';
             
+            // Determine preview icon based on file type
+            let previewIcon = '📄';
+            if (resourceData.file) {
+                if (resourceData.file.type.startsWith('image/')) {
+                    previewIcon = '🖼️';
+                } else if (resourceData.file.type.startsWith('video/')) {
+                    previewIcon = '🎥';
+                }
+            }
+            
             const preview = `
                 <div class="preview-header">
-                    <div style="font-size: 3rem; margin-right: 1rem;">📄</div>
+                    <div style="font-size: 3rem; margin-right: 1rem;">${previewIcon}</div>
                     <div class="preview-info">
                         <h3>${resourceData.title}</h3>
                         <p><strong>Category:</strong> ${categoryLabels[resourceData.type] || resourceData.type}</p>
