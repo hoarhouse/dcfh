@@ -1311,22 +1311,34 @@
                 while (authAttempts < 10) {
                     if (typeof window.getCurrentUser === 'function') {
                         authUser = window.getCurrentUser();
+                        console.log(`🔍 Auth attempt ${authAttempts + 1}: user =`, authUser);
+                        
                         if (authUser && authUser.id) {
                             console.log('✅ User authenticated after', authAttempts + 1, 'attempts');
                             currentUser = authUser;
                             break;
-                        } else if (authAttempts > 3) {
-                            // After a few attempts, check if really no user
-                            console.log('ℹ️ No user session detected after', authAttempts + 1, 'attempts');
-                            break;
                         }
+                    } else {
+                        console.log(`⚠️ Attempt ${authAttempts + 1}: getCurrentUser not ready yet`);
                     }
+                    
                     authAttempts++;
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
-                if (!authUser) {
-                    console.log('⚠️ No user session - showing limited access message');
+                // Final check after all attempts
+                if (!authUser && typeof window.getCurrentUser === 'function') {
+                    authUser = window.getCurrentUser();
+                    console.log('🔍 Final auth check after waiting: user =', authUser);
+                    if (authUser && authUser.id) {
+                        currentUser = authUser;
+                        console.log('✅ User authenticated on final check');
+                    }
+                }
+                
+                if (!authUser || !authUser.id) {
+                    console.log('⚠️ No valid user session found after all attempts');
+                    console.log('Final authUser value:', authUser);
                     showNoAccessMessage();
                     return;
                 }
