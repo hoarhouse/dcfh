@@ -1390,40 +1390,66 @@
                     `;
                 }
             } else {
-                // Multiple images preview (new logic)
+                // Multiple files preview (supports mixed file types: images + documents)
                 const totalSize = files.reduce((sum, file) => sum + file.size, 0);
                 const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+                
+                const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+                const documentFiles = Array.from(files).filter(file => !file.type.startsWith('image/') && !file.type.startsWith('video/'));
+                
+                let fileTypesDescription = '';
+                if (imageFiles.length > 0 && documentFiles.length > 0) {
+                    fileTypesDescription = `${imageFiles.length} Image${imageFiles.length > 1 ? 's' : ''} & ${documentFiles.length} Document${documentFiles.length > 1 ? 's' : ''}`;
+                } else if (imageFiles.length > 0) {
+                    fileTypesDescription = `${imageFiles.length} Image${imageFiles.length > 1 ? 's' : ''}`;
+                } else {
+                    fileTypesDescription = `${documentFiles.length} Document${documentFiles.length > 1 ? 's' : ''}`;
+                }
                 
                 let previewHTML = `
                     <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
                             <div>
-                                <div style="font-weight: 600; color: #333;">${files.length} Images Selected</div>
+                                <div style="font-weight: 600; color: #333;">${fileTypesDescription} Selected</div>
                                 <div style="font-size: 0.9rem; color: #666;">Total: ${totalSizeMB} MB</div>
                             </div>
                             <button type="button" onclick="removeAllFiles()" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.8rem;">Remove All</button>
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; max-width: 400px;">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
                 `;
                 
-                files.forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const imageDiv = document.getElementById(`preview-image-${index}`);
-                        if (imageDiv) {
-                            imageDiv.innerHTML = `
-                                <div style="position: relative;">
-                                    <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e5e5;">
-                                    <button type="button" onclick="removeFile(${index})" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #dc3545; color: white; border: none; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
-                                </div>
-                                <div style="font-size: 0.75rem; color: #666; margin-top: 0.5rem; text-align: center; word-break: break-all;">${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}</div>
-                            `;
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    previewHTML += `<div id="preview-image-${index}" style="text-align: center;">Loading...</div>`;
+                // Show document files first
+                documentFiles.forEach((file, globalIndex) => {
+                    const actualIndex = Array.from(files).indexOf(file);
+                    previewHTML += createDocumentPreview(file, actualIndex);
                 });
+                
+                // Show image files in a grid
+                if (imageFiles.length > 0) {
+                    previewHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; max-width: 600px;">`;
+                    
+                    imageFiles.forEach((file, globalIndex) => {
+                        const actualIndex = Array.from(files).indexOf(file);
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const imageDiv = document.getElementById(`preview-image-${actualIndex}`);
+                            if (imageDiv) {
+                                imageDiv.innerHTML = `
+                                    <div style="position: relative;">
+                                        <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e5e5;">
+                                        <button type="button" onclick="removeFile(${actualIndex})" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #dc3545; color: white; border: none; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: #666; margin-top: 0.5rem; text-align: center; word-break: break-all;">${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}</div>
+                                `;
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                        
+                        previewHTML += `<div id="preview-image-${actualIndex}" style="text-align: center;">Loading...</div>`;
+                    });
+                    
+                    previewHTML += `</div>`;
+                }
                 
                 previewHTML += `
                         </div>
@@ -1494,8 +1520,11 @@
         
         function removeFile(index) {
             if (selectedFiles.length > 1) {
+                // Find the actual index in selectedFiles array
+                const actualIndex = Math.min(index, selectedFiles.length - 1);
+                
                 // Remove specific file from array
-                selectedFiles.splice(index, 1);
+                selectedFiles.splice(actualIndex, 1);
                 
                 // If only one file remains, show single file preview
                 if (selectedFiles.length === 1) {
