@@ -1539,12 +1539,31 @@
                     created_at: new Date().toISOString()
                 };
 
-                // Add this debugging code RIGHT BEFORE the supabase insert:
-                console.log('🔍 DEBUG - About to insert resource:');
-                console.log('currentUser object:', currentUser);
-                console.log('currentUser.email:', currentUser.email);
-                console.log('Complete resourceRecord:', resourceRecord);
-                console.log('resourceRecord.author_email:', resourceRecord.author_email);
+                // 🔍 COMPREHENSIVE DEBUG LOGGING
+                console.log('🔍 Resource record being sent:', resourceRecord);
+                console.log('🔍 Resource record keys:', Object.keys(resourceRecord));
+                console.log('🔍 File URL:', fileUrl);
+                console.log('🔍 Primary file:', primaryFile);
+                console.log('🔍 Resource data:', resourceData);
+                console.log('🔍 Current user:', currentUser);
+                
+                // Log each field individually with validation
+                Object.entries(resourceRecord).forEach(([key, value]) => {
+                    console.log(`🔍 ${key}:`, typeof value, value);
+                    if (value === undefined) console.warn(`⚠️ ${key} is undefined`);
+                    if (value === null) console.log(`ℹ️ ${key} is null (may be intentional)`);
+                    if (typeof value === 'string' && value.length === 0) console.warn(`⚠️ ${key} is empty string`);
+                });
+                
+                // Validate required fields
+                const requiredFields = ['title', 'description', 'author_id', 'author_email'];
+                requiredFields.forEach(field => {
+                    if (!resourceRecord[field]) {
+                        console.error(`❌ VALIDATION ERROR - Missing required field: ${field}`);
+                    }
+                });
+                
+                console.log('🔍 About to insert into Supabase...');
 
                 const { data, error } = await supabase
                     .from('resources')
@@ -1552,13 +1571,29 @@
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Full database error:', error);
+                    console.error('❌ Error code:', error.code);
+                    console.error('❌ Error message:', error.message);
+                    console.error('❌ Error details:', error.details);
+                    console.error('❌ Error hint:', error.hint);
+                    throw error;
+                }
 
                 console.log('Resource submitted successfully:', data);
                 goToStep(4);
 
             } catch (error) {
-                console.error('Error submitting resource:', error);
+                console.error('❌ CATCH BLOCK - Error submitting resource:', error);
+                console.error('❌ Error type:', typeof error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+                
+                if (error.code) console.error('❌ Error code:', error.code);
+                if (error.details) console.error('❌ Error details:', error.details);
+                if (error.hint) console.error('❌ Error hint:', error.hint);
+                
                 showAlert('Error submitting resource: ' + error.message, 'error', 'Submission Error');
                 
                 const submitBtn = document.querySelector('button[onclick="submitResource()"]');
