@@ -939,12 +939,24 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Give unified auth system time to initialize before checking user state
             setTimeout(() => {
-                const currentUser = window.getCurrentUser();
-                
-                if (currentUser) {
-                    console.log('✅ Authenticated user loaded:', currentUser.username);
+                // Verify unified auth system is available
+                if (typeof window.getCurrentUser === 'function') {
+                    const currentUser = window.getCurrentUser();
+                    
+                    if (currentUser) {
+                        console.log('✅ Authenticated user loaded:', currentUser.username);
+                    } else {
+                        console.log('ℹ️ No user session detected - loading in public mode');
+                    }
                 } else {
-                    console.log('ℹ️ No user session detected - loading in public mode');
+                    console.log('⚠️ Unified auth system not yet available, retrying...');
+                    // Retry once more if auth system isn't ready
+                    setTimeout(() => {
+                        const currentUser = window.getCurrentUser?.();
+                        if (currentUser) {
+                            console.log('✅ Authenticated user loaded (delayed):', currentUser.username);
+                        }
+                    }, 200);
                 }
             }, 100); // Small delay for auth initialization
             
