@@ -2073,7 +2073,7 @@ async function initializeDCF() {
 // =============================================================================
 
 async function validateUsername(username) {
-    // Client-side validation only - no database queries for anonymous users
+    // Client-side validation first
     if (!username || username.length < 3 || username.length > 30) {
         return { valid: false, message: 'Username must be 3-30 characters long' };
     }
@@ -2094,8 +2094,36 @@ async function validateUsername(username) {
         return { valid: false, message: 'This username is reserved' };
     }
     
-    // Format is valid - availability will be checked during signup
-    return { valid: true, message: 'Username format is valid' };
+    // Database availability check using secure SQL function
+    if (!window.dcfSupabase) {
+        console.error('Supabase client not initialized');
+        return { valid: true, message: 'Username format is valid (will verify during signup)' };
+    }
+    
+    try {
+        // Use the public SQL function to check availability
+        const { data, error } = await window.dcfSupabase
+            .rpc('check_username_available', {
+                input_username: username.toLowerCase()
+            });
+        
+        if (error) {
+            console.error('Username validation error:', error);
+            // Fallback to format validation if function fails
+            return { valid: true, message: 'Username format is valid (will verify during signup)' };
+        }
+        
+        if (data === true) {
+            return { valid: true, message: 'Username is available' };
+        } else {
+            return { valid: false, message: 'Username is already taken' };
+        }
+        
+    } catch (error) {
+        console.error('Username validation error:', error);
+        // Fallback gracefully if validation service fails
+        return { valid: true, message: 'Username format is valid (will verify during signup)' };
+    }
 }
 
 // =============================================================================
