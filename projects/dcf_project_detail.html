@@ -913,11 +913,8 @@
     </main>
 
     <script>
-        // Initialize Supabase
-const supabase = window.masterSupabase || window.supabase.createClient(
-            'https://atzommnkkwzgbktuzjti.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-        );
+        // Use unified auth client exclusively
+        const supabase = window.dcfSupabase;
 
         // Get project ID from URL
         function getProjectIdFromUrl() {
@@ -1947,25 +1944,29 @@ const supabase = window.masterSupabase || window.supabase.createClient(
         // Wait for auth system to be ready
         async function waitForAuth() {
             let attempts = 0;
-            const maxAttempts = 20; // 10 seconds max wait
+            const maxAttempts = 10; // Reduced timeout for better UX
             
             while (attempts < maxAttempts) {
-                if (window.getCurrentUser && typeof window.getCurrentUser === 'function') {
+                if (typeof window.getCurrentUser === 'function') {
                     const user = window.getCurrentUser();
-                    console.log('🔍 DEBUG - Auth Ready Check - Attempt:', attempts + 1, 'User:', user);
+                    console.log('🔍 DEBUG - Auth Ready Check - Attempt:', attempts + 1, 'User:', user ? 'logged in' : 'no session');
                     
                     if (user && user.id) {
                         console.log('✅ Auth system ready with user:', user.id);
                         return true;
+                    } else {
+                        // Auth system ready but no user - this is fine for public viewing
+                        console.log('ℹ️ Auth system ready, no user session - public viewing mode');
+                        return false;
                     }
                 }
                 
                 console.log('⏳ Waiting for auth system... attempt', attempts + 1);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200)); // Faster polling
                 attempts++;
             }
             
-            console.log('⚠️ Auth system timeout - proceeding without auth');
+            console.log('ℹ️ Auth system not available - continuing in public mode');
             return false;
         }
 
