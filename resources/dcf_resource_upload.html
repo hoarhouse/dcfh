@@ -2110,6 +2110,31 @@
                     return;
                 }
 
+                // Manual file validation (replacing HTML required attribute)
+                if (!resourceData.files || resourceData.files.length === 0) {
+                    showAlert('Please select at least one file to upload', 'error', 'File Required');
+                    return;
+                }
+
+                // Validate file count based on types
+                const videoFiles = resourceData.files.filter(file => file.type.startsWith('video/'));
+                const nonVideoFiles = resourceData.files.filter(file => !file.type.startsWith('video/'));
+
+                if (videoFiles.length > 1) {
+                    showAlert('You can only upload 1 video file at a time', 'error', 'Too Many Videos');
+                    return;
+                }
+
+                if (nonVideoFiles.length > 4) {
+                    showAlert('You can upload up to 4 image/document files', 'error', 'Too Many Files');
+                    return;
+                }
+
+                if (resourceData.files.length > 4) {
+                    showAlert('Maximum 4 files allowed (or 1 video file)', 'error', 'Too Many Files');
+                    return;
+                }
+
                 const submitBtn = document.querySelector('button[onclick="submitResource()"]');
                 const originalText = submitBtn.textContent;
                 submitBtn.textContent = 'Submitting...';
@@ -2122,17 +2147,17 @@
                     // Continue anyway for testing
                 }
 
-                // EMERGENCY - ABSOLUTELY NO REDIRECTS
-                console.log('🚨 Resource upload - all redirects disabled');
-                // Page continues loading regardless of auth state
+                // Get current user from auth system - no fallbacks
+                const currentUser = window.getCurrentUser();
                 
-                // Use fallback user data
-                const currentUser = window.getCurrentUser() || {
-                    id: '668d68a1-2dc1-4515-8333-e9efe52c3d75',
-                    email: 'previewcapital@gmail.com',
-                    name: 'Chris Hoar',
-                    username: 'hooray'
-                };
+                if (!currentUser) {
+                    console.log('⚠️ No authenticated user - redirecting to login');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    showAlert('Please log in to upload resources', 'error', 'Authentication Required');
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
 
                 let fileUrl = null;
                 let fileUrls = [];
