@@ -744,6 +744,28 @@
             opacity: 1;
         }
 
+        /* Individual Photo Item Hover Zones */
+        .photo-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .photo-item:hover {
+            transform: scale(1.05);
+            z-index: 5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .photo-item img {
+            transition: all 0.2s ease;
+        }
+
+        .photo-item:hover img {
+            filter: brightness(1.1);
+        }
+
         .preview-fallback {
             border: 1px solid #e5e5e5;
             font-weight: 500;
@@ -976,6 +998,11 @@
             .image-gallery::after {
                 font-size: 0.7rem;
                 padding: 3px 6px;
+            }
+
+            /* Mobile photo item adjustments */
+            .photo-item:hover {
+                transform: scale(1.02); /* Smaller scale on mobile */
             }
         }
     </style>
@@ -1474,23 +1501,27 @@
                     const remainingCount = imageUrls.length - maxDisplayImages;
                     
                     let gridHTML = `
-                        <div class="resource-preview" 
-                             onmouseover="showMultiPhotoPreview(${JSON.stringify(imageUrls).replace(/"/g, '&quot;')}, '${resource.title}', event)" 
-                             onmouseout="hidePhotoPreview()" 
-                             onclick="navigateToResource('${resource.id}')">
+                        <div class="resource-preview" onclick="navigateToResource('${resource.id}')">
                             <div class="image-gallery" style="display: grid; grid-template-columns: repeat(2, 96px); gap: 8px; width: 200px; height: 120px;">
                     `;
                     
                     for (let i = 0; i < maxDisplayImages; i++) {
                         const isLast = i === maxDisplayImages - 1 && remainingCount > 0;
+                        const photoUrl = imageUrls[i].replace(/'/g, "\\'"); // Escape single quotes
+                        const photoTitle = `${resource.title} ${i + 1}`.replace(/'/g, "\\'");
+                        
                         gridHTML += `
-                            <div style="position: relative; width: 96px; height: ${maxDisplayImages <= 2 ? '120px' : '56px'}; ${maxDisplayImages === 3 && i === 2 ? 'grid-column: 1 / 3; width: 200px;' : ''}">
+                            <div class="photo-item" 
+                                 data-photo-url="${imageUrls[i]}" 
+                                 style="position: relative; width: 96px; height: ${maxDisplayImages <= 2 ? '120px' : '56px'}; ${maxDisplayImages === 3 && i === 2 ? 'grid-column: 1 / 3; width: 200px;' : ''}"
+                                 onmouseover="showIndividualPhotoPreview('${photoUrl}', '${photoTitle}', event)"
+                                 onmouseout="hidePhotoPreview()"
+                                 onclick="event.stopPropagation(); navigateToResource('${resource.id}')">
                                 <img src="${imageUrls[i]}" 
                                      alt="${resource.title} ${i + 1}" 
-                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"
-                                     onerror="this.style.display='none';"
-                                     onmouseover="showPhotoPreview('${imageUrls[i]}', '${resource.title} ${i + 1}', event)">
-                                ${isLast ? `<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border-radius: 8px;">+${remainingCount}</div>` : ''}
+                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; cursor: pointer;"
+                                     onerror="this.style.display='none';">
+                                ${isLast ? `<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border-radius: 8px; pointer-events: none;">+${remainingCount}</div>` : ''}
                             </div>
                         `;
                     }
@@ -1853,6 +1884,30 @@
                         <source src="${videoUrl}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
+                `;
+                
+                backdrop.classList.add('active');
+                overlay.classList.add('active');
+            }, 300);
+        }
+
+        function showIndividualPhotoPreview(imageUrl, title, event) {
+            clearTimeout(previewTimeout);
+            
+            // Stop event propagation to prevent parent hover events
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            previewTimeout = setTimeout(() => {
+                const overlay = document.getElementById('photoPreviewOverlay');
+                const backdrop = document.getElementById('photoPreviewBackdrop');
+                const content = document.getElementById('photoPreviewContent');
+                
+                content.innerHTML = `
+                    <img src="${imageUrl}" 
+                         alt="${title}" 
+                         style="max-width: 400px; max-height: 400px; object-fit: contain; border-radius: 12px; background: #000;" />
                 `;
                 
                 backdrop.classList.add('active');
