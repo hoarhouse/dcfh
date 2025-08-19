@@ -1590,7 +1590,148 @@
     </div>
 
     <script>
+        // Global variables
+        let currentUser = null;
+        let supabase = null;
         let selectedTags = [];
+
+        // Initialize discussion forums with unified auth
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeForumsWithAuth();
+        });
+
+        async function initializeForumsWithAuth() {
+            try {
+                // Use unified auth client exclusively
+                supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    console.log('⚠️ Database connection not available - waiting...');
+                    // Wait for Supabase to be ready
+                    let attempts = 0;
+                    while (!window.dcfSupabase && attempts < 20) {
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                        attempts++;
+                    }
+                    supabase = window.dcfSupabase;
+                    
+                    if (!supabase) {
+                        console.error('❌ Database connection failed after waiting');
+                        showError('Database connection not available. Please refresh the page.');
+                        return;
+                    }
+                }
+
+                // Wait for unified auth system to be ready first
+                let authAttempts = 0;
+                const maxAttempts = 20; // 20 attempts
+                const waitInterval = 150; // 150ms per attempt (3 seconds total)
+                
+                console.log('🔄 Waiting for unified auth system to initialize...');
+                
+                // First, wait for the auth system itself to be ready
+                while (!window.getCurrentUser && authAttempts < maxAttempts) {
+                    console.log(`⏳ Auth system not ready yet (attempt ${authAttempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
+                    authAttempts++;
+                }
+                
+                if (!window.getCurrentUser) {
+                    console.error('❌ Auth system failed to initialize after 3 seconds');
+                    showError('Authentication system not available. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('✅ Auth system ready, checking user session...');
+                
+                // Now check for user authentication with additional attempts
+                let authUser = null;
+                let userCheckAttempts = 0;
+                
+                while (userCheckAttempts < maxAttempts) {
+                    authUser = window.getCurrentUser();
+                    console.log(`🔍 User check attempt ${userCheckAttempts + 1}/${maxAttempts}: user =`, authUser);
+                    
+                    if (authUser && authUser.id) {
+                        console.log(`✅ User authenticated after ${userCheckAttempts + 1} attempts (${(userCheckAttempts + 1) * waitInterval}ms)`);
+                        currentUser = authUser;
+                        break;
+                    }
+                    
+                    userCheckAttempts++;
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
+                }
+                
+                // Final check after all attempts
+                if (!authUser || !authUser.id) {
+                    authUser = window.getCurrentUser();
+                    console.log('🔍 Final auth check after full wait period: user =', authUser);
+                    
+                    if (authUser && authUser.id) {
+                        currentUser = authUser;
+                        console.log('✅ User authenticated on final check');
+                    } else {
+                        console.log('⚠️ No valid user session found after 3 seconds of waiting');
+                        console.log('Final authUser value:', authUser);
+                        showAuthRequired();
+                        return;
+                    }
+                }
+
+                // Initialize forum interface now that auth is confirmed
+                initializeForumInterface();
+
+            } catch (error) {
+                console.error('Error initializing discussion forums:', error);
+                showError('Failed to load discussion forums');
+            }
+        }
+
+        function showAuthRequired() {
+            const forumsContainer = document.querySelector('.main-content');
+            if (forumsContainer) {
+                forumsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin: 2rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+                        <h3 style="margin-bottom: 1rem; color: #333;">Authentication Required</h3>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            Discussion forums require you to be logged in to participate in conversations.
+                        </p>
+                        <a href="../auth/dcf_login_page.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: #333; color: white; text-decoration: none; border-radius: 6px;">
+                            Log In to Continue
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        function showError(message) {
+            const forumsContainer = document.querySelector('.main-content');
+            if (forumsContainer) {
+                forumsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin: 2rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                        <h3 style="margin-bottom: 1rem; color: #333;">Error</h3>
+                        <p style="color: #666; margin-bottom: 1.5rem;">${message}</p>
+                        <button onclick="location.reload()" style="padding: 0.75rem 1.5rem; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function initializeForumInterface() {
+            console.log('✅ Initializing forum interface for user:', currentUser);
+            // Initialize all the existing forum functionality
+            setupCategoryFiltering();
+            setupSearch();
+            setupSorting();
+            setupModals();
+            setupTagInput();
+        }
+
+        function setupCategoryFiltering() {
 
         // Category filtering
         document.querySelectorAll('.category-item').forEach(item => {
