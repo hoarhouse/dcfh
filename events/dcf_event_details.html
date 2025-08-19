@@ -1623,19 +1623,26 @@
             `;
         }
 
-        // Wait for auth system
+        // Wait for auth system with graceful fallback
         async function waitForAuth() {
             let attempts = 0;
-            while (attempts < 50) {
-                if (window.getCurrentUser && window.getCurrentUser()) {
-                    currentUser = window.getCurrentUser();
-                    console.log('✅ Auth ready, user:', currentUser.username);
-                    return;
+            while (attempts < 20) { // Reduced timeout for better UX
+                if (typeof window.getCurrentUser === 'function') {
+                    const user = window.getCurrentUser();
+                    if (user) {
+                        currentUser = user;
+                        console.log('✅ Auth ready, user:', currentUser.username);
+                        return;
+                    } else {
+                        // Auth system ready but no user - this is fine for public viewing
+                        console.log('ℹ️ Auth ready, no user session - public mode');
+                        return;
+                    }
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
-            console.log('⚠️ Auth timeout, proceeding without user');
+            console.log('ℹ️ Auth system not available, continuing in public mode');
         }
 
         // Initialize page
