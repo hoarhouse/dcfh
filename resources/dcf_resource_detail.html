@@ -1755,11 +1755,8 @@
     </main>
 
     <script>
-        // Initialize Supabase with reliable masterSupabase pattern
-        const supabase = window.masterSupabase || window.supabase.createClient(
-            'https://atzommnkkwzgbktuzjti.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-        );
+        // Use unified auth client exclusively
+        const supabase = window.dcfSupabase;
 
         let currentResource = null;
         let currentUser = null;
@@ -1768,31 +1765,32 @@
         let userLikes = new Set();
         let userBookmarks = new Set();
 
-        // Wait for auth to be ready (similar to working project detail page)
+        // Wait for auth to be ready with safe patterns
         async function waitForAuth() {
             let attempts = 0;
-            const maxAttempts = 20; // 10 seconds max wait
+            const maxAttempts = 10; // Reduced timeout for better UX
             
             while (attempts < maxAttempts) {
-                if (window.getCurrentUser && typeof window.getCurrentUser === 'function') {
+                if (typeof window.getCurrentUser === 'function') {
                     const user = window.getCurrentUser();
-                    console.log('🔍 DEBUG - Auth Ready Check - Attempt:', attempts + 1, 'User:', user);
+                    console.log('🔍 Auth Ready Check - Attempt:', attempts + 1, 'User:', user ? 'logged in' : 'no session');
                     
                     if (user && user.id) {
-                        console.log('✅ DEBUG - Auth is ready, user loaded:', user);
+                        // User is authenticated
                         return user;
-                    } else {
-                        console.log('⚠️ DEBUG - User function exists but no user loaded yet');
+                    } else if (attempts > 3) {
+                        // After a few attempts, allow public viewing
+                        // This prevents infinite waiting if user is not logged in
+                        return null;
                     }
-                } else {
-                    console.log('⚠️ DEBUG - getCurrentUser not available yet, attempt:', attempts + 1);
                 }
                 
                 attempts++;
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             
-            console.log('❌ DEBUG - Auth wait timeout reached');
+            // Auth system didn't load in time, proceed with public viewing
+            console.log('⚠️ Auth system timeout - proceeding with public viewing');
             return null;
         }
 
