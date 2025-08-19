@@ -895,6 +895,115 @@
         .doc-remove-btn:hover {
             background: #c82333;
         }
+
+        .final-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            max-width: 800px;
+        }
+
+        .final-preview-item {
+            background: white;
+            border: 2px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .final-preview-item:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        }
+
+        .final-preview-thumbnail {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 0.75rem;
+            border: 1px solid #ddd;
+        }
+
+        .final-preview-icon {
+            font-size: 4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .final-preview-video {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border: 1px solid #ddd;
+        }
+
+        .final-preview-info {
+            flex: 1;
+            width: 100%;
+        }
+
+        .final-preview-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .final-preview-details {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .final-preview-remove {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .final-preview-remove:hover {
+            background: #c82333;
+        }
+
+        @media (max-width: 768px) {
+            .final-preview-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            
+            .final-preview-thumbnail,
+            .final-preview-video {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .final-preview-icon {
+                font-size: 2.5rem;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
@@ -974,6 +1083,15 @@
                     <div class="upload-status" id="uploadStatus">Uploading...</div>
                     <div id="filePreview"></div>
                 </div>
+                
+                <!-- Final Preview Section -->
+                <div id="finalPreviewSection" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
+                    <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.1rem;">📎 Files to Upload:</h3>
+                    <div id="finalPreviewGrid" class="final-preview-grid">
+                        <!-- File previews will be inserted here -->
+                    </div>
+                </div>
+                
                 <div class="button-group">
                     <a href="../resources/dcf_resources_library.html" class="btn btn-secondary">← Back to Resources</a>
                     <button type="submit" class="btn btn-primary">Continue</button>
@@ -1297,6 +1415,7 @@
                     selectedFiles = files;
                     createFilePreview(files);
                     updateUploadGuidance(files);
+                    updateFinalPreview(files);
                     
                     statusDiv.className = 'upload-status success';
                     statusDiv.textContent = `✓ ${files.length} file${files.length > 1 ? 's' : ''} ready for upload`;
@@ -1516,6 +1635,96 @@
             document.getElementById('uploadProgress').style.display = 'none';
             document.getElementById('uploadStatus').style.display = 'none';
             updateUploadGuidance([]);
+            updateFinalPreview([]);
+        }
+
+        function updateFinalPreview(files) {
+            const finalPreviewSection = document.getElementById('finalPreviewSection');
+            const finalPreviewGrid = document.getElementById('finalPreviewGrid');
+            
+            if (!files || files.length === 0) {
+                finalPreviewSection.style.display = 'none';
+                finalPreviewGrid.innerHTML = '';
+                return;
+            }
+            
+            // Show the final preview section
+            finalPreviewSection.style.display = 'block';
+            
+            // Clear existing previews
+            finalPreviewGrid.innerHTML = '';
+            
+            // Create preview for each file
+            files.forEach((file, index) => {
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                const previewItem = document.createElement('div');
+                previewItem.className = 'final-preview-item';
+                previewItem.id = `final-preview-${index}`;
+                
+                let previewContent = '';
+                
+                if (file.type.startsWith('image/')) {
+                    // Image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imagePreview = document.getElementById(`final-preview-${index}`);
+                        if (imagePreview) {
+                            imagePreview.innerHTML = `
+                                <img src="${e.target.result}" class="final-preview-thumbnail" alt="Preview">
+                                <div class="final-preview-info">
+                                    <div class="final-preview-name" title="${file.name}">${file.name}</div>
+                                    <div class="final-preview-details">${fileSize} MB • Image</div>
+                                </div>
+                                <button type="button" class="final-preview-remove" onclick="removeFileFromFinal(${index})">×</button>
+                            `;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    // Placeholder while loading
+                    previewContent = `
+                        <div style="width: 120px; height: 120px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; color: #666;">
+                            Loading...
+                        </div>
+                        <div class="final-preview-info">
+                            <div class="final-preview-name" title="${file.name}">${file.name}</div>
+                            <div class="final-preview-details">${fileSize} MB • Image</div>
+                        </div>
+                        <button type="button" class="final-preview-remove" onclick="removeFileFromFinal(${index})">×</button>
+                    `;
+                } else if (file.type.startsWith('video/')) {
+                    // Video preview
+                    const videoUrl = URL.createObjectURL(file);
+                    previewContent = `
+                        <video src="${videoUrl}" class="final-preview-video" controls></video>
+                        <div class="final-preview-info">
+                            <div class="final-preview-name" title="${file.name}">${file.name}</div>
+                            <div class="final-preview-details">${fileSize} MB • Video</div>
+                        </div>
+                        <button type="button" class="final-preview-remove" onclick="removeFileFromFinal(${index})">×</button>
+                    `;
+                } else {
+                    // Document preview
+                    const fileIcon = getFileIcon(file.type);
+                    const fileTypeLabel = getFileTypeLabel(file.type);
+                    previewContent = `
+                        <div class="final-preview-icon">${fileIcon}</div>
+                        <div class="final-preview-info">
+                            <div class="final-preview-name" title="${file.name}">${file.name}</div>
+                            <div class="final-preview-details">${fileSize} MB • ${fileTypeLabel}</div>
+                        </div>
+                        <button type="button" class="final-preview-remove" onclick="removeFileFromFinal(${index})">×</button>
+                    `;
+                }
+                
+                previewItem.innerHTML = previewContent;
+                finalPreviewGrid.appendChild(previewItem);
+            });
+        }
+
+        function removeFileFromFinal(index) {
+            // Use the existing removeFile function to maintain consistency
+            removeFile(index);
         }
         
         function removeFile(index) {
@@ -1534,6 +1743,7 @@
                     createFilePreview(selectedFiles);
                 }
                 updateUploadGuidance(selectedFiles);
+                updateFinalPreview(selectedFiles);
             } else {
                 // Remove the only file
                 removeAllFiles();
