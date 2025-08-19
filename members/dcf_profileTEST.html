@@ -903,10 +903,17 @@
                 // Check if Supabase client is ready
                 if (window.dcfSupabase && window.getCurrentUser && window.dcfUser) {
                     console.log('✅ Auth system ready');
+                    console.log('dcfUser state:', window.dcfUser);
                     return true;
                 }
                 
                 console.log(`⏳ Auth system not ready, attempt ${attempts + 1}/${maxAttempts}`);
+                console.log('Current state:', {
+                    dcfSupabase: !!window.dcfSupabase,
+                    getCurrentUser: !!window.getCurrentUser,
+                    dcfUser: window.dcfUser
+                });
+                
                 await new Promise(resolve => setTimeout(resolve, 500));
                 attempts++;
             }
@@ -962,11 +969,11 @@
                 currentUserId = currentUser.id;
                 console.log('✅ Loading profile for user:', currentUserId, currentUser.email);
 
-                // Load profile data
+                // Load profile data using email since that's how the auth system works
                 const { data: profile, error } = await window.dcfSupabase
                     .from('user_profiles')
                     .select('id, username, first_name, last_name, title, organization, location, bio, expertise, skills_offered, website, avatar_url, cover_image_url, role, created_at')
-                    .eq('id', currentUserId)
+                    .eq('email', currentUser.email)
                     .single();
 
                 if (error || !profile) {
@@ -975,14 +982,17 @@
                     return;
                 }
 
-                console.log('Profile loaded:', profile);
+                console.log('✅ Profile loaded from database:', profile);
                 currentProfile = profile;
+                
+                // Use the database profile ID for all subsequent queries
+                currentUserId = profile.id;
 
                 // Populate profile
                 populateProfileHeader(profile);
                 populateProfileInfo(profile);
 
-                // Load user's posts
+                // Load user's posts using database profile ID
                 await loadUserPosts(currentUserId);
 
                 // Load statistics
