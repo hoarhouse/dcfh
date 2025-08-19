@@ -1288,27 +1288,50 @@
                 supabase = window.dcfSupabase;
                 
                 if (!supabase) {
-                    console.log('⚠️ Database connection not available');
+                    console.log('⚠️ Database connection not available - waiting...');
+                    // Wait for Supabase to be ready
+                    let attempts = 0;
+                    while (!window.dcfSupabase && attempts < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    supabase = window.dcfSupabase;
+                    
+                    if (!supabase) {
+                        console.error('❌ Database connection failed after waiting');
+                        showError('Database connection not available. Please refresh the page.');
+                        return;
+                    }
+                }
+
+                // Wait for auth to be ready with proper timing
+                let authAttempts = 0;
+                let authUser = null;
+                
+                while (authAttempts < 10) {
+                    if (typeof window.getCurrentUser === 'function') {
+                        authUser = window.getCurrentUser();
+                        if (authUser && authUser.id) {
+                            console.log('✅ User authenticated after', authAttempts + 1, 'attempts');
+                            currentUser = authUser;
+                            break;
+                        } else if (authAttempts > 3) {
+                            // After a few attempts, check if really no user
+                            console.log('ℹ️ No user session detected after', authAttempts + 1, 'attempts');
+                            break;
+                        }
+                    }
+                    authAttempts++;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                if (!authUser) {
+                    console.log('⚠️ No user session - showing limited access message');
                     showNoAccessMessage();
                     return;
                 }
 
-                // Give unified auth system time to initialize
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Get current user through unified auth system only
-                const authUser = window.getCurrentUser?.();
-                console.log('🔍 DEBUG: Event management - user check:', authUser ? 'logged in' : 'no session');
-                
-                if (authUser) {
-                    currentUser = authUser;
-                    console.log('✅ User authenticated, loading management interface');
-                } else {
-                    console.log('ℹ️ No user session - showing limited access message');
-                    showNoAccessMessage();
-                    return;
-                }
-
+                // Load events now that auth is confirmed
                 await loadEvents();
 
             } catch (error) {
@@ -1336,22 +1359,42 @@
         }
 
         async function loadEvents() {
+            const container = document.getElementById('eventsContainer');
+            
             try {
+                // Show loading state
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="loading-spinner"></div><p>Loading your events...</p></div>';
+                }
+                
+                // Ensure supabase is available
+                if (!supabase) {
+                    throw new Error('Database connection not initialized');
+                }
+                
                 let query = supabase.from('events').select('*');
                 
                 // Filter by organizer if we have a current user
                 if (currentUser?.id) {
+                    console.log('🔍 Loading events for user ID:', currentUser.id);
                     query = query.eq('organizer_id', currentUser.id);
                 } else if (currentUser?.email) {
                     // Fallback: try to match by email if available
+                    console.log('🔍 Loading events for email:', currentUser.email);
                     query = query.eq('contact_email', currentUser.email);
+                } else {
+                    console.warn('⚠️ No user ID or email available for filtering');
                 }
 
                 const { data: events, error } = await query.order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                }
 
                 allEvents = events || [];
+                console.log('✅ Loaded', allEvents.length, 'events');
                 
                 // Load attendance counts for each event
                 await loadAttendanceCounts();
@@ -1361,7 +1404,20 @@
 
             } catch (error) {
                 console.error('Error loading events:', error);
-                showError('Failed to load your events');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <h3 style="margin-bottom: 1rem; color: #333;">Failed to Load Events</h3>
+                            <p style="color: #666; margin-bottom: 1.5rem;">
+                                ${error.message || 'Unable to fetch your events. Please try refreshing the page.'}
+                            </p>
+                            <button onclick="location.reload()" style="padding: 0.75rem 1.5rem; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
