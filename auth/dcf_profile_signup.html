@@ -1661,7 +1661,19 @@
 
                 if (profileError) {
                     console.error('Profile creation error:', profileError);
-                    // Don't throw here - auth user was created successfully
+                    
+                    // Handle username conflicts specifically
+                    if (profileError.code === '23505' && profileError.message.includes('username')) {
+                        throw new Error(`The username "${userData.username}" is already taken. Please choose a different username and try again.`);
+                    }
+                    
+                    // Handle email conflicts
+                    if (profileError.code === '23505' && profileError.message.includes('email')) {
+                        throw new Error('An account with this email already exists. Please try signing in instead.');
+                    }
+                    
+                    // Generic profile creation error
+                    throw new Error('Failed to create user profile: ' + profileError.message);
                 }
 
                 console.log('Account created successfully:', authData);
@@ -1671,6 +1683,19 @@
 
             } catch (error) {
                 console.error('Signup error:', error);
+                
+                // Handle username conflicts by returning to step 1
+                if (error.message.includes('username') && error.message.includes('already taken')) {
+                    showAlert(error.message + ' Please go back to Step 1 to choose a different username.', 'error', 'Username Conflict');
+                    
+                    // Reset button and allow user to go back
+                    const submitBtn = event.target;
+                    submitBtn.textContent = 'Join Community';
+                    submitBtn.disabled = false;
+                    return;
+                }
+                
+                // Handle other errors
                 showAlert('Error creating account: ' + error.message, 'error', 'Account Creation Error');
                 
                 // Reset button
@@ -1682,33 +1707,14 @@
 
         // Email validation functions
         async function validateEmail(email) {
-            // Check format first
+            // Client-side validation only - no database queries for anonymous users
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 return { valid: false, message: 'Please enter a valid email address' };
             }
             
-            // Check if email is already registered  
-            const supabase = window.dcfSupabase;
-            if (!supabase) {
-                return { valid: true, message: 'Email is available' };
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('user_profiles')
-                    .select('email')
-                    .eq('email', email.toLowerCase())
-                    .maybeSingle();
-                
-                if (data) {
-                    return { valid: false, message: 'This email is already registered. Try signing in instead.' };
-                }
-                
-                return { valid: true, message: 'Email is available' };
-            } catch (error) {
-                return { valid: true, message: 'Email is available' };
-            }
+            // Format is valid - availability will be checked during signup
+            return { valid: true, message: 'Email format is valid' };
         }
 
         function showEmailValidation(validation) {

@@ -2073,6 +2073,7 @@ async function initializeDCF() {
 // =============================================================================
 
 async function validateUsername(username) {
+    // Client-side validation only - no database queries for anonymous users
     if (!username || username.length < 3 || username.length > 30) {
         return { valid: false, message: 'Username must be 3-30 characters long' };
     }
@@ -2081,26 +2082,20 @@ async function validateUsername(username) {
         return { valid: false, message: 'Username can only contain letters, numbers, and underscores' };
     }
     
-    if (!window.dcfSupabase) {
-        console.error('Supabase client not initialized');
-        return { valid: false, message: 'Unable to validate username' };
+    // Reserved usernames check
+    const reservedUsernames = [
+        'admin', 'administrator', 'root', 'system', 'user', 'guest', 'test',
+        'support', 'help', 'info', 'contact', 'about', 'privacy', 'terms',
+        'api', 'www', 'mail', 'email', 'ftp', 'blog', 'forum', 'chat',
+        'dcf', 'hungary', 'foundation', 'domus', 'communis'
+    ];
+    
+    if (reservedUsernames.includes(username.toLowerCase())) {
+        return { valid: false, message: 'This username is reserved' };
     }
     
-    try {
-        const { data } = await window.dcfSupabase
-            .from('user_profiles')
-            .select('username')
-            .eq('username', username.toLowerCase())
-            .single();
-        
-        if (data) {
-            return { valid: false, message: 'Username is already taken' };
-        }
-        
-        return { valid: true, message: 'Username is available' };
-    } catch (error) {
-        return { valid: true, message: 'Username is available' };
-    }
+    // Format is valid - availability will be checked during signup
+    return { valid: true, message: 'Username format is valid' };
 }
 
 // =============================================================================
