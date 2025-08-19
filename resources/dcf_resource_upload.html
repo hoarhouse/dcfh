@@ -1212,7 +1212,8 @@
                 }
             }
             
-            const preview = `
+            // First create the base preview
+            const basePreview = `
                 <div class="preview-header">
                     <div style="font-size: 3rem; margin-right: 1rem;">${previewIcon}</div>
                     <div class="preview-info">
@@ -1236,7 +1237,59 @@
                 </div>` : ''}
             `;
 
-            document.getElementById('resourcePreview').innerHTML = preview;
+            document.getElementById('resourcePreview').innerHTML = basePreview;
+
+            // Add visual preview for images and videos
+            if (resourceData.file) {
+                if (resourceData.file.type.startsWith('image/')) {
+                    // Create image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imagePreview = document.createElement('div');
+                        imagePreview.className = 'preview-section';
+                        imagePreview.innerHTML = `
+                            <h4>📷 Image Preview</h4>
+                            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 2px solid #e5e5e5; text-align: center;">
+                                <img src="${e.target.result}" style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                <div style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                                    <strong>${resourceData.file.name}</strong> • ${fileSize} MB
+                                </div>
+                            </div>
+                        `;
+                        // Insert after description section
+                        const container = document.getElementById('resourcePreview');
+                        const descSection = container.querySelector('.preview-section');
+                        if (descSection && descSection.nextSibling) {
+                            container.insertBefore(imagePreview, descSection.nextSibling);
+                        } else {
+                            container.appendChild(imagePreview);
+                        }
+                    };
+                    reader.readAsDataURL(resourceData.file);
+                } else if (resourceData.file.type.startsWith('video/')) {
+                    // Create video preview
+                    const videoUrl = URL.createObjectURL(resourceData.file);
+                    const videoPreview = document.createElement('div');
+                    videoPreview.className = 'preview-section';
+                    videoPreview.innerHTML = `
+                        <h4>🎥 Video Preview</h4>
+                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 2px solid #e5e5e5;">
+                            <video src="${videoUrl}" style="width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" controls></video>
+                            <div style="margin-top: 1rem; color: #666; font-size: 0.9rem; text-align: center;">
+                                <strong>${resourceData.file.name}</strong> • ${fileSize} MB
+                            </div>
+                        </div>
+                    `;
+                    // Insert after description section
+                    const container = document.getElementById('resourcePreview');
+                    const descSection = container.querySelector('.preview-section');
+                    if (descSection && descSection.nextSibling) {
+                        container.insertBefore(videoPreview, descSection.nextSibling);
+                    } else {
+                        container.appendChild(videoPreview);
+                    }
+                }
+            }
         }
 
         // Submit resource
