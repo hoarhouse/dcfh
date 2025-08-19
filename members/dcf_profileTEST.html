@@ -865,6 +865,12 @@
     </main>
 
     <script>
+        // Debug auth system on script load
+        console.log('📄 Profile page script loading...');
+        console.log('Initial state - dcfSupabase:', !!window.dcfSupabase);
+        console.log('Initial state - getCurrentUser:', !!window.getCurrentUser);
+        console.log('Initial state - dcfUser:', window.dcfUser);
+        
         // Global variables
         let currentProfile = null;
         let currentUserId = null;
@@ -876,33 +882,85 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Profile page initializing...');
             
-            // Wait for auth to be ready
-            if (!window.dcfSupabase) {
-                console.error('Supabase not initialized');
-                showError('Unable to connect to database. Please refresh the page.');
-                return;
-            }
-
-            // Initialize profile
-            await initializeProfilePage();
+            // Wait for dcf-unified-auth.js to fully initialize
+            await waitForAuthSystemReady();
             
-            // Setup event listeners
+            // Setup event listeners first
             setupEventListeners();
+            
+            // Initialize profile after auth is ready
+            await initializeProfilePage();
         });
+
+        // Wait for auth system to be ready
+        async function waitForAuthSystemReady() {
+            console.log('🔄 Waiting for auth system to initialize...');
+            
+            let attempts = 0;
+            const maxAttempts = 20; // 10 seconds max wait
+            
+            while (attempts < maxAttempts) {
+                // Check if Supabase client is ready
+                if (window.dcfSupabase && window.getCurrentUser && window.dcfUser) {
+                    console.log('✅ Auth system ready');
+                    return true;
+                }
+                
+                console.log(`⏳ Auth system not ready, attempt ${attempts + 1}/${maxAttempts}`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            console.error('❌ Auth system failed to initialize within timeout');
+            showError('Authentication system failed to load. Please refresh the page.');
+            return false;
+        }
 
         // Initialize profile page
         async function initializeProfilePage() {
             try {
-                // Get current user from unified auth system
-                const currentUser = window.getCurrentUser();
-                if (!currentUser?.userId) {
-                    console.log('No authenticated user, redirecting to login');
-                    window.location.href = '../auth/dcf_login_page.html';
+                console.log('🔍 Checking authentication status...');
+                console.log('dcfSupabase available:', !!window.dcfSupabase);
+                console.log('getCurrentUser available:', !!window.getCurrentUser);
+                console.log('dcfUser state:', window.dcfUser);
+                
+                // Wait for user to be properly authenticated
+                let currentUser = null;
+                let attempts = 0;
+                const maxAuthAttempts = 10;
+                
+                while (attempts < maxAuthAttempts) {
+                    currentUser = window.getCurrentUser();
+                    console.log(`Auth attempt ${attempts + 1}: currentUser =`, currentUser);
+                    
+                    if (currentUser?.id) {
+                        console.log('✅ User found:', currentUser);
+                        break;
+                    }
+                    
+                    // Check if user is actually logged out
+                    if (window.dcfUser && window.dcfUser.isLoggedIn === false) {
+                        console.log('❌ User is definitively logged out');
+                        window.location.href = '../auth/dcf_login_page.html';
+                        return;
+                    }
+                    
+                    console.log(`⏳ User not ready, waiting... (attempt ${attempts + 1}/${maxAuthAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+                
+                if (!currentUser?.id) {
+                    console.error('❌ No authenticated user found after retries');
+                    showError('Authentication required. Redirecting to login...');
+                    setTimeout(() => {
+                        window.location.href = '../auth/dcf_login_page.html';
+                    }, 2000);
                     return;
                 }
 
-                currentUserId = currentUser.userId;
-                console.log('Loading profile for user:', currentUserId);
+                currentUserId = currentUser.id;
+                console.log('✅ Loading profile for user:', currentUserId, currentUser.email);
 
                 // Load profile data
                 const { data: profile, error } = await window.dcfSupabase
