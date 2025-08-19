@@ -748,6 +748,11 @@
     </header>
 
     <main class="main-container">
+        <!-- Debug Mode Banner -->
+        <div style="background: #ff6b6b; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; font-weight: 600;">
+            🔧 DEBUG MODE: Authentication redirects are disabled for debugging
+        </div>
+        
         <!-- Alert Messages -->
         <div class="alert alert-error" id="errorAlert"></div>
         <div class="alert alert-success" id="successAlert"></div>
@@ -866,10 +871,18 @@
 
     <script>
         // Debug auth system on script load
-        console.log('📄 Profile page script loading...');
+        console.log('📄 Profile page script loading at:', new Date().toISOString());
+        console.log('🌐 Current URL:', window.location.href);
+        console.log('📋 Document ready state:', document.readyState);
         console.log('Initial state - dcfSupabase:', !!window.dcfSupabase);
         console.log('Initial state - getCurrentUser:', !!window.getCurrentUser);
         console.log('Initial state - dcfUser:', window.dcfUser);
+        
+        // Track when scripts load
+        console.log('🔍 Available window properties:');
+        console.log('  - supabase (CDN):', !!window.supabase);
+        console.log('  - dcfSupabase:', !!window.dcfSupabase);
+        console.log('  - initializeDCF:', !!window.initializeDCF);
         
         // Global variables
         let currentProfile = null;
@@ -877,18 +890,48 @@
         let postsOffset = 0;
         const postsLimit = 20;
         let isLoading = false;
+        
+        // Real-time auth state monitoring
+        setInterval(() => {
+            const currentState = {
+                dcfSupabase: !!window.dcfSupabase,
+                getCurrentUser: !!window.getCurrentUser,
+                dcfUser: window.dcfUser?.isLoggedIn || false,
+                userEmail: window.dcfUser?.profile?.email || 'none'
+            };
+            
+            if (!window.lastAuthState || JSON.stringify(window.lastAuthState) !== JSON.stringify(currentState)) {
+                console.log('🔄 Auth state changed:', currentState);
+                window.lastAuthState = currentState;
+            }
+        }, 1000);
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Profile page initializing...');
+            console.log('🚀 Profile page DOMContentLoaded fired');
+            console.log('⏰ Timestamp:', new Date().toISOString());
+            console.log('📍 Current auth state at DOM ready:', {
+                dcfSupabase: !!window.dcfSupabase,
+                getCurrentUser: !!window.getCurrentUser,
+                dcfUser: window.dcfUser
+            });
             
             // Wait for dcf-unified-auth.js to fully initialize
-            await waitForAuthSystemReady();
+            console.log('⏳ Starting auth system wait...');
+            const authReady = await waitForAuthSystemReady();
+            
+            if (!authReady) {
+                console.error('❌ Auth system failed to initialize, showing debug info');
+                showDebugAuthInfo();
+                return;
+            }
             
             // Setup event listeners first
+            console.log('⚙️ Setting up event listeners...');
             setupEventListeners();
             
             // Initialize profile after auth is ready
+            console.log('👤 Starting profile initialization...');
             await initializeProfilePage();
         });
 
@@ -947,9 +990,9 @@
                     
                     // Check if user is actually logged out
                     if (window.dcfUser && window.dcfUser.isLoggedIn === false) {
-                        console.log('❌ User is definitively logged out');
-                        window.location.href = '../auth/dcf_login_page.html';
-                        return;
+                        console.error('🚨 WOULD REDIRECT: User is definitively logged out');
+                        // window.location.href = '../auth/dcf_login_page.html';
+                        // return;
                     }
                     
                     console.log(`⏳ User not ready, waiting... (attempt ${attempts + 1}/${maxAuthAttempts})`);
@@ -958,11 +1001,15 @@
                 }
                 
                 if (!currentUser?.id) {
-                    console.error('❌ No authenticated user found after retries');
-                    showError('Authentication required. Redirecting to login...');
-                    setTimeout(() => {
-                        window.location.href = '../auth/dcf_login_page.html';
-                    }, 2000);
+                    console.error('🚨 WOULD REDIRECT: No authenticated user found after retries');
+                    showError('DEBUG MODE: Authentication required but redirects disabled');
+                    // setTimeout(() => {
+                    //     window.location.href = '../auth/dcf_login_page.html';
+                    // }, 2000);
+                    // return;
+                    
+                    // Show debug info instead of redirecting
+                    showDebugAuthInfo();
                     return;
                 }
 
@@ -1475,6 +1522,50 @@
             alert.textContent = message;
             alert.classList.add('show');
             setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        // Debug function to show auth state
+        function showDebugAuthInfo() {
+            console.log('🔍 FULL DEBUG AUTH STATE:');
+            console.log('window.dcfSupabase:', window.dcfSupabase);
+            console.log('window.getCurrentUser:', window.getCurrentUser);
+            console.log('window.dcfUser:', window.dcfUser);
+            console.log('window.isUserLoggedIn():', window.isUserLoggedIn ? window.isUserLoggedIn() : 'function not available');
+            
+            // Show debug info on page
+            const debugPanel = document.createElement('div');
+            debugPanel.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 20px;
+                right: 20px;
+                background: #fff;
+                border: 3px solid #ff0000;
+                padding: 20px;
+                z-index: 10000;
+                font-family: monospace;
+                font-size: 12px;
+                max-height: 60vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            
+            debugPanel.innerHTML = `
+                <h3 style="color: #ff0000; margin-top: 0;">🔍 DEBUG: Authentication State</h3>
+                <div><strong>dcfSupabase available:</strong> ${!!window.dcfSupabase}</div>
+                <div><strong>getCurrentUser available:</strong> ${!!window.getCurrentUser}</div>
+                <div><strong>dcfUser state:</strong> ${JSON.stringify(window.dcfUser, null, 2)}</div>
+                <div><strong>Current URL:</strong> ${window.location.href}</div>
+                <div><strong>Script path:</strong> ../js/dcf-unified-auth.js</div>
+                <hr>
+                <div style="color: #ff0000;"><strong>WOULD REDIRECT TO:</strong> ../auth/dcf_login_page.html</div>
+                <hr>
+                <button onclick="this.parentElement.remove()" style="margin-top: 10px;">Close Debug Panel</button>
+                <button onclick="location.reload()" style="margin-top: 10px; margin-left: 10px;">Reload Page</button>
+                <button onclick="window.location.href='../auth/dcf_login_page.html'" style="margin-top: 10px; margin-left: 10px;">Go to Login</button>
+            `;
+            
+            document.body.appendChild(debugPanel);
         }
     </script>
 </body>
