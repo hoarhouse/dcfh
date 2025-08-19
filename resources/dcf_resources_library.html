@@ -1221,18 +1221,55 @@
             const videoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'];
             
             if (imageTypes.includes(resource.file_type?.toLowerCase())) {
-                return `
-                    <div class="resource-preview">
-                        <img src="${resource.file_url}" 
-                             alt="${resource.title}" 
-                             style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                             onclick="event.stopPropagation();">
-                        <div class="preview-fallback" style="display: none; width: 120px; height: 80px; border-radius: 8px; background: #f0f0f0; align-items: center; justify-content: center; color: #666; font-size: 0.8rem;">
-                            📷 Image Preview
+                // Check if file_url is a JSON array (multiple images)
+                let imageUrls = [];
+                try {
+                    // Try to parse as JSON array
+                    const parsed = JSON.parse(resource.file_url);
+                    if (Array.isArray(parsed)) {
+                        imageUrls = parsed;
+                    } else {
+                        imageUrls = [resource.file_url];
+                    }
+                } catch (e) {
+                    // If not JSON, treat as single URL
+                    imageUrls = [resource.file_url];
+                }
+                
+                if (imageUrls.length === 1) {
+                    // Single image
+                    return `
+                        <div class="resource-preview">
+                            <img src="${imageUrls[0]}" 
+                                 alt="${resource.title}" 
+                                 style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                 onclick="event.stopPropagation();">
+                            <div class="preview-fallback" style="display: none; width: 120px; height: 80px; border-radius: 8px; background: #f0f0f0; align-items: center; justify-content: center; color: #666; font-size: 0.8rem;">
+                                📷 Image Preview
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    // Multiple images - show first with count indicator
+                    return `
+                        <div class="resource-preview">
+                            <div style="position: relative;">
+                                <img src="${imageUrls[0]}" 
+                                     alt="${resource.title}" 
+                                     style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     onclick="event.stopPropagation();">
+                                <div style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem;">
+                                    +${imageUrls.length - 1}
+                                </div>
+                            </div>
+                            <div class="preview-fallback" style="display: none; width: 120px; height: 80px; border-radius: 8px; background: #f0f0f0; align-items: center; justify-content: center; color: #666; font-size: 0.8rem;">
+                                📷 ${imageUrls.length} Images
+                            </div>
+                        </div>
+                    `;
+                }
             } else if (videoTypes.includes(resource.file_type?.toLowerCase())) {
                 return `
                     <div class="resource-preview">
