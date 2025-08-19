@@ -2531,33 +2531,55 @@
             }
         }
 
-        // Wait for auth system to be ready
+        // Wait for auth system to be ready with proper timing
         async function waitForAuth() {
-            let attempts = 0;
-            const maxAttempts = 10; // Reduced timeout for better UX
+            let authAttempts = 0;
+            const maxAttempts = 20; // 20 attempts for 3 seconds total
+            const waitInterval = 150; // 150ms per attempt
             
-            while (attempts < maxAttempts) {
-                if (typeof window.getCurrentUser === 'function') {
-                    const user = window.getCurrentUser();
-                    console.log('🔍 Auth Ready Check - Attempt:', attempts + 1, 'User:', user ? 'logged in' : 'no session');
-                    
-                    if (user && user.id) {
-                        // User is authenticated
-                        return true;
-                    } else if (attempts > 3) {
-                        // After a few attempts, allow access check
-                        // This prevents infinite waiting if user is not logged in
-                        return false;
-                    }
-                }
-                
-                attempts++;
-                await new Promise(resolve => setTimeout(resolve, 100));
+            console.log('🔄 Waiting for unified auth system to initialize...');
+            
+            // First, wait for the auth system itself to be ready
+            while (!window.getCurrentUser && authAttempts < maxAttempts) {
+                console.log(`⏳ Auth system not ready yet (attempt ${authAttempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, waitInterval));
+                authAttempts++;
             }
             
-            // Auth system didn't load in time, proceed with limited access
-            console.log('⚠️ Auth system timeout - proceeding with limited access');
-            return false;
+            if (!window.getCurrentUser) {
+                console.error('❌ Auth system failed to initialize after 3 seconds');
+                return false;
+            }
+            
+            console.log('✅ Auth system ready, checking user session...');
+            
+            // Now check for user authentication with additional attempts
+            let userCheckAttempts = 0;
+            
+            while (userCheckAttempts < maxAttempts) {
+                const user = window.getCurrentUser();
+                console.log(`🔍 User check attempt ${userCheckAttempts + 1}/${maxAttempts}: user =`, user);
+                
+                if (user && user.id) {
+                    console.log(`✅ User authenticated after ${userCheckAttempts + 1} attempts (${(userCheckAttempts + 1) * waitInterval}ms)`);
+                    return true;
+                }
+                
+                userCheckAttempts++;
+                await new Promise(resolve => setTimeout(resolve, waitInterval));
+            }
+            
+            // Final check after all attempts
+            const finalUser = window.getCurrentUser();
+            console.log('🔍 Final auth check after full wait period: user =', finalUser);
+            
+            if (finalUser && finalUser.id) {
+                console.log('✅ User authenticated on final check');
+                return true;
+            } else {
+                console.log('⚠️ No valid user session found after 6 seconds of waiting');
+                return false;
+            }
         }
 
         // Check if user has project management access
@@ -2573,16 +2595,22 @@
             
             // Check if user is project owner or team member
             try {
+                console.log('🔍 Current user:', currentUser);
+                console.log('🔍 Project query using author_email for project ID:', projectId);
+                
                 const { data: project, error } = await supabase
                     .from('projects')
-                    .select('owner_email')
+                    .select('author_email')
                     .eq('id', projectId)
                     .single();
                 
                 if (error) throw error;
                 
+                console.log('🔍 Project data retrieved:', project);
+                
                 // Check if user is owner
-                if (project.owner_email === currentUser.email) {
+                if (project.author_email === currentUser.email) {
+                    console.log('✅ User is project owner');
                     return true;
                 }
                 
