@@ -603,6 +603,32 @@
             gap: 0.5rem;
         }
 
+        .resource-preview {
+            display: flex;
+            justify-content: flex-start;
+            margin: 1rem 0;
+        }
+
+        .resource-preview img,
+        .resource-preview video {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .resource-preview img:hover,
+        .resource-preview video:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .preview-fallback {
+            border: 1px solid #e5e5e5;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .btn-small {
             padding: 0.4rem 0.8rem;
             font-size: 0.8rem;
@@ -1101,6 +1127,8 @@
                             </div>
                         </div>
                         
+                        ${getResourcePreview(resource)}
+                        
                         <div class="resource-description">${resource.description}</div>
                         
                         <div class="resource-tags">
@@ -1156,6 +1184,77 @@
                 other: 'Resource'
             };
             return labels[type] || 'Resource';
+        }
+
+        function getResourcePreview(resource) {
+            if (!resource.file_url) return '';
+            
+            const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            const videoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'];
+            
+            if (imageTypes.includes(resource.file_type?.toLowerCase())) {
+                return `
+                    <div class="resource-preview">
+                        <img src="${resource.file_url}" 
+                             alt="${resource.title}" 
+                             style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                             onclick="event.stopPropagation();">
+                        <div class="preview-fallback" style="display: none; width: 120px; height: 80px; border-radius: 8px; background: #f0f0f0; align-items: center; justify-content: center; color: #666; font-size: 0.8rem;">
+                            📷 Image Preview
+                        </div>
+                    </div>
+                `;
+            } else if (videoTypes.includes(resource.file_type?.toLowerCase())) {
+                return `
+                    <div class="resource-preview">
+                        <video style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;"
+                               onclick="event.stopPropagation();"
+                               onloadedmetadata="this.currentTime = 1;"
+                               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                               muted>
+                            <source src="${resource.file_url}" type="${resource.file_type}">
+                        </video>
+                        <div class="preview-fallback" style="display: none; width: 120px; height: 80px; border-radius: 8px; background: #f0f0f0; align-items: center; justify-content: center; color: #666; font-size: 0.8rem;">
+                            🎥 Video Preview
+                        </div>
+                    </div>
+                `;
+            } else if (resource.file_type?.includes('pdf')) {
+                return `
+                    <div class="resource-preview">
+                        <div style="width: 120px; height: 80px; border-radius: 8px; background: #dc3545; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                            📄
+                        </div>
+                    </div>
+                `;
+            } else if (resource.file_type?.includes('word') || resource.file_type?.includes('doc')) {
+                return `
+                    <div class="resource-preview">
+                        <div style="width: 120px; height: 80px; border-radius: 8px; background: #2b579a; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                            📝
+                        </div>
+                    </div>
+                `;
+            } else if (resource.file_type?.includes('excel') || resource.file_type?.includes('sheet')) {
+                return `
+                    <div class="resource-preview">
+                        <div style="width: 120px; height: 80px; border-radius: 8px; background: #107c41; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                            📊
+                        </div>
+                    </div>
+                `;
+            } else if (resource.file_type?.includes('powerpoint') || resource.file_type?.includes('presentation')) {
+                return `
+                    <div class="resource-preview">
+                        <div style="width: 120px; height: 80px; border-radius: 8px; background: #d24726; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                            📈
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return '';
         }
 
         function formatNumber(num) {
