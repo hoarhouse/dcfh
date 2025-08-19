@@ -1304,43 +1304,60 @@
                     }
                 }
 
-                // Wait for auth to be ready with proper timing
+                // Wait for unified auth system to be ready first
                 let authAttempts = 0;
-                let authUser = null;
+                const maxAttempts = 20; // Increased to 20 attempts
+                const waitInterval = 150; // Increased to 150ms per attempt (3 seconds total)
                 
-                while (authAttempts < 10) {
-                    if (typeof window.getCurrentUser === 'function') {
-                        authUser = window.getCurrentUser();
-                        console.log(`🔍 Auth attempt ${authAttempts + 1}: user =`, authUser);
-                        
-                        if (authUser && authUser.id) {
-                            console.log('✅ User authenticated after', authAttempts + 1, 'attempts');
-                            currentUser = authUser;
-                            break;
-                        }
-                    } else {
-                        console.log(`⚠️ Attempt ${authAttempts + 1}: getCurrentUser not ready yet`);
+                console.log('🔄 Waiting for unified auth system to initialize...');
+                
+                // First, wait for the auth system itself to be ready
+                while (!window.getCurrentUser && authAttempts < maxAttempts) {
+                    console.log(`⏳ Auth system not ready yet (attempt ${authAttempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
+                    authAttempts++;
+                }
+                
+                if (!window.getCurrentUser) {
+                    console.error('❌ Auth system failed to initialize after 3 seconds');
+                    showError('Authentication system not available. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('✅ Auth system ready, checking user session...');
+                
+                // Now check for user authentication with additional attempts
+                let authUser = null;
+                let userCheckAttempts = 0;
+                
+                while (userCheckAttempts < maxAttempts) {
+                    authUser = window.getCurrentUser();
+                    console.log(`🔍 User check attempt ${userCheckAttempts + 1}/${maxAttempts}: user =`, authUser);
+                    
+                    if (authUser && authUser.id) {
+                        console.log(`✅ User authenticated after ${userCheckAttempts + 1} attempts (${(userCheckAttempts + 1) * waitInterval}ms)`);
+                        currentUser = authUser;
+                        break;
                     }
                     
-                    authAttempts++;
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    userCheckAttempts++;
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
                 }
                 
                 // Final check after all attempts
-                if (!authUser && typeof window.getCurrentUser === 'function') {
+                if (!authUser || !authUser.id) {
                     authUser = window.getCurrentUser();
-                    console.log('🔍 Final auth check after waiting: user =', authUser);
+                    console.log('🔍 Final auth check after full wait period: user =', authUser);
+                    
                     if (authUser && authUser.id) {
                         currentUser = authUser;
                         console.log('✅ User authenticated on final check');
+                    } else {
+                        console.log('⚠️ No valid user session found after 3 seconds of waiting');
+                        console.log('Final authUser value:', authUser);
+                        showNoAccessMessage();
+                        return;
                     }
-                }
-                
-                if (!authUser || !authUser.id) {
-                    console.log('⚠️ No valid user session found after all attempts');
-                    console.log('Final authUser value:', authUser);
-                    showNoAccessMessage();
-                    return;
                 }
 
                 // Load events now that auth is confirmed
