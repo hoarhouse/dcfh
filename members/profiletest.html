@@ -1062,7 +1062,7 @@
                 // Get profile from Supabase
                 const { data, error } = await window.dcfSupabase
                     .from('user_profiles')
-                    .select('*')
+                    .select('first_name, last_name, role, location, organization, avatar_url, username, bio, interests, skills')
                     .eq('id', currentUser.id)
                     .single();
 
@@ -1079,7 +1079,8 @@
                     currentProfile = {
                         id: currentUser.id,
                         email: currentUser.email,
-                        name: currentUser.name,
+                        first_name: currentUser.first_name || '',
+                        last_name: currentUser.last_name || '',
                         username: currentUser.username,
                         bio: '',
                         role: '',
@@ -1100,8 +1101,9 @@
             console.log('🎨 Updating UI...');
             
             // Basic info
-            if (document.getElementById('profileName') && currentProfile.name) {
-               document.getElementById('profileName').textContent = currentProfile.name;
+            if (document.getElementById('profileName') && (currentProfile.first_name || currentProfile.last_name)) {
+                const fullName = [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ');
+                document.getElementById('profileName').textContent = fullName;
             }
             if (document.getElementById('profileRole') && currentProfile.role) {
                document.getElementById('profileRole').textContent = currentProfile.role;
@@ -1239,7 +1241,8 @@
             const editMode = document.getElementById('contactEditMode');
             
             // Populate form fields
-            document.getElementById('nameInput').value = currentProfile.name || '';
+            const fullName = [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ');
+            document.getElementById('nameInput').value = fullName || '';
             document.getElementById('roleInput').value = currentProfile.role || '';
             document.getElementById('organizationInput').value = currentProfile.organization || '';
             document.getElementById('locationInput').value = currentProfile.location || '';
@@ -1337,7 +1340,7 @@
                     .from('posts')
                     .insert([{
                         author_id: currentUser.id,
-                        author_name: currentUser.name,
+                        author_name: [currentUser.first_name, currentUser.last_name].filter(Boolean).join(' ') || currentUser.username,
                         author_email: currentUser.email,
                         content: content,
                         created_at: new Date().toISOString()
@@ -1469,7 +1472,7 @@
         function shareProfile() {
             if (navigator.share) {
                 navigator.share({
-                    title: `${currentProfile.name} - DCF Hungary`,
+                    title: `${[currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ')} - DCF Hungary`,
                     text: `Check out this profile on DCF Hungary! 🚀`,
                     url: window.location.href
                 });
