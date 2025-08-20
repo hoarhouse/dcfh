@@ -626,6 +626,8 @@ function closeLogoutModal() {
 }
 
 async function confirmLogout() {
+    console.log('🚨 confirmLogout() FUNCTION CALLED');
+    console.trace('LOGOUT CALL STACK:');
     try {
         // Sign out from Supabase
         if (window.dcfSupabase) {
