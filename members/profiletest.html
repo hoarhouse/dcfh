@@ -1172,6 +1172,29 @@
             await loadUserPosts();
             await loadUserStats();
             updateUI();
+            
+            // Initialize post creation after profile loads
+            setTimeout(() => {
+                initializePostCreation();
+                
+                // Add textarea input listener
+                const textarea = document.getElementById('postTextarea');
+                if (textarea) {
+                    textarea.addEventListener('input', handlePostInput);
+                }
+                
+                // Add post button click listener
+                const postBtn = document.querySelector('.post-btn-disabled');
+                if (postBtn) {
+                    postBtn.addEventListener('click', submitPost);
+                }
+                
+                // Add media button click listener
+                const mediaBtn = document.querySelector('.media-btn');
+                if (mediaBtn) {
+                    mediaBtn.addEventListener('click', openMediaUpload);
+                }
+            }, 1000);
         }
 
         function showLoginPrompt() {
@@ -1844,6 +1867,111 @@
                 console.error('❌ Cover image upload error:', error);
                 showNotification('💥 Error uploading cover image', 'error');
             }
+        }
+
+        // Post creation functions
+        // Initialize post creation box with user data
+        function initializePostCreation() {
+            const currentUser = window.dcfUser.profile;
+            if (!currentUser) return;
+            
+            // Update author avatar
+            const authorAvatar = document.getElementById('postAuthorAvatar');
+            if (authorAvatar) {
+                if (currentUser.avatar_url) {
+                    authorAvatar.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                    authorAvatar.textContent = '';
+                } else {
+                    const initials = window.generateInitials(currentUser.username);
+                    authorAvatar.textContent = initials;
+                }
+            }
+            
+            // Update author name
+            const authorName = document.getElementById('postAuthorName');
+            if (authorName) {
+                authorName.textContent = `@${currentUser.username}`;
+            }
+        }
+
+        // Handle post input changes
+        function handlePostInput() {
+            const textarea = document.getElementById('postTextarea');
+            const postBtn = document.querySelector('.post-btn-disabled');
+            
+            if (!textarea || !postBtn) return;
+            
+            const content = textarea.value.trim();
+            const hasContent = content.length > 0;
+            
+            // Enable/disable post button
+            if (hasContent) {
+                postBtn.className = 'post-btn';
+                postBtn.disabled = false;
+                postBtn.style.background = '#000';
+                postBtn.style.color = 'white';
+                postBtn.style.cursor = 'pointer';
+            } else {
+                postBtn.className = 'post-btn-disabled';
+                postBtn.disabled = true;
+                postBtn.style.background = '#e5e5e5';
+                postBtn.style.color = '#999';
+                postBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        // Submit post function
+        async function submitPost() {
+            const currentUser = window.dcfUser.profile;
+            if (!currentUser) {
+                alert('Please log in to create posts');
+                return;
+            }
+            
+            const textarea = document.getElementById('postTextarea');
+            const content = textarea.value.trim();
+            
+            if (!content) {
+                alert('Please enter some content for your post');
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('posts')
+                    .insert({
+                        author_id: currentUser.id,
+                        author_email: currentUser.email,
+                        author_name: `@${currentUser.username}`,
+                        username: currentUser.username,
+                        content: content,
+                        media_count: 0,
+                        media_type: 'none'
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                // Reset form
+                textarea.value = '';
+                handlePostInput();
+                
+                // Show success
+                alert('Post created successfully!');
+                
+                // Reload posts (placeholder for now)
+                console.log('Post created:', data);
+                
+            } catch (error) {
+                console.error('Error creating post:', error);
+                alert('Failed to create post. Please try again.');
+            }
+        }
+
+        // Placeholder for media upload
+        function openMediaUpload() {
+            alert('Media upload coming in Stage 2!');
         }
     </script>
 
