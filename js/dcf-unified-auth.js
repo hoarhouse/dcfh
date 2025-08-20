@@ -641,6 +641,8 @@ async function confirmLogout() {
         localStorage.removeItem('dcf_user_email');
         
         // Navigate to login page
+        console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
+        console.trace();
         const basePath = getCorrectBasePath();
         window.location.href = basePath + 'auth/dcf_login_page.html';
         
@@ -649,6 +651,8 @@ async function confirmLogout() {
         // Force logout even if Supabase signOut fails
         localStorage.clear();
         sessionStorage.clear();
+        console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
+        console.trace();
         const basePath = getCorrectBasePath();
         window.location.href = basePath + 'auth/dcf_login_page.html';
     }
