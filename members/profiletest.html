@@ -2597,69 +2597,73 @@
             }
         }
 
-        async function editPost(postId) {
-            try {
-                // Get current post data
-                const { data: post, error } = await window.dcfSupabase
-                    .from('posts')
-                    .select('*')
-                    .eq('id', postId)
-                    .single();
-                    
-                if (error) throw error;
-                
-                // Create edit modal
-                const editModal = document.createElement('div');
-                editModal.id = 'editPostModal';
-                editModal.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.5);
-                    z-index: 10000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                `;
-                
-                editModal.innerHTML = `
-                    <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="margin: 0; color: #333;">Edit Post</h3>
-                            <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
-                        </div>
-                        
-                        <div style="margin-bottom: 1.5rem;">
-                            <textarea id="editPostContent" style="width: 100%; min-height: 120px; padding: 1rem; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical;" placeholder="What's on your mind?">${post.content}</textarea>
-                        </div>
-                        
-                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                            <button onclick="closeEditModal()" style="padding: 0.75rem 1.5rem; background: #f8f9fa; color: #666; border: 1px solid #e5e5e5; border-radius: 8px; cursor: pointer;">Cancel</button>
-                            <button onclick="savePostEdit('${postId}')" style="padding: 0.75rem 1.5rem; background: #000; color: white; border: none; border-radius: 8px; cursor: pointer;">Save Changes</button>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(editModal);
-                
-                // Focus textarea and position cursor at end
-                const textarea = document.getElementById('editPostContent');
-                textarea.focus();
-                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                
-                // Prevent body scroll
-                document.body.style.overflow = 'hidden';
-                
-            } catch (error) {
-                console.error('Error opening edit modal:', error);
-                showSiteAlert('Failed to open edit dialog', 'error');
+        // INLINE EDITING FUNCTIONS
+        function toggleInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+            
+            if (contentDiv.querySelector('textarea')) {
+                // Already editing - save changes
+                saveInlineEdit(postId);
+            } else {
+                // Start editing
+                startInlineEdit(postId);
             }
         }
 
-        async function savePostEdit(postId) {
-            const textarea = document.getElementById('editPostContent');
+        function startInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+            
+            // Get current content (strip HTML links)
+            const currentContent = contentDiv.textContent || contentDiv.innerText;
+            
+            // Create textarea with current content
+            const textarea = document.createElement('textarea');
+            textarea.id = `edit-textarea-${postId}`;
+            textarea.value = currentContent;
+            textarea.style.cssText = `
+                width: 100%;
+                min-height: 100px;
+                padding: 1rem;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-family: inherit;
+                resize: vertical;
+                outline: none;
+                background: #f8f9fa;
+            `;
+            
+            // Create save/cancel buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = 'margin-top: 0.5rem; display: flex; gap: 0.5rem; justify-content: flex-end;';
+            buttonContainer.innerHTML = `
+                <button onclick="cancelInlineEdit('${postId}')" style="padding: 0.5rem 1rem; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">Cancel</button>
+                <button onclick="saveInlineEdit('${postId}')" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">Save</button>
+            `;
+            
+            // Store original content
+            contentDiv.setAttribute('data-original-content', contentDiv.innerHTML);
+            
+            // Replace content with textarea
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(textarea);
+            contentDiv.appendChild(buttonContainer);
+            
+            // Update edit button
+            editBtn.textContent = '💾 Save';
+            editBtn.style.color = '#28a745';
+            
+            // Focus textarea
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        async function saveInlineEdit(postId) {
+            const textarea = document.getElementById(`edit-textarea-${postId}`);
             const newContent = textarea.value.trim();
             
             if (!newContent) {
@@ -2668,9 +2672,8 @@
             }
             
             try {
-                // Show loading state
-                const saveBtn = document.querySelector('button[onclick="savePostEdit(\'' + postId + '\')"]');
-                const originalText = saveBtn.textContent;
+                // Show saving state
+                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
                 saveBtn.textContent = 'Saving...';
                 saveBtn.disabled = true;
                 
@@ -2685,50 +2688,61 @@
                     
                 if (error) throw error;
                 
-                // Update post in DOM
-                const postElement = document.querySelector(`[data-post-id="${postId}"] .post-content`);
-                if (postElement) {
-                    postElement.innerHTML = linkifyText(newContent);
-                    
-                    // Add edited indicator
-                    const postHeader = document.querySelector(`[data-post-id="${postId}"] .post-date`);
-                    if (postHeader && !postHeader.textContent.includes('(edited)')) {
-                        postHeader.textContent += ' (edited)';
-                    }
+                // Update post content
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                const contentDiv = postElement.querySelector('.post-content');
+                const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+                
+                // Restore content with linkified text
+                contentDiv.innerHTML = linkifyText(newContent);
+                
+                // Update edit button
+                editBtn.innerHTML = '✏️ Edit';
+                editBtn.style.color = '#007bff';
+                
+                // Add edited indicator
+                const postDate = postElement.querySelector('.post-date');
+                if (postDate && !postDate.textContent.includes('(edited)')) {
+                    postDate.textContent += ' (edited)';
                 }
                 
-                closeEditModal();
                 showSiteAlert('Post updated successfully', 'success');
                 
             } catch (error) {
                 console.error('Error saving post edit:', error);
                 showSiteAlert('Failed to save changes. Please try again.', 'error');
                 
-                // Reset button
-                const saveBtn = document.querySelector('button[onclick="savePostEdit(\'' + postId + '\')"]');
+                // Reset save button
+                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
                 if (saveBtn) {
-                    saveBtn.textContent = 'Save Changes';
+                    saveBtn.textContent = 'Save';
                     saveBtn.disabled = false;
                 }
             }
         }
 
-        function closeEditModal() {
-            const modal = document.getElementById('editPostModal');
-            if (modal) {
-                modal.remove();
-            }
+        function cancelInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
             
-            // Restore body scroll
-            document.body.style.overflow = 'auto';
+            // Restore original content
+            const originalContent = contentDiv.getAttribute('data-original-content');
+            contentDiv.innerHTML = originalContent;
+            
+            // Reset edit button
+            editBtn.innerHTML = '✏️ Edit';
+            editBtn.style.color = '#007bff';
         }
 
-        // Close modal on escape key
+        // Close inline edit on escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('editPostModal');
-                if (modal) {
-                    closeEditModal();
+                // Find any active inline edit
+                const editingTextarea = document.querySelector('[id^="edit-textarea-"]');
+                if (editingTextarea) {
+                    const postId = editingTextarea.id.replace('edit-textarea-', '');
+                    cancelInlineEdit(postId);
                 }
             }
         });
