@@ -1188,6 +1188,7 @@
         // Global variables
         let currentUser = null;
         let currentProfile = null;
+        let selectedPostFiles = [];
 
         // Initialize when auth is ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -1250,17 +1251,12 @@
                     postBtn.addEventListener('click', submitPost);
                 }
                 
-                // Add media button click listener
-                const mediaBtn = document.querySelector('.media-btn');
-                if (mediaBtn) {
-                    mediaBtn.addEventListener('click', openMediaUpload);
-                }
                 
                 // Add file input change listener
                 document.getElementById('mediaFileInput').addEventListener('change', function(e) {
                     const files = Array.from(e.target.files);
                     if (files.length > 0) {
-                        handleFileUpload(files);
+                        handlePostFileUpload(files);
                     }
                 });
             }, 1000);
@@ -1931,43 +1927,27 @@
             }
             
             try {
-                // Check for selected media files
-                const fileInput = document.getElementById('mediaFileInput');
-                const selectedFiles = Array.from(fileInput.files);
-
-                let mediaCount = 0;
-                let mediaType = 'none';
-                let uploadedMediaUrls = [];
-
-                // Upload media files if any selected
-                if (selectedFiles.length > 0) {
+                let mediaUrls = [];
+                if (selectedPostFiles && selectedPostFiles.length > 0) {
                     try {
                         // Show upload progress
-                        const previewArea = document.getElementById('mediaPreviewArea');
-                        if (previewArea) {
-                            previewArea.innerHTML = '<div style="text-align: center; padding: 1rem; color: #007bff;"><strong>📤 Uploading media files...</strong></div>';
+                        const statusDiv = document.getElementById('postUploadStatus');
+                        if (statusDiv) {
+                            statusDiv.style.display = 'block';
+                            statusDiv.style.color = '#007bff';
+                            statusDiv.textContent = '📤 Uploading media files...';
                         }
                         
-                        for (let i = 0; i < selectedFiles.length; i++) {
-                            const file = selectedFiles[i];
-                            
-                            // Update progress
-                            if (previewArea) {
-                                previewArea.innerHTML = `<div style="text-align: center; padding: 1rem; color: #007bff;"><strong>📤 Uploading ${i + 1}/${selectedFiles.length}: ${file.name}</strong></div>`;
-                            }
-                            
-                            const uploadedUrl = await uploadMediaFile(file);
-                            uploadedMediaUrls.push(uploadedUrl);
-                        }
-                        mediaCount = selectedFiles.length;
-                        mediaType = selectedFiles[0].type.startsWith('image/') ? 'images' : 'video';
+                        mediaUrls = await uploadPostMedia(selectedPostFiles);
                         
                         // Show completion
-                        if (previewArea) {
-                            previewArea.innerHTML = '<div style="text-align: center; padding: 1rem; color: #28a745;"><strong>✅ Upload complete!</strong></div>';
+                        if (statusDiv) {
+                            statusDiv.style.color = '#28a745';
+                            statusDiv.textContent = '✅ Upload complete!';
                         }
-                    } catch (uploadError) {
-                        alert('Error uploading media files: ' + uploadError.message);
+                    } catch (error) {
+                        console.error('Media upload failed:', error);
+                        alert('Failed to upload media files');
                         return;
                     }
                 }
@@ -1980,8 +1960,9 @@
                         author_name: `@${currentUser.username}`,
                         username: currentUser.username,
                         content: content,
-                        media_count: mediaCount,
-                        media_type: mediaType
+                        media_urls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+                        media_count: mediaUrls.length,
+                        media_type: mediaUrls.length > 0 ? (selectedPostFiles[0].type.startsWith('image/') ? 'images' : 'video') : 'none'
                     })
                     .select()
                     .single();
@@ -1992,23 +1973,14 @@
                 handlePostInput();
                 alert('Post created successfully!');
                 
-                // Save media records to post_media table
-                if (uploadedMediaUrls.length > 0) {
-                    const mediaRecords = uploadedMediaUrls.map((url, index) => ({
-                        post_id: data.id,
-                        media_url: url,
-                        media_type: selectedFiles[index].type.startsWith('image/') ? 'image' : 'video',
-                        file_size: selectedFiles[index].size,
-                        display_order: index + 1
-                    }));
-                    
-                    await window.dcfSupabase
-                        .from('post_media')
-                        .insert(mediaRecords);
-                }
-
                 // Clear media selection after successful post
-                clearMediaSelection();
+                removePostFiles();
+                
+                // Hide upload status
+                const statusDiv = document.getElementById('postUploadStatus');
+                if (statusDiv) {
+                    statusDiv.style.display = 'none';
+                }
                 
                 // Add post to feed immediately
                 addPostToFeed(data);
@@ -2020,9 +1992,6 @@
             }
         }
 
-        function openMediaUpload() {
-            document.getElementById('mediaFileInput').click();
-        }
 
         function addPostToFeed(post) {
             const feedContainer = document.getElementById('postsFeed');
@@ -2125,60 +2094,173 @@
         }
 
         function validateFileSelection(files) {
-            const maxFiles = 4;
-            const maxVideoFiles = 1;
-
-            if (files.length > maxFiles) {
-                throw new Error(`Maximum ${maxFiles} files allowed`);
+            const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            const videoFiles = Array.from(files).filter(file => videoTypes.includes(file.type));
+            const nonVideoFiles = Array.from(files).filter(file => !videoTypes.includes(file.type));
+            
+            // Rule 1: Only 1 video file allowed, and no other files with videos
+            if (videoFiles.length > 1) {
+                showUploadError('Only one video file can be uploaded at a time.');
+                return false;
             }
-
-            const videoFiles = files.filter(file => file.type.startsWith('video/'));
-            if (videoFiles.length > maxVideoFiles) {
-                throw new Error(`Maximum ${maxVideoFiles} video file allowed`);
+            
+            if (videoFiles.length === 1 && files.length > 1) {
+                showUploadError('Videos can only be uploaded one at a time. Please select only the video file.');
+                return false;
             }
-
-            if (videoFiles.length > 0 && files.length > 1) {
-                throw new Error('When uploading video, only 1 file is allowed');
+            
+            // Rule 2: Up to 4 non-video files allowed
+            if (videoFiles.length === 0 && files.length > 4) {
+                showUploadError('Maximum 4 files allowed for images and documents.');
+                return false;
             }
-
+            
+            // Rule 3: Check individual file size limits
+            for (const file of files) {
+                let maxSize;
+                if (file.type.startsWith('video/')) {
+                    maxSize = 50 * 1024 * 1024; // 50MB for videos
+                } else if (file.type.startsWith('image/')) {
+                    maxSize = 5 * 1024 * 1024; // 5MB for images
+                } else {
+                    showUploadError('Only images and videos are allowed for posts.');
+                    return false; // Only images and videos for posts
+                }
+                
+                if (file.size > maxSize) {
+                    const sizeMB = Math.round(maxSize / (1024 * 1024));
+                    showUploadError(`File too large. Max ${sizeMB}MB for ${file.type.startsWith('video/') ? 'videos' : 'images'}.`);
+                    return false;
+                }
+            }
+            
             return true;
         }
 
-        function showFilePreview(files) {
-            const previewArea = document.getElementById('mediaPreviewArea');
-            previewArea.style.display = 'block';
+        function animateProgress(from, to, duration) {
+            const progressFill = document.getElementById('postUploadProgressFill');
+            const startTime = Date.now();
             
-            let previewHTML = '<div style="margin-bottom: 1rem;"><strong>Selected files:</strong></div>';
+            function updateProgress() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = from + (to - from) * progress;
+                
+                progressFill.style.width = currentValue + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateProgress);
+                }
+            }
             
-            files.forEach((file, index) => {
+            updateProgress();
+        }
+
+        function createPostFilePreview(files) {
+            const previewDiv = document.getElementById('postFilePreview');
+            previewDiv.innerHTML = '';
+            
+            if (files.length === 1) {
+                const file = files[0];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        const imgDiv = document.getElementById(`preview-${index}`);
-                        if (imgDiv) {
-                            imgDiv.innerHTML = `<img src="${e.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 8px; object-fit: cover;">`;
-                        }
+                        previewDiv.innerHTML = `
+                            <div style="margin-top: 1rem; position: relative;">
+                                <img src="${e.target.result}" style="width: 100%; max-width: 400px; border-radius: 12px; border: 2px solid #e5e5e5;">
+                                <button type="button" onclick="removePostFiles()" style="position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 53, 69, 0.9); color: white; border: none; cursor: pointer; font-size: 18px; font-weight: bold;">×</button>
+                            </div>
+                        `;
                     };
                     reader.readAsDataURL(file);
-                    previewHTML += `<div id="preview-${index}" style="display: inline-block; margin: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">Loading image...</div>`;
-                } else {
-                    previewHTML += `<div style="display: inline-block; margin: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">🎥 ${file.name}</div>`;
+                } else if (file.type.startsWith('video/')) {
+                    const videoUrl = URL.createObjectURL(file);
+                    previewDiv.innerHTML = `
+                        <div style="margin-top: 1rem; position: relative;">
+                            <video src="${videoUrl}" style="width: 100%; max-width: 400px; border-radius: 12px;" controls></video>
+                            <button type="button" onclick="removePostFiles()" style="position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 53, 69, 0.9); color: white; border: none; cursor: pointer; font-size: 18px; font-weight: bold;">×</button>
+                        </div>
+                    `;
                 }
-            });
-            
-            previewHTML += '<div style="margin-top: 1rem;"><button onclick="clearMediaSelection()" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Remove All</button></div>';
-            
-            previewArea.innerHTML = previewHTML;
+            } else {
+                // Multiple images grid
+                let gridHTML = `<div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 600px;">`;
+                
+                files.forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const imageDiv = document.getElementById(`post-preview-${index}`);
+                            if (imageDiv) {
+                                imageDiv.innerHTML = `
+                                    <div style="position: relative;">
+                                        <img src="${e.target.result}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e5e5;">
+                                        <button type="button" onclick="removePostFile(${index})" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #dc3545; color: white; border: none; cursor: pointer; font-size: 14px; font-weight: bold;">×</button>
+                                    </div>
+                                `;
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                        gridHTML += `<div id="post-preview-${index}">Loading...</div>`;
+                    }
+                });
+                
+                gridHTML += `</div>`;
+                previewDiv.innerHTML = gridHTML;
+            }
         }
 
-        function handleFileUpload(files) {
-            try {
-                validateFileSelection(files);
-                showFilePreview(files);
-            } catch (error) {
-                alert(error.message);
-                document.getElementById('mediaFileInput').value = '';
+        function handlePostFileUpload(files) {
+            if (!validateFileSelection(files)) {
+                return;
             }
+            
+            const progressBar = document.getElementById('postUploadProgress');
+            const statusDiv = document.getElementById('postUploadStatus');
+            
+            progressBar.style.display = 'block';
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = `Processing ${files.length} file${files.length > 1 ? 's' : ''}...`;
+            
+            animateProgress(0, 100, 1500);
+            
+            setTimeout(() => {
+                selectedPostFiles = files;
+                createPostFilePreview(files);
+                
+                statusDiv.style.color = '#28a745';
+                statusDiv.textContent = `✓ ${files.length} file${files.length > 1 ? 's' : ''} ready`;
+                
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    statusDiv.style.display = 'none';
+                }, 1000);
+            }, 1500);
+        }
+
+        function removePostFiles() {
+            selectedPostFiles = [];
+            document.getElementById('postFilePreview').innerHTML = '';
+            document.getElementById('mediaFileInput').value = '';
+        }
+
+        function removePostFile(index) {
+            selectedPostFiles.splice(index, 1);
+            if (selectedPostFiles.length === 0) {
+                removePostFiles();
+            } else {
+                createPostFilePreview(selectedPostFiles);
+            }
+        }
+
+        function showUploadError(message) {
+            const statusDiv = document.getElementById('postUploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#dc3545';
+            statusDiv.textContent = '✗ ' + message;
+            document.getElementById('mediaFileInput').value = '';
         }
 
         function clearMediaSelection() {
@@ -2190,31 +2272,34 @@
             previewArea.innerHTML = 'Selected media will appear here';
         }
 
-        async function uploadMediaFile(file) {
-            const fileExt = file.name.split('.').pop().toLowerCase();
+        async function uploadPostMedia(files) {
             const currentUser = window.dcfUser.profile;
-            const userEmail = currentUser.email;
-            const timestamp = Date.now();
-            const fileName = `post_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
-                method: 'POST',
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                },
-                body: formData
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error('Failed to upload file: ' + file.name);
+            if (!currentUser) throw new Error('User not authenticated');
+            
+            const supabase = window.dcfSupabase;
+            const uploadedUrls = [];
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileName = `post_${currentUser.id}_${Date.now()}_${i}.${file.name.split('.').pop()}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('media')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+                
+                if (error) throw error;
+                
+                const { data: urlData } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(fileName);
+                
+                uploadedUrls.push(urlData.publicUrl);
             }
-
-            const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
-            return publicUrl;
+            
+            return uploadedUrls;
         }
 
         function linkifyText(text) {
