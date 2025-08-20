@@ -1570,14 +1570,50 @@
             document.getElementById('avatarInput').value = '';
         }
 
-        function uploadAvatar() {
+        async function uploadAvatar() {
             const fileInput = document.getElementById('avatarInput');
-            if (!fileInput.files[0]) {
+            const file = fileInput.files[0];
+            
+            if (!file) {
                 showNotification('Please select a file first', 'error');
                 return;
             }
-            showNotification('Upload functionality coming next!');
-            closeAvatarModal();
+
+            try {
+                showNotification('📸 Uploading avatar...');
+                
+                // Use exact working pattern from dcf_member_profile.html
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const userEmail = currentProfile?.email;
+                const timestamp = Date.now();
+                const fileName = `avatar_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${fileExt}`;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                    },
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) throw new Error('Upload failed');
+
+                const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+                
+                // Update database - dcf-unified-auth.js will handle all avatar displays
+                await updateProfile({ avatar_url: publicUrl });
+                
+                showNotification('✨ Avatar updated!');
+                closeAvatarModal();
+                
+            } catch (error) {
+                console.error('❌ Avatar upload error:', error);
+                showNotification('💥 Error uploading avatar', 'error');
+            }
         }
     </script>
 
