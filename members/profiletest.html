@@ -998,29 +998,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Profile page loading...');
             
-            // Wait for auth system to be ready - NO AGGRESSIVE REDIRECTS
+            // Wait for getCurrentUser to be available and return a user
             const checkAuth = setInterval(() => {
-                if (window.dcfUser && window.dcfSupabase && window.dcfUser.isLoggedIn !== undefined) {
-                    clearInterval(checkAuth);
-                    
-                    // DEBUG: Log what we actually have
-                    console.log('🔍 Auth system ready');
-                    console.log('🔍 window.dcfUser:', window.dcfUser);
-                    console.log('🔍 window.dcfUser.isLoggedIn:', window.dcfUser.isLoggedIn);
-                    console.log('🔍 window.getCurrentUser():', window.getCurrentUser ? window.getCurrentUser() : 'function not available');
-                    
-                    // Check BOTH ways like your working pages do
-                    const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
-                    const isLoggedIn = window.dcfUser && window.dcfUser.isLoggedIn;
-                    
-                    if (currentUser || isLoggedIn) {
-                        // User is logged in, proceed normally
-                        console.log('✅ User detected as logged in');
+                if (window.getCurrentUser) {
+                    const currentUser = window.getCurrentUser();
+                    if (currentUser) {
+                        clearInterval(checkAuth);
                         initProfile();
-                    } else {
-                        // Use fallback approach like working pages
-                        console.log('❌ User not detected as logged in');
-                        showLoginPrompt();
+                    }
+                    // If no user after 2 seconds, then show login
+                    else {
+                        setTimeout(() => {
+                            if (!window.getCurrentUser()) {
+                                clearInterval(checkAuth);
+                                showLoginPrompt();
+                            }
+                        }, 2000);
                     }
                 }
             }, 100);
