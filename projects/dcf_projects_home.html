@@ -1946,55 +1946,60 @@ const myProjects = allProjects.filter(project =>
     document.addEventListener('DOMContentLoaded', function() {
         // EMERGENCY - NO REDIRECTS ALLOWED
         console.log('🚨 Page loading - redirects disabled');
-        
-        // Add authentication validation at start
-        if (!window.getCurrentUser()) {
-            console.log('❌ User not authenticated');
-            window.location.href = '../auth/dcf_login_page.html';
-            return;
-        }
 
-        // Check authentication
-        const currentUser = window.getCurrentUser();
-        if (!currentUser) {
-            window.location.href = '../auth/dcf_login_page.html';
-            return;
-        }
-
-        console.log('✅ Page loading with user:', currentUser.username);
+        // Wait for auth system with retry mechanism
+        const checkAuth = setInterval(() => {
+            if (window.getCurrentUser) {
+                clearInterval(checkAuth);
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../auth/dcf_login_page.html';
+                    return;
+                }
+                console.log('✅ Page loading with user:', currentUser.username);
+                
+                // Load projects data
+                loadProjectsOptimized(1, {});
+                updateStats();
+                loadMyProjectsReal();
+                
+                // Add filter listeners
+                const searchInput = document.querySelector('.search-input');
+                const filterSelects = document.querySelectorAll('.filter-select');
+                const categoryBtns = document.querySelectorAll('.category-btn');
+                
+                if (searchInput) {
+                    searchInput.addEventListener('input', () => {
+                        clearProjectsCache();
+                        loadProjectsOptimized(1, getCurrentFilters());
+                    });
+                }
+                
+                filterSelects.forEach(select => {
+                    select.addEventListener('change', () => {
+                        clearProjectsCache();
+                        loadProjectsOptimized(1, getCurrentFilters());
+                    });
+                });
+                
+                categoryBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        categoryBtns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        clearProjectsCache();
+                        loadProjectsOptimized(1, getCurrentFilters());
+                    });
+                });
+            }
+        }, 100);
         
-        // Load projects data
-        loadProjectsOptimized(1, {});
-        updateStats();
-        loadMyProjectsReal();
-        
-        // Add filter listeners
-        const searchInput = document.querySelector('.search-input');
-        const filterSelects = document.querySelectorAll('.filter-select');
-        const categoryBtns = document.querySelectorAll('.category-btn');
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                clearProjectsCache();
-                loadProjectsOptimized(1, getCurrentFilters());
-            });
-        }
-        
-        filterSelects.forEach(select => {
-            select.addEventListener('change', () => {
-                clearProjectsCache();
-                loadProjectsOptimized(1, getCurrentFilters());
-            });
-        });
-        
-        categoryBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                categoryBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                clearProjectsCache();
-                loadProjectsOptimized(1, getCurrentFilters());
-            });
-        });
+        // Timeout after 3 seconds
+        setTimeout(() => {
+            clearInterval(checkAuth);
+            if (!window.getCurrentUser) {
+                window.location.href = '../auth/dcf_login_page.html';
+            }
+        }, 3000);
     });
 
     // Check if user is following displayed projects and update button states
