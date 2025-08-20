@@ -998,20 +998,31 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Profile page loading...');
             
-            // Wait for auth system to be ready
+            // Wait for auth system to be ready - NO AGGRESSIVE REDIRECTS
             const checkAuth = setInterval(() => {
                 if (window.dcfUser && window.dcfSupabase) {
                     clearInterval(checkAuth);
-                    initProfile();
+                    
+                    // Use getCurrentUser() helper like working pages do
+                    const currentUser = window.getCurrentUser();
+                    if (currentUser) {
+                        // User is logged in, proceed normally
+                        initProfile();
+                    } else {
+                        // Use fallback approach like working pages
+                        console.log('User not logged in - using fallback');
+                        // DON'T redirect immediately - let user stay on page
+                        showLoginPrompt();
+                    }
                 }
             }, 100);
             
-            // Timeout after 10 seconds
+            // Timeout after 10 seconds but don't redirect
             setTimeout(() => {
                 clearInterval(checkAuth);
                 if (!window.dcfUser) {
-                    console.error('❌ Auth system not ready after 10 seconds');
-                    showNotification('Authentication system not ready', 'error');
+                    console.log('Auth system timeout - proceeding with fallback');
+                    showLoginPrompt();
                 }
             }, 10000);
         });
@@ -1019,18 +1030,26 @@
         async function initProfile() {
             console.log('🎯 Initializing profile...');
             
-            if (!window.dcfUser.isLoggedIn) {
-                console.log('⚠️ User not logged in, redirecting...');
-                window.location.href = 'dcf_login_page.html';
-                return;
-            }
-
             currentUser = window.dcfUser.profile;
             console.log('✅ Current user:', currentUser);
             
             await loadProfile();
             await loadUserPosts();
             updateUI();
+        }
+
+        function showLoginPrompt() {
+            // Show login message instead of forcing redirect
+            const container = document.querySelector('.main-container');
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin: 2rem 0;">
+                        <h2>Welcome to DCF Hungary</h2>
+                        <p style="margin: 1rem 0; color: #666;">Please log in to view your profile and posts.</p>
+                        <a href="dcf_login_page.html" class="btn btn-primary" style="text-decoration: none;">Log In</a>
+                    </div>
+                `;
+            }
         }
 
         async function loadProfile() {
