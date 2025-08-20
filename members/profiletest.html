@@ -1934,35 +1934,31 @@
         function handlePostInput() {
             const textarea = document.getElementById('postTextarea');
             const postBtn = document.getElementById('postSubmitBtnExpanded');
-            const charCount = document.getElementById('characterCount');
             
             if (!textarea || !postBtn) return;
             
             const content = textarea.value.trim();
             const hasContent = content.length > 0;
             
-            // Update character count
-            if (charCount) {
-                charCount.textContent = `${textarea.value.length}/2000`;
-            }
-            
-            // Simple button state
-            if (hasContent && !postBtn.disabled) {
+            if (hasContent) {
+                postBtn.className = 'post-btn';
+                postBtn.disabled = false;
                 postBtn.style.background = '#000';
                 postBtn.style.color = 'white';
                 postBtn.style.cursor = 'pointer';
-                postBtn.disabled = false;
-            } else if (!hasContent) {
+            } else {
+                postBtn.className = 'post-btn-disabled';
+                postBtn.disabled = true;
                 postBtn.style.background = '#e5e5e5';
                 postBtn.style.color = '#999';
                 postBtn.style.cursor = 'not-allowed';
-                postBtn.disabled = true;
             }
         }
 
         // Submit post function
         async function submitPost() {
             console.log('submitPost called');
+            console.log('currentUser:', window.dcfUser.profile);
             const currentUser = window.dcfUser.profile;
             if (!currentUser) {
                 alert('Please log in to create posts');
@@ -1977,24 +1973,18 @@
                 return;
             }
             
-            // Simple button state management
-            const postBtn = document.getElementById('postSubmitBtnExpanded');
-            postBtn.disabled = true;
-            postBtn.textContent = 'Posting...';
-            
             try {
                 let mediaUrls = [];
-                
-                // Handle media upload if files selected
                 if (selectedPostFiles && selectedPostFiles.length > 0) {
-                    console.log('Uploading', selectedPostFiles.length, 'files');
-                    mediaUrls = await uploadPostMedia(selectedPostFiles);
-                    console.log('Media uploaded:', mediaUrls);
+                    try {
+                        mediaUrls = await uploadPostMedia(selectedPostFiles);
+                    } catch (error) {
+                        console.error('Media upload failed:', error);
+                        alert('Failed to upload media files');
+                        return;
+                    }
                 }
 
-                console.log('Creating post with content:', content);
-                
-                // Insert post to database
                 const { data, error } = await window.dcfSupabase
                     .from('posts')
                     .insert({
@@ -2010,31 +2000,22 @@
                     .select()
                     .single();
                     
-                if (error) {
-                    console.error('Database error:', error);
-                    throw error;
-                }
+                if (error) throw error;
                 
-                console.log('Post created successfully:', data);
-                
-                // Clear form
                 textarea.value = '';
-                removePostFiles();
-                
-                // Success feedback
+                handlePostInput();
                 alert('Post created successfully!');
+                
+                // Clear media selection after successful post
+                removePostFiles();
                 
                 // Add post to feed immediately
                 addPostToFeed(data);
+                console.log('Post created:', data);
                 
             } catch (error) {
                 console.error('Error creating post:', error);
-                alert('Failed to create post: ' + error.message);
-            } finally {
-                // ALWAYS restore button state
-                postBtn.disabled = false;
-                postBtn.textContent = 'Post';
-                handlePostInput(); // Reset button styling
+                alert('Failed to create post. Please try again.');
             }
         }
 
