@@ -69,12 +69,8 @@ async function initializeAuth() {
                 .eq('email', session.user.email)
                 .single();
                 
-            const profileTimeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-            );
-            
             try {
-                const { data: profile } = await Promise.race([profilePromise, profileTimeoutPromise]);
+                const { data: profile } = await profilePromise;
                 
                 console.log('🔍 RAW DATABASE PROFILE:', profile);
                 
