@@ -2456,45 +2456,70 @@
             document.body.style.overflow = 'auto';
         }
 
-        // Scroll detection for post box collapse
+        // Scroll detection for post box collapse - STABLE VERSION
         let lastScrollY = window.scrollY;
         let isCollapsed = false;
+        let scrollTimeout = null;
 
         function handlePostBoxScroll() {
-            const createPostBox = document.querySelector('.create-post-box');
-            const collapsedButton = document.getElementById('createPostCollapsed');
-            const currentScrollY = window.scrollY;
-            
-            // Collapse when scrolling down past 100px
-            if (currentScrollY > 100 && currentScrollY > lastScrollY && !isCollapsed) {
-                createPostBox.style.transform = 'translateY(-100%)';
-                createPostBox.style.opacity = '0';
-                setTimeout(() => {
-                    createPostBox.style.display = 'none';
-                    collapsedButton.style.display = 'flex';
-                }, 300);
-                isCollapsed = true;
-            }
-            // Expand when scrolling up or at top
-            else if ((currentScrollY < lastScrollY || currentScrollY < 50) && isCollapsed) {
-                collapsedButton.style.display = 'none';
-                createPostBox.style.display = 'block';
-                setTimeout(() => {
-                    createPostBox.style.transform = 'translateY(0)';
-                    createPostBox.style.opacity = '1';
-                }, 50);
-                isCollapsed = false;
+            // Debounce scroll events to prevent flutter
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
             }
             
-            lastScrollY = currentScrollY;
+            scrollTimeout = setTimeout(() => {
+                const createPostBox = document.querySelector('.create-post-box');
+                const collapsedButton = document.getElementById('createPostCollapsed');
+                const currentScrollY = window.scrollY;
+                
+                // Only change state if scroll distance is significant (prevents flutter)
+                const scrollDifference = Math.abs(currentScrollY - lastScrollY);
+                if (scrollDifference < 30) return; // Ignore small scroll movements
+                
+                // Collapse when scrolling down past 150px
+                if (currentScrollY > 150 && currentScrollY > lastScrollY && !isCollapsed) {
+                    createPostBox.style.transition = 'all 0.3s ease';
+                    createPostBox.style.transform = 'translateY(-100%)';
+                    createPostBox.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        if (isCollapsed) return; // Prevent race condition
+                        createPostBox.style.display = 'none';
+                        collapsedButton.style.display = 'flex';
+                    }, 300);
+                    isCollapsed = true;
+                }
+                // Expand when scrolling up significantly or near top
+                else if ((currentScrollY < 100 || (currentScrollY < lastScrollY && scrollDifference > 50)) && isCollapsed) {
+                    collapsedButton.style.display = 'none';
+                    createPostBox.style.display = 'block';
+                    createPostBox.style.transition = 'all 0.3s ease';
+                    
+                    setTimeout(() => {
+                        if (!isCollapsed) return; // Prevent race condition
+                        createPostBox.style.transform = 'translateY(0)';
+                        createPostBox.style.opacity = '1';
+                    }, 50);
+                    isCollapsed = false;
+                }
+                
+                lastScrollY = currentScrollY;
+            }, 100); // 100ms debounce
         }
 
         function expandCreatePost() {
             const createPostBox = document.querySelector('.create-post-box');
             const collapsedButton = document.getElementById('createPostCollapsed');
             
+            // Clear any pending scroll timeouts
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            
             collapsedButton.style.display = 'none';
             createPostBox.style.display = 'block';
+            createPostBox.style.transition = 'all 0.3s ease';
+            
             setTimeout(() => {
                 createPostBox.style.transform = 'translateY(0)';
                 createPostBox.style.opacity = '1';
