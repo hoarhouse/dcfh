@@ -2730,21 +2730,25 @@
             }
             
             try {
-                // Check if user already liked this post
-                const { data: existingLike, error: checkError } = await window.dcfSupabase
+                console.log('Checking for existing like...');
+                console.log('Post ID:', postId);
+                console.log('User email:', currentUser.email);
+                
+                // Check if user already liked this post - SIMPLIFIED QUERY
+                const { data: existingLikes, error: checkError } = await window.dcfSupabase
                     .from('post_likes')
-                    .select('id')
+                    .select('*')
                     .eq('post_id', postId)
-                    .eq('user_email', currentUser.email)
-                    .single();
+                    .eq('user_email', currentUser.email);
                     
-                if (checkError && checkError.code !== 'PGRST116') {
+                if (checkError) {
                     console.error('Error checking existing like:', checkError);
                     throw checkError;
                 }
                 
-                let isLiked = !!existingLike;
+                const isLiked = existingLikes && existingLikes.length > 0;
                 console.log('Current like status:', isLiked);
+                console.log('Existing likes found:', existingLikes);
                 
                 if (isLiked) {
                     // Unlike - remove the like
@@ -2755,33 +2759,44 @@
                         .eq('post_id', postId)
                         .eq('user_email', currentUser.email);
                         
-                    if (deleteError) throw deleteError;
+                    if (deleteError) {
+                        console.error('Delete error:', deleteError);
+                        throw deleteError;
+                    }
+                    console.log('Like removed successfully');
                     
                 } else {
                     // Like - add the like
                     console.log('Adding like...');
                     const { error: insertError } = await window.dcfSupabase
                         .from('post_likes')
-                        .insert({
+                        .insert([{
                             post_id: postId,
                             user_email: currentUser.email,
-                            user_name: currentUser.username || currentUser.email,
+                            user_name: currentUser.username || currentUser.email.split('@')[0],
                             created_at: new Date().toISOString()
-                        });
+                        }]);
                         
-                    if (insertError) throw insertError;
+                    if (insertError) {
+                        console.error('Insert error:', insertError);
+                        throw insertError;
+                    }
+                    console.log('Like added successfully');
                 }
                 
-                // Update the like count in posts table
-                console.log('Updating like count...');
-                const { data: likeCount, error: countError } = await window.dcfSupabase
+                // Count total likes for this post
+                console.log('Counting total likes...');
+                const { data: allLikes, error: countError } = await window.dcfSupabase
                     .from('post_likes')
-                    .select('id', { count: 'exact' })
+                    .select('*')
                     .eq('post_id', postId);
                     
-                if (countError) throw countError;
+                if (countError) {
+                    console.error('Count error:', countError);
+                    throw countError;
+                }
                 
-                const newCount = likeCount?.length || 0;
+                const newCount = allLikes ? allLikes.length : 0;
                 console.log('New like count:', newCount);
                 
                 // Update posts table with new count
@@ -2790,7 +2805,10 @@
                     .update({ like_count: newCount })
                     .eq('id', postId);
                     
-                if (updateError) throw updateError;
+                if (updateError) {
+                    console.error('Update posts error:', updateError);
+                    throw updateError;
+                }
                 
                 // Update UI
                 const newLikeStatus = !isLiked;
@@ -2808,7 +2826,7 @@
                 
             } catch (error) {
                 console.error('Error toggling like:', error);
-                alert('Failed to update like. Please try again.');
+                alert('Failed to update like: ' + error.message);
             }
         }
 
