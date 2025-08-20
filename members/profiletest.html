@@ -1646,6 +1646,70 @@
                 showNotification('💥 Error uploading avatar', 'error');
             }
         }
+
+        // Cover image modal functions
+        function openCoverUploadModal() {
+            document.getElementById('coverModal').style.display = 'flex';
+        }
+
+        function closeCoverModal() {
+            document.getElementById('coverModal').style.display = 'none';
+            document.getElementById('coverInput').value = '';
+        }
+
+        async function uploadCoverImage() {
+            const fileInput = document.getElementById('coverInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('Please select a file first', 'error');
+                return;
+            }
+
+            try {
+                showNotification('📸 Uploading cover image...');
+                
+                // Use exact working pattern from dcf_member_profile.html
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const userEmail = currentProfile?.email || currentUser?.email || 'user';
+                const timestamp = Date.now();
+                const fileName = `cover_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${fileExt}`;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                    },
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) throw new Error('Upload failed');
+
+                const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+                
+                // Update database with cover image URL
+                await updateProfile({ cover_image_url: publicUrl });
+                
+                // Update hero section background image
+                const heroBackground = document.getElementById('heroBackground');
+                if (heroBackground) {
+                    heroBackground.style.backgroundImage = `url(${publicUrl})`;
+                    heroBackground.style.backgroundSize = 'cover';
+                    heroBackground.style.backgroundPosition = 'center';
+                }
+                
+                showNotification('✨ Cover image updated!');
+                closeCoverModal();
+                
+            } catch (error) {
+                console.error('❌ Cover image upload error:', error);
+                showNotification('💥 Error uploading cover image', 'error');
+            }
+        }
     </script>
 
     <!-- Avatar Upload Modal -->
@@ -1661,6 +1725,23 @@
             <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                 <button onclick="closeAvatarModal()" class="btn btn-secondary">Cancel</button>
                 <button onclick="uploadAvatar()" class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cover Image Upload Modal -->
+    <div id="coverModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Update Cover Image</h3>
+                <button onclick="closeCoverModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <div class="form-group">
+                <input type="file" id="coverInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px;">
+            </div>
+            <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button onclick="closeCoverModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="uploadCoverImage()" class="btn btn-primary">Upload</button>
             </div>
         </div>
     </div>
