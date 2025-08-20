@@ -1964,10 +1964,9 @@
         // Submit post function
         async function submitPost() {
             console.log('submitPost called');
-            console.log('currentUser:', window.dcfUser.profile);
             const currentUser = window.dcfUser.profile;
             if (!currentUser) {
-                showSiteAlert('Please log in to create posts', 'error');
+                alert('Please log in to create posts');
                 return;
             }
             
@@ -1975,58 +1974,28 @@
             const content = textarea.value.trim();
             
             if (!content) {
-                showSiteAlert('Please enter some content for your post', 'warning');
+                alert('Please enter some content for your post');
                 return;
             }
             
-            // Set loading state
+            // Simple button state management
             const postBtn = document.getElementById('postSubmitBtnExpanded');
-            const originalText = postBtn.textContent;
             postBtn.disabled = true;
-            postBtn.innerHTML = '<span style="display: inline-block; animation: spin 1s linear infinite;">⟳</span> Posting...';
-            postBtn.style.background = '#6c757d';
-            postBtn.style.cursor = 'not-allowed';
-
-            // Add spin animation CSS if not exists
-            if (!document.querySelector('#spinKeyframes')) {
-                const style = document.createElement('style');
-                style.id = 'spinKeyframes';
-                style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
-                document.head.appendChild(style);
-            }
+            postBtn.textContent = 'Posting...';
             
             try {
                 let mediaUrls = [];
+                
+                // Handle media upload if files selected
                 if (selectedPostFiles && selectedPostFiles.length > 0) {
-                    try {
-                        // Show upload progress
-                        const statusDiv = document.getElementById('postUploadStatus');
-                        if (statusDiv) {
-                            statusDiv.style.display = 'block';
-                            statusDiv.style.color = '#007bff';
-                            statusDiv.textContent = '📤 Uploading media files...';
-                        }
-                        
-                        mediaUrls = await uploadPostMedia(selectedPostFiles);
-                        
-                        // Show completion
-                        if (statusDiv) {
-                            statusDiv.style.color = '#28a745';
-                            statusDiv.textContent = '✅ Upload complete!';
-                        }
-                    } catch (error) {
-                        console.error('Media upload failed:', error);
-                        showSiteAlert('Failed to upload media files', 'error');
-                        
-                        // Reset button state on error
-                        postBtn.disabled = false;
-                        postBtn.textContent = originalText;
-                        postBtn.style.background = '#000';
-                        postBtn.style.cursor = 'pointer';
-                        return;
-                    }
+                    console.log('Uploading', selectedPostFiles.length, 'files');
+                    mediaUrls = await uploadPostMedia(selectedPostFiles);
+                    console.log('Media uploaded:', mediaUrls);
                 }
 
+                console.log('Creating post with content:', content);
+                
+                // Insert post to database
                 const { data, error } = await window.dcfSupabase
                     .from('posts')
                     .insert({
@@ -2042,40 +2011,31 @@
                     .select()
                     .single();
                     
-                if (error) throw error;
+                if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                }
                 
+                console.log('Post created successfully:', data);
+                
+                // Clear form
                 textarea.value = '';
-                handlePostInput();
-                showSiteAlert('Post created successfully!', 'success');
-                
-                // Reset button state
-                postBtn.disabled = false;
-                postBtn.textContent = originalText;
-                postBtn.style.background = '#000';
-                postBtn.style.cursor = 'pointer';
-                
-                // Clear media selection after successful post
                 removePostFiles();
                 
-                // Hide upload status
-                const statusDiv = document.getElementById('postUploadStatus');
-                if (statusDiv) {
-                    statusDiv.style.display = 'none';
-                }
+                // Success feedback
+                alert('Post created successfully!');
                 
                 // Add post to feed immediately
                 addPostToFeed(data);
-                console.log('Post created:', data);
                 
             } catch (error) {
                 console.error('Error creating post:', error);
-                showSiteAlert('Failed to create post. Please try again.', 'error');
-                
-                // Reset button state on error
+                alert('Failed to create post: ' + error.message);
+            } finally {
+                // ALWAYS restore button state
                 postBtn.disabled = false;
-                postBtn.textContent = originalText;
-                postBtn.style.background = '#000';
-                postBtn.style.cursor = 'pointer';
+                postBtn.textContent = 'Post';
+                handlePostInput(); // Reset button styling
             }
         }
 
@@ -2669,7 +2629,7 @@
             const newContent = textarea.value.trim();
             
             if (!newContent) {
-                alert('Post content cannot be empty');
+                showSiteAlert('Post content cannot be empty', 'warning');
                 return;
             }
             
@@ -2719,11 +2679,11 @@
                     postDate.textContent += ' (edited)';
                 }
                 
-                alert('Post updated successfully');
+                showSiteAlert('Post updated successfully', 'success');
                 
             } catch (error) {
                 console.error('Error saving post edit:', error);
-                alert('Failed to save changes: ' + error.message);
+                showSiteAlert('Failed to save changes: ' + error.message, 'error');
                 
                 // Restore original content on error
                 const postElement = document.querySelector(`[data-post-id="${postId}"]`);
