@@ -2601,11 +2601,13 @@
         function toggleInlineEdit(postId) {
             const postElement = document.querySelector(`[data-post-id="${postId}"]`);
             const contentDiv = postElement.querySelector('.post-content');
-            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
             
             if (contentDiv.querySelector('textarea')) {
-                // Already editing - save changes
-                saveInlineEdit(postId);
+                // Already editing - trigger save
+                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
+                if (saveBtn && !saveBtn.disabled) {
+                    saveInlineEdit(postId);
+                }
             } else {
                 // Start editing
                 startInlineEdit(postId);
@@ -2667,26 +2669,37 @@
             const newContent = textarea.value.trim();
             
             if (!newContent) {
-                showSiteAlert('Post content cannot be empty', 'warning');
+                alert('Post content cannot be empty');
                 return;
             }
             
+            // Get save button
+            const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
+            const originalText = saveBtn.textContent;
+            
             try {
                 // Show saving state
-                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
                 saveBtn.textContent = 'Saving...';
                 saveBtn.disabled = true;
                 
-                const { error } = await window.dcfSupabase
+                console.log('Updating post:', postId, 'with content:', newContent);
+                
+                const { data, error } = await window.dcfSupabase
                     .from('posts')
                     .update({
                         content: newContent,
                         is_edited: true,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', postId);
+                    .eq('id', postId)
+                    .select();
                     
-                if (error) throw error;
+                console.log('Update result:', { data, error });
+                    
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
                 
                 // Update post content
                 const postElement = document.querySelector(`[data-post-id="${postId}"]`);
@@ -2706,16 +2719,24 @@
                     postDate.textContent += ' (edited)';
                 }
                 
-                showSiteAlert('Post updated successfully', 'success');
+                alert('Post updated successfully');
                 
             } catch (error) {
                 console.error('Error saving post edit:', error);
-                showSiteAlert('Failed to save changes. Please try again.', 'error');
+                alert('Failed to save changes: ' + error.message);
                 
-                // Reset save button
-                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
+                // Restore original content on error
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                const contentDiv = postElement.querySelector('.post-content');
+                const originalContent = contentDiv.getAttribute('data-original-content');
+                if (originalContent) {
+                    contentDiv.innerHTML = originalContent;
+                }
+                
+            } finally {
+                // ALWAYS reset button state
                 if (saveBtn) {
-                    saveBtn.textContent = 'Save';
+                    saveBtn.textContent = originalText;
                     saveBtn.disabled = false;
                 }
             }
