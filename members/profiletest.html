@@ -1152,7 +1152,11 @@
                 </div>
                 
                 
-                <input type="file" id="mediaFileInput" multiple accept="image/*,video/*" style="display: none;" onchange="handleMediaSelection()">
+                <input type="file" id="mediaFileInput" 
+                       class="file-upload-input"
+                       accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" 
+                       multiple 
+                       style="display: none;">
                 
                 <div class="posts-feed" id="postsFeed">
                     <div class="loading-posts">Loading posts...</div>
@@ -1232,6 +1236,14 @@
                 if (mediaBtn) {
                     mediaBtn.addEventListener('click', openMediaUpload);
                 }
+                
+                // Add file input change listener
+                document.getElementById('mediaFileInput').addEventListener('change', function(e) {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        handleFileUpload(files);
+                    }
+                });
             }, 1000);
         }
 
@@ -2066,38 +2078,29 @@
             }
         }
 
-        function handleMediaSelection() {
-            console.log('handleMediaSelection called');
-            const fileInput = document.getElementById('mediaFileInput');
-            console.log('Files selected:', fileInput.files.length);
-            const files = Array.from(fileInput.files);
+        function validateFileSelection(files) {
+            const maxFiles = 4;
+            const maxVideoFiles = 1;
+
+            if (files.length > maxFiles) {
+                throw new Error(`Maximum ${maxFiles} files allowed`);
+            }
+
+            const videoFiles = files.filter(file => file.type.startsWith('video/'));
+            if (videoFiles.length > maxVideoFiles) {
+                throw new Error(`Maximum ${maxVideoFiles} video file allowed`);
+            }
+
+            if (videoFiles.length > 0 && files.length > 1) {
+                throw new Error('When uploading video, only 1 file is allowed');
+            }
+
+            return true;
+        }
+
+        function showFilePreview(files) {
             const previewArea = document.getElementById('mediaPreviewArea');
             
-            if (files.length === 0) return;
-            
-            // Validate file count (up to 4 images OR 1 video)
-            const imageFiles = files.filter(file => file.type.startsWith('image/'));
-            const videoFiles = files.filter(file => file.type.startsWith('video/'));
-            
-            if (videoFiles.length > 1) {
-                alert('You can only upload 1 video at a time');
-                fileInput.value = '';
-                return;
-            }
-            
-            if (videoFiles.length > 0 && imageFiles.length > 0) {
-                alert('You cannot mix images and videos in the same post');
-                fileInput.value = '';
-                return;
-            }
-            
-            if (imageFiles.length > 4) {
-                alert('You can only upload up to 4 images at a time');
-                fileInput.value = '';
-                return;
-            }
-            
-            // Show preview area and display selected files
             previewArea.style.display = 'block';
             previewArea.innerHTML = `
                 <div style="margin-bottom: 1rem;">
@@ -2112,6 +2115,16 @@
                     <button onclick="clearMediaSelection()" style="background: #dc3545; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Remove All</button>
                 </div>
             `;
+        }
+
+        function handleFileUpload(files) {
+            try {
+                validateFileSelection(files);
+                showFilePreview(files);
+            } catch (error) {
+                alert(error.message);
+                document.getElementById('mediaFileInput').value = '';
+            }
         }
 
         function clearMediaSelection() {
