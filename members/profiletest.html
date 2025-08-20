@@ -2001,6 +2001,29 @@
             }
             
             try {
+                // Check for selected media files
+                const fileInput = document.getElementById('mediaFileInput');
+                const selectedFiles = Array.from(fileInput.files);
+
+                let mediaCount = 0;
+                let mediaType = 'none';
+                let uploadedMediaUrls = [];
+
+                // Upload media files if any selected
+                if (selectedFiles.length > 0) {
+                    try {
+                        for (const file of selectedFiles) {
+                            const uploadedUrl = await uploadMediaFile(file);
+                            uploadedMediaUrls.push(uploadedUrl);
+                        }
+                        mediaCount = selectedFiles.length;
+                        mediaType = selectedFiles[0].type.startsWith('image/') ? 'images' : 'video';
+                    } catch (uploadError) {
+                        alert('Error uploading media files: ' + uploadError.message);
+                        return;
+                    }
+                }
+
                 const { data, error } = await window.dcfSupabase
                     .from('posts')
                     .insert({
@@ -2009,8 +2032,8 @@
                         author_name: `@${currentUser.username}`,
                         username: currentUser.username,
                         content: content,
-                        media_count: 0,
-                        media_type: 'none'
+                        media_count: mediaCount,
+                        media_type: mediaType
                     })
                     .select()
                     .single();
@@ -2020,6 +2043,25 @@
                 textarea.value = '';
                 handlePostInput();
                 alert('Post created successfully!');
+                
+                // Save media records to post_media table
+                if (uploadedMediaUrls.length > 0) {
+                    const mediaRecords = uploadedMediaUrls.map((url, index) => ({
+                        post_id: data.id,
+                        media_url: url,
+                        media_type: selectedFiles[index].type.startsWith('image/') ? 'image' : 'video',
+                        file_size: selectedFiles[index].size,
+                        display_order: index + 1
+                    }));
+                    
+                    await window.dcfSupabase
+                        .from('post_media')
+                        .insert(mediaRecords);
+                }
+
+                // Clear media selection after successful post
+                clearMediaSelection();
+                
                 // Add post to feed immediately
                 addPostToFeed(data);
                 console.log('Post created:', data);
@@ -2178,6 +2220,33 @@
             fileInput.value = '';
             previewArea.style.display = 'none';
             previewArea.innerHTML = 'Selected media will appear here';
+        }
+
+        async function uploadMediaFile(file) {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const currentUser = window.dcfUser.profile;
+            const userEmail = currentUser.email;
+            const timestamp = Date.now();
+            const fileName = `post_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/media/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                },
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload file: ' + file.name);
+            }
+
+            const publicUrl = `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/media/${fileName}`;
+            return publicUrl;
         }
     </script>
 
