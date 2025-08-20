@@ -1178,6 +1178,8 @@
                     </div>
                 </div>
                 
+                <input type="file" id="mediaFileInput" multiple accept="image/*,video/*" style="display: none;" onchange="handleMediaSelection()">
+                
                 <div class="posts-feed" id="postsFeed">
                     <div class="loading-posts">Loading posts...</div>
                 </div>
@@ -2029,7 +2031,7 @@
         }
 
         function openMediaUpload() {
-            alert('Media upload coming in Stage 2!');
+            document.getElementById('mediaFileInput').click();
         }
 
         function addPostToFeed(post) {
@@ -2121,6 +2123,61 @@
                 console.error('Error loading posts:', error);
                 feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Failed to load posts</div>';
             }
+        }
+
+        function handleMediaSelection() {
+            const fileInput = document.getElementById('mediaFileInput');
+            const files = Array.from(fileInput.files);
+            const previewArea = document.getElementById('mediaPreviewArea');
+            
+            if (files.length === 0) return;
+            
+            // Validate file count (up to 4 images OR 1 video)
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            const videoFiles = files.filter(file => file.type.startsWith('video/'));
+            
+            if (videoFiles.length > 1) {
+                alert('You can only upload 1 video at a time');
+                fileInput.value = '';
+                return;
+            }
+            
+            if (videoFiles.length > 0 && imageFiles.length > 0) {
+                alert('You cannot mix images and videos in the same post');
+                fileInput.value = '';
+                return;
+            }
+            
+            if (imageFiles.length > 4) {
+                alert('You can only upload up to 4 images at a time');
+                fileInput.value = '';
+                return;
+            }
+            
+            // Show preview area and display selected files
+            previewArea.style.display = 'block';
+            previewArea.innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <strong>${files.length} file${files.length > 1 ? 's' : ''} selected:</strong>
+                </div>
+                ${files.map(file => `
+                    <div style="display: inline-block; margin: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; font-size: 0.85rem;">
+                        ${file.type.startsWith('image/') ? '📷' : '🎥'} ${file.name}
+                    </div>
+                `).join('')}
+                <div style="margin-top: 1rem;">
+                    <button onclick="clearMediaSelection()" style="background: #dc3545; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Remove All</button>
+                </div>
+            `;
+        }
+
+        function clearMediaSelection() {
+            const fileInput = document.getElementById('mediaFileInput');
+            const previewArea = document.getElementById('mediaPreviewArea');
+            
+            fileInput.value = '';
+            previewArea.style.display = 'none';
+            previewArea.innerHTML = 'Selected media will appear here';
         }
     </script>
 
