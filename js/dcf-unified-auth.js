@@ -1985,12 +1985,18 @@ function setupAuthStateListener() {
     if (!window.dcfSupabase) return;
     
     window.dcfSupabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('🔄 Auth state changed:', event);
+        console.log('🔄 AUTH STATE LISTENER - Event:', event);
+        console.log('🔄 AUTH STATE LISTENER - Session exists:', !!session);
+        console.log('🔄 AUTH STATE LISTENER - Current dcfUser state:', window.dcfUser);
+        console.trace('AUTH STATE CHANGE STACK TRACE:');
         
         if (event === 'SIGNED_IN' && session?.user) {
+            console.log('✅ AUTH STATE LISTENER - Processing SIGNED_IN event');
             await initializeAuth();
             updateUserInterface();
         } else if (event === 'SIGNED_OUT') {
+            console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event - THIS MAY CAUSE FALSE LOGOUT');
+            console.log('🚨 AUTH STATE LISTENER - About to set isLoggedIn: false');
             window.dcfUser = { isLoggedIn: false, profile: null, session: null };
             showLoggedOutState();
         }
