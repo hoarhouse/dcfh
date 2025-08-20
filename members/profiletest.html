@@ -1630,75 +1630,6 @@
             }
         }
 
-        async function loadUserPosts() {
-            try {
-                console.log('📡 Loading user posts...');
-                
-                const { data, error } = await window.dcfSupabase
-                    .from('posts')
-                    .select('*')
-                    .eq('author_id', currentUser.id)
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                if (error) throw error;
-
-                displayPosts(data || []);
-                
-            } catch (error) {
-                console.error('❌ Error loading posts:', error);
-                document.getElementById('userPosts').innerHTML = `
-                    <div class="post-card">
-                        <div class="post-content" style="color: #dc3545;">
-                            Error loading posts. Please refresh the page.
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function displayPosts(posts) {
-            const container = document.getElementById('userPosts');
-            const countElement = document.getElementById('postCount');
-            
-            countElement.textContent = `${posts.length} post${posts.length !== 1 ? 's' : ''}`;
-            
-            if (posts.length === 0) {
-                container.innerHTML = `
-                    <div class="post-card no-posts">
-                        <h3>No posts yet</h3>
-                        <p>Share your first post with the DCF community!</p>
-                        <button class="btn btn-primary" onclick="toggleCreatePost()">Write Your First Post</button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = posts.map(post => `
-                <div class="post-card">
-                    <div class="post-header">
-                        <div class="post-author">
-                            <div class="post-avatar"></div>
-                            <div class="post-author-info">
-                                <h4>${post.author_name}</h4>
-                                <div class="post-date">${formatDate(post.created_at)}</div>
-                            </div>
-                        </div>
-                        <div class="post-actions-btns">
-                            <button class="post-action-btn" onclick="editPost('${post.id}')">✏️ Edit</button>
-                            <button class="post-action-btn" onclick="deletePost('${post.id}')" style="color: #dc3545;">🗑️ Delete</button>
-                        </div>
-                    </div>
-                    <div class="post-content">${post.content}</div>
-                    <div class="post-actions">
-                        <div class="post-stats">
-                            <span>👀 0 views</span>
-                            <span>💬 0 comments</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
 
         function formatDate(dateString) {
             const date = new Date(dateString);
@@ -1725,7 +1656,6 @@
                     .eq('id', postId);
                 if (error) throw error;
                 showNotification('Post deleted');
-                await loadUserPosts();
                 await loadPostsFeed();
             } catch (error) {
                 console.error('Error deleting post:', error);
