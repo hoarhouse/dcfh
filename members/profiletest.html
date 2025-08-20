@@ -1062,7 +1062,7 @@
                 // Get profile from Supabase
                 const { data, error } = await window.dcfSupabase
                     .from('user_profiles')
-                    .select('first_name, last_name, role, location, organization, avatar_url, username, bio, interests, skills')
+                    .select('first_name,last_name,role,location,organization,avatar_url,username,bio,interests,skills')
                     .eq('id', currentUser.id)
                     .single();
 
@@ -1101,30 +1101,38 @@
             console.log('🎨 Updating UI...');
             
             // Basic info
-            if (document.getElementById('profileName') && (currentProfile.first_name || currentProfile.last_name)) {
+            if (currentProfile && document.getElementById('profileName') && (currentProfile.first_name || currentProfile.last_name)) {
                 const fullName = [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ');
                 document.getElementById('profileName').textContent = fullName;
             }
-            if (document.getElementById('profileRole') && currentProfile.role) {
+            if (currentProfile && document.getElementById('profileRole') && currentProfile.role) {
                document.getElementById('profileRole').textContent = currentProfile.role;
             }
-            if (document.getElementById('profileLocation') && currentProfile.location) {
+            if (currentProfile && document.getElementById('profileLocation') && currentProfile.location) {
                document.getElementById('profileLocation').innerHTML = `🌍 ${currentProfile.location}`;
             }
             
             // Contact info
-            document.getElementById('displayRole').textContent = currentProfile.role || 'Not specified';
-            document.getElementById('displayOrganization').textContent = currentProfile.organization || 'Not specified';
-            document.getElementById('displayLocation').textContent = currentProfile.location || 'Not specified';
+            if (document.getElementById('displayRole')) {
+                document.getElementById('displayRole').textContent = (currentProfile && currentProfile.role) || 'Not specified';
+            }
+            if (document.getElementById('displayOrganization')) {
+                document.getElementById('displayOrganization').textContent = (currentProfile && currentProfile.organization) || 'Not specified';
+            }
+            if (document.getElementById('displayLocation')) {
+                document.getElementById('displayLocation').textContent = (currentProfile && currentProfile.location) || 'Not specified';
+            }
             
             // About
-            document.getElementById('aboutText').textContent = currentProfile.bio || 'Tell the world about yourself...';
+            if (document.getElementById('aboutText')) {
+                document.getElementById('aboutText').textContent = (currentProfile && currentProfile.bio) || 'Tell the world about yourself...';
+            }
             
             // Avatar handled by dcf-unified-auth.js
             
             // Tags
-            updateTags('interestsTags', currentProfile.interests);
-            updateTags('skillsTags', currentProfile.skills, 'secondary');
+            updateTags('interestsTags', currentProfile && currentProfile.interests);
+            updateTags('skillsTags', currentProfile && currentProfile.skills, 'secondary');
             
             console.log('✅ UI updated successfully');
         }
@@ -1161,7 +1169,7 @@
             const editMode = document.getElementById('aboutEditMode');
             const input = document.getElementById('aboutInput');
             
-            input.value = currentProfile.bio || '';
+            input.value = (currentProfile && currentProfile.bio) || '';
             aboutText.style.display = 'none';
             editMode.classList.add('active');
         }
@@ -1189,7 +1197,7 @@
             const editMode = document.getElementById('interestsEditMode');
             const input = document.getElementById('interestsInput');
             
-            input.value = currentProfile.interests || '';
+            input.value = (currentProfile && currentProfile.interests) || '';
             editMode.classList.add('active');
         }
 
@@ -1215,7 +1223,7 @@
             const editMode = document.getElementById('skillsEditMode');
             const input = document.getElementById('skillsInput');
             
-            input.value = currentProfile.skills || '';
+            input.value = (currentProfile && currentProfile.skills) || '';
             editMode.classList.add('active');
         }
 
@@ -1241,11 +1249,11 @@
             const editMode = document.getElementById('contactEditMode');
             
             // Populate form fields
-            const fullName = [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ');
+            const fullName = currentProfile ? [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ') : '';
             document.getElementById('nameInput').value = fullName || '';
-            document.getElementById('roleInput').value = currentProfile.role || '';
-            document.getElementById('organizationInput').value = currentProfile.organization || '';
-            document.getElementById('locationInput').value = currentProfile.location || '';
+            document.getElementById('roleInput').value = (currentProfile && currentProfile.role) || '';
+            document.getElementById('organizationInput').value = (currentProfile && currentProfile.organization) || '';
+            document.getElementById('locationInput').value = (currentProfile && currentProfile.location) || '';
             
             editMode.classList.add('active');
         }
@@ -1472,7 +1480,7 @@
         function shareProfile() {
             if (navigator.share) {
                 navigator.share({
-                    title: `${[currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ')} - DCF Hungary`,
+                    title: `${currentProfile ? [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ') : 'User'} - DCF Hungary`,
                     text: `Check out this profile on DCF Hungary! 🚀`,
                     url: window.location.href
                 });
