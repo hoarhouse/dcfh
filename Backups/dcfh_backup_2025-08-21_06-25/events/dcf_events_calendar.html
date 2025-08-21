@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events Calendar - DCF Hungary</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+                .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
+            /* Content controlled by master-consolidated.js */
+        }
+
+        .user-avatar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #000, #333);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            color: #000;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .logout-btn {
+            color: #dc3545 !important;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+            color: #c82333 !important;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .create-event-card {
+            background: linear-gradient(135deg, #000, #333);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .create-event-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        .create-event-card p {
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .create-event-card .btn {
+            background: white;
+            color: #000;
+        }
+
+        .create-event-card .btn:hover {
+            background: #f8f9fa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .upcoming-events {
+            margin-bottom: 1.5rem;
+        }
+
+        .upcoming-event {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upcoming-event:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .event-date-mini {
+            width: 50px;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .event-date-mini .day {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .event-date-mini .month {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .event-info-mini {
+            flex: 1;
+        }
+
+        .event-title-mini {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .event-time-mini {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2rem 1rem 2rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.25rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .list-view {
+            padding: 2rem;
+        }
+
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .event-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .event-card:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .event-date-large {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .event-date-box {
+            width: 80px;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .event-date-box .day {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .event-date-box .month {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .event-main-info {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .event-status {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background: #e1f5fe;
+            color: #01579b;
+        }
+
+        .status-irl {
+            background: #e8f5e8;
+            color: #2d7d2d;
+        }
+
+        .status-in-person {
+            background: #e8f5e8;
+            color: #2d7d2d;
+        }
+
+        .event-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .main-content {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .content-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .event-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .event-date-large {
+                align-self: center;
+            }
+        }
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .register-btn.registered {
+            background: #28a745 !important;
+            border-color: #28a745 !important;
+            color: white !important;
+        }
+
+        .register-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <!-- Will be populated by master JS -->
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
+                            </div>
+                        </div>
+                        <!-- Navigation will be dynamically generated -->
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Events Calendar</h1>
+            <p class="page-subtitle">
+                Join workshops, conferences, and community gatherings that advance ethical AI and human-centered technology
+            </p>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="sidebar">
+                <div class="create-event-card">
+                    <h3>Create an Event</h3>
+                    <p>Organize workshops, conferences, or community gatherings</p>
+                    <a href="dcf_create_event.html" class="btn">📅 Create Event</a>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Event Statistics</h3>
+                    <div class="stats-grid" id="statsContainer">
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Total Events</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Upcoming</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">This Month</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Attending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Upcoming Events</h3>
+                    <div class="upcoming-events" id="upcomingEventsContainer">
+                        <p style="color: #666; font-size: 0.9rem; text-align: center;">Loading events...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="allEventsTab" onclick="switchEventFilter('all')">📅 All Events</button>
+                        <button class="view-btn" id="myEventsTab" onclick="switchEventFilter('my')">👤 My Events</button>
+                    </div>
+                    <a href="dcf_create_event.html" class="btn btn-primary">📅 Create Event</a>
+                </div>
+
+                <div class="list-view" id="listView">
+                    <div class="events-list" id="eventsContainer">
+                        <div class="empty-state">
+                            <h3>Loading Events...</h3>
+                            <p>Please wait while we load the latest events.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let currentEventFilter = 'all'; // 'all' or 'my'
+        let allEventsCache = []; // Cache all events to avoid re-fetching
+        
+        function switchView(view) {
+            // Only list view for now
+        }
+        
+        function switchEventFilter(filterType) {
+            currentEventFilter = filterType;
+            
+            // Update active tab
+            document.getElementById('allEventsTab').classList.remove('active');
+            document.getElementById('myEventsTab').classList.remove('active');
+            
+            if (filterType === 'all') {
+                document.getElementById('allEventsTab').classList.add('active');
+            } else {
+                document.getElementById('myEventsTab').classList.add('active');
+            }
+            
+            // Update tab counts
+            updateTabCounts();
+            
+            // Update page title and description
+            updatePageHeader(filterType);
+            
+            // Filter and display events
+            filterAndDisplayEvents(filterType);
+            
+            // Update URL without page reload
+            const url = new URL(window.location);
+            if (filterType === 'my') {
+                url.searchParams.set('view', 'my');
+            } else {
+                url.searchParams.delete('view');
+            }
+            window.history.replaceState({}, '', url);
+        }
+        
+        function updatePageHeader(filterType) {
+            const pageTitle = document.querySelector('.page-title');
+            const pageSubtitle = document.querySelector('.page-subtitle');
+            
+            if (filterType === 'my') {
+                pageTitle.textContent = 'My Events';
+                pageSubtitle.textContent = 'Manage and track the events you\'ve created, from workshops to community gatherings';
+            } else {
+                pageTitle.textContent = 'Events Calendar';
+                pageSubtitle.textContent = 'Join workshops, conferences, and community gatherings that advance ethical AI and human-centered technology';
+            }
+        }
+        
+        function updateTabCounts() {
+            if (allEventsCache.length === 0) return;
+            
+            const currentUser = window.getCurrentUser();
+            const allEventsCount = allEventsCache.length;
+            let myEventsCount = 0;
+            
+            if (currentUser) {
+                myEventsCount = allEventsCache.filter(event => isEventOwner(event)).length;
+            }
+            
+            // Update tab text with counts
+            const allEventsTab = document.getElementById('allEventsTab');
+            const myEventsTab = document.getElementById('myEventsTab');
+            
+            allEventsTab.innerHTML = `📅 All Events (${allEventsCount})`;
+            myEventsTab.innerHTML = `👤 My Events (${myEventsCount})`;
+        }
+        
+        function filterAndDisplayEvents(filterType) {
+            if (allEventsCache.length === 0) {
+                // If no events cached, reload from server
+                loadEvents();
+                return;
+            }
+            
+            let filteredEvents = allEventsCache;
+            
+            if (filterType === 'my') {
+                const currentUser = window.getCurrentUser();
+                if (currentUser) {
+                    filteredEvents = allEventsCache.filter(event => isEventOwner(event));
+                } else {
+                    // User not logged in, show empty state
+                    filteredEvents = [];
+                }
+            }
+            
+            // Display the filtered events
+            displayEvents(filteredEvents);
+            displayUpcomingEvents(filteredEvents);
+            updateStatsDisplay(filteredEvents);
+            updateTabCounts();
+            
+            // Show custom empty state for My Events if needed
+            if (filterType === 'my' && filteredEvents.length === 0) {
+                showMyEventsEmptyState();
+            }
+        }
+
+        function openEventDetails(eventId) {
+            window.location.href = `dcf_event_details.html?id=${eventId}`;
+        }
+
+        function handleManageEvent(eventId, event) {
+            console.log('🔍 DEBUG: handleManageEvent called with eventId:', eventId);
+            
+            // Stop event propagation to prevent any parent handlers
+            if (event) {
+                console.log('🔍 DEBUG: Stopping event propagation');
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
+            // Check current auth state before navigating
+            console.log('🔍 DEBUG: Checking auth before navigation...');
+            
+            let authUser = null;
+            if (window.getCurrentUser && typeof window.getCurrentUser === 'function') {
+                authUser = window.getCurrentUser();
+                console.log('🔍 DEBUG: Auth user:', authUser);
+            }
+            
+            console.log('🔍 DEBUG: Navigating to manage page...');
+            
+            // Navigate to event management page
+            window.location.href = `dcf_event_manage.html?id=${eventId}`;
+        }
+
+        // Add event ownership check function
+        function isEventOwner(event) {
+            if (!event) {
+                console.log('🔍 DEBUG: isEventOwner - no event provided');
+                return false;
+            }
+            
+            // Get current user from unified auth
+            let currentUser = null;
+            if (window.getCurrentUser && typeof window.getCurrentUser === 'function') {
+                currentUser = window.getCurrentUser();
+            }
+            
+            if (!currentUser) {
+                console.log('🔍 DEBUG: isEventOwner - no current user available');
+                return false;
+            }
+            
+            console.log('🔍 DEBUG: isEventOwner checking:', {
+                eventTitle: event.title,
+                eventId: event.id,
+                eventOrganizerID: event.organizer_id,
+                eventContactEmail: event.contact_email,
+                currentUserID: currentUser.id,
+                currentUserEmail: currentUser.email
+            });
+            
+            // Check both organizer_id (for Supabase auth) and contact_email (for fallback)
+            // Convert to strings and normalize for comparison
+            const ownerByID = event.organizer_id && currentUser.id && 
+                             String(event.organizer_id).trim() === String(currentUser.id).trim();
+            const ownerByEmail = event.contact_email && currentUser.email && 
+                               String(event.contact_email).toLowerCase().trim() === String(currentUser.email).toLowerCase().trim();
+            
+            // Also check for legacy created_by field if it exists
+            const ownerByCreatedBy = event.created_by && currentUser.email &&
+                                   String(event.created_by).toLowerCase().trim() === String(currentUser.email).toLowerCase().trim();
+            
+            const isOwner = ownerByID || ownerByEmail || ownerByCreatedBy;
+            
+            console.log('🔍 DEBUG: isEventOwner result:', {
+                ownerByID,
+                ownerByEmail,
+                ownerByCreatedBy,
+                isOwner
+            });
+            
+            return isOwner;
+        }
+
+        // Wait for master JS to initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Give unified auth system time to initialize before checking user state
+            setTimeout(() => {
+                // Verify unified auth system is available
+                if (typeof window.getCurrentUser === 'function') {
+                    const currentUser = window.getCurrentUser();
+                    
+                    if (currentUser) {
+                        console.log('✅ Authenticated user loaded:', currentUser.username);
+                    } else {
+                        console.log('ℹ️ No user session detected - loading in public mode');
+                    }
+                } else {
+                    console.log('⚠️ Unified auth system not yet available, retrying...');
+                    // Retry once more if auth system isn't ready
+                    setTimeout(() => {
+                        const currentUser = window.getCurrentUser?.();
+                        if (currentUser) {
+                            console.log('✅ Authenticated user loaded (delayed):', currentUser.username);
+                        }
+                    }, 200);
+                }
+            }, 100); // Small delay for auth initialization
+            
+            // Check URL parameters for view type
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            
+            if (viewParam === 'my') {
+                currentEventFilter = 'my';
+                // Update active tab
+                document.getElementById('allEventsTab').classList.remove('active');
+                document.getElementById('myEventsTab').classList.add('active');
+                // Update page header
+                updatePageHeader('my');
+            }
+            let attempts = 0;
+            const maxAttempts = 20;
+            
+            async function loadEvents() {
+                attempts++;
+                
+                // Use unified auth client
+                const supabase = window.dcfSupabase;
+                
+                if (supabase && typeof supabase.from === 'function') {
+                    console.log('Loading events with Supabase client...');
+                    
+                    supabase
+                        .from('events')
+                        .select('*')
+                        .eq('status', 'active')
+                        .order('event_date', { ascending: true })
+                        .then(({data, error}) => {
+                            if (error) {
+                                console.error('Error loading events:', error);
+                                showEmptyState();
+                                return;
+                            }
+                            
+                            const events = data || [];
+                            console.log('Loaded events:', events.length);
+                            
+                            checkUserRegistrations(events).then(eventsWithRegistrations => {
+                                // Cache all events
+                                allEventsCache = eventsWithRegistrations;
+                                
+                                // Apply current filter and display
+                                filterAndDisplayEvents(currentEventFilter);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error loading events:', error);
+                            showEmptyState();
+                        });
+                } else if (attempts < maxAttempts) {
+                    console.log(`Waiting for Supabase... attempt ${attempts}/${maxAttempts}`);
+                    setTimeout(loadEvents, 500);
+                } else {
+                    console.error('Failed to load Supabase after maximum attempts');
+                    showEmptyState();
+                }
+            }
+            
+            // Start loading after a short delay
+            setTimeout(loadEvents, 1000);
+        });
+
+        async function checkUserRegistrations(events) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) return events;
+
+            try {
+                const supabase = window.dcfSupabase;
+                const userEmail = currentUser.email;
+                
+                if (!supabase || !userEmail) return events;
+
+                const { data: registrations } = await supabase
+                    .from('event_registrations')
+                    .select('event_id, status')
+                    .eq('attendee_email', userEmail);
+
+                // Add registration status to events
+                return events.map(event => {
+                    const registration = registrations?.find(reg => reg.event_id === event.id);
+                    const status = registration?.status || null;
+                    console.log('Event:', event.title, 'Registration status:', status); // Debug line
+                    return {
+                        ...event,
+                        userRegistrationStatus: status
+                    };
+                });
+            } catch (error) {
+                console.error('Error checking registrations:', error);
+                return events;
+            }
+        }
+
+        async function displayEvents(events) {
+            const container = document.getElementById('eventsContainer');
+            
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Events Yet</h3>
+                        <p>Check back soon for upcoming events and workshops!</p>
+                        <a href="dcf_create_event.html" class="btn btn-primary">Create First Event</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = events.map(event => {
+                // Debug: Log event processing
+                console.log('🔍 DEBUG: Processing event for display:', {
+                    title: event.title,
+                    id: event.id,
+                    organizer_id: event.organizer_id,
+                    contact_email: event.contact_email,
+                    created_by: event.created_by,
+                    registrationStatus: event.userRegistrationStatus
+                });
+                // Only show register button if user is NOT the event owner
+                let registerButtonHtml = '';
+                const isOwner = isEventOwner(event);
+                
+                if (!isOwner) {
+                    if (event.userRegistrationStatus) {
+                        const statusConfig = {
+                            'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
+                            'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
+                            'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' },
+                            'registered': { text: '✅ Registered', bg: '#28a745', border: '#28a745', color: 'white' }
+                        };
+                        const config = statusConfig[event.userRegistrationStatus] || statusConfig['registered'];
+                        registerButtonHtml = `
+                            <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                    onclick="event.stopPropagation(); showStatusChangeOptions('${event.id}', this, '${event.userRegistrationStatus}')" 
+                                    style="background: ${config.bg}; color: ${config.color}; border: 2px solid ${config.border}; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                ${config.text}
+                            </button>
+                        `;
+                    } else {
+                        registerButtonHtml = `
+                            <button class="btn btn-small register-btn" data-event-id="${event.id}" 
+                                    onclick="event.stopPropagation(); toggleRegistrationOptions('${event.id}', this)" 
+                                    style="background: #dc3545; color: white; border: 2px solid #dc3545; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                Register
+                            </button>
+                        `;
+                    }
+                }
+                
+                console.log('🔍 DEBUG: Button logic for', event.title, '- isOwner:', isOwner, '- showing register:', !isOwner, '- showing manage:', isOwner);
+                const eventDate = new Date(event.event_date);
+                const day = eventDate.getDate();
+                const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                
+                return `
+                    <div class="event-card" onclick="openEventDetails('${event.id}')">
+                        <div class="event-header">
+                            <div class="event-date-large">
+                                <div class="event-date-box">
+                                    <div class="day">${day}</div>
+                                    <div class="month">${month}</div>
+                                </div>
+                                <div class="event-main-info">
+                                    <div class="event-title">${event.title}</div>
+                                    <div class="event-meta">
+                                        <div class="event-meta-item">
+                                            <span>📅</span>
+                                            ${event.start_time || 'Time TBD'}
+                                        </div>
+                                        <div class="event-meta-item">
+                                            <span>📍</span>
+                                            ${event.location || event.meeting_link || 'Location TBD'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="event-status">
+                                <span class="status-badge status-${event.event_type}">${event.event_type}</span>
+                            </div>
+                        </div>
+                        <div class="event-description">${event.description}</div>
+                        <div class="event-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+                            <span class="event-time">${event.start_time || 'Time TBD'} ${event.timezone || 'UTC'}</span>
+                            <div class="event-actions" style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEventDetails('${event.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Details</button>
+${registerButtonHtml}
+                                ${isOwner ? `
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); handleManageEvent('${event.id}', event)" style="background: #000; color: white; border-color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                        ⚙️ Manage
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStatsDisplay(events) {
+            const container = document.getElementById('statsContainer');
+            const totalEvents = events.length;
+            const upcomingEvents = events.filter(e => new Date(e.event_date) >= new Date()).length;
+            const thisMonth = events.filter(e => {
+                const eventDate = new Date(e.event_date);
+                const now = new Date();
+                return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear();
+            }).length;
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalEvents}</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${upcomingEvents}</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${thisMonth}</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Attending</div>
+                </div>
+            `;
+        }
+
+        function displayUpcomingEvents(events) {
+            const container = document.getElementById('upcomingEventsContainer');
+            
+            if (events.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 0.9rem; text-align: center;">No upcoming events</p>';
+                return;
+            }
+            
+            const upcomingEvents = events.slice(0, 3);
+            container.innerHTML = upcomingEvents.map(event => {
+                const eventDate = new Date(event.event_date);
+                const day = eventDate.getDate();
+                const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                
+                return `
+                    <div class="upcoming-event" onclick="openEventDetails('${event.id}')">
+                        <div class="event-date-mini">
+                            <div class="day">${day}</div>
+                            <div class="month">${month}</div>
+                        </div>
+                        <div class="event-info-mini">
+                            <div class="event-title-mini">${event.title}</div>
+                            <div class="event-time-mini">${event.start_time || 'Time TBD'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showEmptyState() {
+            const container = document.getElementById('eventsContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>Unable to Load Events</h3>
+                    <p>There was an issue loading events. Please refresh the page or try again later.</p>
+                    <a href="dcf_create_event.html" class="btn btn-primary">Create Event</a>
+                </div>
+            `;
+            
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">-</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">-</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">-</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">-</div>
+                    <div class="stat-label">Attending</div>
+                </div>
+            `;
+            
+            document.getElementById('upcomingEventsContainer').innerHTML = 
+                '<p style="color: #666; font-size: 0.9rem; text-align: center;">Unable to load events</p>';
+        }
+        
+        function showMyEventsEmptyState() {
+            const container = document.getElementById('eventsContainer');
+            const currentUser = window.getCurrentUser();
+            
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Please Log In</h3>
+                        <p>You need to be logged in to view your events.</p>
+                        <a href="../auth/dcf_login_page.html" class="btn btn-primary">Login</a>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Events Created Yet</h3>
+                        <p>You haven't created any events yet. Ready to organize your first workshop, conference, or community gathering?</p>
+                        <a href="dcf_create_event.html" class="btn btn-primary">📅 Create Your First Event</a>
+                        <br><br>
+                        <button onclick="switchEventFilter('all')" class="btn btn-secondary">📅 Browse All Events</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function quickRegister(eventId, eventTitle, buttonElement) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                // EMERGENCY - NO REDIRECTS ALLOWED
+                console.log('🚨 Login required but redirects disabled');
+                return;
+            }
+
+            try {
+                buttonElement.textContent = 'Registering...';
+                buttonElement.disabled = true;
+
+                const supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    throw new Error('Database connection not available');
+                }
+                const userEmail = currentUser.email;
+                const userName = currentUser.name;
+
+                const formData = {
+                    event_id: eventId,
+                    user_id: user?.id || currentUser.id,
+                    attendee_name: userName,
+                    attendee_email: userEmail,
+                    status: 'registered'
+                };
+
+                const { data, error } = await supabase
+                    .from('event_registrations')
+                    .insert([formData]);
+
+                if (error) throw error;
+
+                // Update button to show registered
+                buttonElement.textContent = '✅ Registered';
+                buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
+                buttonElement.disabled = true;
+                buttonElement.onclick = null;
+
+                // Show success notification
+                showSuccessAlert(`Successfully registered for ${eventTitle}!`);
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                buttonElement.textContent = 'Register';
+                buttonElement.disabled = false;
+                
+                if (error.code === '23505') {
+                    showInfoAlert('You are already registered for this event');
+                    buttonElement.textContent = '✅ Registered';
+                    buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
+                    buttonElement.disabled = true;
+                } else {
+                    showErrorAlert('Registration failed. Please try again.');
+                }
+            }
+        }
+
+        function showSuccessAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10001;
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `✅ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function showErrorAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10001;
+                background: #f8d7da;
+                border: 1px solid #f5c6cb;
+                color: #721c24;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `❌ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function showInfoAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10001;
+                background: #e1f5fe;
+                border: 1px solid #b3e5fc;
+                color: #01579b;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `ℹ️ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        // Legacy function for compatibility
+        function showNotification(message, type) {
+            if (type === 'success') {
+                showSuccessAlert(message);
+            } else if (type === 'error') {
+                showErrorAlert(message);
+            } else {
+                showInfoAlert(message);
+            }
+        }
+
+        function toggleRegistrationOptions(eventId, buttonElement) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                // EMERGENCY - NO REDIRECTS ALLOWED
+                console.log('🚨 Login required but redirects disabled');
+                return;
+            }
+
+            const existingOptions = buttonElement.parentElement.querySelector('.registration-options');
+            if (existingOptions) {
+                existingOptions.remove();
+                return;
+            }
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'registration-options';
+            optionsDiv.style.cssText = `display: flex; gap: 0.25rem; margin-top: 0.5rem;`;
+
+            optionsDiv.innerHTML = `
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'going', this)" style="background: #28a745; color: white; border: 2px solid #28a745; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Going</button>
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'interested', this)" style="background: #ffc107; color: #000; border: 2px solid #ffc107; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Interested</button>
+                <button class="btn btn-small" onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', 'not_going', this)" style="background: #6c757d; color: white; border: 2px solid #6c757d; padding: 0.3rem 0.6rem; font-size: 0.75rem;">Not Going</button>
+            `;
+
+            buttonElement.parentElement.appendChild(optionsDiv);
+        }
+
+        async function selectRegistrationStatus(eventId, status, buttonElement) {
+            try {
+                const supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    throw new Error('Database connection not available');
+                }
+                const currentUser = window.getCurrentUser();
+                const userEmail = currentUser.email;
+                const userName = currentUser.name;
+
+                const { data: existingReg } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('attendee_email', userEmail)
+                    .single();
+
+                if (existingReg) {
+                    const { error } = await supabase
+                        .from('event_registrations')
+                        .update({ status: status })
+                        .eq('id', existingReg.id);
+                    if (error) throw error;
+                } else {
+                    const formData = {
+                        event_id: eventId,
+                        user_id: user?.id || currentUser.id,
+                        attendee_name: userName,
+                        attendee_email: userEmail,
+                        status: status
+                    };
+                    const { error } = await supabase
+                        .from('event_registrations')
+                        .insert([formData]);
+                    if (error) throw error;
+                }
+
+                updateRegistrationStatus(eventId, status);
+                showNotification(`Status updated to ${status.replace('_', ' ')}!`, 'success');
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showNotification('Failed to update status. Please try again.', 'error');
+            }
+        }
+
+        function updateRegistrationStatus(eventId, status) {
+            const eventCard = document.querySelector(`[data-event-id="${eventId}"]`).closest('.event-card');
+            const registerBtn = eventCard.querySelector('.register-btn');
+            const optionsDiv = eventCard.querySelector('.registration-options');
+
+            if (optionsDiv) optionsDiv.remove();
+
+            const statusConfig = {
+                'going': { text: '✅ Going', bg: '#28a745', border: '#28a745', color: 'white' },
+                'interested': { text: '⭐ Interested', bg: '#ffc107', border: '#ffc107', color: '#000' },
+                'not_going': { text: '❌ Not Going', bg: '#6c757d', border: '#6c757d', color: 'white' }
+            };
+
+            const config = statusConfig[status];
+            registerBtn.textContent = config.text;
+            registerBtn.style.background = config.bg;
+            registerBtn.style.borderColor = config.border;
+            registerBtn.style.color = config.color;
+            registerBtn.onclick = (e) => {
+                e.stopPropagation();
+                showStatusChangeOptions(eventId, registerBtn, status);
+            };
+        }
+
+        function showStatusChangeOptions(eventId, buttonElement, currentStatus) {
+            const existingOptions = buttonElement.parentElement.querySelector('.status-change-options');
+            if (existingOptions) {
+                existingOptions.remove();
+                return;
+            }
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'status-change-options';
+            optionsDiv.style.cssText = `display: flex; gap: 0.25rem; margin-top: 0.5rem;`;
+
+            const options = [
+                { status: 'going', text: 'Going', bg: '#28a745', color: 'white' },
+                { status: 'interested', text: 'Interested', bg: '#ffc107', color: '#000' },
+                { status: 'not_going', text: 'Not Going', bg: '#6c757d', color: 'white' }
+            ];
+
+            optionsDiv.innerHTML = options.map(option => `
+                <button class="btn btn-small" 
+                        onclick="event.stopPropagation(); selectRegistrationStatus('${eventId}', '${option.status}', this)" 
+                        style="background: ${option.status === currentStatus ? option.bg : 'transparent'}; 
+                               color: ${option.status === currentStatus ? option.color : '#666'}; 
+                               border: 2px solid ${option.bg}; 
+                               padding: 0.3rem 0.6rem; 
+                               font-size: 0.75rem;
+                               opacity: ${option.status === currentStatus ? '1' : '0.7'};">
+                    ${option.text}
+                </button>
+            `).join('');
+
+            buttonElement.parentElement.appendChild(optionsDiv);
+        }
+    </script>
+</body>
+</html>

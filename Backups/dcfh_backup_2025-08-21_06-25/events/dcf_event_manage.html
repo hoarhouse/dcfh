@@ -1,0 +1,2498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Events - DCF Hungary</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+
+
+        
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 99999;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+                .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
+            /* Content controlled by dcf-unified-auth.js */
+        }
+
+        .user-avatar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #000, #333);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            color: #000;
+        }
+
+        .logout-btn {
+            color: #dc3545 !important;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+            color: #c82333 !important;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 99998;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #666;
+            border: 2px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            color: #333;
+            border-color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn:disabled {
+            background: #e5e5e5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .event-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .event-card.editing {
+            border-color: #000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .event-date-box {
+            width: 60px;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            flex-shrink: 0;
+            margin-right: 1rem;
+        }
+
+        .event-date-box .day {
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .event-date-box .month {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+            opacity: 0.9;
+        }
+
+        .event-info {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #e8f5e8;
+            color: #2d7d2d;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .attendee-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .attendee-count {
+            background: #f8f9fa;
+            color: #666;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .registration-rate {
+            color: #28a745;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Enhanced Edit Modal Styles */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .edit-modal.active {
+            display: flex;
+        }
+
+        .edit-modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .edit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2rem 1rem 2rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .edit-modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .edit-progress-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e5e5e5;
+            gap: 1rem;
+        }
+
+        .edit-progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-progress-step.active {
+            color: #000;
+            font-weight: 600;
+        }
+
+        .edit-progress-step.completed {
+            color: #28a745;
+        }
+
+        .edit-progress-step .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e5e5e5;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .edit-progress-step.active .step-number {
+            background: #000;
+            color: white;
+        }
+
+        .edit-progress-step.completed .step-number {
+            background: #28a745;
+            color: white;
+        }
+
+        .edit-step-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .edit-step-content.active {
+            display: block;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-option {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .toggle-option.active {
+            border-color: #000;
+            background: #000;
+            color: white;
+        }
+
+        .toggle-option.active .toggle-title {
+            color: white;
+        }
+
+        .toggle-option.active .toggle-description {
+            color: #ccc;
+        }
+
+        .toggle-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .toggle-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .duration-presets {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .duration-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .duration-btn.active {
+            border-color: #000;
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .duration-btn:hover {
+            border-color: #333;
+        }
+
+        .edit-online-location,
+        .edit-physical-location {
+            display: none;
+        }
+
+        .edit-online-location.show,
+        .edit-physical-location.show {
+            display: block;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            background: #f8f9fa;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+
+        .current-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .current-image {
+            position: relative;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .current-image img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .remove-current-image {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-current-image:hover {
+            background: #dc3545;
+        }
+
+        .no-images {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+            border: 1px dashed #e5e5e5;
+            border-radius: 8px;
+        }
+
+        .file-upload {
+            border: 2px dashed #e5e5e5;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .uploaded-files {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .uploaded-file {
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            position: relative;
+        }
+
+        .file-preview {
+            width: 100%;
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .file-info {
+            padding: 0.75rem;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .remove-file {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-file:hover {
+            background: #dc3545;
+        }
+
+        .edit-modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem;
+            border-top: 1px solid #e5e5e5;
+            background: #f8f9fa;
+        }
+
+        .step-navigation {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .danger-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .edit-modal {
+                padding: 1rem;
+            }
+
+            .edit-modal-content {
+                max-height: 95vh;
+            }
+
+            .toggle-group {
+                flex-direction: column;
+            }
+
+            .duration-presets {
+                flex-direction: column;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+
+            .edit-modal-actions {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .step-navigation,
+            .danger-actions {
+                justify-content: center;
+            }
+        }
+
+        /* Legacy edit form - keep for compatibility */
+        .edit-form {
+            display: none;
+        }
+
+        .edit-form.active {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .registration-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .registration-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .registration-item:last-child {
+            border-bottom: none;
+        }
+
+        .registration-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .registration-info p {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e5e5;
+            border-top: 4px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .main-content {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .event-card {
+                padding: 1rem;
+            }
+
+            .event-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .event-actions {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation
+            </a>
+            <ul class="nav-menu" id="navMenu">
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="window.toggleUserMenu()" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Manage Events</h1>
+                <p class="page-subtitle">Edit and monitor your community events</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.location.href='dcf_create_event.html'">+ Create New Event</button>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="sidebar">
+                <div class="card">
+                    <h3 class="card-title">Event Overview</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalEvents">-</div>
+                            <div class="stat-label">Total Events</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="activeEvents">-</div>
+                            <div class="stat-label">Active</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalAttendees">-</div>
+                            <div class="stat-label">Total Attendees</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="upcomingEvents">-</div>
+                            <div class="stat-label">Upcoming</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="window.location.href='dcf_create_event.html'">🚀 Create Event</button>
+                        <button class="btn btn-secondary" onclick="exportEventData()">📊 Export Data</button>
+                        <button class="btn btn-secondary" onclick="window.location.href='dcf_events_calendar.html'">📅 View Calendar</button>
+                        <button class="btn btn-secondary" onclick="showAllRegistrations()">👥 All Registrations</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Management Tips</h3>
+                    <div style="font-size: 0.9rem; color: #666; line-height: 1.6;">
+                        <p>💡 <strong>Pro tip:</strong> Update event details directly here without recreating.</p>
+                        <br>
+                        <p>📱 <strong>Quick edit:</strong> Click "Edit" to modify any event inline.</p>
+                        <br>
+                        <p>👥 <strong>Registrations:</strong> View and manage attendees for each event.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="event-list" id="eventsList">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading your events...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let allEvents = [];
+        let supabase = null;
+        let editingEventId = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeManagePage();
+        });
+
+        async function initializeManagePage() {
+            try {
+                // Use unified auth client exclusively
+                supabase = window.dcfSupabase;
+                
+                if (!supabase) {
+                    console.log('⚠️ Database connection not available - waiting...');
+                    // Wait for Supabase to be ready
+                    let attempts = 0;
+                    while (!window.dcfSupabase && attempts < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    supabase = window.dcfSupabase;
+                    
+                    if (!supabase) {
+                        console.error('❌ Database connection failed after waiting');
+                        showError('Database connection not available. Please refresh the page.');
+                        return;
+                    }
+                }
+
+                // Wait for unified auth system to be ready first
+                let authAttempts = 0;
+                const maxAttempts = 20; // Increased to 20 attempts
+                const waitInterval = 150; // Increased to 150ms per attempt (3 seconds total)
+                
+                console.log('🔄 Waiting for unified auth system to initialize...');
+                
+                // First, wait for the auth system itself to be ready
+                while (!window.getCurrentUser && authAttempts < maxAttempts) {
+                    console.log(`⏳ Auth system not ready yet (attempt ${authAttempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
+                    authAttempts++;
+                }
+                
+                if (!window.getCurrentUser) {
+                    console.error('❌ Auth system failed to initialize after 3 seconds');
+                    showError('Authentication system not available. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('✅ Auth system ready, checking user session...');
+                
+                // Now check for user authentication with additional attempts
+                let authUser = null;
+                let userCheckAttempts = 0;
+                
+                while (userCheckAttempts < maxAttempts) {
+                    authUser = window.getCurrentUser();
+                    console.log(`🔍 User check attempt ${userCheckAttempts + 1}/${maxAttempts}: user =`, authUser);
+                    
+                    if (authUser && authUser.id) {
+                        console.log(`✅ User authenticated after ${userCheckAttempts + 1} attempts (${(userCheckAttempts + 1) * waitInterval}ms)`);
+                        currentUser = authUser;
+                        break;
+                    }
+                    
+                    userCheckAttempts++;
+                    await new Promise(resolve => setTimeout(resolve, waitInterval));
+                }
+                
+                // Final check after all attempts
+                if (!authUser || !authUser.id) {
+                    authUser = window.getCurrentUser();
+                    console.log('🔍 Final auth check after full wait period: user =', authUser);
+                    
+                    if (authUser && authUser.id) {
+                        currentUser = authUser;
+                        console.log('✅ User authenticated on final check');
+                    } else {
+                        console.log('⚠️ No valid user session found after 3 seconds of waiting');
+                        console.log('Final authUser value:', authUser);
+                        showNoAccessMessage();
+                        return;
+                    }
+                }
+
+                // Load events now that auth is confirmed
+                await loadEvents();
+
+            } catch (error) {
+                console.error('Error initializing manage page:', error);
+                showError('Failed to load event management dashboard');
+            }
+        }
+
+        function showNoAccessMessage() {
+            const container = document.getElementById('eventsList');
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin: 2rem 0;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+                        <h3 style="margin-bottom: 1rem; color: #333;">Authentication Required</h3>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            Event management requires you to be logged in to access your events.
+                        </p>
+                        <a href="../auth/dcf_login_page.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: #333; color: white; text-decoration: none; border-radius: 6px;">
+                            Log In to Continue
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadEvents() {
+            const container = document.getElementById('eventsList');
+            
+            try {
+                // Show loading state
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="loading-spinner"></div><p>Loading your events...</p></div>';
+                }
+                
+                // Ensure supabase is available
+                if (!supabase) {
+                    throw new Error('Database connection not initialized');
+                }
+                
+                let query = supabase.from('events').select('*');
+                
+                // Filter by organizer if we have a current user
+                if (currentUser?.id) {
+                    console.log('🔍 Loading events for user ID:', currentUser.id);
+                    query = query.eq('organizer_id', currentUser.id);
+                } else if (currentUser?.email) {
+                    // Fallback: try to match by email if available
+                    console.log('🔍 Loading events for email:', currentUser.email);
+                    query = query.eq('contact_email', currentUser.email);
+                } else {
+                    console.warn('⚠️ No user ID or email available for filtering');
+                }
+
+                const { data: events, error } = await query.order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                }
+
+                allEvents = events || [];
+                console.log('✅ Loaded', allEvents.length, 'events');
+                
+                // Load attendance counts for each event
+                await loadAttendanceCounts();
+                
+                renderEvents();
+                updateStats();
+
+            } catch (error) {
+                console.error('Error loading events:', error);
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                            <h3 style="margin-bottom: 1rem; color: #333;">Failed to Load Events</h3>
+                            <p style="color: #666; margin-bottom: 1.5rem;">
+                                ${error.message || 'Unable to fetch your events. Please try refreshing the page.'}
+                            </p>
+                            <button onclick="location.reload()" style="padding: 0.75rem 1.5rem; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function loadAttendanceCounts() {
+            for (let event of allEvents) {
+                try {
+                    // Count all registrations (going + interested + registered)
+                    const { count, error } = await supabase
+                        .from('event_registrations')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', event.id)
+                        .in('status', ['going', 'interested', 'registered']);
+
+                    if (!error) {
+                        event.attendee_count = count || 0;
+                    }
+
+                    // Also get going count specifically
+                    const { count: goingCount } = await supabase
+                        .from('event_registrations')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', event.id)
+                        .in('status', ['going', 'registered']);
+
+                    event.going_count = goingCount || 0;
+
+                } catch (error) {
+                    console.error(`Error loading attendance for event ${event.id}:`, error);
+                    event.attendee_count = 0;
+                    event.going_count = 0;
+                }
+            }
+        }
+
+        function renderEvents() {
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = '';
+
+            if (allEvents.length === 0) {
+                eventsList.innerHTML = renderEmptyState();
+                return;
+            }
+
+            allEvents.forEach(event => {
+                eventsList.appendChild(createEventCard(event));
+            });
+        }
+
+        function createEventCard(event) {
+            const eventDate = new Date(event.event_date);
+            const day = eventDate.getDate();
+            const month = eventDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            card.id = `event-${event.id}`;
+            
+            card.innerHTML = `
+                <div class="event-header">
+                    <div style="display: flex; align-items: flex-start;">
+                        <div class="event-date-box">
+                            <div class="day">${day}</div>
+                            <div class="month">${month}</div>
+                        </div>
+                        <div class="event-info">
+                            <h3 class="event-title">${event.title}</h3>
+                            <div class="event-meta">
+                                📍 ${event.event_type === 'online' ? 'Virtual' : event.location || 'Location TBD'} • 
+                                ⏰ ${formatTime(event.start_time)} ${event.timezone || 'UTC'} • 
+                                🏷️ ${event.category || 'General'}
+                            </div>
+                            <div class="event-description">
+                                ${event.description ? (event.description.length > 150 ? event.description.substring(0, 150) + '...' : event.description) : 'No description available'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event-actions">
+                        <span class="status-badge status-${event.status || 'active'}">${(event.status || 'active').toUpperCase()}</span>
+                        <button class="btn btn-secondary btn-small" onclick="editEvent('${event.id}')">✏️ Edit</button>
+                        <button class="btn btn-secondary btn-small" onclick="viewRegistrations('${event.id}')">👥 Registrations</button>
+                        <button class="btn btn-secondary btn-small" onclick="window.open('dcf_event_details.html?id=${event.id}', '_blank')">👁️ View</button>
+                    </div>
+                </div>
+
+                <!-- Enhanced Edit Modal (Initially Hidden) -->
+                <div class="edit-modal" id="edit-modal-${event.id}">
+                    <div class="edit-modal-content">
+                        <div class="edit-modal-header">
+                            <h3>Edit Event: ${event.title}</h3>
+                            <button class="close-btn" onclick="cancelEdit('${event.id}')">&times;</button>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="edit-progress-bar">
+                            <div class="edit-progress-step active" data-step="1">
+                                <div class="step-number">1</div>
+                                <span>Basic Info</span>
+                            </div>
+                            <div class="edit-progress-step" data-step="2">
+                                <div class="step-number">2</div>
+                                <span>Date & Location</span>
+                            </div>
+                            <div class="edit-progress-step" data-step="3">
+                                <div class="step-number">3</div>
+                                <span>Details</span>
+                            </div>
+                            <div class="edit-progress-step" data-step="4">
+                                <div class="step-number">4</div>
+                                <span>Media</span>
+                            </div>
+                        </div>
+
+                        <div id="edit-message-${event.id}"></div>
+
+                        <!-- Step 1: Basic Information -->
+                        <div class="edit-step-content active" data-step="1">
+                            <div class="form-group">
+                                <label class="form-label required" for="edit-title-${event.id}">Event Title</label>
+                                <input type="text" id="edit-title-${event.id}" class="form-input" value="${event.title}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required" for="edit-description-${event.id}">Description</label>
+                                <textarea id="edit-description-${event.id}" class="textarea">${event.description || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required" for="edit-category-${event.id}">Category</label>
+                                <select id="edit-category-${event.id}" class="form-select">
+                                    <option value="conference" ${event.category === 'conference' ? 'selected' : ''}>Conference</option>
+                                    <option value="workshop" ${event.category === 'workshop' ? 'selected' : ''}>Workshop</option>
+                                    <option value="webinar" ${event.category === 'webinar' ? 'selected' : ''}>Webinar</option>
+                                    <option value="networking" ${event.category === 'networking' ? 'selected' : ''}>Networking Event</option>
+                                    <option value="discussion" ${event.category === 'discussion' ? 'selected' : ''}>Discussion Group</option>
+                                    <option value="seminar" ${event.category === 'seminar' ? 'selected' : ''}>Seminar</option>
+                                    <option value="meetup" ${event.category === 'meetup' ? 'selected' : ''}>Community Meetup</option>
+                                    <option value="training" ${event.category === 'training' ? 'selected' : ''}>Training Session</option>
+                                    <option value="panel" ${event.category === 'panel' ? 'selected' : ''}>Panel Discussion</option>
+                                    <option value="other" ${event.category === 'other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Visibility</label>
+                                <div class="toggle-group" id="edit-visibility-${event.id}">
+                                    <div class="toggle-option ${event.visibility === 'public' ? 'active' : ''}" onclick="selectEditVisibility('${event.id}', 'public', this)">
+                                        <div class="toggle-icon">🌍</div>
+                                        <div class="toggle-title">Public</div>
+                                        <div class="toggle-description">Visible to everyone</div>
+                                    </div>
+                                    <div class="toggle-option ${event.visibility === 'private' ? 'active' : ''}" onclick="selectEditVisibility('${event.id}', 'private', this)">
+                                        <div class="toggle-icon">🔒</div>
+                                        <div class="toggle-title">Private</div>
+                                        <div class="toggle-description">Members only</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Event Type</label>
+                                <div class="toggle-group" id="edit-event-type-${event.id}">
+                                    <div class="toggle-option ${event.event_type === 'online' ? 'active' : ''}" onclick="selectEditEventType('${event.id}', 'online', this)">
+                                        <div class="toggle-icon">💻</div>
+                                        <div class="toggle-title">Online</div>
+                                        <div class="toggle-description">Virtual meeting</div>
+                                    </div>
+                                    <div class="toggle-option ${(event.event_type === 'in-person' || event.event_type === 'irl') ? 'active' : ''}" onclick="selectEditEventType('${event.id}', 'in-person', this)">
+                                        <div class="toggle-icon">📍</div>
+                                        <div class="toggle-title">In-Person</div>
+                                        <div class="toggle-description">Physical location</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Date & Location -->
+                        <div class="edit-step-content" data-step="2">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required" for="edit-date-${event.id}">Event Date</label>
+                                    <input type="date" id="edit-date-${event.id}" class="form-input" value="${event.event_date}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required" for="edit-time-${event.id}">Start Time</label>
+                                    <input type="time" id="edit-time-${event.id}" class="form-input" value="${event.start_time}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Duration</label>
+                                <div class="duration-presets" id="edit-duration-${event.id}">
+                                    <button type="button" class="duration-btn ${event.duration_hours === 1 ? 'active' : ''}" onclick="setEditDuration('${event.id}', 1, this)">1 hour</button>
+                                    <button type="button" class="duration-btn ${event.duration_hours === 2 ? 'active' : ''}" onclick="setEditDuration('${event.id}', 2, this)">2 hours</button>
+                                    <button type="button" class="duration-btn ${event.duration_hours === 4 ? 'active' : ''}" onclick="setEditDuration('${event.id}', 4, this)">Half day</button>
+                                    <button type="button" class="duration-btn ${event.duration_hours === 8 ? 'active' : ''}" onclick="setEditDuration('${event.id}', 8, this)">Full day</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-timezone-${event.id}">Time Zone</label>
+                                <select id="edit-timezone-${event.id}" class="form-select">
+                                    <option value="CET" ${event.timezone === 'CET' ? 'selected' : ''}>Central European Time (Budapest)</option>
+                                    <option value="EST" ${event.timezone === 'EST' ? 'selected' : ''}>Eastern Time (New York)</option>
+                                    <option value="PST" ${event.timezone === 'PST' ? 'selected' : ''}>Pacific Time (Los Angeles)</option>
+                                    <option value="GMT" ${event.timezone === 'GMT' ? 'selected' : ''}>Greenwich Mean Time (London)</option>
+                                    <option value="UTC" ${event.timezone === 'UTC' ? 'selected' : ''}>UTC (Universal)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group edit-online-location ${event.event_type === 'online' ? 'show' : ''}" id="edit-online-location-${event.id}">
+                                <label class="form-label required" for="edit-meeting-link-${event.id}">Meeting Platform/Link</label>
+                                <input type="url" id="edit-meeting-link-${event.id}" class="form-input" 
+                                       value="${event.meeting_link || ''}" 
+                                       placeholder="e.g., https://zoom.us/j/123456789">
+                            </div>
+
+                            <div class="form-group edit-physical-location ${(event.event_type === 'in-person' || event.event_type === 'irl') ? 'show' : ''}" id="edit-physical-location-${event.id}">
+                                <label class="form-label required" for="edit-physical-address-${event.id}">Event Location</label>
+                                <textarea id="edit-physical-address-${event.id}" class="textarea" 
+                                          placeholder="Full address with building name and room number">${event.location || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-instructions-${event.id}">Additional Instructions</label>
+                                <textarea id="edit-instructions-${event.id}" class="textarea" 
+                                          placeholder="Special instructions for attendees">${event.additional_instructions || ''}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Event Details -->
+                        <div class="edit-step-content" data-step="3">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-target-audience-${event.id}">Target Audience</label>
+                                <select id="edit-target-audience-${event.id}" class="form-select">
+                                    <option value="all" ${event.target_audience === 'all' ? 'selected' : ''}>All DCF Members</option>
+                                    <option value="researchers" ${event.target_audience === 'researchers' ? 'selected' : ''}>Researchers & Academics</option>
+                                    <option value="practitioners" ${event.target_audience === 'practitioners' ? 'selected' : ''}>Technology Practitioners</option>
+                                    <option value="students" ${event.target_audience === 'students' ? 'selected' : ''}>Students & Early Career</option>
+                                    <option value="leaders" ${event.target_audience === 'leaders' ? 'selected' : ''}>Organizational Leaders</option>
+                                    <option value="public" ${event.target_audience === 'public' ? 'selected' : ''}>General Public</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-max-attendees-${event.id}">Max Attendees</label>
+                                <input type="number" id="edit-max-attendees-${event.id}" class="form-input" 
+                                       value="${event.max_attendees || ''}" placeholder="Leave blank for unlimited">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Registration Required</label>
+                                <div class="toggle-group" id="edit-registration-${event.id}">
+                                    <div class="toggle-option ${event.requires_registration ? 'active' : ''}" onclick="selectEditRegistration('${event.id}', true, this)">
+                                        <div class="toggle-icon">✅</div>
+                                        <div class="toggle-title">Yes</div>
+                                        <div class="toggle-description">Registration required</div>
+                                    </div>
+                                    <div class="toggle-option ${!event.requires_registration ? 'active' : ''}" onclick="selectEditRegistration('${event.id}', false, this)">
+                                        <div class="toggle-icon">🚪</div>
+                                        <div class="toggle-title">No</div>
+                                        <div class="toggle-description">Drop-in welcome</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Topics & Skills</label>
+                                <div class="checkbox-group" id="edit-topics-${event.id}">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-ai-ethics-${event.id}" value="ai_ethics" ${event.topics?.includes('ai_ethics') ? 'checked' : ''}>
+                                        <label for="edit-topic-ai-ethics-${event.id}">AI Ethics</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-cybersecurity-${event.id}" value="cybersecurity" ${event.topics?.includes('cybersecurity') ? 'checked' : ''}>
+                                        <label for="edit-topic-cybersecurity-${event.id}">Cybersecurity</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-policy-${event.id}" value="policy" ${event.topics?.includes('policy') ? 'checked' : ''}>
+                                        <label for="edit-topic-policy-${event.id}">Policy & Governance</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-research-${event.id}" value="research" ${event.topics?.includes('research') ? 'checked' : ''}>
+                                        <label for="edit-topic-research-${event.id}">Research Methods</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-education-${event.id}" value="education" ${event.topics?.includes('education') ? 'checked' : ''}>
+                                        <label for="edit-topic-education-${event.id}">Education & Training</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-humanitarian-${event.id}" value="humanitarian" ${event.topics?.includes('humanitarian') ? 'checked' : ''}>
+                                        <label for="edit-topic-humanitarian-${event.id}">Digital Humanitarianism</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-networking-${event.id}" value="networking" ${event.topics?.includes('networking') ? 'checked' : ''}>
+                                        <label for="edit-topic-networking-${event.id}">Professional Networking</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="edit-topic-innovation-${event.id}" value="innovation" ${event.topics?.includes('innovation') ? 'checked' : ''}>
+                                        <label for="edit-topic-innovation-${event.id}">Innovation & Startups</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Media & Promotion -->
+                        <div class="edit-step-content" data-step="4">
+                            <div class="form-group">
+                                <label class="form-label">Event Images</label>
+                                <div class="current-images" id="edit-current-images-${event.id}">
+                                    ${event.image_urls && event.image_urls.length > 0 ? 
+                                        event.image_urls.map((url, index) => `
+                                            <div class="current-image" data-url="${url}">
+                                                <img src="${url}" alt="Event image ${index + 1}">
+                                                <button class="remove-current-image" onclick="removeCurrentImage('${event.id}', '${url}', this)">&times;</button>
+                                            </div>
+                                        `).join('') : 
+                                        '<p class="no-images">No images uploaded yet</p>'
+                                    }
+                                </div>
+                                <div class="file-upload" id="edit-file-upload-${event.id}" onclick="document.getElementById('edit-event-photos-${event.id}').click()">
+                                    <div class="upload-icon">📸</div>
+                                    <div class="upload-text">Add new images</div>
+                                    <div class="upload-subtext">JPG, PNG, GIF up to 10MB each</div>
+                                </div>
+                                <input type="file" id="edit-event-photos-${event.id}" multiple accept="image/*" style="display: none;">
+                                <div class="uploaded-files" id="edit-uploaded-files-${event.id}"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-resources-${event.id}">Additional Resources</label>
+                                <textarea id="edit-resources-${event.id}" class="textarea" 
+                                          placeholder="Links to documents, websites, or resources">${event.additional_resources || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-organizer-notes-${event.id}">Organizer Notes</label>
+                                <textarea id="edit-organizer-notes-${event.id}" class="textarea" 
+                                          placeholder="Special notes for attendees">${event.organizer_notes || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="edit-contact-email-${event.id}">Contact Email</label>
+                                <input type="email" id="edit-contact-email-${event.id}" class="form-input" 
+                                       value="${event.contact_email || ''}" placeholder="Contact email for questions">
+                            </div>
+                        </div>
+
+                        <!-- Modal Actions -->
+                        <div class="edit-modal-actions">
+                            <div class="step-navigation">
+                                <button class="btn btn-secondary" id="edit-prev-btn-${event.id}" onclick="previousEditStep('${event.id}')" style="display: none;">← Previous</button>
+                                <button class="btn btn-primary" id="edit-next-btn-${event.id}" onclick="nextEditStep('${event.id}')">Next →</button>
+                                <button class="btn btn-primary" id="edit-save-btn-${event.id}" onclick="saveEvent('${event.id}')" style="display: none;">Save Changes</button>
+                            </div>
+                            <div class="danger-actions">
+                                <button class="btn btn-secondary" onclick="cancelEdit('${event.id}')">Cancel</button>
+                                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">Delete Event</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registrations View (Initially Hidden) -->
+                <div class="edit-form" id="registrations-${event.id}">
+                    <h4 style="margin-bottom: 1rem;">Event Registrations (${event.attendee_count || 0} total)</h4>
+                    <div class="registration-list" id="registration-list-${event.id}">
+                        <div style="text-align: center; padding: 2rem; color: #666;">
+                            Loading registrations...
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" onclick="exportAttendees('${event.id}')">📊 Export List</button>
+                        <button class="btn btn-secondary" onclick="closeRegistrations('${event.id}')">Close</button>
+                        <button class="btn btn-primary" onclick="emailAttendees('${event.id}')">📧 Email All</button>
+                    </div>
+                </div>
+
+                <div class="attendee-info">
+                    <span class="attendee-count">${event.going_count || 0} going</span>
+                    <span class="attendee-count" style="margin-left: 0.5rem;">${event.attendee_count || 0} total responses</span>
+                    ${event.max_attendees ? `<span class="registration-rate">of ${event.max_attendees} max</span>` : ''}
+                    <div style="flex: 1;"></div>
+                    <small style="color: #999;">Created ${new Date(event.created_at).toLocaleDateString()}</small>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function renderEmptyState() {
+            return `
+                <div class="empty-state">
+                    <h3>No Events Found</h3>
+                    <p>You haven't created any events yet. Ready to get started?</p>
+                    <button class="btn btn-primary" onclick="window.location.href='dcf_create_event.html'">+ Create Your First Event</button>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            const now = new Date();
+            const active = allEvents.filter(event => event.status === 'active').length;
+            const upcoming = allEvents.filter(event => new Date(event.event_date) >= now && event.status === 'active').length;
+            const totalAttendees = allEvents.reduce((sum, event) => sum + (event.attendee_count || 0), 0);
+
+            document.getElementById('totalEvents').textContent = allEvents.length;
+            document.getElementById('activeEvents').textContent = active;
+            document.getElementById('upcomingEvents').textContent = upcoming;
+            document.getElementById('totalAttendees').textContent = totalAttendees;
+        }
+
+        // Event management functions
+        // Enhanced edit modal system
+        let editModalStates = {};
+
+        function editEvent(eventId) {
+            // Check if we have a URL parameter for this event
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetEventId = urlParams.get('id');
+            
+            // Close any other open edit forms
+            document.querySelectorAll('.edit-modal.active').forEach(modal => {
+                modal.classList.remove('active');
+            });
+
+            // Initialize edit state for this event
+            editModalStates[eventId] = {
+                currentStep: 1,
+                visibility: allEvents.find(e => e.id === eventId)?.visibility || 'public',
+                eventType: allEvents.find(e => e.id === eventId)?.event_type || 'online',
+                duration: allEvents.find(e => e.id === eventId)?.duration_hours || 1,
+                requiresRegistration: allEvents.find(e => e.id === eventId)?.requires_registration !== false,
+                newImages: []
+            };
+
+            // Open this edit modal
+            const editModal = document.getElementById(`edit-modal-${eventId}`);
+            editModal.classList.add('active');
+            editingEventId = eventId;
+
+            // If this event was specified in URL, auto-open the edit modal
+            if (targetEventId === eventId) {
+                // Remove the URL parameter to clean up the URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Initialize file upload handler for this modal
+            initializeEditFileUpload(eventId);
+
+            // Show first step
+            showEditStep(eventId, 1);
+        }
+
+        function showEditStep(eventId, step) {
+            const state = editModalStates[eventId];
+            if (!state) return;
+
+            state.currentStep = step;
+
+            // Hide all steps
+            document.querySelectorAll(`#edit-modal-${eventId} .edit-step-content`).forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show current step
+            const currentStepEl = document.querySelector(`#edit-modal-${eventId} .edit-step-content[data-step="${step}"]`);
+            if (currentStepEl) {
+                currentStepEl.classList.add('active');
+            }
+
+            // Update progress indicators
+            document.querySelectorAll(`#edit-modal-${eventId} .edit-progress-step`).forEach((indicator, index) => {
+                indicator.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    indicator.classList.add('completed');
+                } else if (index + 1 === step) {
+                    indicator.classList.add('active');
+                }
+            });
+            
+            // Update buttons
+            const prevBtn = document.getElementById(`edit-prev-btn-${eventId}`);
+            const nextBtn = document.getElementById(`edit-next-btn-${eventId}`);
+            const saveBtn = document.getElementById(`edit-save-btn-${eventId}`);
+            
+            if (prevBtn) prevBtn.style.display = step === 1 ? 'none' : 'block';
+            if (nextBtn) nextBtn.style.display = step === 4 ? 'none' : 'block';
+            if (saveBtn) saveBtn.style.display = step === 4 ? 'block' : 'none';
+        }
+
+        function nextEditStep(eventId) {
+            const state = editModalStates[eventId];
+            if (!state || state.currentStep >= 4) return;
+            
+            showEditStep(eventId, state.currentStep + 1);
+        }
+
+        function previousEditStep(eventId) {
+            const state = editModalStates[eventId];
+            if (!state || state.currentStep <= 1) return;
+            
+            showEditStep(eventId, state.currentStep - 1);
+        }
+
+        function selectEditVisibility(eventId, visibility, element) {
+            editModalStates[eventId].visibility = visibility;
+            
+            // Update UI
+            element.parentElement.querySelectorAll('.toggle-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        function selectEditEventType(eventId, eventType, element) {
+            editModalStates[eventId].eventType = eventType;
+            
+            // Update UI
+            element.parentElement.querySelectorAll('.toggle-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Show/hide location fields
+            updateEditLocationFields(eventId);
+        }
+
+        function updateEditLocationFields(eventId) {
+            const state = editModalStates[eventId];
+            const onlineLocation = document.getElementById(`edit-online-location-${eventId}`);
+            const physicalLocation = document.getElementById(`edit-physical-location-${eventId}`);
+            
+            if (state.eventType === 'online') {
+                onlineLocation?.classList.add('show');
+                physicalLocation?.classList.remove('show');
+            } else {
+                onlineLocation?.classList.remove('show');
+                physicalLocation?.classList.add('show');
+            }
+        }
+
+        function setEditDuration(eventId, hours, element) {
+            editModalStates[eventId].duration = hours;
+            
+            // Update UI
+            element.parentElement.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        function selectEditRegistration(eventId, required, element) {
+            editModalStates[eventId].requiresRegistration = required;
+            
+            // Update UI
+            element.parentElement.querySelectorAll('.toggle-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        function initializeEditFileUpload(eventId) {
+            const fileInput = document.getElementById(`edit-event-photos-${eventId}`);
+            if (!fileInput) return;
+
+            fileInput.addEventListener('change', function(e) {
+                handleEditFileUpload(eventId, e.target.files);
+                this.value = '';
+            });
+        }
+
+        function handleEditFileUpload(eventId, files) {
+            const state = editModalStates[eventId];
+            const uploadedFilesContainer = document.getElementById(`edit-uploaded-files-${eventId}`);
+            
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024) {
+                    const fileObj = {
+                        name: file.name,
+                        size: formatFileSize(file.size),
+                        data: file,
+                        id: Date.now() + Math.random()
+                    };
+                    
+                    state.newImages.push(fileObj);
+                    
+                    // Create file element with preview
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'uploaded-file';
+                    fileElement.id = `edit-file-${fileObj.id}`;
+                    
+                    // Create image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        fileElement.innerHTML = `
+                            <div class="file-preview" style="background-image: url('${e.target.result}')">
+                                <button class="remove-file" onclick="removeEditFile('${eventId}', '${fileObj.id}')">&times;</button>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    uploadedFilesContainer.appendChild(fileElement);
+                } else {
+                    showEditMessage(eventId, `File ${file.name} is not a valid image or is too large (max 10MB)`, 'error');
+                }
+            });
+        }
+
+        function removeEditFile(eventId, fileId) {
+            const state = editModalStates[eventId];
+            state.newImages = state.newImages.filter(file => file.id !== fileId);
+            
+            const fileElement = document.getElementById(`edit-file-${fileId}`);
+            if (fileElement) {
+                fileElement.remove();
+            }
+        }
+
+        async function removeCurrentImage(eventId, imageUrl, element) {
+            const confirmed = await showConfirm('Remove this image from the event?');
+            if (!confirmed) return;
+            
+            element.closest('.current-image').remove();
+            
+            // Check if no images left
+            const currentImagesContainer = document.getElementById(`edit-current-images-${eventId}`);
+            if (currentImagesContainer.children.length === 0) {
+                currentImagesContainer.innerHTML = '<p class="no-images">No images uploaded yet</p>';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // editEvent function defined above at line 1781
+
+        function cancelEdit(eventId) {
+            const editModal = document.getElementById(`edit-modal-${eventId}`);
+            
+            if (editModal) {
+                editModal.classList.remove('active');
+            }
+            
+            editingEventId = null;
+
+            // Clean up edit state
+            if (editModalStates[eventId]) {
+                delete editModalStates[eventId];
+            }
+
+            // Clear any messages
+            const messageEl = document.getElementById(`edit-message-${eventId}`);
+            if (messageEl) {
+                messageEl.innerHTML = '';
+            }
+        }
+
+        async function saveEvent(eventId) {
+            try {
+                const event = allEvents.find(e => e.id === eventId);
+                if (!event) throw new Error('Event not found');
+
+                // Get form values
+                const updateData = {
+                    title: document.getElementById(`edit-title-${eventId}`).value.trim(),
+                    category: document.getElementById(`edit-category-${eventId}`).value,
+                    description: document.getElementById(`edit-description-${eventId}`).value.trim(),
+                    event_date: document.getElementById(`edit-date-${eventId}`).value,
+                    start_time: document.getElementById(`edit-time-${eventId}`).value,
+                    additional_instructions: document.getElementById(`edit-instructions-${eventId}`).value.trim(),
+                    max_attendees: document.getElementById(`edit-max-attendees-${eventId}`).value ? 
+                                  parseInt(document.getElementById(`edit-max-attendees-${eventId}`).value) : null
+                };
+
+                // Handle location based on event type
+                const locationValue = document.getElementById(`edit-location-${eventId}`).value.trim();
+                if (event.event_type === 'online') {
+                    updateData.meeting_link = locationValue;
+                } else {
+                    updateData.location = locationValue;
+                }
+
+                // Validate required fields
+                if (!updateData.title || !updateData.description || !updateData.event_date || !updateData.start_time) {
+                    showEditMessage(eventId, 'Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Update in Supabase
+                const { data, error } = await supabase
+                    .from('events')
+                    .update(updateData)
+                    .eq('id', eventId)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Update local data
+                Object.assign(event, updateData);
+
+                // Show success message
+                showEditMessage(eventId, 'Event updated successfully!', 'success');
+
+                // Refresh the display
+                setTimeout(() => {
+                    cancelEdit(eventId);
+                    renderEvents();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error saving event:', error);
+                showEditMessage(eventId, 'Failed to save changes. Please try again.', 'error');
+            }
+        }
+
+        function showDeleteConfirmation(eventId) {
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000;
+                background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
+                    <h3 style="color: #dc3545; margin-bottom: 1rem;">⚠️ Delete Event</h3>
+                    <p style="margin-bottom: 1rem;">This will permanently delete "<strong>${event.title}</strong>" and all registration data.</p>
+                    <p style="margin-bottom: 1.5rem; color: #666;">Type <strong>DELETE</strong> to confirm:</p>
+                    <input type="text" id="deleteConfirmInput" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px; margin-bottom: 1.5rem;" placeholder="Type DELETE here">
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="padding: 0.75rem 1.5rem; border: 2px solid #e5e5e5; border-radius: 8px; background: white; cursor: pointer;">Cancel</button>
+                        <button id="confirmDeleteBtn" onclick="confirmEventDeletion('${eventId}')" disabled style="padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #e5e5e5; color: #999; cursor: not-allowed;">Delete Event</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const input = modal.querySelector('#deleteConfirmInput');
+            const btn = modal.querySelector('#confirmDeleteBtn');
+            
+            input.addEventListener('input', function() {
+                if (this.value === 'DELETE') {
+                    btn.disabled = false;
+                    btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #dc3545; color: white; cursor: pointer;';
+                } else {
+                    btn.disabled = true;
+                    btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #e5e5e5; color: #999; cursor: not-allowed;';
+                }
+            });
+            
+            input.focus();
+        }
+
+        async function confirmEventDeletion(eventId) {
+            try {
+                // First delete all registrations
+                await supabase
+                    .from('event_registrations')
+                    .delete()
+                    .eq('event_id', eventId);
+
+                // Then delete the event
+                const { error } = await supabase
+                    .from('events')
+                    .delete()
+                    .eq('id', eventId);
+
+                if (error) throw error;
+
+                // Remove from local data and re-render
+                allEvents = allEvents.filter(e => e.id !== eventId);
+                renderEvents();
+                updateStats();
+
+                // Close modal and show success
+                document.querySelector('[style*="position: fixed"]').remove();
+                showSuccessAlert('Event deleted successfully.');
+
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showErrorAlert('Failed to delete event. Please try again.');
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            showDeleteConfirmation(eventId);
+        }
+
+        async function viewRegistrations(eventId) {
+            // Close any other open forms
+            document.querySelectorAll('.edit-form.active').forEach(form => {
+                form.classList.remove('active');
+            });
+
+            // Open registrations view
+            const registrationsForm = document.getElementById(`registrations-${eventId}`);
+            registrationsForm.classList.add('active');
+
+            // Load registrations
+            await loadEventRegistrations(eventId);
+
+            // Scroll to form
+            registrationsForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        async function loadEventRegistrations(eventId) {
+            try {
+                const { data: registrations, error } = await supabase
+                    .from('event_registrations')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('registered_at', { ascending: false });
+
+                if (error) throw error;
+
+                const registrationList = document.getElementById(`registration-list-${eventId}`);
+                
+                if (!registrations || registrations.length === 0) {
+                    registrationList.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #666;">
+                            No registrations yet
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Count status types
+                const statusCounts = registrations.reduce((acc, reg) => {
+                    acc[reg.status] = (acc[reg.status] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // Status display config
+                const statusConfig = {
+                    'going': { text: '✅ Going', color: '#28a745' },
+                    'interested': { text: '⭐ Interested', color: '#ffc107' },
+                    'not_going': { text: '❌ Not Going', color: '#6c757d' },
+                    'registered': { text: '✅ Registered', color: '#28a745' }
+                };
+
+                registrationList.innerHTML = `
+                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem;">
+                        <strong>Registration Summary:</strong><br>
+                        ${Object.entries(statusCounts).map(([status, count]) => {
+                            const config = statusConfig[status] || { text: status, color: '#666' };
+                            return `<span style="color: ${config.color}; margin-right: 1rem;">${config.text}: ${count}</span>`;
+                        }).join('')}
+                    </div>
+                    ${registrations.map(reg => {
+                        const config = statusConfig[reg.status] || { text: reg.status, color: '#666' };
+                        return `
+                            <div class="registration-item">
+                                <div class="registration-info">
+                                    <h4>${reg.attendee_name}</h4>
+                                    <p>${reg.attendee_email}</p>
+                                    ${reg.organization ? `<p><strong>Organization:</strong> ${reg.organization}</p>` : ''}
+                                    <p><small>Registered: ${new Date(reg.registered_at).toLocaleDateString()}</small></p>
+                                </div>
+                                <div>
+                                    <span class="status-badge" style="background: ${config.color}20; color: ${config.color}; border: 1px solid ${config.color};">${config.text}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                `;
+
+            } catch (error) {
+                console.error('Error loading registrations:', error);
+                document.getElementById(`registration-list-${eventId}`).innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #dc3545;">
+                        Failed to load registrations
+                    </div>
+                `;
+            }
+        }
+
+        function closeRegistrations(eventId) {
+            document.getElementById(`registrations-${eventId}`).classList.remove('active');
+        }
+
+        async function emailAttendees(eventId) {
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            // This would integrate with your email system
+            await showAlert(`Email functionality would send updates to all ${event.attendee_count || 0} registered attendees.`, 'info');
+        }
+
+        async function exportAttendees(eventId) {
+            // This would export attendee list as CSV
+            await showAlert('Attendee export functionality would download a CSV file with registration details.', 'info');
+        }
+
+        function showEditMessage(eventId, message, type) {
+            const messageDiv = document.getElementById(`edit-message-${eventId}`);
+            const className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.innerHTML = `<div class="${className}">${message}</div>`;
+            
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Utility functions
+        function formatTime(timeStr) {
+            if (!timeStr) return 'Time TBD';
+            const [hours, minutes] = timeStr.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function showError(message) {
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = `
+                <div class="empty-state">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+                </div>
+            `;
+        }
+
+        async function exportEventData() {
+            if (allEvents.length === 0) {
+                await showAlert('No events to export', 'warning');
+                return;
+            }
+
+            const csvData = allEvents.map(event => ({
+                'Event Title': event.title,
+                'Date': event.event_date,
+                'Time': event.start_time,
+                'Type': event.event_type,
+                'Category': event.category,
+                'Status': event.status,
+                'Attendees': event.attendee_count || 0,
+                'Max Attendees': event.max_attendees || 'Unlimited',
+                'Created': event.created_at
+            }));
+
+            downloadCSV(csvData, 'dcf-events-export.csv');
+        }
+
+        function downloadCSV(data, filename) {
+            const csv = [
+                Object.keys(data[0]).join(','),
+                ...data.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function showSuccessAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 10001;
+                background: #d4edda; border: 1px solid #c3e6cb; color: #155724;
+                padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `✅ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function showErrorAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 10001;
+                background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;
+                padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `❌ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function showInfoAlert(message) {
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 10001;
+                background: #e1f5fe; border: 1px solid #b3e5fc; color: #01579b;
+                padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alert.innerHTML = `ℹ️ ${message}`;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        function emailAttendees(eventId) {
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) return;
+            showInfoAlert(`Email functionality would send updates to all ${event.attendee_count || 0} registered attendees.`);
+        }
+
+        function exportAttendees(eventId) {
+            showInfoAlert('Attendee export functionality would download a CSV file with registration details.');
+        }
+
+        function exportEventData() {
+            if (allEvents.length === 0) {
+                showErrorAlert('No events to export');
+                return;
+            }
+
+            const csvData = allEvents.map(event => ({
+                'Event Title': event.title,
+                'Date': event.event_date,
+                'Time': event.start_time,
+                'Type': event.event_type,
+                'Category': event.category,
+                'Status': event.status,
+                'Attendees': event.attendee_count || 0,
+                'Max Attendees': event.max_attendees || 'Unlimited',
+                'Created': event.created_at
+            }));
+
+            downloadCSV(csvData, 'dcf-events-export.csv');
+        }
+
+        function showAllRegistrations() {
+            showInfoAlert('Comprehensive registration management would open here.');
+        }
+    </script>
+</body>
+</html>
