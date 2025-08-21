@@ -2026,6 +2026,35 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
+            
+            // Monitor for authentication completion and re-check user status
+            let authChecked = false;
+            const checkAuthAndUpdateStatus = () => {
+                if (!authChecked && window.dcfUser && window.dcfUser.isLoggedIn) {
+                    authChecked = true;
+                    console.log('🔍 DEBUG - Authentication completed, user logged in:', window.dcfUser.profile?.id);
+                    console.log('🔍 DEBUG - Re-running checkUserProjectStatus after auth...');
+                    checkUserProjectStatus();
+                }
+            };
+
+            // Check periodically for auth state change
+            const authCheckInterval = setInterval(() => {
+                checkAuthAndUpdateStatus();
+                
+                // Stop checking after auth is detected or 30 seconds
+                if (authChecked) {
+                    clearInterval(authCheckInterval);
+                }
+            }, 500);
+
+            // Timeout after 30 seconds
+            setTimeout(() => {
+                clearInterval(authCheckInterval);
+                if (!authChecked) {
+                    console.log('🔍 DEBUG - Auth check timeout after 30 seconds');
+                }
+            }, 30000);
         });
     </script>
     </body>
