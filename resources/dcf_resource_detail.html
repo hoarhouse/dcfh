@@ -1887,9 +1887,16 @@
         }
 
         async function displayResource(resource) {
+            // Defensive check for resource object
+            if (!resource || typeof resource !== 'object') {
+                console.error('displayResource: Invalid resource object:', resource);
+                showError();
+                return;
+            }
+
             // Update page title
-            document.title = `${resource.title} - DCF Hungary`;
-            document.getElementById('breadcrumbTitle').textContent = resource.title;
+            document.title = `${resource.title || 'Resource'} - DCF Hungary`;
+            document.getElementById('breadcrumbTitle').textContent = resource.title || 'Unknown Resource';
 
             // Resource header
             document.getElementById('resourceTitle').textContent = resource.title;
@@ -1985,6 +1992,12 @@
         }
 
         function updateStats(resource) {
+            // Defensive check for resource object
+            if (!resource || typeof resource !== 'object') {
+                console.error('updateStats: Invalid resource object:', resource);
+                return;
+            }
+            
             const downloads = resource.download_count || 0;
             const views = resource.view_count || 0;
             const likes = resource.like_count || 0;
@@ -2006,6 +2019,19 @@
 
         function displayFilePreview(resource) {
             const container = document.getElementById('filePreviewSection');
+            
+            // Defensive check for resource object
+            if (!resource || typeof resource !== 'object') {
+                console.error('displayFilePreview: Invalid resource object:', resource);
+                container.innerHTML = `
+                    <div class="download-section">
+                        <div class="download-icon">❌</div>
+                        <div class="download-title">Error Loading File</div>
+                        <div class="download-meta">Resource data is invalid.</div>
+                    </div>
+                `;
+                return;
+            }
             
             if (!resource.file_url) {
                 container.innerHTML = `
