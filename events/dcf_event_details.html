@@ -1684,6 +1684,45 @@
         // Start initialization
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
+            
+            // Monitor for authentication completion and re-check event owner status
+            let authChecked = false;
+            const checkAuthAndUpdateEventStatus = () => {
+                if (!authChecked && window.dcfUser && window.dcfUser.isLoggedIn) {
+                    authChecked = true;
+                    console.log('🔍 DEBUG - Event Auth Complete - User logged in:', window.dcfUser.profile?.id);
+                    console.log('🔍 DEBUG - Re-running event owner check after auth...');
+                    
+                    // Re-run owner check by reloading organizer info
+                    const eventId = getEventIdFromUrl();
+                    if (eventId) {
+                        // Find the current event's organizer_id and contact_email from the page data
+                        const orgControls = document.getElementById('organizerControls');
+                        if (orgControls) {
+                            // Trigger a re-check of owner status
+                            loadOrganizerInfo(window.currentEventOrganizerId, window.currentEventContactEmail);
+                        }
+                    }
+                }
+            };
+
+            // Check periodically for auth state change
+            const authCheckInterval = setInterval(() => {
+                checkAuthAndUpdateEventStatus();
+                
+                // Stop checking after auth is detected
+                if (authChecked) {
+                    clearInterval(authCheckInterval);
+                }
+            }, 500);
+
+            // Timeout after 30 seconds
+            setTimeout(() => {
+                clearInterval(authCheckInterval);
+                if (!authChecked) {
+                    console.log('🔍 DEBUG - Event auth check timeout after 30 seconds');
+                }
+            }, 30000);
         });
     </script>
 </body>
