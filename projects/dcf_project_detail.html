@@ -1873,11 +1873,36 @@
 
         // Check user's follow and join status for this project
         async function checkUserProjectStatus() {
+            console.log('🔍 DEBUG - checkUserProjectStatus called');
+            console.log('🔍 DEBUG - window.currentProject exists?', !!window.currentProject);
+            console.log('🔍 DEBUG - window.getCurrentUser exists?', typeof window.getCurrentUser === 'function');
+            
             const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             const projectId = getProjectIdFromUrl();
             
-            if (!userEmail || !projectId) return;
+            console.log('🔍 DEBUG - getCurrentUser returned:', currentUser);
+            
+            if (!userEmail || !projectId) {
+                console.log('🔍 DEBUG - Missing userEmail or projectId:', { userEmail, projectId });
+                return;
+            }
+
+            // Wait for currentProject to be loaded if not ready
+            if (!window.currentProject) {
+                console.log('🔍 DEBUG - currentProject not ready, waiting...');
+                await new Promise(resolve => {
+                    let checkCount = 0;
+                    const checkInterval = setInterval(() => {
+                        checkCount++;
+                        if (window.currentProject || checkCount > 20) {
+                            clearInterval(checkInterval);
+                            console.log('🔍 DEBUG - currentProject ready after', checkCount, 'checks');
+                            resolve();
+                        }
+                    }, 100);
+                });
+            }
             
             try {
                 // Check if following
@@ -1914,11 +1939,17 @@
                 
                 // Check if user owns this project
                 console.log('🔍 DEBUG - Status Check - Current User:', currentUser);
+                console.log('🔍 DEBUG - Status Check - Current User ID:', currentUser?.id);
+                console.log('🔍 DEBUG - Status Check - Current User ID Type:', typeof currentUser?.id);
                 console.log('🔍 DEBUG - Status Check - currentProject:', window.currentProject);
                 console.log('🔍 DEBUG - Status Check - Author ID:', window.currentProject?.author_id);
-                console.log('🔍 DEBUG - Status Check - Ownership Result:', currentUser?.id === window.currentProject?.author_id);
+                console.log('🔍 DEBUG - Status Check - Author ID Type:', typeof window.currentProject?.author_id);
+                console.log('🔍 DEBUG - Status Check - Direct Comparison:', currentUser?.id, '===', window.currentProject?.author_id);
+                console.log('🔍 DEBUG - Status Check - String Comparison:', String(currentUser?.id), '===', String(window.currentProject?.author_id));
+                console.log('🔍 DEBUG - Status Check - Ownership Result (Direct):', currentUser?.id === window.currentProject?.author_id);
+                console.log('🔍 DEBUG - Status Check - Ownership Result (String):', String(currentUser?.id) === String(window.currentProject?.author_id));
                 
-                if (window.currentProject && currentUser?.id === window.currentProject.author_id) {
+                if (window.currentProject && currentUser?.id && String(currentUser.id) === String(window.currentProject.author_id)) {
                     updateJoinButton('owner');
                 } else if (memberData && memberData.length > 0) {
                     updateJoinButton('member');
