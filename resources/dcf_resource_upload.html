@@ -2224,10 +2224,12 @@
                     file_size: resourceData.files && resourceData.files.length > 1 ? totalSize : (primaryFile ? primaryFile.size : null),
                     author_id: currentUser.id,
                     author_email: currentUser.email,
-                    author_name: `@${currentUser.username || 'unknown'}`,
+                    author_name: currentUser.name || currentUser.username || currentUser.email || 'Unknown User',
                     type: resourceData.type,
+                    language: 'en', // Default to English since form doesn't collect this
+                    organization: null, // Optional field, form doesn't collect this
                     tags: resourceData.topics && resourceData.topics.length > 0 ? resourceData.topics : null,
-                    status: 'approved',
+                    status: 'pending', // Should be pending for moderation, not approved
                     created_at: new Date().toISOString()
                 };
 
@@ -2254,6 +2256,16 @@
                         console.error(`❌ VALIDATION ERROR - Missing required field: ${field}`);
                     }
                 });
+                
+                // Additional validation for database constraints
+                if (!resourceRecord.title || !resourceRecord.description || !resourceRecord.author_id || !resourceRecord.author_email || !resourceRecord.type) {
+                    throw new Error('Missing required fields for database insertion');
+                }
+
+                // Ensure file_url is not empty for uploaded files
+                if (resourceData.files && resourceData.files.length > 0 && !resourceRecord.file_url) {
+                    throw new Error('File upload completed but file_url is empty');
+                }
                 
                 console.log('🔍 About to insert into Supabase...');
 
