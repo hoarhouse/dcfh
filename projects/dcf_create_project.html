@@ -1026,12 +1026,27 @@
                 submitBtn.textContent = 'Creating Project...';
                 submitBtn.disabled = true;
 
-                // Initialize Supabase if needed
+                // Wait for Supabase to be initialized by unified auth
                 if (!window.masterSupabase) {
-                    window.initializeSupabase();
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => {
+                        const checkInterval = setInterval(() => {
+                            if (window.masterSupabase) {
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 100);
+                        // Timeout after 5 seconds
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }, 5000);
+                    });
                 }
                 const supabase = window.masterSupabase;
+
+                if (!supabase) {
+                    throw new Error('Failed to initialize Supabase connection');
+                }
 
                 // Get current user
                 const { data: { session } } = await supabase.auth.getSession();
