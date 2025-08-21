@@ -427,6 +427,13 @@ function handleDocumentClick(event) {
 function addNavigationItems() {
     const dropdown = document.getElementById('userDropdown');
     if (!dropdown || dropdown.querySelector('.nav-item')) return;
+    
+    // Prevent duplicate logout buttons
+    const existingLogout = dropdown.querySelector('.logout-btn');
+    if (existingLogout) {
+        console.log('⚠️ Logout button already exists, skipping navigation items');
+        return;
+    }
 
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
@@ -619,6 +626,12 @@ function closeLogoutModal() {
 }
 
 async function confirmLogout() {
+    if (window.dcfLogoutInProgress) {
+        console.log('🚨 LOGOUT already in progress, ignoring duplicate call');
+        return;
+    }
+    window.dcfLogoutInProgress = true;
+    
     console.log('🚨 confirmLogout() FUNCTION CALLED');
     console.trace('LOGOUT CALL STACK:');
     try {
@@ -627,29 +640,44 @@ async function confirmLogout() {
             await window.dcfSupabase.auth.signOut();
         }
         
-        // Clear state
+        // Clear state immediately
         window.dcfUser = { isLoggedIn: false, profile: null, session: null };
         
-        // Clear localStorage
-        localStorage.removeItem('dcf_user_logged_in');
-        localStorage.removeItem('dcf_user_name');
-        localStorage.removeItem('dcf_user_email');
+        // Update UI to logged out state
+        showLoggedOutState();
         
-        // Navigate to login page
-        console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
-        console.trace();
-        const basePath = getCorrectBasePath();
-        window.location.href = basePath + 'auth/dcf_login_page.html';
+        // Clear localStorage with small delay to ensure UI update
+        setTimeout(() => {
+            localStorage.removeItem('dcf_user_logged_in');
+            localStorage.removeItem('dcf_user_name');
+            localStorage.removeItem('dcf_user_email');
+        }, 50);
+        
+        // Navigate to login page with delay to prevent race conditions
+        setTimeout(() => {
+            console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
+            const basePath = getCorrectBasePath();
+            window.dcfLogoutInProgress = false; // Reset flag before redirect
+            window.location.href = basePath + 'auth/dcf_login_page.html';
+        }, 100);
         
     } catch (error) {
         console.error('Error during logout:', error);
         // Force logout even if Supabase signOut fails
-        localStorage.clear();
-        sessionStorage.clear();
-        console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
-        console.trace();
-        const basePath = getCorrectBasePath();
-        window.location.href = basePath + 'auth/dcf_login_page.html';
+        window.dcfUser = { isLoggedIn: false, profile: null, session: null };
+        showLoggedOutState();
+        
+        setTimeout(() => {
+            localStorage.clear();
+            sessionStorage.clear();
+        }, 50);
+        
+        setTimeout(() => {
+            console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
+            const basePath = getCorrectBasePath();
+            window.dcfLogoutInProgress = false; // Reset flag before redirect
+            window.location.href = basePath + 'auth/dcf_login_page.html';
+        }, 100);
     }
 }
 
@@ -1988,8 +2016,12 @@ function setupAuthStateListener() {
             await initializeAuth();
             updateUserInterface();
         } else if (event === 'SIGNED_OUT') {
-            console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event - THIS MAY CAUSE FALSE LOGOUT');
-            console.log('🚨 AUTH STATE LISTENER - About to set isLoggedIn: false');
+            console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event');
+            if (window.dcfLogoutInProgress) {
+                console.log('✅ AUTH STATE LISTENER - Expected SIGNED_OUT (logout in progress)');
+            } else {
+                console.log('⚠️ AUTH STATE LISTENER - Unexpected SIGNED_OUT (may be session expiry)');
+            }
             window.dcfUser = { isLoggedIn: false, profile: null, session: null };
             showLoggedOutState();
         }
