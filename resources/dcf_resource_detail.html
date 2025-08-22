@@ -2553,11 +2553,21 @@
 
         async function loadComments() {
             try {
+                console.log('🔍 DEBUG loadComments: Starting to load comments for resource:', resourceId);
+                console.log('🔍 DEBUG loadComments: Supabase client available:', !!supabase);
+                
                 const { data: comments, error } = await supabase
                     .from('comments')
                     .select('*')
-                    .eq('resource_id', resourceId)
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('is_deleted', false)
                     .order('created_at', { ascending: false });
+
+                console.log('🔍 DEBUG loadComments: Query result:', { 
+                    commentsCount: comments?.length || 0, 
+                    error: error?.message || 'none' 
+                });
 
                 if (error) throw error;
 
@@ -2956,11 +2966,13 @@
             
             try {
                 const commentData = {
-                    resource_id: resourceId,
+                    content_type: 'resource',
+                    content_id: resourceId,
                     content: content,
                     user_email: currentUser.email,
                     username: currentUser.username || currentUser.name || currentUser.email.split('@')[0],
                     parent_id: null,
+                    is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
@@ -3026,11 +3038,13 @@
             
             try {
                 const replyData = {
-                    resource_id: resourceId,
+                    content_type: 'resource',
+                    content_id: resourceId,
                     content: content,
                     user_email: currentUser.email,
                     username: currentUser.username || currentUser.name || currentUser.email.split('@')[0],
                     parent_id: commentId,
+                    is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
@@ -3072,9 +3086,10 @@
             try {
                 const { error } = await supabase
                     .from('comments')
-                    .delete()
+                    .update({ is_deleted: true, updated_at: new Date().toISOString() })
                     .eq('id', commentId)
-                    .eq('user_email', currentUser.email);
+                    .eq('user_email', currentUser.email)
+                    .eq('is_deleted', false);
                 
                 if (error) throw error;
                 
@@ -3093,7 +3108,9 @@
                 const { data, error } = await supabase
                     .from('comments')
                     .select('id')
-                    .eq('resource_id', resourceId);
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('is_deleted', false);
                 
                 if (error) throw error;
                 return data ? data.length : 0;
