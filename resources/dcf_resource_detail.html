@@ -3337,7 +3337,9 @@
                 return;
             }
             
-            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+            // Better confirmation dialog
+            const confirmMessage = 'Are you sure you want to delete this comment?\n\nThis will replace the comment with "[Comment deleted]" but preserve the reply structure. This action cannot be undone.';
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -3477,7 +3479,7 @@
                 const canEditReply = canEditCommentSync(reply, activeUser);
                 
                 return `
-                    <div class="comment reply">
+                    <div class="comment reply" data-comment-id="${reply.id}">
                         <div class="comment-author">
                             <div class="comment-avatar">${replyInitials}</div>
                             <div class="comment-content">
@@ -3485,18 +3487,26 @@
                                     <span class="comment-username">${reply.author_name || '@Anonymous'}</span>
                                     <span class="comment-time">${replyDate}</span>
                                 </div>
-                                <div class="comment-text">${processMentions(escapeHtml(reply.comment_text))}</div>
-                                <div class="comment-controls">
-                                    <button class="comment-btn like-btn" onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}">
-                                        <span class="like-icon">👍</span>
-                                        <span class="like-count" id="like-count-${reply.id}">${reply.like_count || 0}</span>
-                                    </button>
-                                    <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
-                                        <span class="bookmark-icon">🔖</span>
-                                    </button>
-                                    ${canEditReply ? `<button class="comment-btn edit" onclick="startEditComment('${reply.id}')">Edit</button>` : ''}
-                                    ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
+                                <div class="comment-text">
+                                    ${reply.is_deleted ? 
+                                        `<div class="comment-deleted">[Comment deleted]</div>` : 
+                                        `${processMentions(escapeHtml(reply.comment_text))}${reply.updated_at !== reply.created_at ? 
+                                            `<span class="edited-indicator">(edited ${formatTimeAgo(reply.updated_at)})</span>` : ''}`
+                                    }
                                 </div>
+                                ${reply.is_deleted ? '' : `
+                                    <div class="comment-controls">
+                                        <button class="comment-btn like-btn" onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}">
+                                            <span class="like-icon">👍</span>
+                                            <span class="like-count" id="like-count-${reply.id}">${reply.like_count || 0}</span>
+                                        </button>
+                                        <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
+                                            <span class="bookmark-icon">🔖</span>
+                                        </button>
+                                        ${canEditReply ? `<button class="comment-btn edit" onclick="startEditComment('${reply.id}')">Edit</button>` : ''}
+                                        ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
+                                    </div>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -3504,7 +3514,7 @@
             }).join('');
             
             return `
-                <div class="comment">
+                <div class="comment" data-comment-id="${comment.id}">
                     <div class="comment-author">
                         <div class="comment-avatar">${authorInitials}</div>
                         <div class="comment-content">
@@ -3512,19 +3522,27 @@
                                 <span class="comment-username">${comment.author_name || '@Anonymous'}</span>
                                 <span class="comment-time">${commentDate}</span>
                             </div>
-                            <div class="comment-text">${processMentions(escapeHtml(comment.comment_text))}</div>
-                            <div class="comment-controls">
-                                <button class="comment-btn like-btn" onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}">
-                                    <span class="like-icon">👍</span>
-                                    <span class="like-count" id="like-count-${comment.id}">${comment.like_count || 0}</span>
-                                </button>
-                                <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
-                                <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${comment.id}')" id="bookmark-btn-${comment.id}">
-                                    <span class="bookmark-icon">🔖</span>
-                                </button>
-                                ${canEdit ? `<button class="comment-btn edit" onclick="startEditComment('${comment.id}')">Edit</button>` : ''}
-                                ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
+                            <div class="comment-text">
+                                ${comment.is_deleted ? 
+                                    `<div class="comment-deleted">[Comment deleted]</div>` : 
+                                    `${processMentions(escapeHtml(comment.comment_text))}${comment.updated_at !== comment.created_at ? 
+                                        `<span class="edited-indicator">(edited ${formatTimeAgo(comment.updated_at)})</span>` : ''}`
+                                }
                             </div>
+                            ${comment.is_deleted ? '' : `
+                                <div class="comment-controls">
+                                    <button class="comment-btn like-btn" onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}">
+                                        <span class="like-icon">👍</span>
+                                        <span class="like-count" id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                    </button>
+                                    <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
+                                    <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${comment.id}')" id="bookmark-btn-${comment.id}">
+                                        <span class="bookmark-icon">🔖</span>
+                                    </button>
+                                    ${canEdit ? `<button class="comment-btn edit" onclick="startEditComment('${comment.id}')">Edit</button>` : ''}
+                                    ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
+                                </div>
+                            `}
                             
                             <div class="reply-form" id="replyForm-${comment.id}">
                                 <textarea class="reply-textarea" placeholder="Write a reply..." id="replyText-${comment.id}" onkeydown="handleReplyKeydown(event, '${comment.id}')"></textarea>
@@ -3579,11 +3597,211 @@
             }
         }
 
+        // EDIT COMMENT FUNCTIONALITY
+        async function startEditComment(commentId) {
+            console.log('📝 Starting edit for comment:', commentId);
+            
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to edit comments', 'warning');
+                return;
+            }
+            
+            // Check edit permissions
+            const canEdit = await canEditComment(commentId, currentUser);
+            if (!canEdit) {
+                await showAlert('You can only edit your own comments within 24 hours of posting', 'warning');
+                return;
+            }
+            
+            try {
+                // Get comment text
+                const { data: comment, error } = await supabase
+                    .from('comments')
+                    .select('comment_text')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Get comment text element and controls
+                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
+                const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls`);
+                
+                if (!commentTextElement) {
+                    console.error('Could not find comment text element');
+                    return;
+                }
+                
+                // Store original text and hide controls
+                commentTextElement.setAttribute('data-original-text', comment.comment_text);
+                if (commentControlsElement) commentControlsElement.style.display = 'none';
+                
+                // Replace with edit interface
+                commentTextElement.innerHTML = `
+                    <div class="comment-editing">
+                        <textarea class="comment-edit-textarea" id="edit-textarea-${commentId}">${escapeHtml(comment.comment_text)}</textarea>
+                        <div class="edit-controls">
+                            <button class="btn-edit-save" onclick="saveEditComment('${commentId}')">Save</button>
+                            <button class="btn-edit-cancel" onclick="cancelEditComment('${commentId}')">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Focus the textarea
+                const textarea = document.getElementById(`edit-textarea-${commentId}`);
+                if (textarea) {
+                    textarea.focus();
+                    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                }
+                
+            } catch (error) {
+                console.error('Error starting edit:', error);
+                await showAlert('Failed to start editing', 'error');
+            }
+        }
+
+        async function saveEditComment(commentId) {
+            console.log('💾 Saving edit for comment:', commentId);
+            
+            const textarea = document.getElementById(`edit-textarea-${commentId}`);
+            if (!textarea) {
+                console.error('Could not find edit textarea');
+                return;
+            }
+            
+            const newText = textarea.value.trim();
+            if (!newText) {
+                await showAlert('Comment cannot be empty', 'warning');
+                return;
+            }
+            
+            try {
+                // Get original text
+                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
+                const originalText = commentTextElement?.getAttribute('data-original-text') || '';
+                
+                if (originalText === newText) {
+                    // No changes made
+                    cancelEditComment(commentId);
+                    return;
+                }
+                
+                // Save changes using editComment function
+                await editComment(commentId, newText, 'User edit');
+                
+                // Reload comments to show updated content
+                await loadComments();
+                await showAlert('Comment updated successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error saving edit:', error);
+                await showAlert('Failed to save changes', 'error');
+            }
+        }
+
+        function cancelEditComment(commentId) {
+            console.log('❌ Canceling edit for comment:', commentId);
+            
+            const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
+            const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls`);
+            
+            if (commentTextElement) {
+                // Restore original text
+                const originalText = commentTextElement.getAttribute('data-original-text') || '';
+                commentTextElement.innerHTML = processMentions(escapeHtml(originalText));
+                commentTextElement.removeAttribute('data-original-text');
+            }
+            
+            if (commentControlsElement) {
+                commentControlsElement.style.display = 'flex';
+            }
+        }
+
+        async function editComment(commentId, newText, editReason = 'User edit') {
+            console.log('📝 Editing comment:', commentId, 'New text:', newText);
+            
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                throw new Error('User not authenticated');
+            }
+            
+            try {
+                // Get original comment text for history
+                const { data: originalComment, error: fetchError } = await supabase
+                    .from('comments')
+                    .select('comment_text, author_id, author_email')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                // Check permissions
+                if (originalComment.author_id !== currentUser.id && originalComment.author_email !== currentUser.email) {
+                    throw new Error('Permission denied');
+                }
+                
+                // Update comment in database
+                const { error: updateError } = await supabase
+                    .from('comments')
+                    .update({
+                        comment_text: newText,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', commentId);
+                
+                if (updateError) throw updateError;
+                
+                // Add to edit history
+                const { error: historyError } = await supabase
+                    .from('comment_edit_history')
+                    .insert({
+                        comment_id: commentId,
+                        original_text: originalComment.comment_text,
+                        edited_text: newText,
+                        edited_by: currentUser.id,
+                        edit_reason: editReason,
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (historyError) {
+                    console.error('Failed to save edit history:', historyError);
+                    // Don't throw here - comment was updated successfully
+                }
+                
+                console.log('✅ Comment edited successfully');
+                
+            } catch (error) {
+                console.error('Error editing comment:', error);
+                throw error;
+            }
+        }
+
         // Ensure functions are available in global scope
         window.handleCommentKeydown = handleCommentKeydown;
         window.handleReplyKeydown = handleReplyKeydown;
         window.submitComment = submitComment;
         window.submitReply = submitReply;
+        window.startEditComment = startEditComment;
+        window.saveEditComment = saveEditComment;
+        window.cancelEditComment = cancelEditComment;
+        window.editComment = editComment;
 
         // Setup keyboard event delegation for dynamic content
         function setupKeyboardEventDelegation() {
