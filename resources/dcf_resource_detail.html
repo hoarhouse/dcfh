@@ -2053,7 +2053,6 @@
             while (attempts < maxAttempts) {
                 if (typeof window.getCurrentUser === 'function') {
                     const user = window.getCurrentUser();
-                    console.log('🔍 Auth Ready Check - Attempt:', attempts + 1, 'User:', user ? 'logged in' : 'no session');
                     
                     if (user && user.id) {
                         // User is authenticated
@@ -2070,7 +2069,6 @@
             }
             
             // Auth system didn't load in time, proceed with public viewing
-            console.log('⚠️ Auth system timeout - proceeding with public viewing');
             return null;
         }
 
@@ -2085,13 +2083,9 @@
                 return;
             }
 
-            console.log('🔍 DEBUG - Auth System Check');
-            console.log('🔍 DEBUG - window.getCurrentUser exists:', typeof window.getCurrentUser);
-            console.log('🔍 DEBUG - Resource ID:', resourceId);
 
             // Wait for auth system to be ready
             currentUser = await waitForAuth();
-            console.log('🔍 DEBUG - Final currentUser after auth wait:', currentUser);
             
             // Load resource data
             await loadResource();
@@ -2105,15 +2099,12 @@
 
 
         async function getUsernameFromEmail(email) {
-            console.log('🔍 DEBUG: getUsernameFromEmail called with email:', email);
             
             if (!email) {
-                console.log('❌ DEBUG: No email provided');
                 return 'unknown';
             }
             
             try {
-                console.log('🔍 DEBUG: Supabase client available:', !!supabase);
                 
                 const { data, error } = await supabase
                     .from('user_profiles')
@@ -2121,19 +2112,14 @@
                     .eq('email', email)
                     .single();
                 
-                console.log('🔍 DEBUG: Database query result:', { data, error });
                 
                 if (error) {
-                    console.log('❌ DEBUG: Database error:', error);
                     return 'unknown';
                 }
                 
                 const username = data?.username || 'unknown';
-                console.log('✅ DEBUG: Returning username:', username);
                 return username;
             } catch (error) {
-                console.log('❌ DEBUG: Exception in getUsernameFromEmail:', error);
-                console.log('Could not find username for email:', email);
                 return 'unknown';
             }
         }
@@ -2186,25 +2172,16 @@
             document.getElementById('resourceTitle').textContent = resource.title;
             
             // Get username for author display
-            console.log('🔍 DEBUG: Processing author display for resource:', resource.id);
-            console.log('🔍 DEBUG: Original resource.author_name:', resource.author_name);
-            console.log('🔍 DEBUG: Resource.author_email:', resource.author_email);
             
             let authorDisplay = resource.author_name;
-            console.log('🔍 DEBUG: Initial authorDisplay:', authorDisplay);
             
             if (!authorDisplay || !authorDisplay.startsWith('@')) {
-                console.log('🔍 DEBUG: Author name does not start with @, looking up username...');
                 const username = await getUsernameFromEmail(resource.author_email);
-                console.log('🔍 DEBUG: Username lookup returned:', username);
                 authorDisplay = `@${username}`;
-                console.log('🔍 DEBUG: Final authorDisplay:', authorDisplay);
             } else {
-                console.log('🔍 DEBUG: Author name already starts with @, using as-is');
             }
             
             document.getElementById('resourceAuthor').textContent = authorDisplay;
-            console.log('🔍 DEBUG: Set resourceAuthor element to:', authorDisplay);
             document.getElementById('resourceOrganization').textContent = resource.organization || 'DCF Community';
             document.getElementById('resourceDate').textContent = new Date(resource.created_at).toLocaleDateString();
             document.getElementById('resourceLanguage').textContent = (resource.language || 'en').toUpperCase();
@@ -2250,19 +2227,14 @@
             displayFilePreview(resource);
 
             // Author info
-            console.log('🔍 DEBUG: Setting up author info section');
-            console.log('🔍 DEBUG: authorDisplay for avatar:', authorDisplay);
             
             const authorAvatar = document.getElementById('authorAvatar');
             const username = authorDisplay.startsWith('@') ? authorDisplay.substring(1) : (authorDisplay || 'unknown');
-            console.log('🔍 DEBUG: Extracted username for avatar:', username);
             
             const authorInitials = username.substring(0, 2).toUpperCase();
-            console.log('🔍 DEBUG: Author initials:', authorInitials);
             
             authorAvatar.textContent = authorInitials;
             document.getElementById('authorName').textContent = authorDisplay;
-            console.log('🔍 DEBUG: Set authorName element to:', authorDisplay);
 
             // Show edit controls if user is the author
             if (currentUser && currentUser.email === resource.author_email) {
@@ -2331,16 +2303,12 @@
             // Parse JSON array URLs
             let fileUrls = [];
             try {
-                console.log('🔍 DEBUG: Parsing file_url:', resource.file_url);
                 if (resource.file_url && resource.file_url.startsWith('[')) {
                     fileUrls = JSON.parse(resource.file_url);
-                    console.log('✅ DEBUG: Parsed JSON array:', fileUrls);
                 } else {
                     fileUrls = [resource.file_url];
-                    console.log('✅ DEBUG: Single URL converted to array:', fileUrls);
                 }
             } catch (e) {
-                console.log('❌ DEBUG: JSON parse error, using single URL:', e);
                 fileUrls = [resource.file_url];
             }
 
@@ -2358,7 +2326,6 @@
                 return;
             }
 
-            console.log('🔍 DEBUG: Processing', fileUrls.length, 'file URLs');
 
             // Determine file types and create media objects
             mediaFiles = fileUrls.map((url, index) => {
@@ -2378,7 +2345,6 @@
             const hasMultipleFiles = mediaFiles.length > 1;
             const hasMedia = mediaFiles.some(file => file.isImage || file.isVideo);
 
-            console.log('🔍 DEBUG: Media analysis - hasMultiple:', hasMultipleFiles, 'hasMedia:', hasMedia);
 
             // Display based on file types
             if (hasMedia) {
@@ -2489,7 +2455,6 @@
             // Add keyboard navigation
             setupKeyboardNavigation();
             
-            console.log('✅ DEBUG: Smooth media gallery created with', mediaFiles.length, 'media files');
         }
 
         function switchMediaWithTransition(index) {
@@ -2559,7 +2524,6 @@
                 thumb.classList.toggle('active', i === index);
             });
 
-            console.log('✅ DEBUG: Switched to media', index + 1);
         }
 
         function navigateMedia(direction) {
@@ -2647,7 +2611,6 @@
         }
 
         function handleImageError(img) {
-            console.log('❌ DEBUG: Image failed to load:', img.src);
             img.style.display = 'none';
             const container = img.parentElement;
             if (container) {
@@ -2727,7 +2690,6 @@
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            console.log('✅ DEBUG: Opened fullscreen for media', index + 1);
         }
 
         function closeFullscreen() {
@@ -2792,8 +2754,6 @@
 
         async function loadComments() {
             try {
-                console.log('🔍 DEBUG loadComments: Starting to load comments for resource:', resourceId);
-                console.log('🔍 DEBUG loadComments: Supabase client available:', !!supabase);
                 
                 const { data: comments, error } = await supabase
                     .from('comments')
@@ -2802,8 +2762,7 @@
                     .eq('content_id', resourceId)
                     .order('created_at', { ascending: false });
 
-                console.log('🔍 DEBUG loadComments: Query result:', { 
-                    commentsCount: comments?.length || 0, 
+ 
                     error: error?.message || 'none' 
                 });
 
@@ -3605,14 +3564,11 @@
         }
 
         function handleCommentKeydown(event) {
-            console.log('🎹 Comment keydown:', event.key, 'Shift:', event.shiftKey);
             if (event.key === 'Enter') {
                 if (event.shiftKey) {
-                    console.log('✅ Shift+Enter detected - new line');
                     // Shift+Enter = new line (default behavior)
                     return;
                 } else {
-                    console.log('✅ Enter detected - submitting comment');
                     // Plain Enter = submit
                     event.preventDefault();
                     submitComment();
@@ -3621,14 +3577,11 @@
         }
 
         function handleReplyKeydown(event, commentId) {
-            console.log('🎹 Reply keydown:', event.key, 'Shift:', event.shiftKey, 'CommentID:', commentId);
             if (event.key === 'Enter') {
                 if (event.shiftKey) {
-                    console.log('✅ Shift+Enter detected - new line');
                     // Shift+Enter = new line (default behavior)
                     return;
                 } else {
-                    console.log('✅ Enter detected - submitting reply for comment:', commentId);
                     // Plain Enter = submit
                     event.preventDefault();
                     submitReply(commentId);
@@ -3638,7 +3591,6 @@
 
         // EDIT COMMENT FUNCTIONALITY
         async function startEditComment(commentId) {
-            console.log('📝 Starting edit for comment:', commentId);
             
             // Wait for auth to be ready
             let currentUser = window.getCurrentUser();
@@ -3709,7 +3661,6 @@
         }
 
         async function saveEditComment(commentId) {
-            console.log('💾 Saving edit for comment:', commentId);
             
             const textarea = document.getElementById(`edit-textarea-${commentId}`);
             if (!textarea) {
@@ -3747,7 +3698,6 @@
         }
 
         function cancelEditComment(commentId) {
-            console.log('❌ Canceling edit for comment:', commentId);
             
             const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
             const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls-inline`);
@@ -3765,7 +3715,6 @@
         }
 
         async function editComment(commentId, newText, editReason = 'User edit') {
-            console.log('📝 Editing comment:', commentId, 'New text:', newText);
             
             // Wait for auth to be ready
             let currentUser = window.getCurrentUser();
@@ -3823,7 +3772,6 @@
                     // Don't throw here - comment was updated successfully
                 }
                 
-                console.log('✅ Comment edited successfully');
                 
             } catch (error) {
                 console.error('Error editing comment:', error);
@@ -3843,7 +3791,6 @@
 
         // Setup keyboard event delegation for dynamic content
         function setupKeyboardEventDelegation() {
-            console.log('🎹 Setting up keyboard event delegation');
             
             // Event delegation for all textareas
             document.addEventListener('keydown', function(event) {
@@ -3851,14 +3798,12 @@
                 
                 // Main comment textarea
                 if (target.id === 'commentText') {
-                    console.log('🎹 Delegated event on main comment textarea');
                     handleCommentKeydown(event);
                 }
                 
                 // Reply textareas (match pattern replyText-{commentId})
                 if (target.id && target.id.startsWith('replyText-')) {
                     const commentId = target.id.replace('replyText-', '');
-                    console.log('🎹 Delegated event on reply textarea for comment:', commentId);
                     handleReplyKeydown(event, commentId);
                 }
             });
@@ -4058,7 +4003,6 @@
                             created_at: new Date().toISOString()
                         }]);
                 } catch (error) {
-                    console.log('Error storing mention:', error);
                 }
             }
         }
@@ -4443,7 +4387,6 @@
             const reason = await showPrompt('Please describe the issue with this resource:', '', 'Report Resource');
             if (reason) {
                 // You can implement a reporting system here
-                console.log('Resource reported:', resourceId, reason);
             }
         }
 
@@ -4451,7 +4394,6 @@
             const suggestion = await showPrompt('Please describe your suggested edit:', '', 'Suggest Edit');
             if (suggestion) {
                 // You can implement a suggestion system here
-                console.log('Edit suggested:', resourceId, suggestion);
             }
         }
 
