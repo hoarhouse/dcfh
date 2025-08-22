@@ -1141,6 +1141,63 @@
             color: #666;
         }
 
+        .comment-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            align-items: center;
+        }
+
+        .like-btn.liked .like-icon {
+            color: #0066cc;
+        }
+
+        .bookmark-btn.bookmarked .bookmark-icon {
+            color: #ff6b35;
+        }
+
+        .like-count {
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+        }
+
+        .comment-sorting {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .sort-btn {
+            padding: 0.25rem 0.75rem;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sort-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .sort-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .mention {
+            color: #0066cc;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .mention:hover {
+            text-decoration: underline;
+        }
+
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -1768,9 +1825,16 @@
                             <div class="comment-form">
                                 <textarea class="comment-textarea" id="commentText" placeholder="Share your thoughts about this resource..." onkeydown="handleCommentKeydown(event)"></textarea>
                                 <div class="comment-actions">
-                                    <span class="form-help">Be respectful and constructive in your feedback</span>
+                                    <span class="form-help">Be respectful and constructive in your feedback | Press Ctrl+Enter to post</span>
                                     <button class="btn btn-primary" onclick="submitComment()">Post Comment</button>
                                 </div>
+                            </div>
+
+                            <div class="comment-sorting">
+                                <span style="font-size: 0.85rem; color: #666;">Sort by:</span>
+                                <button class="sort-btn active" onclick="sortComments('newest')" id="sort-newest">Newest First</button>
+                                <button class="sort-btn" onclick="sortComments('liked')" id="sort-liked">Most Liked</button>
+                                <button class="sort-btn" onclick="sortComments('replies')" id="sort-replies">Most Replies</button>
                             </div>
 
                             <div class="comments-list" id="commentsList">
@@ -2608,7 +2672,14 @@
 
                 if (error) throw error;
 
-                await displayComments(comments || []);
+                // Store comments globally for sorting
+                currentComments = comments || [];
+                
+                // Load user interactions
+                await loadUserCommentInteractions();
+                
+                // Apply current sort
+                await sortComments(currentSort);
                 
                 // Update comment count
                 const totalComments = await getTotalCommentCount();
@@ -2644,6 +2715,18 @@
             }));
 
             container.innerHTML = commentsHtml.join('');
+            
+            // Update like and bookmark states after rendering
+            comments.forEach(comment => {
+                if (userCommentLikes.has(comment.id)) {
+                    const likeBtn = document.getElementById(`like-btn-${comment.id}`);
+                    if (likeBtn) likeBtn.classList.add('liked');
+                }
+                if (userBookmarkedComments.has(comment.id)) {
+                    const bookmarkBtn = document.getElementById(`bookmark-btn-${comment.id}`);
+                    if (bookmarkBtn) bookmarkBtn.classList.add('bookmarked');
+                }
+            });
         }
 
         async function loadCommentReplies(parentId) {
@@ -3038,6 +3121,11 @@
                 if (error) throw error;
                 
                 textarea.value = '';
+                
+                // Store mentions and update stats
+                await storeMentions(data.id, content, currentUser.id);
+                await updateCommentStats(data.id);
+                
                 await loadComments();
                 await showAlert('Comment posted successfully!', 'success');
                 
@@ -3121,6 +3209,12 @@
                 
                 textarea.value = '';
                 cancelReply(commentId);
+                
+                // Store mentions and update stats for both reply and parent
+                await storeMentions(data.id, content, currentUser.id);
+                await updateCommentStats(data.id);
+                await updateCommentStats(commentId); // Update parent comment stats
+                
                 await loadComments();
                 await showAlert('Reply posted successfully!', 'success');
                 
@@ -3254,8 +3348,15 @@
                                     <span class="comment-username">${reply.author_name || '@Anonymous'}</span>
                                     <span class="comment-time">${replyDate}</span>
                                 </div>
-                                <div class="comment-text">${escapeHtml(reply.comment_text)}</div>
+                                <div class="comment-text">${processMentions(escapeHtml(reply.comment_text))}</div>
                                 <div class="comment-controls">
+                                    <button class="comment-btn like-btn" onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}">
+                                        <span class="like-icon">👍</span>
+                                        <span class="like-count" id="like-count-${reply.id}">${reply.like_count || 0}</span>
+                                    </button>
+                                    <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
+                                        <span class="bookmark-icon">🔖</span>
+                                    </button>
                                     ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
                                 </div>
                             </div>
@@ -3273,9 +3374,16 @@
                                 <span class="comment-username">${comment.author_name || '@Anonymous'}</span>
                                 <span class="comment-time">${commentDate}</span>
                             </div>
-                            <div class="comment-text">${escapeHtml(comment.comment_text)}</div>
+                            <div class="comment-text">${processMentions(escapeHtml(comment.comment_text))}</div>
                             <div class="comment-controls">
+                                <button class="comment-btn like-btn" onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}">
+                                    <span class="like-icon">👍</span>
+                                    <span class="like-count" id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                </button>
                                 <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
+                                <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${comment.id}')" id="bookmark-btn-${comment.id}">
+                                    <span class="bookmark-icon">🔖</span>
+                                </button>
                                 ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
                             </div>
                             
@@ -3311,6 +3419,286 @@
             if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault();
                 submitReply(commentId);
+            }
+        }
+
+        // WORLD-CLASS COMMENT SYSTEM FEATURES
+
+        // Global variables for comment management
+        let currentComments = [];
+        let currentSort = 'newest';
+        let userCommentLikes = new Set();
+        let userBookmarkedComments = new Set();
+
+        // FEATURE 1: REAL LIKE SYSTEM
+        async function toggleCommentLike(commentId) {
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to like comments', 'warning');
+                return;
+            }
+            
+            try {
+                const isLiked = userCommentLikes.has(commentId);
+                
+                if (isLiked) {
+                    // Remove like
+                    await supabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_id', currentUser.id);
+                    
+                    userCommentLikes.delete(commentId);
+                } else {
+                    // Add like
+                    await supabase
+                        .from('comment_likes')
+                        .insert([{
+                            comment_id: commentId,
+                            user_id: currentUser.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    userCommentLikes.add(commentId);
+                }
+                
+                // Update like count and UI
+                await updateCommentLikeCount(commentId);
+                await updateCommentStats(commentId);
+                
+            } catch (error) {
+                console.error('❌ Comment like toggle failed:', error);
+                await showAlert('Failed to update like', 'error');
+            }
+        }
+
+        async function updateCommentLikeCount(commentId) {
+            try {
+                const { data, error } = await supabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                if (error) throw error;
+                
+                const likeCount = data.length;
+                const likeButton = document.getElementById(`like-btn-${commentId}`);
+                const likeCountElement = document.getElementById(`like-count-${commentId}`);
+                
+                if (likeCountElement) {
+                    likeCountElement.textContent = likeCount;
+                }
+                
+                if (likeButton) {
+                    if (userCommentLikes.has(commentId)) {
+                        likeButton.classList.add('liked');
+                    } else {
+                        likeButton.classList.remove('liked');
+                    }
+                }
+                
+                // Update comment like count in database
+                await supabase
+                    .from('comments')
+                    .update({ like_count: likeCount })
+                    .eq('id', commentId);
+                
+            } catch (error) {
+                console.error('❌ Failed to update comment like count:', error);
+            }
+        }
+
+        // FEATURE 2: BOOKMARK FUNCTIONALITY
+        async function toggleCommentBookmark(commentId) {
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to bookmark comments', 'warning');
+                return;
+            }
+            
+            try {
+                const isBookmarked = userBookmarkedComments.has(commentId);
+                
+                if (isBookmarked) {
+                    // Remove bookmark
+                    await supabase
+                        .from('comment_bookmarks')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_id', currentUser.id);
+                    
+                    userBookmarkedComments.delete(commentId);
+                } else {
+                    // Add bookmark
+                    await supabase
+                        .from('comment_bookmarks')
+                        .insert([{
+                            comment_id: commentId,
+                            user_id: currentUser.id,
+                            user_email: currentUser.email,
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    userBookmarkedComments.add(commentId);
+                }
+                
+                // Update UI
+                updateBookmarkUI(commentId);
+                
+            } catch (error) {
+                console.error('❌ Comment bookmark toggle failed:', error);
+                await showAlert('Failed to update bookmark', 'error');
+            }
+        }
+
+        function updateBookmarkUI(commentId) {
+            const bookmarkButton = document.getElementById(`bookmark-btn-${commentId}`);
+            if (bookmarkButton) {
+                if (userBookmarkedComments.has(commentId)) {
+                    bookmarkButton.classList.add('bookmarked');
+                } else {
+                    bookmarkButton.classList.remove('bookmarked');
+                }
+            }
+        }
+
+        // FEATURE 3: COMMENT SORTING
+        async function sortComments(sortType) {
+            currentSort = sortType;
+            
+            // Update active button
+            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`sort-${sortType}`).classList.add('active');
+            
+            let sortedComments = [...currentComments];
+            
+            switch (sortType) {
+                case 'liked':
+                    sortedComments.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+                    break;
+                case 'replies':
+                    // Calculate reply count for each comment
+                    sortedComments.forEach(comment => {
+                        comment.reply_count = currentComments.filter(c => c.parent_comment_id === comment.id).length;
+                    });
+                    sortedComments.sort((a, b) => (b.reply_count || 0) - (a.reply_count || 0));
+                    break;
+                case 'newest':
+                default:
+                    sortedComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    break;
+            }
+            
+            currentComments = sortedComments;
+            await displayComments(currentComments);
+        }
+
+        // FEATURE 4: @USERNAME MENTIONS
+        function processMentions(text) {
+            const mentionRegex = /@(\w+)/g;
+            return text.replace(mentionRegex, '<span class="mention">@$1</span>');
+        }
+
+        async function storeMentions(commentId, text, authorUserId) {
+            const mentionRegex = /@(\w+)/g;
+            const mentions = [...text.matchAll(mentionRegex)];
+            
+            for (const match of mentions) {
+                const username = match[1];
+                try {
+                    // Store mention in database (simplified - in real app, would lookup user_id by username)
+                    await supabase
+                        .from('comment_mentions')
+                        .insert([{
+                            comment_id: commentId,
+                            mentioned_username: username,
+                            mentioner_user_id: authorUserId,
+                            is_read: false,
+                            created_at: new Date().toISOString()
+                        }]);
+                } catch (error) {
+                    console.log('Error storing mention:', error);
+                }
+            }
+        }
+
+        // FEATURE 5: COMMENT STATS TRACKING
+        async function updateCommentStats(commentId) {
+            try {
+                // Get current stats
+                const { data: likeData } = await supabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                const { data: replyData } = await supabase
+                    .from('comments')
+                    .select('id')
+                    .eq('parent_comment_id', commentId);
+                
+                const likeCount = likeData ? likeData.length : 0;
+                const replyCount = replyData ? replyData.length : 0;
+                const engagementScore = likeCount + (replyCount * 2); // Replies worth more than likes
+                
+                // Update or insert stats
+                await supabase
+                    .from('comment_stats')
+                    .upsert({
+                        comment_id: commentId,
+                        like_count: likeCount,
+                        reply_count: replyCount,
+                        engagement_score: engagementScore,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'comment_id' });
+                
+            } catch (error) {
+                console.error('Error updating comment stats:', error);
+            }
+        }
+
+        // FEATURE 6: LOAD USER INTERACTIONS
+        async function loadUserCommentInteractions() {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) return;
+            
+            try {
+                // Load user's liked comments
+                const { data: likes } = await supabase
+                    .from('comment_likes')
+                    .select('comment_id')
+                    .eq('user_id', currentUser.id);
+                
+                userCommentLikes = new Set((likes || []).map(l => l.comment_id));
+                
+                // Load user's bookmarked comments
+                const { data: bookmarks } = await supabase
+                    .from('comment_bookmarks')
+                    .select('comment_id')
+                    .eq('user_id', currentUser.id);
+                
+                userBookmarkedComments = new Set((bookmarks || []).map(b => b.comment_id));
+                
+            } catch (error) {
+                console.error('Error loading user comment interactions:', error);
             }
         }
 
