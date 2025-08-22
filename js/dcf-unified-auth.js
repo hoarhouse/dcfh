@@ -2005,23 +2005,25 @@ function addNotificationDropdownCSS() {
 function setupAuthStateListener() {
     if (!window.dcfSupabase) return;
     
+    // Prevent multiple listeners
+    if (window.authListenerSetup) return;
+    window.authListenerSetup = true;
+    
     window.dcfSupabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 AUTH STATE LISTENER - Event:', event);
-        console.log('🔄 AUTH STATE LISTENER - Session exists:', !!session);
-        console.log('🔄 AUTH STATE LISTENER - Current dcfUser state:', window.dcfUser);
-        console.trace('AUTH STATE CHANGE STACK TRACE:');
         
         if (event === 'SIGNED_IN' && session?.user) {
             console.log('✅ AUTH STATE LISTENER - Processing SIGNED_IN event');
-            await initializeAuth();
+            // ✅ REMOVE initializeAuth() call to prevent loop
+            // Just update UI state directly
+            window.dcfUser = { 
+                isLoggedIn: true, 
+                profile: session.user, 
+                session: session 
+            };
             updateUserInterface();
         } else if (event === 'SIGNED_OUT') {
             console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event');
-            if (window.dcfLogoutInProgress) {
-                console.log('✅ AUTH STATE LISTENER - Expected SIGNED_OUT (logout in progress)');
-            } else {
-                console.log('⚠️ AUTH STATE LISTENER - Unexpected SIGNED_OUT (may be session expiry)');
-            }
             window.dcfUser = { isLoggedIn: false, profile: null, session: null };
             showLoggedOutState();
         }
