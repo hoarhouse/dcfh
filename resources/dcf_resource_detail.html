@@ -2041,6 +2041,18 @@
         // Use unified auth client exclusively
         const supabase = window.dcfSupabase;
 
+        // Ensure authenticated client for RLS operations
+        async function ensureAuthenticatedClient() {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser || !window.dcfUser?.session) {
+                throw new Error('No authenticated user');
+            }
+            
+            // Set the session explicitly on the client to ensure auth.uid() works in RLS
+            await window.dcfSupabase.auth.setSession(window.dcfUser.session);
+            return window.dcfSupabase;
+        }
+
         let currentResource = null;
         let currentUser = null;
         let resourceId = null;
@@ -3185,7 +3197,8 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                const { data, error } = await supabase
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                const { data, error } = await authenticatedSupabase
                     .from('comments')
                     .insert([commentData])
                     .select()
@@ -3274,7 +3287,8 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                const { data, error } = await supabase
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                const { data, error } = await authenticatedSupabase
                     .from('comments')
                     .insert([replyData])
                     .select()
@@ -3325,7 +3339,8 @@
             }
             
             try {
-                const { error } = await supabase
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                const { error } = await authenticatedSupabase
                     .from('comments')
                     .update({ is_deleted: true, updated_at: new Date().toISOString() })
                     .eq('id', commentId)
@@ -3741,7 +3756,8 @@
                 }
                 
                 // Update comment in database
-                const { error: updateError } = await supabase
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                const { error: updateError } = await authenticatedSupabase
                     .from('comments')
                     .update({
                         comment_text: newText,
@@ -3752,7 +3768,7 @@
                 if (updateError) throw updateError;
                 
                 // Add to edit history
-                const { error: historyError } = await supabase
+                const { error: historyError } = await authenticatedSupabase
                     .from('comment_edit_history')
                     .insert({
                         comment_id: commentId,
@@ -3836,9 +3852,11 @@
             try {
                 const isLiked = userCommentLikes.has(commentId);
                 
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                
                 if (isLiked) {
                     // Remove like
-                    await supabase
+                    await authenticatedSupabase
                         .from('comment_likes')
                         .delete()
                         .eq('comment_id', commentId)
@@ -3847,7 +3865,7 @@
                     userCommentLikes.delete(commentId);
                 } else {
                     // Add like
-                    await supabase
+                    await authenticatedSupabase
                         .from('comment_likes')
                         .insert([{
                             comment_id: commentId,
@@ -3937,9 +3955,11 @@
             try {
                 const isBookmarked = userBookmarkedComments.has(commentId);
                 
+                const authenticatedSupabase = await ensureAuthenticatedClient();
+                
                 if (isBookmarked) {
                     // Remove bookmark
-                    await supabase
+                    await authenticatedSupabase
                         .from('comment_bookmarks')
                         .delete()
                         .eq('comment_id', commentId)
@@ -3948,7 +3968,7 @@
                     userBookmarkedComments.delete(commentId);
                 } else {
                     // Add bookmark
-                    await supabase
+                    await authenticatedSupabase
                         .from('comment_bookmarks')
                         .insert([{
                             comment_id: commentId,
