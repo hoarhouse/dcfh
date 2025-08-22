@@ -1973,6 +1973,9 @@
             await loadRelatedResources();
             await loadUserInteractions();
             await loadComments();
+            
+            // Add event delegation for keyboard shortcuts
+            setupKeyboardEventDelegation();
         });
 
 
@@ -3413,11 +3416,14 @@
         }
 
         function handleCommentKeydown(event) {
+            console.log('🎹 Comment keydown:', event.key, 'Shift:', event.shiftKey);
             if (event.key === 'Enter') {
                 if (event.shiftKey) {
+                    console.log('✅ Shift+Enter detected - new line');
                     // Shift+Enter = new line (default behavior)
                     return;
                 } else {
+                    console.log('✅ Enter detected - submitting comment');
                     // Plain Enter = submit
                     event.preventDefault();
                     submitComment();
@@ -3426,16 +3432,48 @@
         }
 
         function handleReplyKeydown(event, commentId) {
+            console.log('🎹 Reply keydown:', event.key, 'Shift:', event.shiftKey, 'CommentID:', commentId);
             if (event.key === 'Enter') {
                 if (event.shiftKey) {
+                    console.log('✅ Shift+Enter detected - new line');
                     // Shift+Enter = new line (default behavior)
                     return;
                 } else {
+                    console.log('✅ Enter detected - submitting reply for comment:', commentId);
                     // Plain Enter = submit
                     event.preventDefault();
                     submitReply(commentId);
                 }
             }
+        }
+
+        // Ensure functions are available in global scope
+        window.handleCommentKeydown = handleCommentKeydown;
+        window.handleReplyKeydown = handleReplyKeydown;
+        window.submitComment = submitComment;
+        window.submitReply = submitReply;
+
+        // Setup keyboard event delegation for dynamic content
+        function setupKeyboardEventDelegation() {
+            console.log('🎹 Setting up keyboard event delegation');
+            
+            // Event delegation for all textareas
+            document.addEventListener('keydown', function(event) {
+                const target = event.target;
+                
+                // Main comment textarea
+                if (target.id === 'commentText') {
+                    console.log('🎹 Delegated event on main comment textarea');
+                    handleCommentKeydown(event);
+                }
+                
+                // Reply textareas (match pattern replyText-{commentId})
+                if (target.id && target.id.startsWith('replyText-')) {
+                    const commentId = target.id.replace('replyText-', '');
+                    console.log('🎹 Delegated event on reply textarea for comment:', commentId);
+                    handleReplyKeydown(event, commentId);
+                }
+            });
         }
 
         // WORLD-CLASS COMMENT SYSTEM FEATURES
