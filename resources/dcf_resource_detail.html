@@ -1148,6 +1148,36 @@
             align-items: center;
         }
 
+        /* EFFICIENT COMMENT LAYOUT */
+        .comment-main-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .comment-text-inline {
+            flex: 1;
+            color: #333;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .comment-footer-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .comment-controls-inline {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
         .like-btn.liked .like-icon {
             color: #0066cc;
         }
@@ -1670,6 +1700,18 @@
 
             .fullscreen-next {
                 right: 1rem;
+            }
+
+            /* Mobile responsive for efficient comment layout */
+            .comment-footer-line {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .comment-controls-inline {
+                width: 100%;
+                justify-content: space-between;
             }
         }
 
@@ -3479,28 +3521,30 @@
                         <div class="comment-author">
                             <div class="comment-avatar">${replyInitials}</div>
                             <div class="comment-content">
-                                <div class="comment-header">
+                                <div class="comment-main-line">
                                     <span class="comment-username">${reply.author_name || '@Anonymous'}</span>
-                                    <span class="comment-time">${replyDate}</span>
-                                </div>
-                                <div class="comment-text">
-                                    ${reply.is_deleted ? 
-                                        `<div class="comment-deleted">[Comment deleted]</div>` : 
-                                        `${processMentions(escapeHtml(reply.comment_text))}${reply.updated_at !== reply.created_at ? 
-                                            `<span class="edited-indicator">(edited ${formatTimeAgo(reply.updated_at)})</span>` : ''}`
-                                    }
+                                    <span class="comment-text-inline">
+                                        ${reply.is_deleted ? 
+                                            `<span class="comment-deleted">[Comment deleted]</span>` : 
+                                            `${processMentions(escapeHtml(reply.comment_text))}${reply.updated_at !== reply.created_at ? 
+                                                `<span class="edited-indicator">(edited ${formatTimeAgo(reply.updated_at)})</span>` : ''}`
+                                        }
+                                    </span>
                                 </div>
                                 ${reply.is_deleted ? '' : `
-                                    <div class="comment-controls">
-                                        <button class="comment-btn like-btn" onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}">
-                                            <span class="like-icon">👍</span>
-                                            <span class="like-count" id="like-count-${reply.id}">${reply.like_count || 0}</span>
-                                        </button>
-                                        <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
-                                            <span class="bookmark-icon">🔖</span>
-                                        </button>
-                                        ${canEditReply ? `<button class="comment-btn edit" onclick="startEditComment('${reply.id}')">Edit</button>` : ''}
-                                        ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
+                                    <div class="comment-footer-line">
+                                        <span class="comment-time">${replyDate}</span>
+                                        <div class="comment-controls-inline">
+                                            <button class="comment-btn like-btn" onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}">
+                                                <span class="like-icon">👍</span>
+                                                <span class="like-count" id="like-count-${reply.id}">${reply.like_count || 0}</span>
+                                            </button>
+                                            <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
+                                                <span class="bookmark-icon">🔖</span>
+                                            </button>
+                                            ${canEditReply ? `<button class="comment-btn edit" onclick="startEditComment('${reply.id}')">Edit</button>` : ''}
+                                            ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
+                                        </div>
                                     </div>
                                 `}
                             </div>
@@ -3514,29 +3558,31 @@
                     <div class="comment-author">
                         <div class="comment-avatar">${authorInitials}</div>
                         <div class="comment-content">
-                            <div class="comment-header">
+                            <div class="comment-main-line">
                                 <span class="comment-username">${comment.author_name || '@Anonymous'}</span>
-                                <span class="comment-time">${commentDate}</span>
-                            </div>
-                            <div class="comment-text">
-                                ${comment.is_deleted ? 
-                                    `<div class="comment-deleted">[Comment deleted]</div>` : 
-                                    `${processMentions(escapeHtml(comment.comment_text))}${comment.updated_at !== comment.created_at ? 
-                                        `<span class="edited-indicator">(edited ${formatTimeAgo(comment.updated_at)})</span>` : ''}`
-                                }
+                                <span class="comment-text-inline">
+                                    ${comment.is_deleted ? 
+                                        `<span class="comment-deleted">[Comment deleted]</span>` : 
+                                        `${processMentions(escapeHtml(comment.comment_text))}${comment.updated_at !== comment.created_at ? 
+                                            `<span class="edited-indicator">(edited ${formatTimeAgo(comment.updated_at)})</span>` : ''}`
+                                    }
+                                </span>
                             </div>
                             ${comment.is_deleted ? '' : `
-                                <div class="comment-controls">
-                                    <button class="comment-btn like-btn" onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}">
-                                        <span class="like-icon">👍</span>
-                                        <span class="like-count" id="like-count-${comment.id}">${comment.like_count || 0}</span>
-                                    </button>
-                                    <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
-                                    <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${comment.id}')" id="bookmark-btn-${comment.id}">
-                                        <span class="bookmark-icon">🔖</span>
-                                    </button>
-                                    ${canEdit ? `<button class="comment-btn edit" onclick="startEditComment('${comment.id}')">Edit</button>` : ''}
-                                    ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
+                                <div class="comment-footer-line">
+                                    <span class="comment-time">${commentDate}</span>
+                                    <div class="comment-controls-inline">
+                                        <button class="comment-btn like-btn" onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}">
+                                            <span class="like-icon">👍</span>
+                                            <span class="like-count" id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                        </button>
+                                        <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${comment.id}')" id="bookmark-btn-${comment.id}">
+                                            <span class="bookmark-icon">🔖</span>
+                                        </button>
+                                        <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
+                                        ${canEdit ? `<button class="comment-btn edit" onclick="startEditComment('${comment.id}')">Edit</button>` : ''}
+                                        ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
+                                    </div>
                                 </div>
                             `}
                             
@@ -3629,8 +3675,8 @@
                 if (error) throw error;
                 
                 // Get comment text element and controls
-                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
-                const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls`);
+                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
+                const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls-inline`);
                 
                 if (!commentTextElement) {
                     console.error('Could not find comment text element');
@@ -3682,7 +3728,7 @@
             
             try {
                 // Get original text
-                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
+                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
                 const originalText = commentTextElement?.getAttribute('data-original-text') || '';
                 
                 if (originalText === newText) {
@@ -3706,8 +3752,8 @@
         function cancelEditComment(commentId) {
             console.log('❌ Canceling edit for comment:', commentId);
             
-            const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`);
-            const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls`);
+            const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
+            const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls-inline`);
             
             if (commentTextElement) {
                 // Restore original text
