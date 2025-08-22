@@ -2621,10 +2621,10 @@
             }
 
             // Filter top-level comments (no parent_id)
-            const topLevelComments = comments.filter(comment => !comment.parent_id);
+            const topLevelComments = comments.filter(comment => !comment.parent_comment_id);
             
             const commentsHtml = await Promise.all(topLevelComments.map(async comment => {
-                const replies = comments.filter(c => c.parent_id === comment.id);
+                const replies = comments.filter(c => c.parent_comment_id === comment.id);
                 return createCommentHtml(comment, replies);
             }));
 
@@ -2684,7 +2684,7 @@
                     <div class="comment-content">${comment.comment_text}</div>
                     <div class="comment-controls">
                         <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
-                        ${currentUser && (currentUser.email === comment.user_email || isUserAdmin(currentUser)) ? 
+                        ${currentUser && (currentUser.email === comment.author_email || isUserAdmin(currentUser)) ? 
                             `<button class="comment-btn" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
                     </div>
                     
@@ -2705,19 +2705,6 @@
             `;
         }
 
-        async function getTotalCommentCount() {
-            try {
-                const { count } = await supabase
-                    .from('resource_comments')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('resource_id', resourceId);
-
-                return count || 0;
-            } catch (error) {
-                console.error('Error getting comment count:', error);
-                return 0;
-            }
-        }
 
         async function loadRelatedResources() {
             try {
@@ -2787,7 +2774,7 @@
                 const { data: likes } = await supabase
                     .from('resource_likes')
                     .select('resource_id')
-                    .eq('user_email', currentUser.email);
+                    .eq('author_email', currentUser.email);
                 
                 userLikes = new Set((likes || []).map(l => l.resource_id));
 
@@ -2795,7 +2782,7 @@
                 const { data: bookmarks } = await supabase
                     .from('resource_bookmarks')
                     .select('resource_id')
-                    .eq('user_email', currentUser.email);
+                    .eq('author_email', currentUser.email);
                 
                 userBookmarks = new Set((bookmarks || []).map(b => b.resource_id));
 
@@ -2846,7 +2833,7 @@
                         .from('resource_likes')
                         .delete()
                         .eq('resource_id', resourceId)
-                        .eq('user_email', currentUser.email);
+                        .eq('author_email', currentUser.email);
                     
                     userLikes.delete(resourceId);
                     document.getElementById('likeBtn').classList.remove('active');
@@ -2856,7 +2843,7 @@
                         .from('resource_likes')
                         .insert({
                             resource_id: resourceId,
-                            user_email: currentUser.email,
+                            author_email: currentUser.email,
                             user_name: currentUser.name
                         });
                     
@@ -2899,7 +2886,7 @@
                         .from('resource_bookmarks')
                         .delete()
                         .eq('resource_id', resourceId)
-                        .eq('user_email', currentUser.email);
+                        .eq('author_email', currentUser.email);
                     
                     userBookmarks.delete(resourceId);
                     document.getElementById('bookmarkBtn').classList.remove('active');
@@ -2909,7 +2896,7 @@
                         .from('resource_bookmarks')
                         .insert({
                             resource_id: resourceId,
-                            user_email: currentUser.email,
+                            author_email: currentUser.email,
                             user_name: currentUser.name
                         });
                     
@@ -3017,10 +3004,11 @@
                 const commentData = {
                     content_type: 'resource',
                     content_id: resourceId,
+                    author_id: currentUser.id,
+                    author_email: currentUser.email,
+                    author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
                     comment_text: content,
-                    user_email: currentUser.email,
-                    username: `@${currentUser.username || currentUser.email.split('@')[0]}`,
-                    parent_id: null,
+                    parent_comment_id: null,
                     is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -3098,10 +3086,11 @@
                 const replyData = {
                     content_type: 'resource',
                     content_id: resourceId,
+                    author_id: currentUser.id,
+                    author_email: currentUser.email,
+                    author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
                     comment_text: content,
-                    user_email: currentUser.email,
-                    username: `@${currentUser.username || currentUser.email.split('@')[0]}`,
-                    parent_id: commentId,
+                    parent_comment_id: commentId,
                     is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -3155,7 +3144,7 @@
                     .from('comments')
                     .update({ is_deleted: true, updated_at: new Date().toISOString() })
                     .eq('id', commentId)
-                    .eq('user_email', currentUser.email)
+                    .eq('author_email', currentUser.email)
                     .eq('is_deleted', false);
                 
                 if (error) throw error;
@@ -3221,17 +3210,17 @@
 
         function canDeleteComment(comment, user) {
             if (!user) return false;
-            return user.email === comment.user_email || isUserAdmin(user);
+            return user.email === comment.author_email || isUserAdmin(user);
         }
 
         function createCommentHtml(comment, replies = []) {
-            const authorInitials = getUserInitials(comment.username);
+            const authorInitials = getUserInitials(comment.author_name);
             const commentDate = formatCommentDate(comment.created_at);
             const activeUser = currentUser;
             const canDelete = canDeleteComment(comment, activeUser);
             
             const repliesHtml = replies.map(reply => {
-                const replyInitials = getUserInitials(reply.username);
+                const replyInitials = getUserInitials(reply.author_name);
                 const replyDate = formatCommentDate(reply.created_at);
                 const canDeleteReply = canDeleteComment(reply, activeUser);
                 
@@ -3241,7 +3230,7 @@
                             <div class="comment-author">
                                 <div class="comment-avatar">${replyInitials}</div>
                                 <div class="comment-info">
-                                    <div class="comment-username">${reply.username || '@Anonymous'}</div>
+                                    <div class="comment-username">${reply.author_name || '@Anonymous'}</div>
                                     <div class="comment-date">${replyDate}</div>
                                 </div>
                             </div>
@@ -3260,7 +3249,7 @@
                         <div class="comment-author">
                             <div class="comment-avatar">${authorInitials}</div>
                             <div class="comment-info">
-                                <div class="comment-username">${comment.username || '@Anonymous'}</div>
+                                <div class="comment-username">${comment.author_name || '@Anonymous'}</div>
                                 <div class="comment-date">${commentDate}</div>
                             </div>
                         </div>
@@ -3473,7 +3462,7 @@
                     .from('resource_analytics')
                     .insert({
                         resource_id: resourceId,
-                        user_email: currentUser.email,
+                        author_email: currentUser.email,
                         action_type: actionType,
                         metadata: {
                             timestamp: new Date().toISOString(),
