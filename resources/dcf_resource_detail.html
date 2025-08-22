@@ -1198,6 +1198,16 @@
             text-decoration: underline;
         }
 
+        .comment-link {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+
+        .comment-link:hover {
+            color: #004499;
+            text-decoration: underline;
+        }
+
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -3131,10 +3141,13 @@
                 
             } catch (error) {
                 console.error('Error submitting comment:', error);
-                await showAlert('Failed to post comment. Please try again.', 'error');
+                await showAlert(`Failed to post comment: ${error.message}`, 'error');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                // Ensure button reset even on uncaught errors
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText || 'Post Comment';
+                }
             }
         }
 
@@ -3475,6 +3488,7 @@
                 
                 // Update like count and UI
                 await updateCommentLikeCount(commentId);
+                updateLikeUI(commentId);
                 await updateCommentStats(commentId);
                 
             } catch (error) {
@@ -3516,6 +3530,17 @@
                 
             } catch (error) {
                 console.error('❌ Failed to update comment like count:', error);
+            }
+        }
+
+        function updateLikeUI(commentId) {
+            const likeButton = document.getElementById(`like-btn-${commentId}`);
+            if (likeButton) {
+                if (userCommentLikes.has(commentId)) {
+                    likeButton.classList.add('liked');
+                } else {
+                    likeButton.classList.remove('liked');
+                }
             }
         }
 
@@ -3613,9 +3638,19 @@
         }
 
         // FEATURE 4: @USERNAME MENTIONS
+        function makeLinksClickable(text) {
+            const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+            const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+            
+            return text
+                .replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="comment-link">$1</a>')
+                .replace(emailRegex, '<a href="mailto:$1" class="comment-link">$1</a>');
+        }
+
         function processMentions(text) {
             const mentionRegex = /@(\w+)/g;
-            return text.replace(mentionRegex, '<span class="mention">@$1</span>');
+            const withMentions = text.replace(mentionRegex, '<span class="mention">@$1</span>');
+            return makeLinksClickable(withMentions);
         }
 
         async function storeMentions(commentId, text, authorUserId) {
