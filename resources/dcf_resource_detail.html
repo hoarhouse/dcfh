@@ -2506,11 +2506,10 @@
             return typeMap[fileType] || 'Document';
         }
 
-        /*
         async function loadComments() {
             try {
                 const { data: comments, error } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('*')
                     .eq('resource_id', resourceId)
                     .order('created_at', { ascending: false });
@@ -2521,14 +2520,16 @@
                 
                 // Update comment count
                 const totalComments = await getTotalCommentCount();
-                document.getElementById('commentCount').textContent = `${totalComments} comments`;
-                document.getElementById('totalComments').textContent = totalComments;
+                const commentCountElement = document.getElementById('totalComments');
+                if (commentCountElement) {
+                    commentCountElement.textContent = totalComments;
+                }
 
             } catch (error) {
                 console.error('Error loading comments:', error);
+                await showAlert('Failed to load comments', 'error');
             }
         }
-        */
 
         async function displayComments(comments) {
             const container = document.getElementById('commentsList');
@@ -2542,8 +2543,11 @@
                 return;
             }
 
-            const commentsHtml = await Promise.all(comments.map(async comment => {
-                const replies = await loadCommentReplies(comment.id);
+            // Filter top-level comments (no parent_id)
+            const topLevelComments = comments.filter(comment => !comment.parent_id);
+            
+            const commentsHtml = await Promise.all(topLevelComments.map(async comment => {
+                const replies = comments.filter(c => c.parent_id === comment.id);
                 return createCommentHtml(comment, replies);
             }));
 
@@ -2887,13 +2891,65 @@
 
         // Comment functions
         async function submitComment() {
-            await showAlert('Comments Coming Soon!', 'info');
-            return;
+            const textarea = document.getElementById('commentText');
+            const content = textarea.value.trim();
+            
+            if (!content) {
+                await showAlert('Please enter a comment', 'warning');
+                return;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to post comments', 'warning');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('.comment-form .btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Posting...';
+            
+            try {
+                const commentData = {
+                    resource_id: resourceId,
+                    content: content,
+                    user_email: currentUser.email,
+                    username: currentUser.username || currentUser.name || currentUser.email.split('@')[0],
+                    parent_id: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                const { data, error } = await supabase
+                    .from('comments')
+                    .insert([commentData])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                textarea.value = '';
+                await loadComments();
+                await showAlert('Comment posted successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                await showAlert('Failed to post comment. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         }
 
         async function toggleReplyForm(commentId) {
-            await showAlert('Comments Coming Soon!', 'info');
-            return;
+            const replyForm = document.getElementById(`replyForm-${commentId}`);
+            if (replyForm) {
+                replyForm.classList.toggle('active');
+                if (replyForm.classList.contains('active')) {
+                    const textarea = document.getElementById(`replyText-${commentId}`);
+                    if (textarea) textarea.focus();
+                }
+            }
         }
 
         function cancelReply(commentId) {
