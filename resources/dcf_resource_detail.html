@@ -3728,35 +3728,116 @@
 
         // FEATURE 5: COMMENT STATS TRACKING
         async function updateCommentStats(commentId) {
+            console.log('📊 Updating comment stats for comment:', commentId);
+            
             try {
                 // Get current stats
-                const { data: likeData } = await supabase
+                const { data: likeData, error: likeError } = await supabase
                     .from('comment_likes')
                     .select('id')
                     .eq('comment_id', commentId);
                 
-                const { data: replyData } = await supabase
+                if (likeError) {
+                    console.error('❌ Error fetching like data:', likeError);
+                    throw likeError;
+                }
+
+                const { data: replyData, error: replyError } = await supabase
                     .from('comments')
                     .select('id')
                     .eq('parent_comment_id', commentId);
+                
+                if (replyError) {
+                    console.error('❌ Error fetching reply data:', replyError);
+                    throw replyError;
+                }
                 
                 const likeCount = likeData ? likeData.length : 0;
                 const replyCount = replyData ? replyData.length : 0;
                 const engagementScore = likeCount + (replyCount * 2); // Replies worth more than likes
                 
-                // Update or insert stats
-                await supabase
+                console.log('📊 Stats calculated:', { commentId, likeCount, replyCount, engagementScore });
+                
+                // PRIMARY ATTEMPT: Corrected UPSERT syntax
+                const statsData = {
+                    comment_id: commentId,
+                    like_count: likeCount,
+                    reply_count: replyCount,
+                    engagement_score: engagementScore,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                console.log('📊 Attempting UPSERT with corrected syntax...');
+                const { data: upsertResult, error: upsertError } = await supabase
                     .from('comment_stats')
-                    .upsert({
-                        comment_id: commentId,
-                        like_count: likeCount,
-                        reply_count: replyCount,
-                        engagement_score: engagementScore,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'comment_id' });
+                    .upsert(statsData, { 
+                        onConflict: 'comment_id',
+                        ignoreDuplicates: false 
+                    });
+                
+                if (upsertError) {
+                    console.error('❌ UPSERT failed, trying fallback method:', upsertError);
+                    throw upsertError;
+                }
+                
+                console.log('✅ UPSERT successful:', upsertResult);
                 
             } catch (error) {
-                console.error('Error updating comment stats:', error);
+                console.error('❌ Primary UPSERT failed, attempting fallback insert/update:', error);
+                
+                // FALLBACK: Separate insert/update logic
+                try {
+                    // Check if record exists
+                    const { data: existing, error: selectError } = await supabase
+                        .from('comment_stats')
+                        .select('comment_id')
+                        .eq('comment_id', commentId)
+                        .single();
+                    
+                    const likeCount = (await supabase.from('comment_likes').select('id').eq('comment_id', commentId)).data?.length || 0;
+                    const replyCount = (await supabase.from('comments').select('id').eq('parent_comment_id', commentId)).data?.length || 0;
+                    const engagementScore = likeCount + (replyCount * 2);
+                    
+                    if (existing && !selectError) {
+                        // Update existing record
+                        console.log('📊 Updating existing stats record...');
+                        const { error: updateError } = await supabase
+                            .from('comment_stats')
+                            .update({
+                                like_count: likeCount,
+                                reply_count: replyCount,
+                                engagement_score: engagementScore,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('comment_id', commentId);
+                        
+                        if (updateError) throw updateError;
+                        console.log('✅ Stats updated successfully via fallback');
+                        
+                    } else {
+                        // Insert new record
+                        console.log('📊 Inserting new stats record...');
+                        const { error: insertError } = await supabase
+                            .from('comment_stats')
+                            .insert({
+                                comment_id: commentId,
+                                like_count: likeCount,
+                                reply_count: replyCount,
+                                engagement_score: engagementScore,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            });
+                        
+                        if (insertError) throw insertError;
+                        console.log('✅ Stats inserted successfully via fallback');
+                    }
+                    
+                } catch (fallbackError) {
+                    console.error('❌ Fallback insert/update also failed:', fallbackError);
+                    // Don't throw here - we don't want to break the like functionality
+                    // The like still works, just the stats tracking failed
+                }
             }
         }
 
