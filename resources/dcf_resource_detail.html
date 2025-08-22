@@ -3320,55 +3320,86 @@
         }
 
         async function deleteComment(commentId) {
-            // Wait for auth to be ready
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
+            const currentUser = getCurrentUser();
             if (!currentUser) {
-                await showAlert('Please log in to delete comments', 'warning');
+                alert('You must be logged in to delete comments.');
                 return;
             }
-            
-            // Better confirmation dialog
-            const confirmMessage = 'Are you sure you want to delete this comment?\n\nThis will replace the comment with "[Comment deleted]" but preserve the reply structure. This action cannot be undone.';
-            if (!confirm(confirmMessage)) {
+
+            if (!confirm('Are you sure you want to delete this comment?')) {
                 return;
             }
-            
+
             try {
-                // Check if Supabase client is available
-                if (!window.dcfSupabase) {
-                    console.error('Supabase client not initialized');
-                    await showAlert('System not ready. Please refresh the page.', 'error');
+                console.log(`🗑️ Attempting to delete comment ${commentId} for user ${currentUser.email}`);
+                
+                // First verify this comment belongs to the current user
+                const { data: commentCheck, error: checkError } = await window.dcfSupabase
+                    .from('comments')
+                    .select('author_email, comment_text')
+                    .eq('id', commentId)
+                    .eq('is_deleted', false)
+                    .single();
+
+                if (checkError || !commentCheck) {
+                    console.error('Comment not found or already deleted:', checkError);
+                    alert('Comment not found or already deleted.');
                     return;
                 }
-                
-                // Set user email for RLS policy
-                await window.dcfSupabase.rpc('set_config', {
-                   setting_name: 'app.current_user_email',
-                   setting_value: currentUser.email,
-                   is_local: true
-                });
-                
-                const { error } = await window.dcfSupabase
+
+                if (commentCheck.author_email !== currentUser.email) {
+                    console.error('User email mismatch:', {
+                        comment_author: commentCheck.author_email,
+                        current_user: currentUser.email
+                    });
+                    alert('You can only delete your own comments.');
+                    return;
+                }
+
+                console.log('✅ Comment ownership verified, proceeding with deletion...');
+
+                // Perform the deletion using a more direct approach
+                const { data, error } = await window.dcfSupabase
                     .from('comments')
-                    .update({ is_deleted: true, updated_at: new Date().toISOString() })
+                    .update({ 
+                        is_deleted: true,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', commentId)
                     .eq('author_email', currentUser.email)
-                    .eq('is_deleted', false);
-                
-                if (error) throw error;
-                
+                    .eq('is_deleted', false)
+                    .select();
+
+                if (error) {
+                    console.error('❌ Delete operation failed:', error);
+                    alert('Failed to delete comment. Please try again.');
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    console.error('❌ No rows affected by delete operation');
+                    alert('Comment could not be deleted. It may have already been removed.');
+                    return;
+                }
+
+                console.log('✅ Comment deleted successfully:', data);
+
+                // Remove comment from UI immediately
+                const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+                if (commentElement) {
+                    commentElement.remove();
+                    console.log('✅ Comment removed from UI');
+                }
+
+                // Update comment count
+                updateCommentCount(-1);
+
+                // Optionally refresh all comments to ensure consistency
                 await loadComments();
-                
+
             } catch (error) {
-                console.error('Error deleting comment:', error);
-                await showAlert('Failed to delete comment. Please try again.', 'error');
+                console.error('❌ Unexpected error during deletion:', error);
+                alert('An unexpected error occurred. Please try again.');
             }
         }
 
