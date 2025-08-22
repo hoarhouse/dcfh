@@ -981,14 +981,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .comment-author {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 0.75rem;
         }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-time {
+            color: #666;
+            font-size: 0.75rem;
+            font-weight: normal;
+        }
+
+        .comment-text {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
 
         .comment-avatar {
             width: 40px;
@@ -3194,7 +3210,13 @@
 
         function getUserInitials(name) {
             if (!name) return 'U';
-            // Handle @username format
+            // Use unified auth system's generateInitials function
+            if (window.generateInitials) {
+                // Handle @username format
+                const cleanName = name.startsWith('@') ? name.substring(1) : name;
+                return window.generateInitials(cleanName);
+            }
+            // Fallback if unified function not available
             const cleanName = name.startsWith('@') ? name.substring(1) : name;
             return cleanName.split(' ')
                 .map(word => word.charAt(0))
@@ -3225,18 +3247,18 @@
                 
                 return `
                     <div class="comment reply">
-                        <div class="comment-header">
-                            <div class="comment-author">
-                                <div class="comment-avatar">${replyInitials}</div>
-                                <div class="comment-info">
-                                    <div class="comment-username">${reply.author_name || '@Anonymous'}</div>
-                                    <div class="comment-date">${replyDate}</div>
+                        <div class="comment-author">
+                            <div class="comment-avatar">${replyInitials}</div>
+                            <div class="comment-content">
+                                <div class="comment-header">
+                                    <span class="comment-username">${reply.author_name || '@Anonymous'}</span>
+                                    <span class="comment-time">${replyDate}</span>
+                                </div>
+                                <div class="comment-text">${escapeHtml(reply.comment_text)}</div>
+                                <div class="comment-controls">
+                                    ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
                                 </div>
                             </div>
-                        </div>
-                        <div class="comment-content">${escapeHtml(reply.comment_text)}</div>
-                        <div class="comment-controls">
-                            ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -3244,26 +3266,26 @@
             
             return `
                 <div class="comment">
-                    <div class="comment-header">
-                        <div class="comment-author">
-                            <div class="comment-avatar">${authorInitials}</div>
-                            <div class="comment-info">
-                                <div class="comment-username">${comment.author_name || '@Anonymous'}</div>
-                                <div class="comment-date">${commentDate}</div>
+                    <div class="comment-author">
+                        <div class="comment-avatar">${authorInitials}</div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-username">${comment.author_name || '@Anonymous'}</span>
+                                <span class="comment-time">${commentDate}</span>
                             </div>
-                        </div>
-                    </div>
-                    <div class="comment-content">${escapeHtml(comment.comment_text)}</div>
-                    <div class="comment-controls">
-                        <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
-                        ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
-                    </div>
-                    
-                    <div class="reply-form" id="replyForm-${comment.id}">
-                        <textarea class="reply-textarea" placeholder="Write a reply..." id="replyText-${comment.id}" onkeydown="handleReplyKeydown(event, '${comment.id}')"></textarea>
-                        <div class="reply-actions">
-                            <button class="btn btn-secondary" onclick="cancelReply('${comment.id}')">Cancel</button>
-                            <button class="btn btn-primary" onclick="submitReply('${comment.id}')">Reply</button>
+                            <div class="comment-text">${escapeHtml(comment.comment_text)}</div>
+                            <div class="comment-controls">
+                                <button class="comment-btn" onclick="toggleReplyForm('${comment.id}')">Reply</button>
+                                ${canDelete ? `<button class="comment-btn delete" onclick="deleteComment('${comment.id}')">Delete</button>` : ''}
+                            </div>
+                            
+                            <div class="reply-form" id="replyForm-${comment.id}">
+                                <textarea class="reply-textarea" placeholder="Write a reply..." id="replyText-${comment.id}" onkeydown="handleReplyKeydown(event, '${comment.id}')"></textarea>
+                                <div class="reply-actions">
+                                    <button class="btn btn-secondary" onclick="cancelReply('${comment.id}')">Cancel</button>
+                                    <button class="btn btn-primary" onclick="submitReply('${comment.id}')">Reply</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
