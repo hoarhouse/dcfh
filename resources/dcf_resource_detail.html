@@ -1208,6 +1208,92 @@
             text-decoration: underline;
         }
 
+        /* EDIT FUNCTIONALITY STYLES */
+        .comment-editing {
+            background: #f8f9fa;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+
+        .comment-edit-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            resize: vertical;
+        }
+
+        .comment-edit-textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .edit-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn-edit-save {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .btn-edit-save:hover {
+            background: #218838;
+        }
+
+        .btn-edit-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .btn-edit-cancel:hover {
+            background: #545b62;
+        }
+
+        .edited-indicator {
+            color: #6c757d;
+            font-size: 0.75rem;
+            font-style: italic;
+            margin-left: 0.5rem;
+        }
+
+        .comment-btn.edit {
+            color: #007bff;
+        }
+
+        .comment-btn.edit:hover {
+            background: #e3f2fd;
+            color: #0056b3;
+        }
+
+        .comment-deleted {
+            color: #6c757d;
+            font-style: italic;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #dee2e6;
+        }
+
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -3335,6 +3421,48 @@
             return user.email === comment.author_email || isUserAdmin(user);
         }
 
+        async function canEditComment(commentId, currentUser) {
+            if (!currentUser) return false;
+            
+            try {
+                const { data: comment, error } = await supabase
+                    .from('comments')
+                    .select('author_id, author_email, created_at, is_deleted')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (error || !comment || comment.is_deleted) return false;
+                
+                // Check ownership
+                if (comment.author_id !== currentUser.id && comment.author_email !== currentUser.email) return false;
+                
+                // Check 24-hour limit
+                const createdAt = new Date(comment.created_at);
+                const now = new Date();
+                const hoursDiff = (now - createdAt) / (1000 * 60 * 60);
+                
+                return hoursDiff <= 24;
+                
+            } catch (error) {
+                console.error('Error checking edit permissions:', error);
+                return false;
+            }
+        }
+
+        function canEditCommentSync(comment, user) {
+            if (!user || !comment || comment.is_deleted) return false;
+            
+            // Check ownership
+            if (comment.author_id !== user.id && comment.author_email !== user.email) return false;
+            
+            // Check 24-hour limit
+            const createdAt = new Date(comment.created_at);
+            const now = new Date();
+            const hoursDiff = (now - createdAt) / (1000 * 60 * 60);
+            
+            return hoursDiff <= 24;
+        }
+
         function createCommentHtml(comment, replies = []) {
             const authorInitials = getUserInitials(comment.author_name);
             const commentDate = formatCommentDate(comment.created_at);
@@ -3345,6 +3473,7 @@
                 const replyInitials = getUserInitials(reply.author_name);
                 const replyDate = formatCommentDate(reply.created_at);
                 const canDeleteReply = canDeleteComment(reply, activeUser);
+                const canEditReply = canEditCommentSync(reply, activeUser);
                 
                 return `
                     <div class="comment reply">
@@ -3364,6 +3493,7 @@
                                     <button class="comment-btn bookmark-btn" onclick="toggleCommentBookmark('${reply.id}')" id="bookmark-btn-${reply.id}">
                                         <span class="bookmark-icon">🔖</span>
                                     </button>
+                                    ${canEditReply ? `<button class="comment-btn edit" onclick="startEditComment('${reply.id}')">Edit</button>` : ''}
                                     ${canDeleteReply ? `<button class="comment-btn delete" onclick="deleteComment('${reply.id}')">Delete</button>` : ''}
                                 </div>
                             </div>
