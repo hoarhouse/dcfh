@@ -3832,7 +3832,6 @@
         let currentComments = [];
         let currentSort = 'newest';
         let userCommentLikes = new Set();
-        let userBookmarkedComments = new Set();
 
         // FEATURE 1: REAL LIKE SYSTEM
         async function toggleCommentLike(commentId) {
@@ -3942,81 +3941,11 @@
             }
         }
 
-        // FEATURE 2: BOOKMARK FUNCTIONALITY
-        async function toggleCommentBookmark(commentId) {
-            // Wait for auth to be ready
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
-            if (!currentUser) {
-                await showAlert('Please log in to bookmark comments', 'warning');
-                return;
-            }
-            
-            try {
-                // Check if Supabase client is available
-                if (!window.dcfSupabase) {
-                    console.error('Supabase client not initialized');
-                    await showAlert('System not ready. Please refresh the page.', 'error');
-                    return;
-                }
-                
-                const isBookmarked = userBookmarkedComments.has(commentId);
-                
-                if (isBookmarked) {
-                    // Remove bookmark
-                    await window.dcfSupabase
-                        .from('comment_bookmarks')
-                        .delete()
-                        .eq('comment_id', commentId)
-                        .eq('user_id', currentUser.id);
-                    
-                    userBookmarkedComments.delete(commentId);
-                } else {
-                    // Add bookmark
-                    await window.dcfSupabase
-                        .from('comment_bookmarks')
-                        .insert([{
-                            comment_id: commentId,
-                            user_id: currentUser.id,
-                            user_email: currentUser.email,
-                            created_at: new Date().toISOString()
-                        }]);
-                    
-                    userBookmarkedComments.add(commentId);
-                }
-                
-                // Update UI
-                updateBookmarkUI(commentId);
-                
-            } catch (error) {
-                console.error('❌ Comment bookmark toggle failed:', error);
-                await showAlert('Failed to update bookmark', 'error');
-            }
-        }
-
-        function updateBookmarkUI(commentId) {
-            const bookmarkButton = document.getElementById(`bookmark-btn-${commentId}`);
-            if (bookmarkButton) {
-                if (userBookmarkedComments.has(commentId)) {
-                    bookmarkButton.classList.add('bookmarked');
-                } else {
-                    bookmarkButton.classList.remove('bookmarked');
-                }
-            }
-        }
 
         function updateAllCommentUIs(comments) {
             comments.forEach(comment => {
                 // Update like UI
                 updateLikeUI(comment.id);
-                // Update bookmark UI  
-                updateBookmarkUI(comment.id);
             });
         }
 
@@ -4218,13 +4147,6 @@
                 
                 userCommentLikes = new Set((likes || []).map(l => l.comment_id));
                 
-                // Load user's bookmarked comments
-                const { data: bookmarks } = await supabase
-                    .from('comment_bookmarks')
-                    .select('comment_id')
-                    .eq('user_id', currentUser.id);
-                
-                userBookmarkedComments = new Set((bookmarks || []).map(b => b.comment_id));
                 
             } catch (error) {
                 console.error('Error loading user comment interactions:', error);
