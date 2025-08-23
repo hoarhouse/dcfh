@@ -3332,44 +3332,60 @@
 
         // Add comment like functionality
         async function toggleCommentLike(commentId, postId) {
-            const currentUser = window.getCurrentUser();
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
             if (!currentUser) {
-                alert('Please log in to like comments');
+                await showAlert('Please log in to like comments', 'warning');
                 return;
             }
             
             try {
-                // Check if already liked
-                const { data: existingLike, error } = await window.dcfSupabase
-                    .from('comment_likes')
-                    .select('id')
-                    .eq('comment_id', commentId)
-                    .eq('user_email', currentUser.email)
-                    .single();
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.error('Supabase client not initialized');
+                    await showAlert('System not ready. Please refresh the page.', 'error');
+                    return;
+                }
                 
-                if (existingLike) {
-                    // Unlike
+                const isLiked = userCommentLikes.has(commentId);
+                
+                if (isLiked) {
+                    // Remove like
                     await window.dcfSupabase
                         .from('comment_likes')
                         .delete()
                         .eq('comment_id', commentId)
-                        .eq('user_email', currentUser.email)
+                        .eq('user_email', currentUser.email);
+                    
+                    userCommentLikes.delete(commentId);
                 } else {
-                    // Like
+                    // Add like
                     await window.dcfSupabase
                         .from('comment_likes')
-                        .insert({
+                        .insert([{
                             comment_id: commentId,
                             user_email: currentUser.email,
-                            user_name: currentUser.username || currentUser.email.split('@')[0]
-                        });
+                            user_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    userCommentLikes.add(commentId);
                 }
                 
-                // Reload comments to show updated like count
-                await loadPostComments(postId);
+                // Update like count and UI
+                await updateCommentLikeCount(commentId);
+                updateLikeUI(commentId);
                 
             } catch (error) {
-                console.error('Error toggling comment like:', error);
+                console.error('❌ Comment like toggle failed:', error);
+                await showAlert('Failed to update like', 'error');
             }
         }
 
