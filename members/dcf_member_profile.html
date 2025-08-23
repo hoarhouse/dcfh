@@ -3063,6 +3063,329 @@
             }
         });
 
+        // POST COMMENT SYSTEM FUNCTIONS
+        async function submitPostComment(postId) {
+            const textarea = document.getElementById(`commentText-${postId}`);
+            const content = textarea.value.trim();
+            
+            if (!content) {
+                await showAlert('Please enter a comment', 'warning');
+                return;
+            }
+            
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to post comments', 'warning');
+                return;
+            }
+            
+            const submitBtn = document.querySelector(`#commentText-${postId}`).parentElement.querySelector('.btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Posting...';
+            
+            try {
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.error('Supabase client not initialized');
+                    await showAlert('System not ready. Please refresh the page.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    return;
+                }
+                
+                const commentData = {
+                    content_type: 'post',
+                    content_id: postId,
+                    author_id: currentUser.id,
+                    author_email: currentUser.email,
+                    author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
+                    comment_text: content,
+                    parent_comment_id: null,
+                    is_deleted: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                const { data, error } = await window.dcfSupabase
+                    .from('comments')
+                    .insert([commentData])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                textarea.value = '';
+                
+                // Reload comments for this specific post
+                await loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                await showAlert(`Failed to post comment: ${error.message}`, 'error');
+            } finally {
+                // Ensure button reset even on uncaught errors
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText || 'Post Comment';
+                }
+            }
+        }
+
+        async function loadPostComments(postId) {
+            try {
+                const { data: comments, error } = await window.dcfSupabase
+                    .from('comments')
+                    .select('*')
+                    .eq('content_type', 'post')
+                    .eq('content_id', postId)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Filter top-level comments (no parent_id)
+                const topLevelComments = comments.filter(comment => !comment.parent_comment_id);
+                
+                // Display comments
+                const container = document.getElementById(`commentsList-${postId}`);
+                
+                if (topLevelComments.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: #666; padding: 1rem; font-style: italic;">
+                            💬 No comments yet. Be the first to share your thoughts!
+                        </div>
+                    `;
+                } else {
+                    const commentsHtml = await Promise.all(topLevelComments.map(async comment => {
+                        const replies = comments.filter(c => c.parent_comment_id === comment.id);
+                        return createPostCommentHtml(comment, replies);
+                    }));
+                    container.innerHTML = commentsHtml.join('');
+                }
+                
+                // Update comment count
+                const totalComments = comments.length;
+                const commentCountElement = document.getElementById(`totalComments-${postId}`);
+                if (commentCountElement) {
+                    commentCountElement.textContent = totalComments;
+                }
+
+            } catch (error) {
+                console.error('Error loading post comments:', error);
+                const container = document.getElementById(`commentsList-${postId}`);
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 1rem;">Failed to load comments</div>';
+                }
+            }
+        }
+
+        function createPostCommentHtml(comment, replies = []) {
+            const timeAgo = formatTimeAgo(comment.created_at);
+            const currentUser = window.getCurrentUser();
+            const isOwn = currentUser && comment.author_email === currentUser.email;
+            
+            // Generate replies HTML
+            let repliesHtml = '';
+            if (replies.length > 0) {
+                repliesHtml = replies.map(reply => {
+                    const replyTimeAgo = formatTimeAgo(reply.created_at);
+                    const isOwnReply = currentUser && reply.author_email === currentUser.email;
+                    
+                    return `
+                        <div class="reply-comment" data-comment-id="${reply.id}" style="margin-left: 2rem; margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #e5e5e5;">
+                            <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div>
+                                    <strong style="color: #000; font-size: 0.9rem;">${reply.author_name}</strong>
+                                    <span style="color: #666; font-size: 0.8rem; margin-left: 0.5rem;">${replyTimeAgo}</span>
+                                </div>
+                                ${isOwnReply ? `
+                                    <div class="comment-actions">
+                                        <button onclick="deletePostComment('${reply.id}', '${comment.content_id}')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="comment-content" style="color: #333; font-size: 0.85rem; line-height: 1.4;">
+                                ${linkifyText(reply.comment_text)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            return `
+                <div class="comment" data-comment-id="${comment.id}" style="margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #e5e5e5;">
+                    <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong style="color: #000; font-size: 0.95rem;">${comment.author_name}</strong>
+                            <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">${timeAgo}</span>
+                        </div>
+                        <div class="comment-actions" style="display: flex; gap: 0.5rem;">
+                            <button onclick="togglePostReplyForm('${comment.id}')" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.8rem;">💬 Reply</button>
+                            ${isOwn ? `
+                                <button onclick="deletePostComment('${comment.id}', '${comment.content_id}')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="comment-content" style="color: #333; line-height: 1.5; margin-bottom: 0.75rem;">
+                        ${linkifyText(comment.comment_text)}
+                    </div>
+                    
+                    <!-- Reply form -->
+                    <div class="reply-form" id="replyForm-${comment.id}" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e5e5;">
+                        <textarea id="replyText-${comment.id}" placeholder="Write a reply..." style="width: 100%; padding: 0.5rem; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 0.85rem; min-height: 60px; resize: vertical; font-family: inherit;"></textarea>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: flex-end;">
+                            <button onclick="cancelPostReply('${comment.id}')" style="padding: 0.25rem 0.75rem; background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Cancel</button>
+                            <button onclick="submitPostReply('${comment.id}', '${comment.content_id}')" style="padding: 0.25rem 0.75rem; background: #000; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Reply</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Replies -->
+                    ${repliesHtml}
+                </div>
+            `;
+        }
+
+        async function togglePostReplyForm(commentId) {
+            const replyForm = document.getElementById(`replyForm-${commentId}`);
+            if (replyForm) {
+                const isVisible = replyForm.style.display !== 'none';
+                replyForm.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    const textarea = document.getElementById(`replyText-${commentId}`);
+                    if (textarea) textarea.focus();
+                }
+            }
+        }
+
+        function cancelPostReply(commentId) {
+            const replyForm = document.getElementById(`replyForm-${commentId}`);
+            replyForm.style.display = 'none';
+            document.getElementById(`replyText-${commentId}`).value = '';
+        }
+
+        async function submitPostReply(parentCommentId, postId) {
+            const textarea = document.getElementById(`replyText-${parentCommentId}`);
+            const content = textarea.value.trim();
+            
+            if (!content) {
+                await showAlert('Please enter a reply', 'warning');
+                return;
+            }
+            
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showAlert('Please log in to post replies', 'warning');
+                return;
+            }
+            
+            const submitBtn = document.querySelector(`#replyForm-${parentCommentId} button[onclick*="submitPostReply"]`);
+            const originalText = submitBtn ? submitBtn.textContent : 'Reply';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Posting...';
+            }
+            
+            try {
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.error('Supabase client not initialized');
+                    await showAlert('System not ready. Please refresh the page.', 'error');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                    return;
+                }
+                
+                const replyData = {
+                    content_type: 'post',
+                    content_id: postId,
+                    author_id: currentUser.id,
+                    author_email: currentUser.email,
+                    author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
+                    comment_text: content,
+                    parent_comment_id: parentCommentId,
+                    is_deleted: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                const { data, error } = await window.dcfSupabase
+                    .from('comments')
+                    .insert([replyData])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                textarea.value = '';
+                cancelPostReply(parentCommentId);
+                
+                // Reload comments for this specific post
+                await loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error submitting reply:', error);
+                await showAlert('Failed to post reply. Please try again.', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            }
+        }
+
+        async function deletePostComment(commentId, postId) {
+            const confirmed = await showConfirm('Are you sure you want to delete this comment?');
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('comments')
+                    .delete()
+                    .eq('id', commentId);
+
+                if (error) throw error;
+
+                // Reload comments for this specific post
+                await loadPostComments(postId);
+
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                await showAlert('Failed to delete comment. Please try again.', 'error');
+            }
+        }
+
+        // Load comments for all posts when page loads
+        async function loadAllPostComments() {
+            const postCards = document.querySelectorAll('[data-post-id]');
+            for (const postCard of postCards) {
+                const postId = postCard.getAttribute('data-post-id');
+                if (postId) {
+                    await loadPostComments(postId);
+                }
+            }
+        }
+
     </script>
 
     <!-- Avatar Upload Modal -->
