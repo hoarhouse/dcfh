@@ -3355,11 +3355,11 @@
             
             try {
                 // Check if already liked
-                const { data: existingLike } = await window.dcfSupabase
+                const { data: existingLike, error } = await window.dcfSupabase
                     .from('comment_likes')
                     .select('id')
                     .eq('comment_id', commentId)
-                    .eq('user_email', currentUser.email)
+                    .eq('user_id', currentUser.id)
                     .single();
                 
                 if (existingLike) {
@@ -3393,10 +3393,15 @@
 
         async function loadCommentLikeCount(commentId) {
             try {
-                const { data: likes } = await window.dcfSupabase
+                const { data: likes, error } = await window.dcfSupabase
                     .from('comment_likes')
                     .select('id')
                     .eq('comment_id', commentId);
+                
+                if (error) {
+                    console.log('Comment likes table not ready yet');
+                    return;
+                }
                 
                 const likeCount = likes ? likes.length : 0;
                 const likeCountElement = document.getElementById('like-count-' + commentId);
