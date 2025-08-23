@@ -2077,6 +2077,11 @@
                 addPostToFeed(data);
                 console.log('Post created:', data);
                 
+                // Load comments for new post
+                setTimeout(() => {
+                    loadPostComments(data.id);
+                }, 500);
+                
             } catch (error) {
                 console.error('Error creating post:', error);
                 alert('Failed to create post. Please try again.');
@@ -2110,6 +2115,28 @@
             if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
             return `${Math.floor(diffInSeconds / 86400)}d ago`;
         }
+
+        // Add keyboard shortcuts for comment textareas
+        document.addEventListener('keydown', function(e) {
+            if (e.target.id && e.target.id.startsWith('commentText-')) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const postId = e.target.id.replace('commentText-', '');
+                    submitPostComment(postId);
+                }
+            }
+            if (e.target.id && e.target.id.startsWith('replyText-')) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const commentId = e.target.id.replace('replyText-', '');
+                    const postId = e.target.closest('[data-post-id]').getAttribute('data-post-id');
+                    submitReply(commentId, postId);
+                } else if (e.key === 'Escape') {
+                    const commentId = e.target.id.replace('replyText-', '');
+                    toggleReplyForm(commentId);
+                }
+            }
+        });
 
         function createPostHTML(post) {
             const timeAgo = formatTimeAgo(post.created_at);
@@ -2271,7 +2298,7 @@
                     ${mediaHTML}
                     <div class="post-actions">
                         <button class="post-action-btn" onclick="toggleLike('${post.id}')" id="like-btn-${post.id}">🤍 Like (${post.like_count || 0})</button>
-                        <button class="post-action-btn">💬 Comment (${post.comment_count || 0})</button>
+                        <button class="post-action-btn" onclick="document.getElementById('commentText-${post.id}').focus()">💬 Comment (<span id="commentCount-${post.id}">0</span>)</button>
                         <button class="post-action-btn">📤 Share</button>
                         ${post.author_email === window.dcfUser?.profile?.email ? `
                             <div style="margin-left: auto; display: flex; gap: 0.5rem;">
@@ -2296,6 +2323,39 @@
                         <div id="commentsList-${post.id}">
                             <em style="color: #666; font-size: 0.9rem;">No comments yet</em>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- COMMENTS SECTION FOR POST -->
+                <div class="comments-section" style="margin-top: 1.5rem; border-top: 1px solid #f0f0f0; padding-top: 1rem;">
+                    <div class="section-title" style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">
+                        💬 Comments (<span id="totalComments-${post.id}">0</span>)
+                    </div>
+                    
+                    <!-- Comment form -->
+                    <div id="commentForm-${post.id}" style="margin-bottom: 1rem;">
+                        <div style="display: flex; gap: 0.75rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0;">
+                                ${currentUser && currentUser.username ? currentUser.username.substring(0, 2).toUpperCase() : 'U'}
+                            </div>
+                            <div style="flex: 1;">
+                                <textarea 
+                                    id="commentText-${post.id}" 
+                                    placeholder="Write a comment..." 
+                                    style="width: 100%; min-height: 60px; padding: 0.75rem; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.9rem; resize: vertical; font-family: inherit; margin-bottom: 0.5rem;">
+                                </textarea>
+                                <button 
+                                    onclick="submitPostComment('${post.id}')" 
+                                    style="background: #000; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">
+                                    Post Comment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments list -->
+                    <div id="commentsList-${post.id}">
+                        <em style="color: #666; font-size: 0.9rem;">No comments yet</em>
                     </div>
                 </div>
             `;
@@ -2327,6 +2387,10 @@
                 // After posts are loaded, check like statuses
                 setTimeout(() => {
                     loadUserLikeStatuses();
+                    // Load comments for all posts
+                    posts.forEach(post => {
+                        loadPostComments(post.id);
+                    });
                 }, 500);
                 
             } catch (error) {
@@ -3057,6 +3121,320 @@
                 }
             }
         });
+
+        // POST COMMENT FUNCTIONS
+        async function submitPostComment(postId) {
+            const textarea = document.getElementById('commentText-' + postId);
+            if (!textarea) {
+                console.error('Comment textarea not found for post:', postId);
+                return;
+            }
+            
+            const content = textarea.value.trim();
+            if (!content) {
+                alert('Please enter a comment');
+                return;
+            }
+            
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to post comments');
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('comments')
+                    .insert({
+                        content_type: 'post',
+                        content_id: postId,
+                        author_id: currentUser.id,
+                        author_email: currentUser.email,
+                        author_name: '@' + currentUser.username,
+                        comment_text: content,
+                        parent_comment_id: null
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                textarea.value = '';
+                await loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert('Failed to post comment');
+            }
+        }
+
+        async function loadPostComments(postId) {
+            try {
+                const { data: comments, error } = await window.dcfSupabase
+                    .from('comments')
+                    .select('*')
+                    .eq('content_type', 'post')
+                    .eq('content_id', postId)
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                await displayPostComments(postId, comments || []);
+                
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
+        async function displayPostComments(postId, comments) {
+            const container = document.getElementById('commentsList-' + postId);
+            if (!container) return;
+            
+            if (comments.length === 0) {
+                container.innerHTML = '<em style="color: #666; font-size: 0.9rem;">No comments yet</em>';
+                return;
+            }
+            
+            // Separate main comments and replies
+            const mainComments = comments.filter(c => !c.parent_comment_id);
+            const replies = comments.filter(c => c.parent_comment_id);
+            const currentUser = window.getCurrentUser();
+            
+            const commentsHtml = mainComments.map(comment => {
+                const initials = comment.author_name ? comment.author_name.substring(1, 3).toUpperCase() : 'UN';
+                const timeAgo = formatTimeAgo(comment.created_at);
+                const isOwnComment = currentUser && comment.author_email === currentUser.email;
+                
+                // Get replies for this comment
+                const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
+                const repliesHtml = commentReplies.map(reply => {
+                    const replyInitials = reply.author_name.substring(1, 3).toUpperCase();
+                    const replyTimeAgo = formatTimeAgo(reply.created_at);
+                    
+                    return `
+                        <div style="display: flex; gap: 0.5rem; padding: 0.5rem; margin: 0.5rem 0 0 2rem; background: white; border-radius: 6px; border-left: 3px solid #e5e5e5;" data-comment-id="${reply.id}">
+                            <div style="width: 28px; height: 28px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.7rem; flex-shrink: 0;">
+                                ${replyInitials}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                    <span style="font-weight: 600; color: #333; font-size: 0.85rem;">${reply.author_name}</span>
+                                    <span style="color: #666; font-size: 0.75rem;">${replyTimeAgo}</span>
+                                </div>
+                                <div style="color: #555; line-height: 1.4; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                    ${reply.comment_text}
+                                </div>
+                                <div style="display: flex; gap: 1rem; align-items: center;">
+                                    <button onclick="toggleCommentLike('${reply.id}', '${postId}')" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.75rem; padding: 0.2rem 0.4rem; display: flex; align-items: center; gap: 0.25rem;" id="like-btn-${reply.id}">
+                                        👍 <span id="like-count-${reply.id}">0</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div style="display: flex; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: #f8f9fa; border-radius: 8px;" data-comment-id="${comment.id}">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0;">
+                            ${initials}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <span style="font-weight: 600; color: #333; font-size: 0.9rem;">${comment.author_name}</span>
+                                <span style="color: #666; font-size: 0.8rem;">${timeAgo}</span>
+                            </div>
+                            <div style="color: #555; line-height: 1.4; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                ${comment.comment_text}
+                            </div>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <button onclick="toggleCommentLike('${comment.id}', '${postId}')" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.25rem;" id="like-btn-${comment.id}">
+                                    👍 <span id="like-count-${comment.id}">0</span>
+                                </button>
+                                <button onclick="toggleReplyForm('${comment.id}')" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem;">Reply</button>
+                            </div>
+                            <div id="replyForm-${comment.id}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: white; border-radius: 8px; border: 1px solid #e5e5e5;">
+                                <textarea id="replyText-${comment.id}" placeholder="Write a reply..." style="width: 100%; min-height: 50px; padding: 0.5rem; border: 1px solid #e5e5e5; border-radius: 6px; font-size: 0.85rem; resize: vertical; font-family: inherit; margin-bottom: 0.5rem;"></textarea>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button onclick="submitReply('${comment.id}', '${postId}')" style="background: #000; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Reply</button>
+                                    <button onclick="toggleReplyForm('${comment.id}')" style="background: #f8f9fa; color: #666; border: 1px solid #e5e5e5; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Cancel</button>
+                                </div>
+                            </div>
+                            ${repliesHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = commentsHtml;
+            
+            // Update comment count
+            const totalCount = comments.length;
+            const countElement = document.getElementById('totalComments-' + postId);
+            const commentCountElement = document.getElementById('commentCount-' + postId);
+            if (countElement) countElement.textContent = totalCount;
+            if (commentCountElement) commentCountElement.textContent = totalCount;
+            
+            // Load like counts for all comments
+            setTimeout(() => {
+                comments.forEach(comment => {
+                    loadCommentLikeCount(comment.id);
+                });
+            }, 100);
+        }
+
+        window.submitPostComment = submitPostComment;
+        window.loadPostComments = loadPostComments;
+
+        // Add reply functionality
+        async function submitReply(commentId, postId) {
+            const textarea = document.getElementById('replyText-' + commentId);
+            if (!textarea) return;
+            
+            const content = textarea.value.trim();
+            if (!content) {
+                alert('Please enter a reply');
+                return;
+            }
+            
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to reply');
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('comments')
+                    .insert({
+                        content_type: 'post',
+                        content_id: postId,
+                        author_id: currentUser.id,
+                        author_email: currentUser.email,
+                        author_name: '@' + currentUser.username,
+                        comment_text: content,
+                        parent_comment_id: commentId
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                textarea.value = '';
+                toggleReplyForm(commentId);
+                await loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error posting reply:', error);
+                alert('Failed to post reply');
+            }
+        }
+
+        function toggleReplyForm(commentId) {
+            const form = document.getElementById('replyForm-' + commentId);
+            if (form) {
+                const isVisible = form.style.display !== 'none';
+                form.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    const textarea = document.getElementById('replyText-' + commentId);
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.value = '';
+                    }
+                }
+            }
+        }
+
+        // Add comment like functionality
+        async function toggleCommentLike(commentId, postId) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to like comments');
+                return;
+            }
+            
+            try {
+                // Check if already liked
+                const { data: existingLike } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId)
+                    .eq('user_email', currentUser.email)
+                    .single();
+                
+                if (existingLike) {
+                    // Unlike
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_email', currentUser.email);
+                } else {
+                    // Like
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .insert({
+                            comment_id: commentId,
+                            user_id: currentUser.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.username || currentUser.email.split('@')[0]
+                        });
+                }
+                
+                // Reload comments to show updated like count
+                await loadPostComments(postId);
+                
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+            }
+        }
+
+        window.toggleCommentLike = toggleCommentLike;
+
+        async function loadCommentLikeCount(commentId) {
+            try {
+                const { data: likes } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                const likeCount = likes ? likes.length : 0;
+                const likeCountElement = document.getElementById('like-count-' + commentId);
+                if (likeCountElement) {
+                    likeCountElement.textContent = likeCount;
+                }
+                
+                // Check if current user liked this comment
+                const currentUser = window.getCurrentUser();
+                if (currentUser) {
+                    const { data: userLike } = await window.dcfSupabase
+                        .from('comment_likes')
+                        .select('id')
+                        .eq('comment_id', commentId)
+                        .eq('user_email', currentUser.email)
+                        .single();
+                    
+                    const likeButton = document.getElementById('like-btn-' + commentId);
+                    if (likeButton) {
+                        if (userLike) {
+                            likeButton.style.color = '#007bff';
+                            likeButton.style.fontWeight = '600';
+                        } else {
+                            likeButton.style.color = '#666';
+                            likeButton.style.fontWeight = 'normal';
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading comment like count:', error);
+            }
+        }
+
+        window.loadCommentLikeCount = loadCommentLikeCount;
+
+        window.submitReply = submitReply;
+        window.toggleReplyForm = toggleReplyForm;
 
     </script>
 
