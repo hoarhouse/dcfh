@@ -2336,6 +2336,7 @@
                 setTimeout(() => {
                     loadUserLikeStatuses();
                     loadAllPostComments();
+                    setupKeyboardEventDelegation();
                 }, 500);
                 
             } catch (error) {
@@ -3388,6 +3389,73 @@
                     await loadPostComments(postId);
                 }
             }
+        }
+
+        // KEYBOARD SHORTCUTS FOR COMMENTS
+        function handleCommentKeydown(event, postId) {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // Shift+Enter = new line (default behavior)
+                    return;
+                } else {
+                    // Plain Enter = submit
+                    event.preventDefault();
+                    submitPostComment(postId);
+                }
+            }
+        }
+
+        function handleReplyKeydown(event, parentCommentId, postId) {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // Shift+Enter = new line (default behavior)
+                    return;
+                } else {
+                    // Plain Enter = submit
+                    event.preventDefault();
+                    submitPostReply(parentCommentId, postId);
+                }
+            } else if (event.key === 'Escape') {
+                // Escape = cancel reply
+                event.preventDefault();
+                cancelPostReply(parentCommentId);
+            }
+        }
+
+        // Event delegation for dynamic textareas
+        function setupKeyboardEventDelegation() {
+            document.addEventListener('keydown', function(event) {
+                const target = event.target;
+                
+                // Main comment textareas (match pattern commentText-{postId})
+                if (target.id && target.id.startsWith('commentText-')) {
+                    const postId = target.id.replace('commentText-', '');
+                    handleCommentKeydown(event, postId);
+                }
+                
+                // Reply textareas (match pattern replyText-{commentId})
+                if (target.id && target.id.startsWith('replyText-')) {
+                    const commentId = target.id.replace('replyText-', '');
+                    // Need to find the postId from the comment's content_id
+                    const replyForm = document.getElementById(`replyForm-${commentId}`);
+                    if (replyForm) {
+                        // Extract postId from the reply form's parent comment
+                        const commentElement = replyForm.closest('[data-comment-id]');
+                        if (commentElement) {
+                            // Look for the submit button to extract postId
+                            const submitButton = replyForm.querySelector('button[onclick*="submitPostReply"]');
+                            if (submitButton) {
+                                const onclickValue = submitButton.getAttribute('onclick');
+                                const postIdMatch = onclickValue.match(/submitPostReply\('[^']+',\s*'([^']+)'/);
+                                if (postIdMatch) {
+                                    const postId = postIdMatch[1];
+                                    handleReplyKeydown(event, commentId, postId);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
     </script>
