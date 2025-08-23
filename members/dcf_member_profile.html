@@ -3503,6 +3503,141 @@
             });
         }
 
+        // COMMENT LIKING SYSTEM
+        let userPostCommentLikes = new Set();
+
+        // Toggle like/unlike for comments
+        async function togglePostCommentLike(commentId) {
+            const currentUser = window.dcfUser?.profile;
+            if (!currentUser) {
+                await showAlert('Please log in to like comments', 'warning');
+                return;
+            }
+            
+            try {
+                // Check if user already liked this comment
+                const { data: existingLikes, error: checkError } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('*')
+                    .eq('comment_id', commentId)
+                    .eq('user_email', currentUser.email);
+                    
+                if (checkError) throw checkError;
+                
+                const isLiked = existingLikes && existingLikes.length > 0;
+                
+                if (isLiked) {
+                    // Remove like
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_email', currentUser.email);
+                    
+                    userPostCommentLikes.delete(commentId);
+                } else {
+                    // Add like
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .insert([{
+                            comment_id: commentId,
+                            user_id: currentUser.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.username || currentUser.email.split('@')[0],
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    userPostCommentLikes.add(commentId);
+                }
+                
+                // Update like count and UI
+                await updatePostCommentLikeCount(commentId);
+                updatePostCommentLikeUI(commentId);
+                
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+                await showAlert('Failed to update like', 'error');
+            }
+        }
+
+        // Update like count from database
+        async function updatePostCommentLikeCount(commentId) {
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                if (error) throw error;
+                
+                const likeCount = data.length;
+                const likeCountElement = document.getElementById(`like-count-${commentId}`);
+                
+                if (likeCountElement) {
+                    likeCountElement.textContent = likeCount;
+                }
+                
+                // Update comment like count in database
+                await window.dcfSupabase
+                    .from('comments')
+                    .update({ like_count: likeCount })
+                    .eq('id', commentId);
+                
+            } catch (error) {
+                console.error('Error updating comment like count:', error);
+            }
+        }
+
+        // Update like button visual state
+        function updatePostCommentLikeUI(commentId) {
+            const likeButton = document.getElementById(`like-btn-${commentId}`);
+            if (likeButton) {
+                if (userPostCommentLikes.has(commentId)) {
+                    likeButton.classList.add('liked');
+                    likeButton.querySelector('.like-icon').textContent = '❤️';
+                    likeButton.style.color = '#dc3545';
+                    likeButton.style.fontWeight = '600';
+                } else {
+                    likeButton.classList.remove('liked');
+                    likeButton.querySelector('.like-icon').textContent = '👍';
+                    likeButton.style.color = '#666';
+                    likeButton.style.fontWeight = '500';
+                }
+            }
+        }
+
+        // Load user's like statuses when comments load
+        async function loadUserPostCommentLikes(postId) {
+            const currentUser = window.dcfUser?.profile;
+            if (!currentUser) return;
+            
+            try {
+                // Get all comment IDs for this post
+                const commentElements = document.querySelectorAll(`#commentsList-${postId} [data-comment-id]`);
+                const commentIds = Array.from(commentElements).map(el => el.getAttribute('data-comment-id'));
+                
+                if (commentIds.length === 0) return;
+                
+                // Get user's likes for these comments
+                const { data: userLikes, error } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('comment_id')
+                    .eq('user_email', currentUser.email)
+                    .in('comment_id', commentIds);
+                    
+                if (error) throw error;
+                
+                // Update local state and UI
+                userLikes.forEach(like => {
+                    userPostCommentLikes.add(like.comment_id);
+                    updatePostCommentLikeUI(like.comment_id);
+                });
+                
+            } catch (error) {
+                console.error('Error loading user comment likes:', error);
+            }
+        }
+
     </script>
 
     <!-- Avatar Upload Modal -->
