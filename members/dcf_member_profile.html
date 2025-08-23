@@ -3266,6 +3266,11 @@
                     loadCommentLikeCount(comment.id);
                 });
             }, 100);
+            
+            // Load user comment interactions
+            setTimeout(async () => {
+                await loadUserCommentInteractions(postId);
+            }, 200);
         }
 
         window.submitPostComment = submitPostComment;
@@ -3390,6 +3395,95 @@
         }
 
         window.toggleCommentLike = toggleCommentLike;
+
+        async function updateCommentLikeCount(commentId) {
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                if (error) throw error;
+                
+                const likeCount = data.length;
+                const likeButton = document.getElementById(`like-btn-${commentId}`);
+                const likeCountElement = document.getElementById(`like-count-${commentId}`);
+                
+                if (likeCountElement) {
+                    likeCountElement.textContent = likeCount;
+                }
+                
+                if (likeButton) {
+                    if (userCommentLikes.has(commentId)) {
+                        likeButton.classList.add('liked');
+                    } else {
+                        likeButton.classList.remove('liked');
+                    }
+                }
+                
+                // Update comment like count in database
+                await window.dcfSupabase
+                    .from('comments')
+                    .update({ like_count: likeCount })
+                    .eq('id', commentId);
+                
+            } catch (error) {
+                console.error('❌ Failed to update comment like count:', error);
+            }
+        }
+
+        function updateLikeUI(commentId) {
+            const likeButton = document.getElementById(`like-btn-${commentId}`);
+            if (likeButton) {
+                if (userCommentLikes.has(commentId)) {
+                    likeButton.classList.add('liked');
+                } else {
+                    likeButton.classList.remove('liked');
+                }
+            }
+        }
+
+        function updateAllCommentUIs(comments) {
+            comments.forEach(comment => {
+                // Update like UI
+                updateLikeUI(comment.id);
+            });
+        }
+
+        async function loadUserCommentInteractions(postId) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) return;
+            
+            try {
+                // Get all comment IDs for this post
+                const commentElements = document.querySelectorAll(`#commentsList-${postId} [data-comment-id]`);
+                const commentIds = Array.from(commentElements).map(el => el.getAttribute('data-comment-id'));
+                
+                if (commentIds.length === 0) return;
+                
+                // Get user's likes for these comments
+                const { data: userLikes, error } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('comment_id')
+                    .eq('user_email', currentUser.email)
+                    .in('comment_id', commentIds);
+                    
+                if (error) throw error;
+                
+                // Add liked comment IDs to Set
+                userLikes.forEach(like => {
+                    userCommentLikes.add(like.comment_id);
+                });
+                
+                // Update UI for all comments
+                commentIds.forEach(commentId => {
+                    updateLikeUI(commentId);
+                });
+                
+            } catch (error) {
+                console.error('Error loading user comment interactions:', error);
+            }
+        }
 
         async function loadCommentLikeCount(commentId) {
             try {
