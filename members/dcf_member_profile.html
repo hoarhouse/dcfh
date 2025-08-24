@@ -3336,10 +3336,64 @@
             }
         }
 
-       // Add comment like functionality
+      // Add comment like functionality
         async function toggleCommentLike(commentId, postId) {
-            alert('Comment likes coming soon!');
-            return;
+            // Wait for auth to be ready
+            let currentUser = window.getCurrentUser();
+            let attempts = 0;
+            while (!currentUser && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                currentUser = window.getCurrentUser();
+                attempts++;
+            }
+            
+            if (!currentUser) {
+                await showSiteAlert('Please log in to like comments', 'warning');
+                return;
+            }
+            
+            try {
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.error('Supabase client not initialized');
+                    await showSiteAlert('System not ready. Please refresh the page.', 'error');
+                    return;
+                }
+                
+                const isLiked = userCommentLikes.has(commentId);
+                
+                if (isLiked) {
+                    // Remove like
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .delete()
+                        .eq('comment_id', commentId)
+                        .eq('user_email', currentUser.email);
+                    
+                    userCommentLikes.delete(commentId);
+                } else {
+                    // Add like
+                    await window.dcfSupabase
+                        .from('comment_likes')
+                        .insert([{
+                            comment_id: commentId,
+                            user_id: currentUser.id,
+                            user_email: currentUser.email,
+                            user_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    userCommentLikes.add(commentId);
+                }
+                
+                // Update like count and UI
+                await updateCommentLikeCount(commentId);
+                updateLikeUI(commentId);
+                
+            } catch (error) {
+                console.error('❌ Comment like toggle failed:', error);
+                await showSiteAlert('Failed to update like', 'error');
+            }
         }
 
         window.toggleCommentLike = toggleCommentLike;
