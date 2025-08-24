@@ -3275,21 +3275,37 @@
         }
 
         function sortComments(sortType, postId) {
+            console.log('Sorting comments:', sortType, postId);
             const container = document.getElementById('commentsList-' + postId);
-            if (!container) return;
+            if (!container) {
+                console.log('Container not found:', 'commentsList-' + postId);
+                return;
+            }
 
             const commentElements = Array.from(container.querySelectorAll('[data-comment-id]'));
+            console.log('Found comments:', commentElements.length);
             
+            if (commentElements.length === 0) return;
+
             commentElements.sort((a, b) => {
                 switch(sortType) {
                     case 'newest':
-                        const timeA = new Date(a.querySelector('.comment-date')?.getAttribute('data-timestamp') || 0);
-                        const timeB = new Date(b.querySelector('.comment-date')?.getAttribute('data-timestamp') || 0);
-                        return timeB - timeA;
+                        // Extract timestamp from the comment structure
+                        const timeTextA = a.querySelector('span[style*="color: #666"]')?.textContent || '';
+                        const timeTextB = b.querySelector('span[style*="color: #666"]')?.textContent || '';
+                        
+                        // Simple text-based sorting for now
+                        if (timeTextA.includes('Just now')) return -1;
+                        if (timeTextB.includes('Just now')) return 1;
+                        if (timeTextA.includes('m ago') && timeTextB.includes('h ago')) return -1;
+                        if (timeTextA.includes('h ago') && timeTextB.includes('m ago')) return 1;
+                        return timeTextB.localeCompare(timeTextA);
                     
                     case 'liked':
-                        const likesA = parseInt(a.querySelector('[id*="like-count"]')?.textContent || '0');
-                        const likesB = parseInt(b.querySelector('[id*="like-count"]')?.textContent || '0');
+                        const likeSpanA = a.querySelector('span[id*="like-count"]');
+                        const likeSpanB = b.querySelector('span[id*="like-count"]');
+                        const likesA = parseInt(likeSpanA?.textContent || '0');
+                        const likesB = parseInt(likeSpanB?.textContent || '0');
                         return likesB - likesA;
                     
                     case 'replies':
@@ -3302,10 +3318,29 @@
                 }
             });
 
-            // Re-append sorted elements
-            commentElements.forEach(element => {
-                container.appendChild(element);
+            // Update sort button states
+            const sortButtons = document.querySelectorAll(`[onclick*="sortComments"][onclick*="'${postId}'"]`);
+            sortButtons.forEach(btn => {
+                if (btn.getAttribute('onclick').includes(`'${sortType}'`)) {
+                    btn.style.background = '#000';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = '#f8f9fa';
+                    btn.style.color = '#666';
+                    btn.classList.remove('active');
+                }
             });
+
+            // Clear and re-append sorted elements
+            const fragment = document.createDocumentFragment();
+            commentElements.forEach(element => {
+                fragment.appendChild(element);
+            });
+            container.innerHTML = '';
+            container.appendChild(fragment);
+            
+            console.log('Comments sorted successfully');
         }
 
         function getTotalCommentCount(postId) {
