@@ -2320,19 +2320,31 @@
                                 💬 Comments (<span id="totalComments-${post.id}">0</span>)
                             </div>
                             
-                            <!-- Comment form -->
+                            <!-- Comment Sorting Controls -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button onclick="sortComments('newest', '${post.id}')" class="sort-btn active" data-sort="newest" style="background: #000; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Newest First</button>
+                                    <button onclick="sortComments('liked', '${post.id}')" class="sort-btn" data-sort="liked" style="background: #f8f9fa; color: #666; border: 1px solid #e5e5e5; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Most Liked</button>
+                                    <button onclick="sortComments('replies', '${post.id}')" class="sort-btn" data-sort="replies" style="background: #f8f9fa; color: #666; border: 1px solid #e5e5e5; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Most Replies</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Enhanced Comment form -->
                             <div id="commentForm-${post.id}" style="margin-bottom: 1rem;">
                                 <div style="display: flex; gap: 0.75rem;">
                                     <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0;">
                                         ${currentUser && currentUser.username ? currentUser.username.substring(0, 2).toUpperCase() : 'U'}
                                     </div>
                                     <div style="flex: 1;">
-                                        <textarea id="commentText-${post.id}" placeholder="Write a comment..." style="width: 100%; min-height: 60px; padding: 0.75rem; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.9rem; resize: vertical; font-family: inherit; margin-bottom: 0.5rem;"></textarea>
-                                        <button 
-                                            onclick="submitPostComment('${post.id}')" 
-                                            style="background: #000; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">
-                                            Post Comment
-                                        </button>
+                                        <textarea id="commentText-${post.id}" placeholder="Write a comment..." style="width: 100%; min-height: 100px; padding: 1rem; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 1rem; resize: vertical; font-family: inherit; margin-bottom: 0.5rem; transition: border-color 0.3s ease;" onfocus="this.style.borderColor='#dc3545';" onblur="this.style.borderColor='#e5e5e5';"></textarea>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div style="font-size: 0.8rem; color: #666;">Be respectful and constructive | Press Enter to post, Shift+Enter for new line</div>
+                                            <button 
+                                                onclick="submitPostComment('${post.id}')" 
+                                                style="background: #000; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">
+                                                Post Comment
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3259,6 +3271,47 @@
             const commentCountElement = document.getElementById('commentCount-' + postId);
             if (countElement) countElement.textContent = totalCount;
             if (commentCountElement) commentCountElement.textContent = totalCount;
+
+        }
+
+        function sortComments(sortType, postId) {
+            const container = document.getElementById('commentsList-' + postId);
+            if (!container) return;
+
+            const commentElements = Array.from(container.querySelectorAll('[data-comment-id]'));
+            
+            commentElements.sort((a, b) => {
+                switch(sortType) {
+                    case 'newest':
+                        const timeA = new Date(a.querySelector('.comment-date')?.getAttribute('data-timestamp') || 0);
+                        const timeB = new Date(b.querySelector('.comment-date')?.getAttribute('data-timestamp') || 0);
+                        return timeB - timeA;
+                    
+                    case 'liked':
+                        const likesA = parseInt(a.querySelector('[id*="like-count"]')?.textContent || '0');
+                        const likesB = parseInt(b.querySelector('[id*="like-count"]')?.textContent || '0');
+                        return likesB - likesA;
+                    
+                    case 'replies':
+                        const repliesA = a.querySelectorAll('[style*="margin: 0.5rem 0 0 2rem"]').length;
+                        const repliesB = b.querySelectorAll('[style*="margin: 0.5rem 0 0 2rem"]').length;
+                        return repliesB - repliesA;
+                    
+                    default:
+                        return 0;
+                }
+            });
+
+            // Re-append sorted elements
+            commentElements.forEach(element => {
+                container.appendChild(element);
+            });
+        }
+
+        function getTotalCommentCount(postId) {
+            const container = document.getElementById('commentsList-' + postId);
+            if (!container) return 0;
+            return container.querySelectorAll('[data-comment-id]').length;
             
             // Load like counts for all comments
             setTimeout(() => {
@@ -3536,6 +3589,79 @@
                 textarea.focus();
                 textarea.setSelectionRange(0, 0); // Position cursor at start
             }
+        }
+
+        // Comment Management Functions
+        function canDeleteComment(comment, user) {
+            if (!user) return false;
+            return comment.author_email === user.email || user.role === 'admin';
+        }
+
+        function canEditComment(commentId, currentUser) {
+            if (!currentUser) return false;
+            // 24-hour edit window
+            const comment = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (!comment) return false;
+            
+            const timeElement = comment.querySelector('.comment-date');
+            if (!timeElement) return true; // Allow if no timestamp
+            
+            const commentTime = new Date(timeElement.getAttribute('data-timestamp') || Date.now());
+            const now = new Date();
+            const hoursDiff = (now - commentTime) / (1000 * 60 * 60);
+            
+            return hoursDiff <= 24;
+        }
+
+        async function deleteComment(commentId) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to delete comments');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this comment?')) {
+                return;
+            }
+
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('comments')
+                    .update({ 
+                        comment_text: '[Comment deleted]',
+                        is_deleted: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', commentId);
+
+                if (error) throw error;
+
+                // Update UI
+                const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+                if (commentElement) {
+                    const textElement = commentElement.querySelector('.comment-text, [style*="color: #555"]');
+                    if (textElement) {
+                        textElement.textContent = '[Comment deleted]';
+                        textElement.style.fontStyle = 'italic';
+                        textElement.style.opacity = '0.6';
+                    }
+                    
+                    // Hide action buttons
+                    const actionsDiv = commentElement.querySelector('[style*="display: flex"]');
+                    if (actionsDiv) actionsDiv.style.display = 'none';
+                }
+
+                showSiteAlert('Comment deleted', 'success');
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                showSiteAlert('Failed to delete comment', 'error');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
     </script>
