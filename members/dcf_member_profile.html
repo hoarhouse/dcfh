@@ -3749,6 +3749,49 @@
             return text.replace(mentionRegex, '<span style="color: #007bff; font-weight: 600;">@$1</span>');
         }
 
+        async function storeMentions(commentId, text, authorUserId) {
+            const mentionRegex = /@(\w+)/g;
+            const mentions = [];
+            let match;
+            
+            while ((match = mentionRegex.exec(text)) !== null) {
+                mentions.push(match[1]); // Extract username without @
+            }
+            
+            if (mentions.length === 0) return;
+            
+            try {
+                // Get user IDs for mentioned usernames
+                const { data: users, error: userError } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('id, username')
+                    .in('username', mentions);
+                    
+                if (userError) throw userError;
+                
+                // Create mention records
+                const mentionRecords = users.map(user => ({
+                    comment_id: commentId,
+                    mentioned_user_id: user.id,
+                    mentioned_username: user.username,
+                    mentioning_user_id: authorUserId,
+                    created_at: new Date().toISOString()
+                }));
+                
+                if (mentionRecords.length > 0) {
+                    const { error: insertError } = await window.dcfSupabase
+                        .from('comment_mentions')
+                        .insert(mentionRecords);
+                        
+                    if (insertError) throw insertError;
+                    console.log(`Created ${mentionRecords.length} mention notifications`);
+                }
+                
+            } catch (error) {
+                console.error('Error storing mentions:', error);
+            }
+        }
+
         function focusCommentBox(postId) {
             const textarea = document.getElementById('commentText-' + postId);
             if (textarea) {
