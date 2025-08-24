@@ -3290,27 +3290,40 @@
             commentElements.sort((a, b) => {
                 switch(sortType) {
                     case 'newest':
-                        // Extract timestamp from the comment structure
-                        const timeTextA = a.querySelector('span[style*="color: #666"]')?.textContent || '';
-                        const timeTextB = b.querySelector('span[style*="color: #666"]')?.textContent || '';
-                        
-                        // Simple text-based sorting for now
-                        if (timeTextA.includes('Just now')) return -1;
-                        if (timeTextB.includes('Just now')) return 1;
-                        if (timeTextA.includes('m ago') && timeTextB.includes('h ago')) return -1;
-                        if (timeTextA.includes('h ago') && timeTextB.includes('m ago')) return 1;
-                        return timeTextB.localeCompare(timeTextA);
+                        // Get comment IDs and use them as rough timestamp ordering
+                        const idA = a.getAttribute('data-comment-id');
+                        const idB = b.getAttribute('data-comment-id');
+                        return idB.localeCompare(idA); // Newer IDs typically come after
                     
                     case 'liked':
-                        const likeSpanA = a.querySelector('span[id*="like-count"]');
-                        const likeSpanB = b.querySelector('span[id*="like-count"]');
-                        const likesA = parseInt(likeSpanA?.textContent || '0');
-                        const likesB = parseInt(likeSpanB?.textContent || '0');
+                        // Find like count spans more broadly
+                        const likeSpanA = a.querySelector('[id*="like-count"]') || a.querySelector('span');
+                        const likeSpanB = b.querySelector('[id*="like-count"]') || b.querySelector('span');
+                        
+                        let likesA = 0;
+                        let likesB = 0;
+                        
+                        if (likeSpanA) {
+                            const textA = likeSpanA.textContent;
+                            const matchA = textA.match(/(\d+)/);
+                            likesA = matchA ? parseInt(matchA[1]) : 0;
+                        }
+                        
+                        if (likeSpanB) {
+                            const textB = likeSpanB.textContent;
+                            const matchB = textB.match(/(\d+)/);
+                            likesB = matchB ? parseInt(matchB[1]) : 0;
+                        }
+                        
+                        console.log(`Sorting by likes: ${likesA} vs ${likesB}`);
                         return likesB - likesA;
                     
                     case 'replies':
-                        const repliesA = a.querySelectorAll('[style*="margin: 0.5rem 0 0 2rem"]').length;
-                        const repliesB = b.querySelectorAll('[style*="margin: 0.5rem 0 0 2rem"]').length;
+                        // Count nested reply divs
+                        const repliesA = a.querySelectorAll('div[style*="margin: 0.5rem 0 0 2rem"], div[style*="margin-left: 2rem"]').length;
+                        const repliesB = b.querySelectorAll('div[style*="margin: 0.5rem 0 0 2rem"], div[style*="margin-left: 2rem"]').length;
+                        
+                        console.log(`Sorting by replies: ${repliesA} vs ${repliesB}`);
                         return repliesB - repliesA;
                     
                     default:
