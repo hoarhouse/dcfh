@@ -3787,28 +3787,15 @@
             try {
                 const { error } = await window.dcfSupabase
                     .from('comments')
-                    .update({ 
-                        comment_text: '[Comment deleted]',
-                        is_deleted: true,
-                        updated_at: new Date().toISOString()
-                    })
+                    .delete()
                     .eq('id', commentId);
 
                 if (error) throw error;
 
-                // Update UI
+                // Remove from UI
                 const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
                 if (commentElement) {
-                    const textElement = commentElement.querySelector('.comment-text, [style*="color: #555"]');
-                    if (textElement) {
-                        textElement.textContent = '[Comment deleted]';
-                        textElement.style.fontStyle = 'italic';
-                        textElement.style.opacity = '0.6';
-                    }
-                    
-                    // Hide action buttons
-                    const actionsDiv = commentElement.querySelector('[style*="display: flex"]');
-                    if (actionsDiv) actionsDiv.style.display = 'none';
+                    commentElement.remove();
                 }
 
                 showSiteAlert('Comment deleted', 'success');
