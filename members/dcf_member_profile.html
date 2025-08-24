@@ -3606,8 +3606,13 @@
 
         async function loadCommentLikeCount(commentId) {
             try {
-                // DISABLED - table missing
-                return;
+                // Get like count from database
+                const { data: likes, error } = await window.dcfSupabase
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                if (error) throw error;
                 
                 const likeCount = likes ? likes.length : 0;
                 const likeCountElement = document.getElementById('like-count-' + commentId);
@@ -3630,6 +3635,7 @@
                         if (userLike) {
                             likeButton.style.color = '#007bff';
                             likeButton.style.fontWeight = '600';
+                            userCommentLikes.add(commentId);
                         } else {
                             likeButton.style.color = '#666';
                             likeButton.style.fontWeight = 'normal';
@@ -3641,7 +3647,6 @@
                 console.error('Error loading comment like count:', error);
             }
         }
-
         window.loadCommentLikeCount = loadCommentLikeCount;
 
         window.submitReply = submitReply;
