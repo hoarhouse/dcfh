@@ -3246,7 +3246,7 @@
                             </div>
                             <div style="display: flex; gap: 1rem; align-items: center;">
                                 <button onclick="toggleCommentLike('${comment.id}')" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.25rem;" id="like-btn-${comment.id}">
-                                    👍 <span id="like-count-${comment.id}">0</span>
+                                    👍 <span id="like-count-${comment.id}">${comment.like_count || 0}</span>
                                 </button>
                                 <button onclick="toggleReplyForm('${comment.id}')" style="background: none; border: none; color: #666; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem;">Reply</button>
                             </div>
@@ -3525,13 +3525,20 @@
                 if (error) throw error;
                 
                 const likeCount = data.length;
-                const likeButton = document.getElementById(`like-btn-${commentId}`);
-                const likeCountElement = document.getElementById(`like-count-${commentId}`);
                 
+                // Update database like_count field
+                await window.dcfSupabase
+                    .from('comments')
+                    .update({ like_count: likeCount })
+                    .eq('id', commentId);
+                
+                // Update UI
+                const likeCountElement = document.getElementById(`like-count-${commentId}`);
                 if (likeCountElement) {
                     likeCountElement.textContent = likeCount;
                 }
                 
+                const likeButton = document.getElementById(`like-btn-${commentId}`);
                 if (likeButton) {
                     if (userCommentLikes.has(commentId)) {
                         likeButton.classList.add('liked');
@@ -3539,12 +3546,6 @@
                         likeButton.classList.remove('liked');
                     }
                 }
-                
-                // Update comment like count in database
-                await window.dcfSupabase
-                    .from('comments')
-                    .update({ like_count: likeCount })
-                    .eq('id', commentId);
                 
             } catch (error) {
                 console.error('❌ Failed to update comment like count:', error);
