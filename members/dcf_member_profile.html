@@ -3156,6 +3156,9 @@
                     
                 if (error) throw error;
                 
+                // Store mentions
+                await storeMentions(data.id, content, currentUser.id);
+                
                 textarea.value = '';
                 await loadPostComments(postId);
                 
@@ -3427,6 +3430,9 @@
                     .single();
                     
                 if (error) throw error;
+                
+                // Store mentions
+                await storeMentions(data.id, content, currentUser.id);
                 
                 textarea.value = '';
                 toggleReplyForm(commentId);
@@ -3722,9 +3728,15 @@
                 
                 if (error) throw error;
                 
+                // Store mentions for edited comment
+                const currentUser = window.getCurrentUser();
+                if (currentUser) {
+                    await storeMentions(commentId, newText, currentUser.id);
+                }
+                
                 // Update UI
                 const textElement = commentElement.querySelector('[style*="color: #555"]');
-                textElement.innerHTML = `${escapeHtml(newText)} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
+                textElement.innerHTML = `${escapeHtml(processMentions(newText))} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
                 
             } catch (error) {
                 console.error('Error updating comment:', error);
@@ -3743,6 +3755,8 @@
         window.submitReply = submitReply;
         window.toggleReplyForm = toggleReplyForm;
         window.focusCommentBox = focusCommentBox;
+        window.storeMentions = storeMentions;
+        window.processMentions = processMentions;
 
         function processMentions(text) {
             const mentionRegex = /@(\w+)/g;
