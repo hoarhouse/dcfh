@@ -3287,29 +3287,44 @@
             
             if (commentElements.length === 0) return;
 
-            // TEMPORARY: Random shuffle to test if sorting mechanism works
-            console.log('Before sort:', commentElements.map(el => el.getAttribute('data-comment-id').substring(0, 8)));
+            console.log('Sorting comments by:', sortType);
             
             commentElements.sort((a, b) => {
                 switch(sortType) {
                     case 'newest':
-                        console.log('Shuffling for newest');
-                        return Math.random() - 0.5; // Random shuffle
+                        // Use data-comment-id as timestamp proxy (newer UUIDs sort later alphabetically)
+                        const idA = a.getAttribute('data-comment-id');
+                        const idB = b.getAttribute('data-comment-id');
+                        return idB.localeCompare(idA);
                     
                     case 'liked':
-                        console.log('Shuffling for liked');
-                        return Math.random() - 0.5; // Random shuffle
+                        // Look for like count in the specific span with id like-count-{commentId}
+                        const commentIdA = a.getAttribute('data-comment-id');
+                        const commentIdB = b.getAttribute('data-comment-id');
+                        
+                        const likeElementA = document.getElementById('like-count-' + commentIdA);
+                        const likeElementB = document.getElementById('like-count-' + commentIdB);
+                        
+                        const likesA = likeElementA ? parseInt(likeElementA.textContent) || 0 : 0;
+                        const likesB = likeElementB ? parseInt(likeElementB.textContent) || 0 : 0;
+                        
+                        console.log(`Comment ${commentIdA.substring(0, 8)} has ${likesA} likes`);
+                        console.log(`Comment ${commentIdB.substring(0, 8)} has ${likesB} likes`);
+                        
+                        return likesB - likesA; // Higher likes first
                     
                     case 'replies':
-                        console.log('Shuffling for replies');
-                        return Math.random() - 0.5; // Random shuffle
+                        // Count direct reply divs (nested comments with specific margin style)
+                        const repliesA = a.querySelectorAll('div[style*="margin: 0.5rem 0 0 2rem"]').length;
+                        const repliesB = b.querySelectorAll('div[style*="margin: 0.5rem 0 0 2rem"]').length;
+                        
+                        console.log(`Comment has ${repliesA} replies vs ${repliesB} replies`);
+                        return repliesB - repliesA; // More replies first
                     
                     default:
                         return 0;
                 }
             });
-            
-            console.log('After sort:', commentElements.map(el => el.getAttribute('data-comment-id').substring(0, 8)));
 
             // Update sort button states
             const sortButtons = document.querySelectorAll(`[onclick*="sortComments"][onclick*="'${postId}'"]`);
