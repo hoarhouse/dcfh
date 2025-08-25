@@ -3529,8 +3529,26 @@
             }
         }
 
-        // EDIT COMMENT FUNCTIONALITY
-        async function startEditComment(commentId) {
+        // EDIT COMMENT FUNCTIONALITY - STABLE VERSION FROM MEMBER PROFILE
+        function startEditComment(commentId) {
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (!commentElement) return;
+            
+            const textElement = commentElement.querySelector('[style*="color: #555"]');
+            if (!textElement) return;
+            
+            const originalText = textElement.innerText.trim();
+            
+            textElement.innerHTML = `
+                <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${originalText}</textarea>
+                <div style="margin-top: 8px;">
+                    <button onclick="saveEditComment('${commentId}')" class="save-edit-btn" style="background: #007bff; color: white; border: none; padding: 4px 12px; border-radius: 4px; margin-right: 8px;">Save</button>
+                    <button onclick="cancelEditComment('${commentId}')" class="cancel-edit-btn" style="background: #6c757d; color: white; border: none; padding: 4px 12px; border-radius: 4px;">Cancel</button>
+                </div>
+            `;
+        }
+
+        async function startEditCommentOLD(commentId) {
             
             // Wait for auth to be ready
             let currentUser = window.getCurrentUser();
@@ -3601,6 +3619,43 @@
         }
 
         async function saveEditComment(commentId) {
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            const textarea = commentElement.querySelector('.edit-textarea');
+            const newText = textarea.value.trim();
+            
+            if (!newText) {
+                alert('Comment cannot be empty');
+                return;
+            }
+            
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('comments')
+                    .update({ 
+                        comment_text: newText,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', commentId);
+                
+                if (error) throw error;
+                
+                // Store mentions for edited comment
+                const currentUser = window.getCurrentUser();
+                if (currentUser) {
+                    await storeMentions(commentId, newText, currentUser.id);
+                }
+                
+                // Update UI
+                const textElement = commentElement.querySelector('[style*="color: #555"]');
+                textElement.innerHTML = `${escapeHtml(processMentions(newText))} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
+                
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                alert('Failed to update comment');
+            }
+        }
+
+        async function saveEditCommentOLD(commentId) {
             
             const textarea = document.getElementById(`edit-textarea-${commentId}`);
             if (!textarea) {
