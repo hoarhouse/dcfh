@@ -3176,11 +3176,6 @@
                 return;
             }
             
-            if (content.length > 2000) {
-                await showAlert('Comment too long. Maximum 2000 characters allowed.', 'warning');
-                return;
-            }
-            
             // Wait for auth to be ready
             let currentUser = window.getCurrentUser();
             let attempts = 0;
@@ -3223,11 +3218,17 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                const { data, error } = await window.dcfSupabase
+                const insertPromise = window.dcfSupabase
                     .from('comments')
                     .insert([commentData])
                     .select()
                     .single();
+                
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Database timeout')), 10000)
+                );
+                
+                const { data, error } = await Promise.race([insertPromise, timeoutPromise]);
                 
                 if (error) throw error;
                 
@@ -3535,9 +3536,6 @@
                                             `<span class="comment-deleted">[Comment deleted]</span>` : 
                                             `${processMentions(escapeHtml(cleanReplyText))}${wasEdited ? 
                                                 `<span class="edited-indicator"> (edited)</span>` : ''}`
-                                        }
-                                    </span>
-                                </div>
                                         }
                                     </span>
                                 </div>
