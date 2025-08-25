@@ -3889,7 +3889,7 @@
         // Setup keyboard event delegation for dynamic content
         function setupKeyboardEventDelegation() {
             
-            // Event delegation for all textareas
+            // Event delegation for all textareas and edit fields
             document.addEventListener('keydown', function(event) {
                 const target = event.target;
                 
@@ -3903,7 +3903,52 @@
                     const commentId = target.id.replace('replyText-', '');
                     handleReplyKeydown(event, commentId);
                 }
+                
+                // Edit comment textareas
+                if (target.classList && target.classList.contains('edit-textarea')) {
+                    handleEditKeydown(event, target);
+                }
             });
+        }
+
+        function handleEditKeydown(event, textarea) {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                // Ctrl+Enter or Cmd+Enter = save
+                event.preventDefault();
+                const saveBtn = textarea.parentElement.querySelector('.save-edit-btn');
+                if (saveBtn) saveBtn.click();
+            } else if (event.key === 'Escape') {
+                // Escape = cancel
+                event.preventDefault();
+                const cancelBtn = textarea.parentElement.querySelector('.cancel-edit-btn');
+                if (cancelBtn) cancelBtn.click();
+            }
+        }
+
+        function handleCommentKeydown(event) {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // Shift+Enter = new line (default behavior)
+                    return;
+                } else {
+                    // Plain Enter = submit
+                    event.preventDefault();
+                    submitComment();
+                }
+            }
+        }
+
+        function handleReplyKeydown(event, commentId) {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // Shift+Enter = new line (default behavior)
+                    return;
+                } else {
+                    // Plain Enter = submit
+                    event.preventDefault();
+                    submitReply(commentId);
+                }
+            }
         }
 
         // WORLD-CLASS COMMENT SYSTEM FEATURES
