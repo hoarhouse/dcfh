@@ -3575,8 +3575,8 @@
             }
         }
 
-        // EDIT COMMENT FUNCTIONALITY - FIXED FOR RESOURCE DETAIL PAGE
-        function startEditComment(commentId) {
+        // EDIT COMMENT FUNCTIONALITY - GETS CLEAN TEXT FROM DATABASE
+        async function startEditComment(commentId) {
             console.log('startEditComment called for:', commentId);
             
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
@@ -3585,26 +3585,40 @@
                 return;
             }
             
-            // Look for the comment text in the Resource Detail structure
-            const textElement = commentElement.querySelector('.comment-text-inline') || 
-                               commentElement.querySelector('[style*="color: #555"]') ||
-                               commentElement.querySelector('[style*="line-height: 1.4"]');
-            
-            if (!textElement) {
-                console.error('Text element not found in comment:', commentId);
-                return;
+            // Get clean text from database instead of HTML
+            try {
+                const { data: comment, error } = await window.dcfSupabase
+                    .from('comments')
+                    .select('comment_text')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (error) throw error;
+                
+                const textElement = commentElement.querySelector('.comment-text-inline') || 
+                                   commentElement.querySelector('[style*="color: #555"]') ||
+                                   commentElement.querySelector('[style*="line-height: 1.4"]');
+                
+                if (!textElement) {
+                    console.error('Text element not found in comment:', commentId);
+                    return;
+                }
+                
+                const cleanText = comment.comment_text || '';
+                console.log('Clean text from database:', cleanText);
+                
+                textElement.innerHTML = `
+                    <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${escapeHtml(cleanText)}</textarea>
+                    <div style="margin-top: 8px;">
+                        <button onclick="saveEditComment('${commentId}')" class="save-edit-btn" style="background: #007bff; color: white; border: none; padding: 4px 12px; border-radius: 4px; margin-right: 8px;">Save</button>
+                        <button onclick="cancelEditComment('${commentId}')" class="cancel-edit-btn" style="background: #6c757d; color: white; border: none; padding: 4px 12px; border-radius: 4px;">Cancel</button>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error fetching comment text:', error);
+                alert('Failed to load comment for editing');
             }
-            
-            const originalText = textElement.innerText.trim();
-            console.log('Original text:', originalText);
-            
-            textElement.innerHTML = `
-                <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${originalText}</textarea>
-                <div style="margin-top: 8px;">
-                    <button onclick="saveEditComment('${commentId}')" class="save-edit-btn" style="background: #007bff; color: white; border: none; padding: 4px 12px; border-radius: 4px; margin-right: 8px;">Save</button>
-                    <button onclick="cancelEditComment('${commentId}')" class="cancel-edit-btn" style="background: #6c757d; color: white; border: none; padding: 4px 12px; border-radius: 4px;">Cancel</button>
-                </div>
-            `;
         }
 
         async function startEditCommentOLD(commentId) {
