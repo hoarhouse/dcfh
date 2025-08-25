@@ -532,6 +532,11 @@
             const supabase = window.dcfSupabase;
             if (!supabase) {
                 console.error('Supabase not initialized');
+                submitBtn.textContent = originalText;
+                submitBtn.classList.remove('loading');
+                const errorMsg = document.getElementById('errorMessage');
+                errorMsg.textContent = 'System not ready. Please refresh the page.';
+                errorMsg.style.display = 'block';
                 return;
             }
             
@@ -553,11 +558,17 @@
                 let loginSuccess = false;
                 let userData = null;
                 
-                // Try Supabase Auth
-                const { data, error } = await supabase.auth.signInWithPassword({
+                // Try Supabase Auth with timeout
+                const authPromise = supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
+
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Login request timeout')), 10000)
+                );
+
+                const { data, error } = await Promise.race([authPromise, timeoutPromise]);
                 
                 if (error) {
                     throw new Error(error.message);
