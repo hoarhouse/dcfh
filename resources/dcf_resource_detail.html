@@ -3514,11 +3514,24 @@
             const canDelete = canDeleteComment(comment, activeUser);
             const canEdit = canEditCommentSync(comment, activeUser);
             
+            // Avatar logic for main comments
+            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
+            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
+                `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                authorInitials;
+            
             const repliesHtml = replies.map(reply => {
                 const replyInitials = getUserInitials(reply.author_name);
                 const replyDate = formatCommentDate(reply.created_at);
                 const canDeleteReply = canDeleteComment(reply, activeUser);
                 const canEditReply = canEditCommentSync(reply, activeUser);
+                
+                // Avatar logic for replies
+                const isCurrentUserReply = window.dcfUser?.profile?.email === reply.author_email;
+                const replyAvatarContent = isCurrentUserReply && currentUserAvatar ?
+                    `<img src="${currentUserAvatar}" alt="${reply.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                    replyInitials;
                 
                 // Clean the comment text and check if edited
                 const cleanReplyText = reply.comment_text || '';
@@ -3527,7 +3540,7 @@
                 return `
                     <div class="comment reply" data-comment-id="${reply.id}">
                         <div class="comment-author">
-                            <div class="comment-avatar">${replyInitials}</div>
+                            <div class="comment-avatar">${replyAvatarContent}</div>
                             <div class="comment-content">
                                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
                                     <span style="font-weight: 600; color: #333; font-size: 0.9rem;">${reply.author_name || '@Anonymous'}</span>
@@ -3561,7 +3574,7 @@
             return `
                 <div class="comment" data-comment-id="${comment.id}">
                     <div class="comment-author">
-                        <div class="comment-avatar">${authorInitials}</div>
+                        <div class="comment-avatar">${commentAvatarContent}</div>
                         <div class="comment-content">
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
                                 <span style="font-weight: 600; color: #333; font-size: 0.9rem;">${comment.author_name || '@Anonymous'}</span>
