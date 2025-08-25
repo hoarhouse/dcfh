@@ -3279,6 +3279,11 @@
                 return;
             }
             
+            if (content.length > 2000) {
+                alert('Comment is too long. Maximum 2000 characters allowed.');
+                return;
+            }
+            
             const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to post comments');
@@ -3286,19 +3291,22 @@
             }
             
             try {
-                const { data, error } = await window.dcfSupabase
-                    .from('comments')
-                    .insert({
-                        content_type: 'post',
-                        content_id: postId,
-                        author_id: currentUser.id,
-                        author_email: currentUser.email,
-                        author_name: '@' + currentUser.username,
-                        comment_text: content,
-                        parent_comment_id: null
-                    })
-                    .select()
-                    .single();
+                const { data, error } = await Promise.race([
+                    window.dcfSupabase
+                        .from('comments')
+                        .insert({
+                            content_type: 'post',
+                            content_id: postId,
+                            author_id: currentUser.id,
+                            author_email: currentUser.email,
+                            author_name: '@' + currentUser.username,
+                            comment_text: content,
+                            parent_comment_id: null
+                        })
+                        .select()
+                        .single(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 10000))
+                ]);
                     
                 if (error) throw error;
                 
@@ -3554,6 +3562,11 @@
                 return;
             }
             
+            if (content.length > 2000) {
+                alert('Reply is too long. Maximum 2000 characters allowed.');
+                return;
+            }
+            
             const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 alert('Please log in to reply');
@@ -3561,19 +3574,22 @@
             }
             
             try {
-                const { data, error } = await window.dcfSupabase
-                    .from('comments')
-                    .insert({
-                        content_type: 'post',
-                        content_id: postId,
-                        author_id: currentUser.id,
-                        author_email: currentUser.email,
-                        author_name: '@' + currentUser.username,
-                        comment_text: content,
-                        parent_comment_id: commentId
-                    })
-                    .select()
-                    .single();
+                const { data, error } = await Promise.race([
+                    window.dcfSupabase
+                        .from('comments')
+                        .insert({
+                            content_type: 'post',
+                            content_id: postId,
+                            author_id: currentUser.id,
+                            author_email: currentUser.email,
+                            author_name: '@' + currentUser.username,
+                            comment_text: content,
+                            parent_comment_id: commentId
+                        })
+                        .select()
+                        .single(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 10000))
+                ]);
                     
                 if (error) throw error;
                 
