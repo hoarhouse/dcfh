@@ -3344,12 +3344,14 @@
         // Helper functions for comment system
         async function getTotalCommentCount() {
             try {
+                // Only count TOP-LEVEL comments (exclude replies)
                 const { data, error } = await supabase
                     .from('comments')
                     .select('id')
                     .eq('content_type', 'resource')
                     .eq('content_id', resourceId)
-                    .eq('is_deleted', false);
+                    .eq('is_deleted', false)
+                    .is('parent_comment_id', null); // Only top-level comments
                 
                 if (error) throw error;
                 return data ? data.length : 0;
