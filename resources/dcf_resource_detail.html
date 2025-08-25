@@ -4074,31 +4074,53 @@
             });
         }
 
-        // FEATURE 3: COMMENT SORTING
+        // ENHANCED COMMENT SORTING - copied from Member Profile
         async function sortComments(sortType) {
             currentSort = sortType;
             
-            // Update active button
-            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`sort-${sortType}`).classList.add('active');
+            // Update active button with better styling
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = '#f8f9fa';
+                btn.style.color = '#666';
+            });
+            
+            const activeBtn = document.getElementById(`sort-${sortType}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.background = '#000';
+                activeBtn.style.color = 'white';
+            }
             
             // Separate top-level comments and replies
             const topLevelComments = currentComments.filter(c => !c.parent_comment_id);
             const replies = currentComments.filter(c => c.parent_comment_id);
             
-            // Sort ONLY top-level comments
+            // Enhanced sorting with better logic
             let sortedTopLevel = [...topLevelComments];
             
             switch (sortType) {
                 case 'liked':
-                    sortedTopLevel.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+                    sortedTopLevel.sort((a, b) => {
+                        const aLikes = parseInt(a.like_count) || 0;
+                        const bLikes = parseInt(b.like_count) || 0;
+                        if (bLikes !== aLikes) return bLikes - aLikes;
+                        // Secondary sort by date for tied likes
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
                     break;
                 case 'replies':
-                    // Calculate reply count for each top-level comment
+                    // Enhanced reply counting
                     sortedTopLevel.forEach(comment => {
-                        comment.reply_count = replies.filter(r => r.parent_comment_id === comment.id).length;
+                        comment.reply_count = replies.filter(r => r.parent_comment_id === comment.id && !r.is_deleted).length;
                     });
-                    sortedTopLevel.sort((a, b) => (b.reply_count || 0) - (a.reply_count || 0));
+                    sortedTopLevel.sort((a, b) => {
+                        const aReplies = a.reply_count || 0;
+                        const bReplies = b.reply_count || 0;
+                        if (bReplies !== aReplies) return bReplies - aReplies;
+                        // Secondary sort by date for tied reply counts
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
                     break;
                 case 'newest':
                 default:
@@ -4106,9 +4128,12 @@
                     break;
             }
             
-            // Recombine: sorted top-level comments + unsorted replies (in original order)
+            // Recombine with better organization
             currentComments = [...sortedTopLevel, ...replies];
             await displayComments(currentComments);
+            
+            // Show sort feedback
+            console.log(`Comments sorted by ${sortType}:`, sortedTopLevel.length, 'top-level comments');
         }
 
         // FEATURE 4: @USERNAME MENTIONS
