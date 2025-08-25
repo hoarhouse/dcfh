@@ -2793,6 +2793,7 @@
 
         async function loadComments() {
             try {
+                console.log('🔄 Loading comments for resource:', resourceId);
                 
                 const { data: comments, error } = await supabase
                     .from('comments')
@@ -2801,27 +2802,55 @@
                     .eq('content_id', resourceId)
                     .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Database error loading comments:', error);
+                    throw error;
+                }
+
+                console.log(`✅ Loaded ${comments?.length || 0} comments from database`);
 
                 // Store comments globally for sorting
                 currentComments = comments || [];
                 
-                // Load user interactions
-                await loadUserCommentInteractions();
+                // Load user interactions with error handling
+                try {
+                    await loadUserCommentInteractions();
+                } catch (interactionError) {
+                    console.warn('⚠️ Failed to load user interactions:', interactionError);
+                    // Continue without user interactions
+                }
                 
-                // Apply current sort
-                await sortComments(currentSort);
+                // Apply current sort with error handling
+                try {
+                    await sortComments(currentSort);
+                } catch (sortError) {
+                    console.warn('⚠️ Failed to sort comments, showing unsorted:', sortError);
+                    await displayComments(currentComments);
+                }
                 
-                // Update comment count
-                const totalComments = await getTotalCommentCount();
-                const commentCountElement = document.getElementById('totalComments');
-                if (commentCountElement) {
-                    commentCountElement.textContent = totalComments;
+                // Update comment count with error handling
+                try {
+                    const totalComments = await getTotalCommentCount();
+                    const commentCountElement = document.getElementById('totalComments');
+                    if (commentCountElement) {
+                        commentCountElement.textContent = totalComments;
+                    }
+                    console.log(`📊 Updated comment count: ${totalComments}`);
+                } catch (countError) {
+                    console.warn('⚠️ Failed to update comment count:', countError);
                 }
 
             } catch (error) {
-                console.error('Error loading comments:', error);
-                await showAlert('Failed to load comments', 'error');
+                console.error('❌ Critical error loading comments:', error);
+                const container = document.getElementById('commentsList');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: #dc3545; padding: 2rem;">
+                            ❌ Failed to load comments. Please refresh the page.
+                        </div>
+                    `;
+                }
+                await showSiteAlert('Failed to load comments. Please refresh the page.', 'error');
             }
         }
 
@@ -3142,6 +3171,11 @@
                 return;
             }
             
+            if (content.length > 2000) {
+                await showAlert('Comment too long. Maximum 2000 characters allowed.', 'warning');
+                return;
+            }
+            
             // Wait for auth to be ready
             let currentUser = window.getCurrentUser();
             let attempts = 0;
@@ -3235,6 +3269,11 @@
             
             if (!content) {
                 await showAlert('Please enter a reply', 'warning');
+                return;
+            }
+            
+            if (content.length > 2000) {
+                await showAlert('Reply too long. Maximum 2000 characters allowed.', 'warning');
                 return;
             }
             
