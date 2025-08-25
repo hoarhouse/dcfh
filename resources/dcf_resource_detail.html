@@ -2083,6 +2083,12 @@
         let isEditing = false;
         let userLikes = new Set();
         let userBookmarks = new Set();
+        
+        // Comment display state
+        let showingAllComments = false;
+        let allComments = [];
+        let popularComments = [];
+        let currentSort = 'newest';
 
         // Wait for auth to be ready with safe patterns
         async function waitForAuth() {
@@ -2811,6 +2817,7 @@
 
                 // Store comments globally for sorting
                 currentComments = comments || [];
+                allComments = comments || [];
                 
                 // Load user interactions with error handling
                 try {
@@ -2820,11 +2827,11 @@
                     // Continue without user interactions
                 }
                 
-                // Apply current sort with error handling
+                // Apply popularity-based display logic
                 try {
-                    await sortComments(currentSort);
-                } catch (sortError) {
-                    console.warn('⚠️ Failed to sort comments, showing unsorted:', sortError);
+                    await displayCommentsWithPopularity();
+                } catch (displayError) {
+                    console.warn('⚠️ Failed to display comments with popularity, showing all:', displayError);
                     await displayComments(currentComments);
                 }
                 
@@ -2878,6 +2885,157 @@
             
             // Update UI states for top-level comments only (replies already processed by createCommentHtml)
             updateAllCommentUIs(topLevelComments);
+        }
+
+        async function displayCommentsWithPopularity() {
+            const topLevelComments = allComments.filter(comment => !comment.parent_comment_id);
+            
+            if (topLevelComments.length <= 2) {
+                // Show all comments if 2 or fewer
+                showingAllComments = true;
+                await displayComments(allComments);
+                return;
+            }
+            
+            // Sort by popularity (like_count) descending, then by created_at descending
+            const sortedByPopularity = [...topLevelComments].sort((a, b) => {
+                const likesA = a.like_count || 0;
+                const likesB = b.like_count || 0;
+                
+                if (likesB !== likesA) {
+                    return likesB - likesA; // Higher likes first
+                }
+                
+                // If likes are equal, sort by newest first
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+            
+            popularComments = sortedByPopularity.slice(0, 2);
+            
+            if (showingAllComments) {
+                await displayComments(allComments);
+            } else {
+                await displayPopularComments();
+            }
+        }
+
+        async function displayPopularComments() {
+            const container = document.getElementById('commentsList');
+            
+            if (popularComments.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #666; padding: 2rem;">
+                        💬 No comments yet. Be the first to share your thoughts!
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create HTML for top 2 popular comments
+            const commentsHtml = await Promise.all(popularComments.map(async comment => {
+                const replies = allComments.filter(c => c.parent_comment_id === comment.id);
+                return createCommentHtml(comment, replies);
+            }));
+            
+            const totalComments = allComments.filter(c => !c.parent_comment_id).length;
+            const remainingCount = totalComments - 2;
+            
+            // Add "View all comments" link
+            const expandLink = `
+                <div style="text-align: center; padding: 1.5rem 0; border-top: 1px solid #e5e5e5; margin-top: 1rem;">
+                    <button onclick="toggleAllComments()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: underline;">
+                        View all comments (${remainingCount} more)
+                    </button>
+                </div>
+            `;
+            
+            container.innerHTML = commentsHtml.join('') + expandLink;
+            
+            // Update UI states for displayed comments
+            updateAllCommentUIs(popularComments);
+        }
+
+        async function toggleAllComments() {
+            showingAllComments = !showingAllComments;
+            
+            if (showingAllComments) {
+                // Show all comments with existing sort
+                await sortComments(currentSort);
+                
+                // Add "Show popular comments" link
+                const container = document.getElementById('commentsList');
+                const collapseLink = `
+                    <div style="text-align: center; padding: 1.5rem 0; border-top: 1px solid #e5e5e5; margin-top: 1rem;">
+                        <button onclick="toggleAllComments()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: underline;">
+                            Show popular comments only
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += collapseLink;
+            } else {
+                // Show popular comments only
+                await displayPopularComments();
+            }
+        }
+
+        // Make function globally accessible
+        window.toggleAllComments = toggleAllComments;
+
+        async function sortComments(sortType) {
+            currentSort = sortType;
+            
+            if (!allComments || allComments.length === 0) {
+                return;
+            }
+            
+            const topLevelComments = allComments.filter(comment => !comment.parent_comment_id);
+            let sortedComments;
+            
+            switch (sortType) {
+                case 'newest':
+                    sortedComments = [...topLevelComments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    break;
+                case 'liked':
+                    sortedComments = [...topLevelComments].sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+                    break;
+                case 'replies':
+                    sortedComments = [...topLevelComments].sort((a, b) => {
+                        const repliesA = allComments.filter(c => c.parent_comment_id === a.id).length;
+                        const repliesB = allComments.filter(c => c.parent_comment_id === b.id).length;
+                        return repliesB - repliesA;
+                    });
+                    break;
+                default:
+                    sortedComments = topLevelComments;
+            }
+            
+            // Rebuild full comment array with sorted top-level comments and their replies
+            const sortedFullComments = [];
+            sortedComments.forEach(comment => {
+                sortedFullComments.push(comment);
+                const replies = allComments.filter(c => c.parent_comment_id === comment.id);
+                replies.forEach(reply => sortedFullComments.push(reply));
+            });
+            
+            currentComments = sortedFullComments;
+            
+            if (showingAllComments) {
+                await displayComments(sortedFullComments);
+                
+                // Add "Show popular comments" link when showing all
+                const container = document.getElementById('commentsList');
+                const collapseLink = `
+                    <div style="text-align: center; padding: 1.5rem 0; border-top: 1px solid #e5e5e5; margin-top: 1rem;">
+                        <button onclick="toggleAllComments()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: underline;">
+                            Show popular comments only
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += collapseLink;
+            } else {
+                // If showing popular comments, maintain that view
+                await displayCommentsWithPopularity();
+            }
         }
 
         async function loadCommentReplies(parentId) {
