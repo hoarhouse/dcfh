@@ -992,8 +992,14 @@
             }
 
             try {
-                // Show preview
+                // Show preview immediately
                 showPhotoPreview(file, photoType);
+                
+                // Mark as uploading
+                const uploadDiv = document.getElementById(`${photoType === 'main' ? 'mainPhoto' : photoType}Upload`);
+                if (uploadDiv) {
+                    uploadDiv.setAttribute('data-uploading', 'true');
+                }
                 
                 // Upload to Supabase storage
                 const photoUrl = await uploadPhotoToStorage(file, photoType);
@@ -1001,11 +1007,31 @@
                 // Store the uploaded photo URL
                 uploadedPhotos[photoType] = photoUrl;
                 
-                console.log(`Photo uploaded: ${photoType} -> ${photoUrl}`);
+                // Mark upload as complete
+                if (uploadDiv) {
+                    uploadDiv.removeAttribute('data-uploading');
+                    uploadDiv.setAttribute('data-uploaded', 'true');
+                }
+                
+                console.log(`Photo uploaded successfully: ${photoType} -> ${photoUrl}`);
                 
             } catch (error) {
                 console.error('Photo upload failed:', error);
                 alert('Photo upload failed. Please try again.');
+                
+                // Reset on failure
+                const idPrefix = photoType === 'main' ? 'mainPhoto' : photoType;
+                const preview = document.getElementById(`${idPrefix}Preview`);
+                const content = document.getElementById(`${idPrefix}Content`);
+                const uploadDiv = document.getElementById(`${idPrefix}Upload`);
+                
+                if (preview) preview.style.display = 'none';
+                if (content) content.style.display = 'flex';
+                if (uploadDiv) {
+                    uploadDiv.classList.remove('has-image');
+                    uploadDiv.removeAttribute('data-uploading');
+                }
+                
                 input.value = '';
             }
         }
@@ -1313,9 +1339,28 @@
         document.getElementById('resourcesForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Validate main photo is uploaded (required)
-            if (!uploadedPhotos.main) {
-                alert('Please upload a main photo for your project');
+            // Validate main photo is selected and uploaded (required)
+            const mainPhotoUploadDiv = document.getElementById('mainPhotoUpload');
+            const mainPhotoPreview = document.getElementById('mainPhotoPreview');
+            
+            // Check if main photo is still uploading
+            if (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true') {
+                alert('Please wait for the main photo to finish uploading');
+                return;
+            }
+            
+            // Check if a main photo has been successfully uploaded
+            const hasMainPhoto = uploadedPhotos.main || 
+                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true');
+            
+            if (!hasMainPhoto) {
+                // Check if preview exists but upload hasn't started/completed
+                const hasPreview = mainPhotoPreview && mainPhotoPreview.style.display === 'block';
+                if (hasPreview) {
+                    alert('Please wait for the main photo to finish uploading');
+                } else {
+                    alert('Please upload a main photo for your project');
+                }
                 return;
             }
             
