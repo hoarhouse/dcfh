@@ -2801,7 +2801,7 @@
                 console.log('🔄 Loading comments for resource:', resourceId);
                 
                 const { data: comments, error } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('*')
                     .eq('content_type', 'resource')
                     .eq('content_id', resourceId)
@@ -3039,7 +3039,7 @@
         async function loadCommentReplies(parentId) {
             try {
                 const { data: replies, error } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('*')
                     .eq('parent_comment_id', parentId)
                     .order('created_at', { ascending: true });
@@ -3369,13 +3369,14 @@
                     author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
                     comment_text: content,
                     parent_comment_id: null,
+                    like_count: 0,
                     is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
                 
                 const insertPromise = window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .insert([commentData])
                     .select()
                     .single();
@@ -3485,13 +3486,14 @@
                     author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
                     comment_text: content,
                     parent_comment_id: commentId,
+                    like_count: 0,
                     is_deleted: false,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
                 
                 const { data, error } = await window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .insert([replyData])
                     .select()
                     .single();
@@ -3527,7 +3529,7 @@
 
             try {
                 const { error } = await window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .delete()
                     .eq('id', commentId);
 
@@ -3552,7 +3554,7 @@
             try {
                 // Only count TOP-LEVEL comments (exclude replies)
                 const { data, error } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('id')
                     .eq('content_type', 'resource')
                     .eq('content_id', resourceId)
@@ -3626,7 +3628,7 @@
             
             try {
                 const { data: comment, error } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('author_id, author_email, created_at, is_deleted')
                     .eq('id', commentId)
                     .single();
@@ -3879,7 +3881,7 @@
             // Get clean text from database instead of HTML
             try {
                 const { data: comment, error } = await window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('comment_text')
                     .eq('id', commentId)
                     .single();
@@ -3925,7 +3927,7 @@
             
             try {
                 const { error } = await window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .update({ 
                         comment_text: newText,
                         updated_at: new Date().toISOString()
@@ -3980,7 +3982,7 @@
             try {
                 // Get original comment text for history
                 const { data: originalComment, error: fetchError } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('comment_text, author_id, author_email')
                     .eq('id', commentId)
                     .single();
@@ -3994,7 +3996,7 @@
                 
                 // Update comment in database
                 const { error: updateError } = await window.dcfSupabase
-                    .from('resource_comments')
+                    .from('comments')
                     .update({
                         comment_text: newText,
                         updated_at: new Date().toISOString()
@@ -4086,19 +4088,6 @@
                     // Plain Enter = submit
                     event.preventDefault();
                     submitComment();
-                }
-            }
-        }
-
-        function handleReplyKeydown(event, commentId) {
-            if (event.key === 'Enter') {
-                if (event.shiftKey) {
-                    // Shift+Enter = new line (default behavior)
-                    return;
-                } else {
-                    // Plain Enter = submit
-                    event.preventDefault();
-                    submitReply(commentId);
                 }
             }
         }
@@ -4198,7 +4187,7 @@
                 
                 // Update comment like count in database
                 await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .update({ like_count: likeCount })
                     .eq('id', commentId);
                 
@@ -4350,7 +4339,7 @@
                 if (likeError) throw likeError;
 
                 const { data: replyData, error: replyError } = await supabase
-                    .from('resource_comments')
+                    .from('comments')
                     .select('id')
                     .eq('parent_comment_id', commentId);
                 
@@ -4391,7 +4380,7 @@
                         .single();
                     
                     const likeCount = (await supabase.from('comment_likes').select('id').eq('comment_id', commentId)).data?.length || 0;
-                    const replyCount = (await supabase.from('resource_comments').select('id').eq('parent_comment_id', commentId)).data?.length || 0;
+                    const replyCount = (await supabase.from('comments').select('id').eq('parent_comment_id', commentId)).data?.length || 0;
                     const engagementScore = likeCount + (replyCount * 2);
                     
                     if (existing && !selectError) {
@@ -4588,7 +4577,7 @@
 
             try {
                 // Delete all related data first
-                await supabase.from('resource_comments').delete().eq('resource_id', resourceId);
+                await supabase.from('comments').delete().eq('resource_id', resourceId);
                 await supabase.from('resource_likes').delete().eq('resource_id', resourceId);
                 await supabase.from('resource_bookmarks').delete().eq('resource_id', resourceId);
                 await supabase.from('resource_analytics').delete().eq('resource_id', resourceId);
