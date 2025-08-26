@@ -1661,32 +1661,34 @@
         }
 
         function setupHeroLayout(project) {
-            // Check if project has multiple photos
-            const hasPhotos = project.media_url && project.media_count > 1;
+            // Check if project has photos using individual URL fields
+            const hasPhotos = project.main_photo_url && 
+                             (project.sub_photo_1_url || project.sub_photo_2_url || project.sub_photo_3_url);
             
             if (hasPhotos) {
-                try {
-                    heroPhotos = JSON.parse(project.media_url);
+                // Build array from individual photo URLs
+                heroPhotos = [];
+                if (project.main_photo_url) heroPhotos.push(project.main_photo_url);
+                if (project.sub_photo_1_url) heroPhotos.push(project.sub_photo_1_url);
+                if (project.sub_photo_2_url) heroPhotos.push(project.sub_photo_2_url);
+                if (project.sub_photo_3_url) heroPhotos.push(project.sub_photo_3_url);
+                
+                if (heroPhotos.length >= 2) {  // At least main photo + 1 sub photo
+                    // Show hero layout
+                    document.getElementById('heroPhotos').style.display = 'grid';
+                    document.getElementById('fallbackHeader').style.display = 'none';
+                    document.getElementById('metaCards').style.display = 'grid';
                     
-                    if (heroPhotos.length >= 3) {
-                        // Show hero layout
-                        document.getElementById('heroPhotos').style.display = 'grid';
-                        document.getElementById('fallbackHeader').style.display = 'none';
-                        document.getElementById('metaCards').style.display = 'grid';
-                        
-                        // Setup photos
-                        document.getElementById('mainHeroPhoto').src = heroPhotos[0];
-                        document.getElementById('subPhoto1').src = heroPhotos[1] || heroPhotos[0];
-                        document.getElementById('subPhoto2').src = heroPhotos[2] || heroPhotos[0];
-                        document.getElementById('subPhoto3').src = heroPhotos[3] || heroPhotos[1];
-                        
-                        // Setup inspirational elements
-                        setupInspirationalElements(project);
-                        
-                        return true;
-                    }
-                } catch (e) {
-                    console.log('Error parsing media URLs:', e);
+                    // Setup photos
+                    document.getElementById('mainHeroPhoto').src = heroPhotos[0];
+                    document.getElementById('subPhoto1').src = heroPhotos[1] || heroPhotos[0];
+                    document.getElementById('subPhoto2').src = heroPhotos[2] || heroPhotos[0];
+                    document.getElementById('subPhoto3').src = heroPhotos[3] || heroPhotos[1];
+                    
+                    // Setup inspirational elements
+                    setupInspirationalElements(project);
+                    
+                    return true;
                 }
             }
             
