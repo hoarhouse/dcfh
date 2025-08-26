@@ -3353,11 +3353,10 @@
             
             try {
                 // Check if Supabase client is available
-                if (!window.dcfSupabase) {
+                const dbClient = supabase || window.dcfSupabase;
+                if (!dbClient) {
                     console.error('Supabase client not initialized');
                     await showAlert('System not ready. Please refresh the page.', 'error');
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
                     return;
                 }
                 
@@ -3375,27 +3374,46 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                const insertPromise = window.dcfSupabase
-                    .from('comments')
-                    .insert([commentData])
-                    .select()
-                    .single();
+                console.log('📤 Submitting comment data:', commentData);
                 
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Database timeout')), 10000)
-                );
+                // Database operation with timeout
+                const { data, error } = await Promise.race([
+                    dbClient
+                        .from('comments')
+                        .insert([commentData])
+                        .select()
+                        .single(),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Database operation timed out after 10 seconds')), 10000)
+                    )
+                ]);
                 
-                const { data, error } = await Promise.race([insertPromise, timeoutPromise]);
+                if (error) {
+                    console.error('❌ Database insert error:', error);
+                    throw error;
+                }
                 
-                if (error) throw error;
+                if (!data) {
+                    console.error('❌ No data returned from database insert');
+                    throw new Error('No data returned from comment insertion');
+                }
+                
+                console.log('✅ Comment inserted successfully:', data);
                 
                 textarea.value = '';
                 
                 // Store mentions and update stats
-                await storeMentions(data.id, content, currentUser.id);
-                await updateCommentStats(data.id);
+                try {
+                    await storeMentions(data.id, content, currentUser.id);
+                    await updateCommentStats(data.id);
+                } catch (statsError) {
+                    console.warn('⚠️ Failed to update comment stats:', statsError);
+                    // Don't fail the whole operation for stats errors
+                }
                 
                 await loadComments();
+                
+                console.log('✅ Comment submission completed successfully');
                 
             } catch (error) {
                 console.error('Error submitting comment:', error);
@@ -3492,11 +3510,18 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                const { data, error } = await window.dcfSupabase
-                    .from('comments')
-                    .insert([replyData])
-                    .select()
-                    .single();
+                // Use consistent database client with timeout
+                const dbClient = supabase || window.dcfSupabase;
+                const { data, error } = await Promise.race([
+                    dbClient
+                        .from('comments')
+                        .insert([replyData])
+                        .select()
+                        .single(),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Reply submission timed out after 10 seconds')), 10000)
+                    )
+                ]);
                 
                 if (error) throw error;
                 
