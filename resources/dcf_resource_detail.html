@@ -2909,7 +2909,7 @@
                 return new Date(b.created_at) - new Date(a.created_at);
             });
             
-            popularComments = sortedByPopularity.slice(0, 2);
+            popularComments = sortedByPopularity.slice(0, 1);
             
             if (showingAllComments) {
                 await displayComments(allComments);
@@ -2930,21 +2930,20 @@
                 return;
             }
             
-            // Create HTML for top 2 popular comments
+            // Create HTML for top popular comment (without replies in popular view)
             const commentsHtml = await Promise.all(popularComments.map(async comment => {
                 const replies = allComments.filter(c => c.parent_comment_id === comment.id);
-                return createCommentHtml(comment, replies);
+                const replyCount = replies.length;
+                return createPopularCommentHtml(comment, replyCount);
             }));
             
             const totalComments = allComments.filter(c => !c.parent_comment_id).length;
-            const remainingCount = totalComments - 2;
+            const totalReplies = allComments.filter(c => c.parent_comment_id).length;
             
-            // Add "View all comments" link
+            // Add summary line
             const expandLink = `
-                <div style="text-align: center; padding: 1.5rem 0; border-top: 1px solid #e5e5e5; margin-top: 1rem;">
-                    <button onclick="toggleAllComments()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: underline;">
-                        View all comments (${remainingCount} more)
-                    </button>
+                <div style="margin-left: 2rem; padding: 0.75rem 0; color: #666; font-style: italic; font-size: 0.9rem;">
+                    ${totalComments} comments, ${totalReplies} replies - <span onclick="toggleAllComments()" style="color: #007bff; cursor: pointer; text-decoration: underline;">Click to see all comments</span>
                 </div>
             `;
             
@@ -3662,6 +3661,57 @@
             const hoursDiff = (now - createdAt) / (1000 * 60 * 60);
             
             return hoursDiff <= 24;
+        }
+
+        function createPopularCommentHtml(comment, replyCount = 0) {
+            const authorInitials = getUserInitials(comment.author_name);
+            const commentDate = formatCommentDate(comment.created_at);
+            const activeUser = window.getCurrentUser(); // Get fresh user data instead of stale global
+            const canDelete = canDeleteComment(comment, activeUser);
+            const canEdit = canEditCommentSync(comment, activeUser);
+            
+            // Avatar logic for main comments
+            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
+            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
+                `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                authorInitials;
+            
+            return `
+                <div class="comment main-comment" data-comment-id="${comment.id}" style="background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <div class="comment-avatar" style="flex-shrink: 0;">${commentAvatarContent}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <!-- Header Line -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <div style="display: flex; align-items: center; gap: 0.375rem;">
+                                    <span style="font-weight: 600; color: #2c3e50; font-size: 0.85rem;">${comment.author_name || '@Anonymous'}</span>
+                                    <span style="color: #7f8c8d; font-size: 0.75rem;">${commentDate}</span>
+                                    ${comment.updated_at !== comment.created_at ? `<span style="color: #95a5a6; font-size: 0.7rem; font-style: italic;">edited</span>` : ''}
+                                    ${replyCount > 0 ? `<span style="color: #007bff; font-size: 0.7rem; background: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 3px;">${replyCount} replies</span>` : ''}
+                                </div>
+                                ${!comment.is_deleted ? `
+                                    <div style="display: flex; align-items: center; gap: 0.25rem; opacity: 0.7;">
+                                        <button onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like comment">
+                                            👍 <span id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                        </button>
+                                        ${canEdit ? `<button onclick="startEditComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
+                                        ${canDelete ? `<button onclick="deleteComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Content Line -->
+                            <div style="color: #34495e; line-height: 1.4; font-size: 0.875rem;">
+                                ${comment.is_deleted ? 
+                                    `<span style="color: #95a5a6; font-style: italic;">[Comment deleted]</span>` : 
+                                    processMentions(escapeHtml(comment.comment_text))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function createCommentHtml(comment, replies = []) {
