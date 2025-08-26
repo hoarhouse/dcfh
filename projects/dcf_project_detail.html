@@ -2541,7 +2541,7 @@
             }
         }
 
-        async function joinProjectRequest(projectId, projectTitle) {
+        async function joinProjectRequest(projectId, projectTitle, skillFocus = null) {
             const currentUser = window.getCurrentUser();
             const userEmail = currentUser ? currentUser.email : null;
             const userName = currentUser ? currentUser.name : null;
@@ -2552,6 +2552,20 @@
             }
             
             try {
+                const joinData = {
+                    user_email: userEmail,
+                    user_name: userName,
+                    project_id: projectId,
+                    status: 'pending',
+                    message: skillFocus ? 
+                        `Interested in contributing with ${skillFocus} skills` : 
+                        `${userName} would like to join ${projectTitle}`
+                };
+                
+                if (skillFocus) {
+                    joinData.skill_focus = skillFocus;
+                }
+                
                 const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests', {
                     method: 'POST',
                     headers: {
@@ -2559,22 +2573,24 @@
                         'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        user_email: userEmail,
-                        user_name: userName,
-                        project_id: projectId,
-                        message: `${userName} would like to join ${projectTitle}`
-                    })
+                    body: JSON.stringify(joinData)
                 });
                 
                 if (response.ok) {
                     updateJoinButton('pending');
-                    console.log(`Join request sent for: ${projectTitle}`);
+                    showAlert(skillFocus ? 
+                        `Your ${skillFocus}-focused join request has been submitted! The project owner will review your application.` :
+                        'Your join request has been submitted! The project owner will review your application.', 
+                        'success', 'Request Sent');
                 } else if (response.status === 409) {
                     showAlert('You have already requested to join this project', 'warning', 'Already Requested');
+                } else {
+                    throw new Error('Failed to submit join request');
                 }
+                
             } catch (error) {
-                console.error('Error joining project:', error);
+                console.error('Error submitting join request:', error);
+                showAlert('Failed to submit join request. Please try again.', 'error', 'Request Failed');
             }
         }
 
@@ -2878,56 +2894,6 @@
             
             if (confirm(`${message}\n\nClick OK to submit your join request with ${skillType} focus.`)) {
                 joinProjectRequest(getProjectIdFromUrl(), window.currentProject?.title, skillType);
-            }
-        }
-        
-        // Enhanced join request function with skill matching
-        async function joinProjectRequest(projectId, projectTitle, skillFocus = null) {
-            const currentUser = window.getCurrentUser();
-            const userEmail = currentUser ? currentUser.email : null;
-            const userName = currentUser ? currentUser.name : null;
-            
-            if (!userEmail) {
-                showAlert('Please log in to join projects', 'warning', 'Login Required');
-                return;
-            }
-            
-            try {
-                const joinData = {
-                    user_email: userEmail,
-                    user_name: userName,
-                    project_id: projectId,
-                    status: 'pending',
-                    message: skillFocus ? `Interested in contributing with ${skillFocus} skills` : 'Interested in joining this project'
-                };
-                
-                if (skillFocus) {
-                    joinData.skill_focus = skillFocus;
-                }
-                
-                const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests', {
-                    method: 'POST',
-                    headers: {
-                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(joinData)
-                });
-                
-                if (response.ok) {
-                    updateJoinButton('pending');
-                    showAlert(skillFocus ? 
-                        `Your ${skillFocus}-focused join request has been submitted! The project owner will review your application.` :
-                        'Your join request has been submitted! The project owner will review your application.', 
-                        'success', 'Request Sent');
-                } else {
-                    throw new Error('Failed to submit join request');
-                }
-                
-            } catch (error) {
-                console.error('Error submitting join request:', error);
-                showAlert('Failed to submit join request. Please try again.', 'error', 'Request Failed');
             }
         }
     </script>
