@@ -2096,8 +2096,6 @@ function getUserId() {
 }
 
 // =============================================================================
-// 13. INITIALIZATION - SINGLE ENTRY POINT
-// =============================================================================
 async function initializeDCF() {
     console.log('🚀 Initializing DCF Authentication System - REDIRECTS DISABLED...');
     
