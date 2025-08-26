@@ -3912,75 +3912,6 @@
             }
         }
 
-        async function startEditCommentOLD(commentId) {
-            
-            // Wait for auth to be ready
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
-            if (!currentUser) {
-                await showAlert('Please log in to edit comments', 'warning');
-                return;
-            }
-            
-            // Check edit permissions
-            const canEdit = await canEditComment(commentId, currentUser);
-            if (!canEdit) {
-                await showAlert('You can only edit your own comments within 24 hours of posting', 'warning');
-                return;
-            }
-            
-            try {
-                // Get comment text
-                const { data: comment, error } = await supabase
-                    .from('resource_comments')
-                    .select('comment_text')
-                    .eq('id', commentId)
-                    .single();
-                
-                if (error) throw error;
-                
-                // Get comment text element and controls
-                const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
-                const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls-inline`);
-                
-                if (!commentTextElement) {
-                    console.error('Could not find comment text element');
-                    return;
-                }
-                
-                // Store original text and hide controls
-                commentTextElement.setAttribute('data-original-text', comment.comment_text);
-                if (commentControlsElement) commentControlsElement.style.display = 'none';
-                
-                // Replace with edit interface
-                commentTextElement.innerHTML = `
-                    <div class="comment-editing">
-                        <textarea class="comment-edit-textarea" id="edit-textarea-${commentId}">${escapeHtml(comment.comment_text)}</textarea>
-                        <div class="edit-controls">
-                            <button class="btn-edit-save" onclick="saveEditComment('${commentId}')">Save</button>
-                            <button class="btn-edit-cancel" onclick="cancelEditComment('${commentId}')">Cancel</button>
-                        </div>
-                    </div>
-                `;
-                
-                // Focus the textarea
-                const textarea = document.getElementById(`edit-textarea-${commentId}`);
-                if (textarea) {
-                    textarea.focus();
-                    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                }
-                
-            } catch (error) {
-                console.error('Error starting edit:', error);
-                await showAlert('Failed to start editing', 'error');
-            }
-        }
 
         async function saveEditComment(commentId) {
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
@@ -4018,49 +3949,6 @@
             }
         }
 
-        async function saveEditCommentOLD(commentId) {
-            
-            const textarea = document.getElementById(`edit-textarea-${commentId}`);
-            if (!textarea) {
-                console.error('Could not find edit textarea');
-                return;
-            }
-            
-            const newText = textarea.value.trim();
-            if (!newText) {
-                await showAlert('Comment cannot be empty', 'warning');
-                return;
-            }
-            
-            try {
-                // Get original text
-                let commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
-                const originalText = commentTextElement?.getAttribute('data-original-text') || '';
-                
-                if (originalText === newText) {
-                    // No changes made
-                    cancelEditComment(commentId);
-                    return;
-                }
-                
-                // Save changes using editComment function
-                await editComment(commentId, newText, 'User edit');
-                
-                // Update the specific comment's display text
-                commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
-                if (commentTextElement) {
-                    commentTextElement.textContent = newText;
-                    commentTextElement.setAttribute('data-original-text', newText);
-                }
-                
-                // Exit edit mode
-                cancelEditComment(commentId);
-                
-            } catch (error) {
-                console.error('Error saving edit:', error);
-                await showAlert('Failed to save changes', 'error');
-            }
-        }
 
         function cancelEditComment(commentId) {
             const postElement = document.querySelector(`[data-comment-id="${commentId}"]`).closest('[data-post-id]');
@@ -4073,22 +3961,6 @@
             }
         }
 
-        function cancelEditCommentOLD(commentId) {
-            
-            const commentTextElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text-inline`);
-            const commentControlsElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-controls-inline`);
-            
-            if (commentTextElement) {
-                // Restore original text
-                const originalText = commentTextElement.getAttribute('data-original-text') || '';
-                commentTextElement.innerHTML = processMentions(escapeHtml(originalText));
-                commentTextElement.removeAttribute('data-original-text');
-            }
-            
-            if (commentControlsElement) {
-                commentControlsElement.style.display = 'flex';
-            }
-        }
 
         async function editComment(commentId, newText, editReason = 'User edit') {
             
