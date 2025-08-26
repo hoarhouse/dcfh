@@ -1108,6 +1108,71 @@
             return icons[category] || '📋';
         }
 
+        // Hero photo switching functionality
+        let heroPhotos = [];
+        let currentMainPhotoIndex = 0;
+
+        function switchMainPhoto(index) {
+            if (heroPhotos.length > index + 1) {
+                const mainPhoto = document.getElementById('mainHeroPhoto');
+                const targetPhotoIndex = index + 1; // Sub photos start from index 1
+                
+                // Smooth transition
+                mainPhoto.style.opacity = '0.7';
+                setTimeout(() => {
+                    mainPhoto.src = heroPhotos[targetPhotoIndex];
+                    mainPhoto.style.opacity = '1';
+                    currentMainPhotoIndex = targetPhotoIndex;
+                }, 150);
+                
+                // Update sub-photo highlights
+                document.querySelectorAll('.sub-photo').forEach(photo => {
+                    photo.style.filter = 'brightness(0.9)';
+                });
+                document.getElementById(`subPhoto${index + 1}`).style.filter = 'brightness(1)';
+            }
+        }
+
+        function setupHeroLayout(project) {
+            // Check if project has multiple photos
+            const hasPhotos = project.media_url && project.media_count > 1;
+            
+            if (hasPhotos) {
+                try {
+                    heroPhotos = JSON.parse(project.media_url);
+                    
+                    if (heroPhotos.length >= 3) {
+                        // Show hero layout
+                        document.getElementById('heroPhotos').style.display = 'grid';
+                        document.getElementById('fallbackHeader').style.display = 'none';
+                        document.getElementById('metaCards').style.display = 'grid';
+                        
+                        // Setup photos
+                        document.getElementById('mainHeroPhoto').src = heroPhotos[0];
+                        document.getElementById('subPhoto1').src = heroPhotos[1] || heroPhotos[0];
+                        document.getElementById('subPhoto2').src = heroPhotos[2] || heroPhotos[0];
+                        document.getElementById('subPhoto3').src = heroPhotos[3] || heroPhotos[1];
+                        
+                        // Setup overlay content
+                        document.getElementById('overlayTitle').textContent = project.title;
+                        document.getElementById('overlayAuthor').textContent = project.author_name || `@${project.author_username}`;
+                        document.getElementById('overlayLocation').textContent = project.location || 'Global';
+                        document.getElementById('overlayStatus').textContent = project.status.charAt(0).toUpperCase() + project.status.slice(1);
+                        
+                        return true;
+                    }
+                } catch (e) {
+                    console.log('Error parsing media URLs:', e);
+                }
+            }
+            
+            // Use fallback layout
+            document.getElementById('heroPhotos').style.display = 'none';
+            document.getElementById('fallbackHeader').style.display = 'block';
+            document.getElementById('metaCards').style.display = 'none';
+            return false;
+        }
+
         // Load project data
         async function loadProject() {
             const projectId = getProjectIdFromUrl();
