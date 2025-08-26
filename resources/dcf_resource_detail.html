@@ -3428,20 +3428,47 @@
         }
 
         async function toggleReplyForm(commentId) {
+            console.log('🔄 Toggling reply form for comment:', commentId);
+            
             const replyForm = document.getElementById(`replyForm-${commentId}`);
-            if (replyForm) {
-                replyForm.classList.toggle('active');
-                if (replyForm.classList.contains('active')) {
-                    const textarea = document.getElementById(`replyText-${commentId}`);
-                    if (textarea) textarea.focus();
+            if (!replyForm) {
+                console.error('❌ Reply form not found for comment:', commentId);
+                return;
+            }
+            
+            const isCurrentlyVisible = replyForm.style.display === 'block' || replyForm.classList.contains('active');
+            console.log('📊 Current visibility state:', isCurrentlyVisible);
+            
+            if (isCurrentlyVisible) {
+                // Hide the form
+                replyForm.style.display = 'none';
+                replyForm.classList.remove('active');
+                console.log('👁️ Reply form hidden');
+            } else {
+                // Show the form
+                replyForm.style.display = 'block';
+                replyForm.classList.add('active');
+                console.log('👁️ Reply form shown');
+                
+                const textarea = document.getElementById(`replyText-${commentId}`);
+                if (textarea) {
+                    setTimeout(() => textarea.focus(), 100); // Small delay to ensure proper focus
+                } else {
+                    console.warn('⚠️ Reply textarea not found for comment:', commentId);
                 }
             }
         }
 
         function cancelReply(commentId) {
             const replyForm = document.getElementById(`replyForm-${commentId}`);
-            replyForm.classList.remove('active');
-            document.getElementById(`replyText-${commentId}`).value = '';
+            if (replyForm) {
+                replyForm.style.display = 'none';
+                replyForm.classList.remove('active');
+            }
+            const textarea = document.getElementById(`replyText-${commentId}`);
+            if (textarea) {
+                textarea.value = '';
+            }
         }
 
         async function submitReply(commentId) {
