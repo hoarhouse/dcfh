@@ -898,7 +898,40 @@
         </div>
 
         <div id="projectContent" style="display: none;">
-            <div class="project-header">
+            <!-- Hero Photo Grid -->
+            <div class="hero-photo-grid" id="heroPhotos" style="display: none;">
+                <div class="main-photo-container">
+                    <img class="main-photo" id="mainHeroPhoto" src="" alt="Project Preview">
+                    
+                    <!-- Overlaid Title -->
+                    <div class="title-overlay">
+                        <h1 class="overlay-title" id="overlayTitle">Project Title</h1>
+                        <div class="overlay-meta">
+                            <div class="overlay-meta-item">
+                                <span>👤</span>
+                                <span id="overlayAuthor">Author Name</span>
+                            </div>
+                            <div class="overlay-meta-item">
+                                <span>📍</span>
+                                <span id="overlayLocation">Location</span>
+                            </div>
+                            <div class="overlay-meta-item">
+                                <span>🚀</span>
+                                <span id="overlayStatus">Status</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sub-photos-container">
+                    <img class="sub-photo" id="subPhoto1" src="" alt="Project Image 1" onclick="switchMainPhoto(0)">
+                    <img class="sub-photo" id="subPhoto2" src="" alt="Project Image 2" onclick="switchMainPhoto(1)">
+                    <img class="sub-photo" id="subPhoto3" src="" alt="Project Image 3" onclick="switchMainPhoto(2)">
+                </div>
+            </div>
+
+            <!-- Fallback for projects without photos -->
+            <div class="project-header" id="fallbackHeader">
                 <div class="project-header-top">
                     <div class="project-title-section">
                         <div class="project-icon" id="projectIcon">📋</div>
@@ -941,6 +974,51 @@
 
                 <div class="project-tags" id="projectTags">
                     <!-- Tags will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Metadata Cards (for hero layout) -->
+            <div class="project-meta-cards" id="metaCards" style="display: none;">
+                <div class="meta-card">
+                    <span>👥</span>
+                    <div>
+                        <strong>Team Size</strong>
+                        <span id="cardTeamSize">1 Member</span>
+                    </div>
+                </div>
+                <div class="meta-card">
+                    <span>📅</span>
+                    <div>
+                        <strong>Created</strong>
+                        <span id="cardCreated">Loading...</span>
+                    </div>
+                </div>
+                <div class="meta-card">
+                    <span>⏳</span>
+                    <div>
+                        <strong>Timeline</strong>
+                        <span id="cardTimeline">Loading...</span>
+                    </div>
+                </div>
+                <div class="meta-card">
+                    <span>💰</span>
+                    <div>
+                        <strong>Funding</strong>
+                        <span id="cardFunding">Self-funded</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Description and Tags (for hero layout) -->
+            <div id="heroDescription" style="display: none;">
+                <div style="background: white; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom: 1rem;">About This Project</h3>
+                    <div class="project-description" id="heroProjectDescription">
+                        Loading project description...
+                    </div>
+                    <div class="project-tags" id="heroProjectTags">
+                        <!-- Tags will be loaded here -->
+                    </div>
                 </div>
             </div>
 
@@ -1223,6 +1301,9 @@
             // Store project globally for later use
             window.currentProject = project;
             
+            // Setup hero layout first
+            const usingHeroLayout = setupHeroLayout(project);
+            
             // Hide loading, show content
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('projectContent').style.display = 'block';
@@ -1233,22 +1314,58 @@
             // Update breadcrumb
             document.getElementById('breadcrumbProjectTitle').textContent = project.title;
 
-            // Update project header
-            document.getElementById('projectIcon').textContent = getCategoryIcon(project.category);
-            document.getElementById('projectTitle').textContent = project.title;
-            document.getElementById('projectSubtitle').textContent = project.description;
+            // Update content based on layout
+            if (usingHeroLayout) {
+                // Show hero description section
+                document.getElementById('heroDescription').style.display = 'block';
+                document.getElementById('heroProjectDescription').textContent = project.description;
+                
+                // Update metadata cards
+                document.getElementById('cardTeamSize').textContent = '1 Member';
+                document.getElementById('cardCreated').textContent = formatDate(project.created_at);
+                document.getElementById('cardTimeline').textContent = project.timeline || 'Ongoing';
+                document.getElementById('cardFunding').textContent = project.funding || 'Self-funded';
+                
+                // Update hero tags
+                const heroTagsContainer = document.getElementById('heroProjectTags');
+                if (project.skills && Array.isArray(project.skills)) {
+                    heroTagsContainer.innerHTML = project.skills.map((skill, index) => 
+                        `<div class="tag ${index === 0 ? 'highlight' : ''}">${skill}</div>`
+                    ).join('');
+                } else {
+                    heroTagsContainer.innerHTML = '<div class="tag highlight">No skills specified</div>';
+                }
+            } else {
+                // Use fallback layout
+                document.getElementById('heroDescription').style.display = 'none';
+                
+                // Update project header
+                document.getElementById('projectIcon').textContent = getCategoryIcon(project.category);
+                document.getElementById('projectTitle').textContent = project.title;
+                document.getElementById('projectSubtitle').textContent = project.description;
 
-            // Update meta information
-            const statusBadge = document.getElementById('statusBadge');
-            statusBadge.textContent = project.status || 'active';
-            statusBadge.className = `status-badge status-${project.status || 'active'}`;
+                // Update meta information
+                const statusBadge = document.getElementById('statusBadge');
+                statusBadge.textContent = project.status || 'active';
+                statusBadge.className = `status-badge status-${project.status || 'active'}`;
 
-            document.getElementById('teamSize').textContent = '1 Member';
-            document.getElementById('projectLocation').textContent = project.location || 'Global';
-            document.getElementById('projectCreated').textContent = formatDate(project.created_at);
+                document.getElementById('teamSize').textContent = '1 Member';
+                document.getElementById('projectLocation').textContent = project.location || 'Global';
+                document.getElementById('projectCreated').textContent = formatDate(project.created_at);
 
-            // Update description
-            document.getElementById('projectDescription').textContent = project.description;
+                // Update description
+                document.getElementById('projectDescription').textContent = project.description;
+                
+                // Update fallback tags
+                const tagsContainer = document.getElementById('projectTags');
+                if (project.skills && Array.isArray(project.skills)) {
+                    tagsContainer.innerHTML = project.skills.map((skill, index) => 
+                        `<div class="tag ${index === 0 ? 'highlight' : ''}">${skill}</div>`
+                    ).join('');
+                } else {
+                    tagsContainer.innerHTML = '<div class="tag highlight">No skills specified</div>';
+                }
+            }
             
             // Add Manage Project button dynamically for project owner
             const currentUser = window.getCurrentUser();
@@ -1266,21 +1383,6 @@
             console.log('🔍 DEBUG - ID Types:', typeof currentUser?.id, 'vs', typeof project.author_id);
             
 // Ownership logic now handled by updateJoinButton() after auth loads
-
-            // Update tags
-            const tagsContainer = document.getElementById('projectTags');
-            if (project.skills) {
-                let skills;
-                try {
-                    skills = Array.isArray(project.skills) ? project.skills : project.skills.split(',');
-                } catch (e) {
-                    skills = [project.skills];
-                }
-                
-                tagsContainer.innerHTML = skills.map((skill, index) => 
-                    `<span class="tag ${index < 3 ? 'highlight' : ''}">${skill.trim()}</span>`
-                ).join('');
-            }
 
             // Update skills needed section
             const skillsContainer = document.getElementById('skillsNeeded');
