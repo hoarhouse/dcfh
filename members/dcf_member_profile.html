@@ -3344,115 +3344,62 @@
             const replies = comments.filter(c => c.parent_comment_id);
             const currentUser = window.getCurrentUser();
             
+            // Initialize comment state for this post
+            if (!(postId in postCommentStates)) {
+                postCommentStates[postId] = {
+                    showingAll: mainComments.length <= 2, // Show all if 2 or fewer
+                    allComments: comments
+                };
+            }
             
-            const commentsHtml = mainComments.map(comment => {
-                const initials = comment.author_name ? comment.author_name.substring(1, 3).toUpperCase() : 'UN';
-                const timeAgo = formatTimeAgo(comment.created_at);
-                const isOwnComment = currentUser && comment.author_email === currentUser.email;
-                
-                // Avatar logic for main comments
-                const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
-                const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
-                const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
-                    `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
-                    initials;
-                
-                
-                // Get replies for this comment
-                const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
-                const repliesHtml = commentReplies.map(reply => {
-                    const replyInitials = reply.author_name.substring(1, 3).toUpperCase();
-                    const replyTimeAgo = formatTimeAgo(reply.created_at);
-                    
-                    // Avatar logic for replies
-                    const isCurrentUserReply = window.dcfUser?.profile?.email === reply.author_email;
-                    const replyAvatarContent = isCurrentUserReply && currentUserAvatar ?
-                        `<img src="${currentUserAvatar}" alt="${reply.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
-                        replyInitials;
-                    
-                    
-                    return `
-                        <div style="background: #f8f9fa; border-left: 3px solid #007bff; padding: 0.5rem; margin: 0.25rem 0 0 1rem; border-radius: 0 6px 6px 0;" data-comment-id="${reply.id}">
-                            <div style="display: flex; gap: 0.375rem;">
-                                <div style="width: 24px; height: 24px; border-radius: 50%; background: #666; color: white; font-weight: 600; font-size: 0.7rem; flex-shrink: 0; overflow: hidden; position: relative;">
-                                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                                        ${replyAvatarContent}
-                                    </div>
-                                </div>
-                                <div style="flex: 1; min-width: 0;">
-                                    <!-- Header Line -->
-                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.125rem;">
-                                        <div style="display: flex; align-items: center; gap: 0.25rem;">
-                                            <span style="font-weight: 600; color: #2c3e50; font-size: 0.8rem;">${reply.author_name}</span>
-                                            <span style="color: #7f8c8d; font-size: 0.7rem;">${replyTimeAgo}</span>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 0.125rem; opacity: 0.6;">
-                                            <button onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like reply">
-                                                👍 <span id="like-count-${reply.id}">0</span>
-                                            </button>
-                                            ${currentUser && reply.author_email === currentUser.email ? `<button onclick="startEditComment('${reply.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
-                                            ${currentUser && reply.author_email === currentUser.email ? `<button onclick="deleteComment('${reply.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Content Line -->
-                                    <div style="color: #495057; line-height: 1.3; font-size: 0.8rem;">
-                                        ${processMentions(reply.comment_text)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+            if (postCommentStates[postId].showingAll) {
+                // Show all comments (existing behavior)
+                const commentsHtml = mainComments.map(comment => {
+                    return createFullCommentHtml(comment, replies, currentUser, postId);
                 }).join('');
                 
-                return `
-                    <div style="background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" data-comment-id="${comment.id}">
-                        <div style="display: flex; gap: 0.5rem;">
-                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; overflow: hidden; position: relative;">
-                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                                    ${commentAvatarContent}
-                                </div>
-                            </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <!-- Header Line -->
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-                                    <div style="display: flex; align-items: center; gap: 0.375rem;">
-                                        <span style="font-weight: 600; color: #2c3e50; font-size: 0.85rem;">${comment.author_name}</span>
-                                        <span style="color: #7f8c8d; font-size: 0.75rem;">${timeAgo}</span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 0.25rem; opacity: 0.7;">
-                                        <button onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like comment">
-                                            👍 <span id="like-count-${comment.id}">${comment.like_count || 0}</span>
-                                        </button>
-                                        <button onclick="toggleReplyForm('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Reply">💬</button>
-                                        ${isOwnComment ? `<button onclick="startEditComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
-                                        ${isOwnComment ? `<button onclick="deleteComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
-                                    </div>
-                                </div>
-                                
-                                <!-- Content Line -->
-                                <div style="color: #34495e; line-height: 1.4; font-size: 0.875rem;">
-                                    ${processMentions(comment.comment_text)}
-                                </div>
-                                
-                                <!-- Reply Form -->
-                                <div id="replyForm-${comment.id}" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
-                                    <textarea id="replyText-${comment.id}" placeholder="Write a reply..." style="width: 100%; min-height: 60px; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.8rem; resize: vertical; font-family: inherit;"></textarea>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: flex-end;">
-                                        <button onclick="toggleReplyForm('${comment.id}')" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Cancel</button>
-                                        <button onclick="submitReply('${comment.id}', '${postId}')" style="background: #007bff; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Reply</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Replies Section -->
-                                ${repliesHtml ? `<div style="margin-top: 0.5rem; border-top: 1px solid #f1f3f4; padding-top: 0.5rem;">${repliesHtml}</div>` : ''}
-                            </div>
+                container.innerHTML = commentsHtml;
+                
+                // Add collapse link if there are 3+ comments
+                if (mainComments.length > 2) {
+                    const collapseLink = `
+                        <div style="margin-left: 2rem; padding: 0.75rem 0; color: #666; font-style: italic; font-size: 0.9rem;">
+                            <span onclick="togglePostComments('${postId}')" style="color: #007bff; cursor: pointer; text-decoration: underline;">Show popular comment only</span>
                         </div>
+                    `;
+                    container.innerHTML += collapseLink;
+                }
+            } else {
+                // Show only most popular comment
+                const sortedByPopularity = [...mainComments].sort((a, b) => {
+                    const likesA = a.like_count || 0;
+                    const likesB = b.like_count || 0;
+                    
+                    if (likesB !== likesA) {
+                        return likesB - likesA; // Higher likes first
+                    }
+                    
+                    // If likes are equal, sort by newest first
+                    return new Date(b.created_at) - new Date(a.created_at);
+                });
+                
+                const popularComment = sortedByPopularity[0];
+                const commentReplies = replies.filter(r => r.parent_comment_id === popularComment.id);
+                const replyCount = commentReplies.length;
+                
+                const popularCommentHtml = createPopularCommentHtml(popularComment, replyCount, currentUser);
+                
+                const totalComments = mainComments.length;
+                const totalReplies = replies.length;
+                
+                const summaryLine = `
+                    <div style="margin-left: 2rem; padding: 0.75rem 0; color: #666; font-style: italic; font-size: 0.9rem;">
+                        ${totalComments} comments, ${totalReplies} replies - <span onclick="togglePostComments('${postId}')" style="color: #007bff; cursor: pointer; text-decoration: underline;">Click to see all comments</span>
                     </div>
                 `;
-            }).join('');
-            
-            container.innerHTML = commentsHtml;
+                
+                container.innerHTML = popularCommentHtml + summaryLine;
+            }
             
             // Update comment count (main comments only, not replies)
             const mainCommentsCount = mainComments.length;
@@ -3460,8 +3407,171 @@
             const commentCountElement = document.getElementById('commentCount-' + postId);
             if (countElement) countElement.textContent = mainCommentsCount;
             if (commentCountElement) commentCountElement.textContent = mainCommentsCount;
-
         }
+
+        function createPopularCommentHtml(comment, replyCount, currentUser) {
+            const initials = comment.author_name ? comment.author_name.substring(1, 3).toUpperCase() : 'UN';
+            const timeAgo = formatTimeAgo(comment.created_at);
+            const isOwnComment = currentUser && comment.author_email === currentUser.email;
+            
+            // Avatar logic
+            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
+            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
+                `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                initials;
+            
+            return `
+                <div style="background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" data-comment-id="${comment.id}">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; overflow: hidden; position: relative;">
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                ${commentAvatarContent}
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <!-- Header Line -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <div style="display: flex; align-items: center; gap: 0.375rem;">
+                                    <span style="font-weight: 600; color: #2c3e50; font-size: 0.85rem;">${comment.author_name}</span>
+                                    <span style="color: #7f8c8d; font-size: 0.75rem;">${timeAgo}</span>
+                                    ${replyCount > 0 ? `<span style="color: #007bff; font-size: 0.7rem; background: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 3px;">${replyCount} replies</span>` : ''}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.25rem; opacity: 0.7;">
+                                    <button onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like comment">
+                                        👍 <span id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                    </button>
+                                    ${isOwnComment ? `<button onclick="startEditComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
+                                    ${isOwnComment ? `<button onclick="deleteComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Content Line -->
+                            <div style="color: #34495e; line-height: 1.4; font-size: 0.875rem;">
+                                ${processMentions(comment.comment_text)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createFullCommentHtml(comment, replies, currentUser, postId) {
+            const initials = comment.author_name ? comment.author_name.substring(1, 3).toUpperCase() : 'UN';
+            const timeAgo = formatTimeAgo(comment.created_at);
+            const isOwnComment = currentUser && comment.author_email === currentUser.email;
+            
+            // Avatar logic for main comments
+            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
+            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
+                `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                initials;
+            
+            // Get replies for this comment
+            const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
+            const repliesHtml = commentReplies.map(reply => {
+                const replyInitials = reply.author_name.substring(1, 3).toUpperCase();
+                const replyTimeAgo = formatTimeAgo(reply.created_at);
+                
+                // Avatar logic for replies
+                const isCurrentUserReply = window.dcfUser?.profile?.email === reply.author_email;
+                const replyAvatarContent = isCurrentUserReply && currentUserAvatar ?
+                    `<img src="${currentUserAvatar}" alt="${reply.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+                    replyInitials;
+                
+                return `
+                    <div style="background: #f8f9fa; border-left: 3px solid #007bff; padding: 0.5rem; margin: 0.25rem 0 0 1rem; border-radius: 0 6px 6px 0;" data-comment-id="${reply.id}">
+                        <div style="display: flex; gap: 0.375rem;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: #666; color: white; font-weight: 600; font-size: 0.7rem; flex-shrink: 0; overflow: hidden; position: relative;">
+                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                    ${replyAvatarContent}
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <!-- Header Line -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.125rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                        <span style="font-weight: 600; color: #2c3e50; font-size: 0.8rem;">${reply.author_name}</span>
+                                        <span style="color: #7f8c8d; font-size: 0.7rem;">${replyTimeAgo}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.125rem; opacity: 0.6;">
+                                        <button onclick="toggleCommentLike('${reply.id}')" id="like-btn-${reply.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like reply">
+                                            👍 <span id="like-count-${reply.id}">0</span>
+                                        </button>
+                                        ${currentUser && reply.author_email === currentUser.email ? `<button onclick="startEditComment('${reply.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
+                                        ${currentUser && reply.author_email === currentUser.email ? `<button onclick="deleteComment('${reply.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem; border-radius: 3px; font-size: 0.7rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
+                                    </div>
+                                </div>
+                                
+                                <!-- Content Line -->
+                                <div style="color: #495057; line-height: 1.3; font-size: 0.8rem;">
+                                    ${processMentions(reply.comment_text)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div style="background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" data-comment-id="${comment.id}">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #333; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; overflow: hidden; position: relative;">
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                ${commentAvatarContent}
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <!-- Header Line -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <div style="display: flex; align-items: center; gap: 0.375rem;">
+                                    <span style="font-weight: 600; color: #2c3e50; font-size: 0.85rem;">${comment.author_name}</span>
+                                    <span style="color: #7f8c8d; font-size: 0.75rem;">${timeAgo}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.25rem; opacity: 0.7;">
+                                    <button onclick="toggleCommentLike('${comment.id}')" id="like-btn-${comment.id}" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d; display: flex; align-items: center; gap: 0.125rem;" title="Like comment">
+                                        👍 <span id="like-count-${comment.id}">${comment.like_count || 0}</span>
+                                    </button>
+                                    <button onclick="toggleReplyForm('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Reply">💬</button>
+                                    ${isOwnComment ? `<button onclick="startEditComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #7f8c8d;" title="Edit">✏️</button>` : ''}
+                                    ${isOwnComment ? `<button onclick="deleteComment('${comment.id}')" style="background: none; border: none; cursor: pointer; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.75rem; color: #e74c3c;" title="Delete">🗑️</button>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Content Line -->
+                            <div style="color: #34495e; line-height: 1.4; font-size: 0.875rem;">
+                                ${processMentions(comment.comment_text)}
+                            </div>
+                            
+                            <!-- Reply Form -->
+                            <div id="replyForm-${comment.id}" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <textarea id="replyText-${comment.id}" placeholder="Write a reply..." style="width: 100%; min-height: 60px; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.8rem; resize: vertical; font-family: inherit;"></textarea>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: flex-end;">
+                                    <button onclick="toggleReplyForm('${comment.id}')" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                                    <button onclick="submitReply('${comment.id}', '${postId}')" style="background: #007bff; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Reply</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Replies Section -->
+                            ${repliesHtml ? `<div style="margin-top: 0.5rem; border-top: 1px solid #f1f3f4; padding-top: 0.5rem;">${repliesHtml}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function togglePostComments(postId) {
+            if (postCommentStates[postId]) {
+                postCommentStates[postId].showingAll = !postCommentStates[postId].showingAll;
+                
+                // Reload comments with new state
+                loadPostComments(postId);
+            }
+        }
+
+        // Make function globally accessible
+        window.togglePostComments = togglePostComments;
 
         function sortComments(sortType, postId) {
             console.log('Sorting comments:', sortType, postId);
