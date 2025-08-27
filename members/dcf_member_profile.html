@@ -4027,6 +4027,12 @@
                 return;
             }
             
+            // Check if already in edit mode
+            if (commentElement.querySelector('.edit-textarea')) {
+                console.log('⚠️ Already in edit mode for comment:', commentId);
+                return;
+            }
+            
             // Look for the correct color styling (#34495e not #555)
             const textElement = commentElement.querySelector('[style*="color: #34495e"]') || 
                                commentElement.querySelector('[style*="color: #555"]');
@@ -4035,8 +4041,21 @@
                 return;
             }
             
-            const originalText = textElement.innerText.trim().replace(/\s*\(edited\)$/, '');
+            // Store original text in data attribute if not already stored
+            let originalText;
+            if (textElement.hasAttribute('data-original-text')) {
+                // Use stored original text
+                originalText = textElement.getAttribute('data-original-text');
+            } else {
+                // First time editing - store the original text
+                originalText = textElement.innerText.trim().replace(/\s*\(edited\)$/, '');
+                textElement.setAttribute('data-original-text', originalText);
+            }
+            
             console.log('📝 Original text:', originalText);
+            
+            // Mark as in edit mode
+            textElement.setAttribute('data-editing', 'true');
             
             textElement.innerHTML = `
                 <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${escapeHtml(originalText)}</textarea>
@@ -4082,10 +4101,16 @@
                 }
                 
                 // Update UI - look for correct color
-                const textElement = commentElement.querySelector('[style*="color: #34495e"]') || 
+                const textElement = commentElement.querySelector('[data-editing="true"]') ||
+                                   commentElement.querySelector('[style*="color: #34495e"]') || 
                                    commentElement.querySelector('[style*="color: #555"]') ||
                                    commentElement.querySelector('.edit-textarea').parentElement;
                 if (textElement) {
+                    // Update stored original text with new text
+                    textElement.setAttribute('data-original-text', newText);
+                    // Clear editing state
+                    textElement.removeAttribute('data-editing');
+                    // Update display
                     textElement.innerHTML = `${processMentions(escapeHtml(newText))} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
                 }
                 
@@ -4096,11 +4121,32 @@
         }
 
         function cancelEditComment(commentId) {
-            const postElement = document.querySelector(`[data-comment-id="${commentId}"]`).closest('[data-post-id]');
-            if (postElement) {
-                const postId = postElement.getAttribute('data-post-id');
-                loadPostComments(postId);
+            console.log('❌ Canceling edit for comment:', commentId);
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (!commentElement) {
+                console.error('Comment element not found:', commentId);
+                return;
             }
+            
+            // Find the text element that's being edited
+            const textElement = commentElement.querySelector('[data-editing="true"]');
+            if (!textElement) {
+                console.error('No element in edit mode found');
+                return;
+            }
+            
+            // Get the stored original text
+            const originalText = textElement.getAttribute('data-original-text') || '';
+            
+            // Clear editing state
+            textElement.removeAttribute('data-editing');
+            
+            // Restore original text with proper formatting
+            const isEdited = originalText !== textElement.getAttribute('data-original-text-clean');
+            const displayText = processMentions(escapeHtml(originalText));
+            const editedLabel = isEdited ? ' <span style="color: #999; font-size: 0.8em;">(edited)</span>' : '';
+            
+            textElement.innerHTML = displayText + editedLabel;
         }
 
         window.submitReply = submitReply;
