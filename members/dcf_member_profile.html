@@ -3569,12 +3569,23 @@
         }
 
         function togglePostComments(postId) {
-            if (postCommentStates[postId]) {
-                postCommentStates[postId].showingAll = !postCommentStates[postId].showingAll;
-                
-                // Reload comments with new state
-                loadPostComments(postId);
+            console.log('🔄 Toggling comments for post:', postId);
+            
+            // Initialize state if it doesn't exist
+            if (!postCommentStates[postId]) {
+                console.warn('⚠️ Comment state not found for post, initializing:', postId);
+                postCommentStates[postId] = {
+                    showingAll: false,
+                    allComments: []
+                };
             }
+            
+            // Toggle the state
+            postCommentStates[postId].showingAll = !postCommentStates[postId].showingAll;
+            console.log('📊 New state for post', postId, ':', postCommentStates[postId].showingAll ? 'showing all' : 'showing popular');
+            
+            // Reload comments with new state
+            loadPostComments(postId);
         }
 
         // Make function globally accessible
@@ -4002,21 +4013,38 @@
         window.loadCommentLikeCount = loadCommentLikeCount;
 
         function startEditComment(commentId) {
+            console.log('🔄 Starting edit for comment:', commentId);
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
-            if (!commentElement) return;
+            if (!commentElement) {
+                console.error('❌ Comment element not found:', commentId);
+                return;
+            }
             
-            const textElement = commentElement.querySelector('[style*="color: #555"]');
-            if (!textElement) return;
+            // Look for the correct color styling (#34495e not #555)
+            const textElement = commentElement.querySelector('[style*="color: #34495e"]') || 
+                               commentElement.querySelector('[style*="color: #555"]');
+            if (!textElement) {
+                console.error('❌ Text element not found in comment');
+                return;
+            }
             
-             const originalText = textElement.innerText.trim().replace(/\s*\(edited\)$/, '');
+            const originalText = textElement.innerText.trim().replace(/\s*\(edited\)$/, '');
+            console.log('📝 Original text:', originalText);
             
             textElement.innerHTML = `
-                <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${originalText}</textarea>
+                <textarea class="edit-textarea" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${escapeHtml(originalText)}</textarea>
                 <div style="margin-top: 8px;">
                     <button onclick="saveEditComment('${commentId}')" class="save-edit-btn" style="background: #007bff; color: white; border: none; padding: 4px 12px; border-radius: 4px; margin-right: 8px;">Save</button>
                     <button onclick="cancelEditComment('${commentId}')" class="cancel-edit-btn" style="background: #6c757d; color: white; border: none; padding: 4px 12px; border-radius: 4px;">Cancel</button>
                 </div>
             `;
+            
+            // Focus the textarea
+            const textarea = textElement.querySelector('.edit-textarea');
+            if (textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
         }
 
         async function saveEditComment(commentId) {
@@ -4046,9 +4074,13 @@
                     await storeMentions(commentId, newText, currentUser.id);
                 }
                 
-                // Update UI
-                const textElement = commentElement.querySelector('[style*="color: #555"]');
-                textElement.innerHTML = `${escapeHtml(processMentions(newText))} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
+                // Update UI - look for correct color
+                const textElement = commentElement.querySelector('[style*="color: #34495e"]') || 
+                                   commentElement.querySelector('[style*="color: #555"]') ||
+                                   commentElement.querySelector('.edit-textarea').parentElement;
+                if (textElement) {
+                    textElement.innerHTML = `${processMentions(escapeHtml(newText))} <span style="color: #999; font-size: 0.8em;">(edited)</span>`;
+                }
                 
             } catch (error) {
                 console.error('Error updating comment:', error);
