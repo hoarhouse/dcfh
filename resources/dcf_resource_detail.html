@@ -2994,62 +2994,6 @@
         // Make function globally accessible
         window.toggleAllComments = toggleAllComments;
 
-        async function sortComments(sortType) {
-            currentSort = sortType;
-            
-            if (!allComments || allComments.length === 0) {
-                return;
-            }
-            
-            const topLevelComments = allComments.filter(comment => !comment.parent_comment_id);
-            let sortedComments;
-            
-            switch (sortType) {
-                case 'newest':
-                    sortedComments = [...topLevelComments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    break;
-                case 'liked':
-                    sortedComments = [...topLevelComments].sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
-                    break;
-                case 'replies':
-                    sortedComments = [...topLevelComments].sort((a, b) => {
-                        const repliesA = allComments.filter(c => c.parent_comment_id === a.id).length;
-                        const repliesB = allComments.filter(c => c.parent_comment_id === b.id).length;
-                        return repliesB - repliesA;
-                    });
-                    break;
-                default:
-                    sortedComments = topLevelComments;
-            }
-            
-            // Rebuild full comment array with sorted top-level comments and their replies
-            const sortedFullComments = [];
-            sortedComments.forEach(comment => {
-                sortedFullComments.push(comment);
-                const replies = allComments.filter(c => c.parent_comment_id === comment.id);
-                replies.forEach(reply => sortedFullComments.push(reply));
-            });
-            
-            currentComments = sortedFullComments;
-            
-            if (showingAllComments) {
-                await displayComments(sortedFullComments);
-                
-                // Add "Show popular comments" link when showing all
-                const container = document.getElementById('commentsList');
-                const collapseLink = `
-                    <div style="text-align: center; padding: 1.5rem 0; border-top: 1px solid #e5e5e5; margin-top: 1rem;">
-                        <button onclick="toggleAllComments()" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: underline;">
-                            Show popular comments only
-                        </button>
-                    </div>
-                `;
-                container.innerHTML += collapseLink;
-            } else {
-                // If showing popular comments, maintain that view
-                await displayCommentsWithPopularity();
-            }
-        }
 
         async function loadCommentReplies(parentId) {
             try {
@@ -4336,8 +4280,16 @@
                     break;
             }
             
-            // Recombine with better organization
-            currentComments = [...sortedTopLevel, ...replies];
+            // Create properly organized comments array maintaining parent-child relationships
+            const sortedFullComments = [];
+            sortedTopLevel.forEach(comment => {
+                sortedFullComments.push(comment);
+                const commentReplies = allComments.filter(c => c.parent_comment_id === comment.id);
+                sortedFullComments.push(...commentReplies);
+            });
+            
+            // Update currentComments and display
+            currentComments = sortedFullComments;
             await displayComments(currentComments);
             
             // Show sort feedback
