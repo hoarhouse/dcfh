@@ -3794,7 +3794,7 @@
                     return;
                 }
                 
-                console.log('Toggling like for comment:', commentId, 'by user:', currentUser.email);
+                console.log('🔄 Toggling like for comment:', commentId, 'by user:', currentUser.email);
                 
                 // Check if user already liked this comment
                 const { data: existingLike, error: checkError } = await window.dcfSupabase
@@ -3802,9 +3802,9 @@
                     .select('id')
                     .eq('comment_id', commentId)
                     .eq('user_email', currentUser.email)
-                    .single();
+                    .maybeSingle();
                 
-                if (checkError && checkError.code !== 'PGRST116') {
+                if (checkError) {
                     console.error('Error checking existing like:', checkError);
                     throw checkError;
                 }
@@ -3814,7 +3814,7 @@
                 
                 if (isLiked) {
                     // Remove like
-                    console.log('Removing like...');
+                    console.log('➖ Removing like...');
                     const { error: deleteError } = await window.dcfSupabase
                         .from('comment_likes')
                         .delete()
@@ -3822,33 +3822,36 @@
                         .eq('user_email', currentUser.email);
                     
                     if (deleteError) {
-                        console.error('Delete error:', deleteError);
+                        console.error('❌ Delete error:', deleteError);
                         throw deleteError;
                     }
                     
                     userCommentLikes.delete(commentId);
-                    console.log('Like removed successfully');
+                    console.log('✅ Like removed successfully');
                     
                 } else {
-                    // Add like - use UPSERT to prevent duplicates
-                    console.log('Adding like...');
+                    // Add like
+                    console.log('➕ Adding like...');
+                    const likeData = {
+                        comment_id: commentId,
+                        user_id: currentUser.id,
+                        user_email: currentUser.email,
+                        user_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
+                        created_at: new Date().toISOString()
+                    };
+                    console.log('📤 Like data:', likeData);
+                    
                     const { error: insertError } = await window.dcfSupabase
                         .from('comment_likes')
-                        .insert([{
-                            comment_id: commentId,
-                            user_id: currentUser.id,
-                            user_email: currentUser.email,
-                            user_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
-                            created_at: new Date().toISOString()
-                        }]);
+                        .insert(likeData);
                     
                     if (insertError) {
-                        console.error('Insert error:', insertError);
+                        console.error('❌ Insert error:', insertError);
                         throw insertError;
                     }
                     
                     userCommentLikes.add(commentId);
-                    console.log('Like added successfully');
+                    console.log('✅ Like added successfully');
                 }
                 
                 // Update like count and UI
