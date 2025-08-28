@@ -1343,6 +1343,14 @@
             const mainPhotoUploadDiv = document.getElementById('mainPhotoUpload');
             const mainPhotoPreview = document.getElementById('mainPhotoPreview');
             
+            // Debug logging
+            console.log('Main photo validation:', {
+                uploading: mainPhotoUploadDiv?.getAttribute('data-uploading'),
+                uploaded: mainPhotoUploadDiv?.getAttribute('data-uploaded'),
+                uploadedPhotosMain: uploadedPhotos.main,
+                previewVisible: mainPhotoPreview?.style.display
+            });
+            
             // Check if main photo is still uploading
             if (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true') {
                 alert('Please wait for the main photo to finish uploading');
@@ -1350,14 +1358,16 @@
             }
             
             // Check if a main photo has been successfully uploaded
+            // Fix: Check uploadedPhotos.main first (most reliable indicator)
             const hasMainPhoto = uploadedPhotos.main || 
                                 (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true');
             
             if (!hasMainPhoto) {
-                // Check if preview exists but upload hasn't started/completed
+                // Only show upload message if preview is visible but no URL stored
                 const hasPreview = mainPhotoPreview && mainPhotoPreview.style.display === 'block';
-                if (hasPreview) {
-                    alert('Please wait for the main photo to finish uploading');
+                if (hasPreview && !uploadedPhotos.main) {
+                    // This means preview is showing but upload failed or hasn't completed
+                    alert('Photo upload may have failed. Please remove and re-upload the main photo.');
                 } else {
                     alert('Please upload a main photo for your project');
                 }
