@@ -2112,9 +2112,137 @@
             }
         }
         
+        // Comprehensive Authorization Audit Function
+        async function runAuthorizationAudit() {
+            console.log('');
+            console.log('🔍 ============================================');
+            console.log('🔍 COMPREHENSIVE AUTHORIZATION AUDIT STARTING');
+            console.log('🔍 ============================================');
+            console.log('');
+            
+            // 1. Check localStorage and sessionStorage
+            console.log('📦 1. STORAGE AUDIT:');
+            console.log('localStorage items:', Object.keys(localStorage));
+            console.log('sessionStorage items:', Object.keys(sessionStorage));
+            
+            // Check for Supabase auth data
+            const authKeys = Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('auth'));
+            console.log('Auth-related localStorage keys:', authKeys);
+            authKeys.forEach(key => {
+                try {
+                    const value = localStorage.getItem(key);
+                    console.log(`  ${key}:`, value ? JSON.parse(value) : 'null');
+                } catch (e) {
+                    console.log(`  ${key}: [non-JSON value]`);
+                }
+            });
+            
+            // 2. Check global auth objects
+            console.log('');
+            console.log('🌍 2. GLOBAL OBJECTS AUDIT:');
+            console.log('window.dcfUser:', window.dcfUser);
+            console.log('window.dcfSupabase:', window.dcfSupabase ? 'Available' : 'Not available');
+            console.log('window.getCurrentUser:', typeof window.getCurrentUser);
+            
+            // 3. Get current user via different methods
+            console.log('');
+            console.log('👤 3. CURRENT USER RETRIEVAL:');
+            
+            // Method 1: Via getCurrentUser function
+            const userMethod1 = window.getCurrentUser ? window.getCurrentUser() : null;
+            console.log('Method 1 - getCurrentUser():', userMethod1);
+            
+            // Method 2: Direct from dcfUser
+            const userMethod2 = window.dcfUser?.profile;
+            console.log('Method 2 - window.dcfUser.profile:', userMethod2);
+            
+            // Method 3: From Supabase directly
+            if (window.dcfSupabase) {
+                try {
+                    const { data: { session } } = await window.dcfSupabase.auth.getSession();
+                    console.log('Method 3 - Supabase session:', session);
+                    if (session) {
+                        console.log('  Session user ID:', session.user.id);
+                        console.log('  Session user email:', session.user.email);
+                        console.log('  Session user ID type:', typeof session.user.id);
+                    }
+                } catch (e) {
+                    console.log('Method 3 - Error getting Supabase session:', e);
+                }
+            }
+            
+            // 4. Get project data
+            console.log('');
+            console.log('📋 4. PROJECT DATA AUDIT:');
+            const projectId = getProjectIdFromUrl();
+            console.log('Project ID from URL:', projectId);
+            
+            if (window.currentProject) {
+                console.log('Current Project:', window.currentProject);
+                console.log('  Project author_id:', window.currentProject.author_id);
+                console.log('  Project author_id type:', typeof window.currentProject.author_id);
+                console.log('  Project author object:', window.currentProject.author);
+                if (window.currentProject.author) {
+                    console.log('    Author ID:', window.currentProject.author.id);
+                    console.log('    Author email:', window.currentProject.author.email);
+                    console.log('    Author username:', window.currentProject.author.username);
+                }
+            } else {
+                console.log('No current project loaded yet');
+            }
+            
+            // 5. Comparison Analysis
+            console.log('');
+            console.log('🔄 5. COMPARISON ANALYSIS:');
+            
+            if (userMethod1 && window.currentProject) {
+                console.log('User ID:', userMethod1.id);
+                console.log('Project author_id:', window.currentProject.author_id);
+                console.log('Are they equal (===)?', userMethod1.id === window.currentProject.author_id);
+                console.log('Are they equal (==)?', userMethod1.id == window.currentProject.author_id);
+                console.log('String comparison:', String(userMethod1.id) === String(window.currentProject.author_id));
+                
+                if (window.currentProject.author) {
+                    console.log('');
+                    console.log('Email comparison:');
+                    console.log('  User email:', userMethod1.email);
+                    console.log('  Author email:', window.currentProject.author.email);
+                    console.log('  Emails match?', userMethod1.email === window.currentProject.author.email);
+                    console.log('  Case-insensitive match?', 
+                        userMethod1.email?.toLowerCase() === window.currentProject.author.email?.toLowerCase());
+                }
+            }
+            
+            // 6. Check auth state
+            console.log('');
+            console.log('🔐 6. AUTHENTICATION STATE:');
+            console.log('Is logged in (dcfUser)?', window.dcfUser?.isLoggedIn);
+            console.log('Has profile?', !!window.dcfUser?.profile);
+            console.log('Has session?', !!window.dcfUser?.session);
+            
+            // 7. Function availability
+            console.log('');
+            console.log('⚙️ 7. FUNCTION AVAILABILITY:');
+            console.log('displayProject:', typeof displayProject);
+            console.log('updateProjectButtons:', typeof updateProjectButtons);
+            console.log('getCurrentUser:', typeof window.getCurrentUser);
+            console.log('initializePage:', typeof initializePage);
+            
+            console.log('');
+            console.log('🔍 ============================================');
+            console.log('🔍 AUDIT COMPLETE - Check results above');
+            console.log('🔍 ============================================');
+            console.log('');
+        }
+        
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
+            
+            // Run audit after a short delay to ensure everything is loaded
+            setTimeout(() => {
+                runAuthorizationAudit();
+            }, 2000);
         });
         console.log('JavaScript parsing complete');
    </script>
