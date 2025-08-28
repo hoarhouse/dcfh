@@ -3041,13 +3041,26 @@
         
         // Apply saved position on page load
         function applySavedCoverPosition() {
-            if (window.currentProject && window.currentProject.cover_position !== undefined) {
+            if (window.currentProject && window.currentProject.id) {
                 const heroBackground = document.getElementById('heroBackground');
                 if (heroBackground) {
-                    const position = window.currentProject.cover_position || 50;
-                    heroBackground.style.backgroundPosition = `center ${position}%`;
-                    currentCoverPosition = position;
-                    console.log('Applied saved cover position:', position);
+                    // Try to load position from localStorage
+                    const storageKey = `cover_position_${window.currentProject.id}`;
+                    const savedPosition = localStorage.getItem(storageKey);
+                    
+                    if (savedPosition !== null) {
+                        const position = parseFloat(savedPosition);
+                        heroBackground.style.backgroundPosition = `center ${position}%`;
+                        currentCoverPosition = position;
+                        window.currentProject.cover_position = position;
+                        console.log('Applied saved cover position from localStorage:', position);
+                    } else {
+                        // Default to center if no saved position
+                        const defaultPosition = 50;
+                        heroBackground.style.backgroundPosition = `center ${defaultPosition}%`;
+                        currentCoverPosition = defaultPosition;
+                        console.log('No saved position found, using default:', defaultPosition);
+                    }
                 }
             }
         }
