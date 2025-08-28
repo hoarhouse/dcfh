@@ -1938,12 +1938,23 @@
             if (imageUrl) {
                 heroBackground.style.backgroundImage = `url(${imageUrl})`;
             }
-            // Apply saved position if available
-            if (window.currentProject && window.currentProject.cover_position !== undefined) {
-                const position = window.currentProject.cover_position || 50;
-                heroBackground.style.backgroundPosition = `center ${position}%`;
-                currentCoverPosition = position;
-                console.log('Applied saved cover position:', position);
+            // Apply saved position from localStorage if available
+            if (window.currentProject && window.currentProject.id && heroBackground) {
+                const storageKey = `cover_position_${window.currentProject.id}`;
+                const savedPosition = localStorage.getItem(storageKey);
+                
+                if (savedPosition !== null) {
+                    const position = parseFloat(savedPosition);
+                    heroBackground.style.backgroundPosition = `center ${position}%`;
+                    currentCoverPosition = position;
+                    window.currentProject.cover_position = position;
+                    console.log('Applied saved cover position from localStorage:', position);
+                } else {
+                    // Default to center
+                    heroBackground.style.backgroundPosition = `center 50%`;
+                    currentCoverPosition = 50;
+                    console.log('Using default cover position');
+                }
             }
         }
 
@@ -2982,7 +2993,7 @@
             }
         }
         
-        function saveCoverPosition() {
+        async function saveCoverPosition() {
             try {
                 console.log('Saving cover position:', currentCoverPosition);
                 
@@ -2993,17 +3004,36 @@
                     return;
                 }
                 
-                // Save position to localStorage
-                const storageKey = `cover_position_${window.currentProject.id}`;
-                localStorage.setItem(storageKey, currentCoverPosition.toString());
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.error('Supabase client not initialized');
+                    alert('Unable to save: Database connection not available. Please refresh the page.');
+                    return;
+                }
                 
-                console.log('✅ Cover position saved to localStorage:', storageKey, currentCoverPosition);
+                // Save position to database as CSS background-position value
+                const positionValue = `center ${currentCoverPosition}%`;
+                const { data: updateData, error: updateError } = await window.dcfSupabase
+                    .from('projects')
+                    .update({ 
+                        cover_position: positionValue,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', window.currentProject.id);
+                
+                if (updateError) {
+                    console.error('Error updating cover position:', updateError);
+                    alert(`Failed to save cover position: ${updateError.message || 'Unknown error'}`);
+                    return;
+                }
+                
+                console.log('✅ Cover position saved to database:', positionValue);
                 
                 // Exit reposition mode
                 exitRepositionMode();
                 
                 // Update local data for current session
-                window.currentProject.cover_position = currentCoverPosition;
+                window.currentProject.cover_position = positionValue;
                 
                 alert('Cover position saved successfully!');
                 
