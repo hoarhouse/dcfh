@@ -1881,6 +1881,141 @@
         // setStatsData(15, 8, 23, 5, 'Project Impact');
         // setJoinCardContent('Join Our Mission', 'Be part of something bigger than yourself');
 
+        // Cover Edit Modal Functions
+        let selectedCoverFile = null;
+        
+        function openCoverEditModal() {
+            const modal = document.getElementById('coverEditModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        function closeCoverEditModal() {
+            const modal = document.getElementById('coverEditModal');
+            const preview = document.getElementById('coverImagePreview');
+            const placeholder = document.querySelector('.upload-placeholder');
+            const saveBtn = document.getElementById('saveCoverBtn');
+            
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            
+            // Reset modal state
+            if (preview) {
+                preview.style.display = 'none';
+                preview.src = '';
+            }
+            if (placeholder) {
+                placeholder.style.display = 'block';
+            }
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
+            selectedCoverFile = null;
+        }
+        
+        function previewCoverImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            selectedCoverFile = file;
+            
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('coverImagePreview');
+                const placeholder = document.querySelector('.upload-placeholder');
+                const saveBtn = document.getElementById('saveCoverBtn');
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function saveCoverImage() {
+            if (!selectedCoverFile || !window.currentProject) {
+                alert('Please select an image first');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('saveCoverBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Uploading...';
+            }
+            
+            try {
+                // Generate unique filename
+                const fileExt = selectedCoverFile.name.split('.').pop();
+                const fileName = `cover-${window.currentProject.id}-${Date.now()}.${fileExt}`;
+                const filePath = `project-covers/${fileName}`;
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
+                    .from('project-images')
+                    .upload(filePath, selectedCoverFile);
+                
+                if (uploadError) {
+                    throw uploadError;
+                }
+                
+                // Get public URL
+                const { data: urlData } = window.dcfSupabase.storage
+                    .from('project-images')
+                    .getPublicUrl(filePath);
+                
+                const publicUrl = urlData.publicUrl;
+                
+                // Update project with new cover URL
+                const { error: updateError } = await window.dcfSupabase
+                    .from('projects')
+                    .update({ main_photo_url: publicUrl })
+                    .eq('id', window.currentProject.id);
+                
+                if (updateError) {
+                    throw updateError;
+                }
+                
+                // Update the display
+                setHeroBackground(publicUrl);
+                closeCoverEditModal();
+                
+                // Show success message
+                alert('Cover photo updated successfully!');
+                
+            } catch (error) {
+                console.error('Error uploading cover:', error);
+                alert('Failed to upload cover photo. Please try again.');
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Cover Photo';
+                }
+            }
+        }
+        
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
