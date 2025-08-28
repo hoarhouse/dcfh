@@ -936,15 +936,31 @@
             // Set about section - use project name in title and handle website link
             setAboutContent(`About ${project.title}`, project.description, project.website_url);
             
-            // Set author details
+            // Set author details using unified auth system instead of raw database data
             if (project.author) {
-                const authorName = `${project.author.first_name || ''} ${project.author.last_name || ''}`.trim() || project.author.username;
-                setAuthorDetails(
-                    authorName,
-                    'Project Lead',
-                    project.author.email,
-                    generateInitials(authorName)
-                );
+                const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+                
+                // Check if the current user is the project author
+                if (currentUser && currentUser.id === project.author_id) {
+                    // Use unified auth data for current user
+                    setAuthorDetails(
+                        `@${currentUser.username}`,
+                        'Project Lead',
+                        null, // Never show email
+                        generateInitials(currentUser.username),
+                        currentUser.avatar_url
+                    );
+                } else {
+                    // For other users, use only safe public data
+                    const username = project.author?.username || 'Unknown User';
+                    setAuthorDetails(
+                        `@${username}`,
+                        'Project Lead', 
+                        null, // Never show email
+                        generateInitials(username),
+                        project.author?.avatar_url
+                    );
+                }
             }
             
             // Set stats (you can enhance this with actual counts later)
@@ -1043,20 +1059,34 @@
             }
         }
 
-        // Function to set author details
-        function setAuthorDetails(name, title, email, avatarInitials) {
+        // Function to set author details (privacy-safe)
+        function setAuthorDetails(username, title, email, avatarInitials, avatarUrl) {
             const authorName = document.getElementById('authorName');
             const authorTitle = document.getElementById('authorTitle');
             const authorEmail = document.getElementById('authorEmail');
             const authorAvatar = document.getElementById('authorAvatar');
             
-            if (name && authorName) authorName.textContent = name;
+            if (username && authorName) authorName.textContent = username;
             if (title && authorTitle) authorTitle.textContent = title;
-            if (email && authorEmail) {
-                authorEmail.textContent = email;
-                authorEmail.href = `mailto:${email}`;
+            
+            // NEVER show email address - hide the email element
+            if (authorEmail) {
+                authorEmail.style.display = 'none';
             }
-            if (avatarInitials && authorAvatar) authorAvatar.textContent = avatarInitials;
+            
+            // Handle avatar - use profile pic if available, otherwise initials
+            if (authorAvatar) {
+                if (avatarUrl) {
+                    authorAvatar.style.backgroundImage = `url(${avatarUrl})`;
+                    authorAvatar.style.backgroundSize = 'cover';
+                    authorAvatar.style.backgroundPosition = 'center';
+                    authorAvatar.textContent = '';
+                } else {
+                    authorAvatar.style.backgroundImage = '';
+                    authorAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                    authorAvatar.textContent = avatarInitials || 'U';
+                }
+            }
         }
 
         // Function to set stats data
