@@ -821,6 +821,98 @@
     </main>
 
     <script>
+        // Get project ID from URL
+        function getProjectIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load project data
+        async function loadProject() {
+            const projectId = getProjectIdFromUrl();
+            
+            if (!projectId) {
+                console.error('No project ID found in URL');
+                return;
+            }
+
+            if (!window.dcfSupabase) {
+                console.error('Supabase client not available');
+                return;
+            }
+
+            try {
+                const { data: project, error } = await window.dcfSupabase
+                    .from('projects')
+                    .select(`*, author:user_profiles!author_id(id,email,username,first_name,last_name)`)
+                    .eq('id', projectId)
+                    .single();
+
+                if (error || !project) {
+                    console.error('Error loading project:', error);
+                    return;
+                }
+
+                displayProject(project);
+                
+            } catch (error) {
+                console.error('Error loading project:', error);
+            }
+        }
+
+        // Display project data
+        function displayProject(project) {
+            // Store project globally
+            window.currentProject = project;
+            
+            // Set hero section
+            if (project.main_photo_url) {
+                setHeroBackground(project.main_photo_url);
+            }
+            setHeroTitle(project.title, project.goal || project.description);
+            
+            // Set about section
+            setAboutContent('About This Project', project.description);
+            
+            // Set author details
+            if (project.author) {
+                const authorName = `${project.author.first_name || ''} ${project.author.last_name || ''}`.trim() || project.author.username;
+                setAuthorDetails(
+                    authorName,
+                    'Project Lead',
+                    project.author.email,
+                    generateInitials(authorName)
+                );
+            }
+            
+            // Set stats (you can enhance this with actual counts later)
+            setStatsData(1, 0, 0, 0, 'Project Statistics');
+            
+            // Update page title
+            document.title = `${project.title} - DCF Hungary`;
+        }
+
+        // Generate initials from name
+        function generateInitials(name) {
+            if (!name || typeof name !== 'string') return 'U';
+            
+            const cleanName = name.replace(/^(Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?|Professor|Father|Fr\.?|Sister|Sr\.?|Rabbi)\s+/i, '').trim();
+            const parts = cleanName.split(' ').filter(part => part.length > 0);
+            
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            } else if (parts.length === 1) {
+                return parts[0].substring(0, 2).toUpperCase();
+            }
+            
+            return 'U';
+        }
+
+        // Initialize page
+        async function initializePage() {
+            await loadProject();
+        }
+
         // Function to set hero background image
         function setHeroBackground(imageUrl) {
             const heroBackground = document.getElementById('heroBackground');
@@ -961,6 +1053,11 @@
         // setAboutContent('About Our Mission', 'This project aims to make a difference...');
         // setStatsData(15, 8, 23, 5, 'Project Impact');
         // setJoinCardContent('Join Our Mission', 'Be part of something bigger than yourself');
+
+        // Initialize page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
     </script>
 </body>
 </html>
