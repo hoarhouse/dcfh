@@ -816,6 +816,7 @@
                 <h3 id="joinCardTitle">Join This Project</h3>
                 <p id="joinCardDescription">Help advance this important initiative and make a meaningful impact in your community</p>
                 <button class="btn" id="joinProjectBtn" onclick="handleJoinProject()">🤝 Join Now</button>
+                <button class="btn" id="manageProjectBtn" onclick="manageProject()" style="display: none; background: #dc3545; margin-left: 1rem;">⚙️ Manage Project</button>
             </div>
         </div>
 
@@ -966,9 +967,44 @@
             // Set stats (you can enhance this with actual counts later)
             setStatsData(1, 0, 0, 0, 'Project Statistics');
             
+            // Check if current user is the project author and show appropriate buttons
+            updateProjectButtons(project);
+            
             // Update page title
             document.title = `${project.title} - DCF Hungary`;
         }
+
+        // Function to update project buttons based on user ownership
+        function updateProjectButtons(project) {
+            const joinBtn = document.getElementById('joinProjectBtn');
+            const manageBtn = document.getElementById('manageProjectBtn');
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            
+            console.log('Checking project ownership:', {
+                currentUserId: currentUser?.id,
+                projectAuthorId: project.author_id,
+                isOwner: currentUser?.id === project.author_id
+            });
+            
+            if (currentUser && currentUser.id === project.author_id) {
+                // User is the project owner - show manage button, hide join button
+                if (joinBtn) joinBtn.style.display = 'none';
+                if (manageBtn) manageBtn.style.display = 'inline-flex';
+                console.log('Showing manage button for project owner');
+            } else {
+                // User is not the owner - show join button, hide manage button  
+                if (joinBtn) joinBtn.style.display = 'inline-flex';
+                if (manageBtn) manageBtn.style.display = 'none';
+                console.log('Showing join button for non-owner');
+            }
+        }
+
+        // Function to handle manage project
+        function manageProject() {
+            const projectId = getProjectIdFromUrl();
+            if (projectId) {
+                window.location.href = `dcf_project_manage.html?id=${projectId}`;
+            }
 
         // Generate initials from name
         function generateInitials(name) {
@@ -1214,5 +1250,7 @@
             initializePage();
         });
     </script>
+</body>
+</html>
 </body>
 </html>
