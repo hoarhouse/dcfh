@@ -1623,6 +1623,109 @@
             await loadProject();
         }
         
+        // Re-check ownership after authentication completes
+        function recheckOwnershipAfterAuth() {
+            console.log('🔄 RE-CHECKING OWNERSHIP AFTER AUTH COMPLETION');
+            
+            if (!window.currentProject) {
+                console.log('No project loaded yet, waiting...');
+                return;
+            }
+            
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            
+            if (!currentUser) {
+                console.log('Still no user after auth - may not be logged in');
+                return;
+            }
+            
+            console.log('Re-check - Current User:', currentUser);
+            console.log('Re-check - User ID:', currentUser.id);
+            console.log('Re-check - Project Author ID:', window.currentProject.author_id);
+            
+            // Check ownership
+            const isOwnerById = currentUser.id === window.currentProject.author_id;
+            const isOwnerByEmail = window.currentProject.author && 
+                                  currentUser.email === window.currentProject.author.email;
+            
+            const isOwner = isOwnerById || isOwnerByEmail;
+            
+            console.log('Re-check - Ownership by ID:', isOwnerById);
+            console.log('Re-check - Ownership by email:', isOwnerByEmail);
+            console.log('Re-check - FINAL RESULT:', isOwner);
+            
+            if (isOwner) {
+                console.log('✅ OWNERSHIP CONFIRMED AFTER AUTH - SHOWING CONTROLS');
+                
+                // Show edit cover button
+                const editCoverBtn = document.getElementById('editCoverBtn');
+                if (editCoverBtn) {
+                    editCoverBtn.style.display = 'flex';
+                    console.log('✅ Edit cover button shown');
+                }
+                
+                // Show owner controls (Manage Project button in hero)
+                const ownerControls = document.getElementById('ownerControls');
+                if (ownerControls) {
+                    ownerControls.style.display = 'flex';
+                    console.log('✅ Owner controls shown');
+                }
+                
+                // Update stats section buttons
+                const joinBtn = document.getElementById('joinProjectBtn');
+                const manageBtn = document.getElementById('manageProjectBtn');
+                if (joinBtn) {
+                    joinBtn.style.display = 'none';
+                    console.log('✅ Join button hidden');
+                }
+                if (manageBtn) {
+                    manageBtn.style.display = 'inline-flex';
+                    console.log('✅ Manage button shown');
+                }
+                
+                // Also re-run updateProjectButtons for completeness
+                if (typeof updateProjectButtons === 'function') {
+                    updateProjectButtons(window.currentProject);
+                }
+            }
+        }
+        
+        // Listen for auth completion and re-check ownership
+        function setupAuthListener() {
+            console.log('🎧 Setting up auth completion listener');
+            
+            // Method 1: Check every 500ms for auth to be ready
+            const authCheckInterval = setInterval(() => {
+                if (window.dcfUser && window.dcfUser.isLoggedIn) {
+                    console.log('✅ Auth detected as complete, re-checking ownership');
+                    clearInterval(authCheckInterval);
+                    
+                    // Give it a moment for all data to settle
+                    setTimeout(() => {
+                        recheckOwnershipAfterAuth();
+                    }, 100);
+                }
+            }, 500);
+            
+            // Stop checking after 10 seconds
+            setTimeout(() => {
+                clearInterval(authCheckInterval);
+            }, 10000);
+            
+            // Method 2: Also listen for Supabase auth state changes
+            if (window.dcfSupabase) {
+                window.dcfSupabase.auth.onAuthStateChange((event, session) => {
+                    console.log('🔐 Auth state changed:', event);
+                    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                        console.log('Auth event detected, waiting for dcfUser to update...');
+                        setTimeout(() => {
+                            recheckOwnershipAfterAuth();
+                        }, 500);
+                    }
+                });
+            }
+        }
+        
         // Like/Share Functionality
         let isLiked = false;
         let likeCount = 0;
@@ -2367,10 +2470,17 @@
         window.forceShowOwnerControls = forceShowOwnerControls;
         window.runAuthorizationAudit = runAuthorizationAudit;
         window.tryAlternativeAuth = tryAlternativeAuth;
+        window.recheckOwnershipAfterAuth = recheckOwnershipAfterAuth;
         
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM Content Loaded - Starting initialization');
+            
+            // Load the project first
             initializePage();
+            
+            // Set up auth listener to re-check ownership when auth completes
+            setupAuthListener();
             
             // Run audit after a short delay to ensure everything is loaded
             setTimeout(() => {
