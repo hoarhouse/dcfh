@@ -2597,43 +2597,50 @@
             // Set up auth listener to re-check ownership when auth completes
             setupAuthListener();
             
-            // Add event listener to Edit Cover button as backup
-            setTimeout(() => {
+            // Setup Edit Cover button click handler
+            function setupEditCoverButton() {
                 const editCoverBtn = document.getElementById('editCoverBtn');
-                if (editCoverBtn) {
-                    console.log('🎯 Edit Cover button found, adding click listener');
-                    console.log('Button display style:', editCoverBtn.style.display);
-                    console.log('Button disabled:', editCoverBtn.disabled);
-                    console.log('Button pointer events:', window.getComputedStyle(editCoverBtn).pointerEvents);
-                    
-                    // Remove any existing onclick to avoid conflicts
-                    editCoverBtn.removeAttribute('onclick');
-                    
-                    // Add new click handler
-                    editCoverBtn.onclick = function(e) {
-                        console.log('🔴 EDIT COVER BUTTON CLICKED!');
-                        alert('Edit Cover button was clicked!');
-                        
-                        // Try to open modal
-                        if (typeof openCoverEditModal === 'function') {
-                            openCoverEditModal();
-                        } else {
-                            console.error('openCoverEditModal function not found');
-                            // Try direct modal display
-                            const modal = document.getElementById('coverEditModal');
-                            if (modal) {
-                                modal.style.display = 'flex';
-                                modal.classList.add('active');
-                                console.log('Modal opened directly');
-                            }
-                        }
-                    };
-                    
-                    console.log('✅ Click handler attached to Edit Cover button');
-                } else {
-                    console.error('❌ Edit Cover button not found in DOM');
+                if (!editCoverBtn) {
+                    console.error('❌ Edit Cover button not found');
+                    return;
                 }
-            }, 1000); // Wait a bit for everything to load
+                
+                console.log('🎯 Setting up Edit Cover button');
+                
+                // Clear any existing handlers
+                editCoverBtn.onclick = null;
+                const newBtn = editCoverBtn.cloneNode(true);
+                editCoverBtn.parentNode.replaceChild(newBtn, editCoverBtn);
+                
+                // Get the fresh button reference
+                const btn = document.getElementById('editCoverBtn');
+                
+                // Add click handler
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('🔴 EDIT COVER BUTTON CLICKED!');
+                    
+                    // Show modal
+                    const modal = document.getElementById('coverEditModal');
+                    if (modal) {
+                        console.log('Opening cover edit modal');
+                        modal.style.display = 'flex';
+                        modal.classList.add('active');
+                    } else {
+                        console.error('Cover edit modal not found');
+                        alert('Cover edit modal not found. Please refresh the page.');
+                    }
+                });
+                
+                console.log('✅ Edit Cover button handler attached');
+            }
+            
+            // Call setup immediately and after delay
+            setupEditCoverButton();
+            setTimeout(setupEditCoverButton, 1000);
+            setTimeout(setupEditCoverButton, 2000);
             
             // Run audit after a short delay to ensure everything is loaded
             setTimeout(() => {
