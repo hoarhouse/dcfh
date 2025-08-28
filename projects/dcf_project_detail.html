@@ -2121,20 +2121,30 @@
         let selectedCoverFile = null;
         
         function openCoverEditModal() {
+            console.log('🎨 Opening cover edit modal');
             const modal = document.getElementById('coverEditModal');
+            
             if (modal) {
+                console.log('✅ Modal element found');
                 modal.classList.add('active');
+                modal.style.display = 'flex'; // Also force display flex
+                console.log('Modal classes:', modal.classList.toString());
+            } else {
+                console.error('❌ Cover edit modal element not found');
             }
         }
         
         function closeCoverEditModal() {
+            console.log('🔒 Closing cover edit modal');
             const modal = document.getElementById('coverEditModal');
             const preview = document.getElementById('coverImagePreview');
             const placeholder = document.querySelector('.upload-placeholder');
             const saveBtn = document.getElementById('saveCoverBtn');
+            const fileInput = document.getElementById('coverImageInput');
             
             if (modal) {
                 modal.classList.remove('active');
+                modal.style.display = 'none'; // Force hide
             }
             
             // Reset modal state
@@ -2147,6 +2157,9 @@
             }
             if (saveBtn) {
                 saveBtn.disabled = true;
+            }
+            if (fileInput) {
+                fileInput.value = ''; // Clear file input
             }
             selectedCoverFile = null;
         }
@@ -2191,8 +2204,20 @@
         }
         
         async function saveCoverImage() {
-            if (!selectedCoverFile || !window.currentProject) {
+            console.log('💾 Saving cover image');
+            
+            if (!selectedCoverFile) {
                 alert('Please select an image first');
+                return;
+            }
+            
+            if (!window.currentProject) {
+                alert('Project data not loaded. Please refresh the page.');
+                return;
+            }
+            
+            if (!window.dcfSupabase) {
+                alert('Authentication system not ready. Please try again.');
                 return;
             }
             
@@ -2203,19 +2228,34 @@
             }
             
             try {
+                console.log('Uploading file:', selectedCoverFile.name);
+                
                 // Generate unique filename
                 const fileExt = selectedCoverFile.name.split('.').pop();
                 const fileName = `cover-${window.currentProject.id}-${Date.now()}.${fileExt}`;
                 const filePath = `project-covers/${fileName}`;
                 
+                console.log('File path:', filePath);
+                
                 // Upload to Supabase Storage
                 const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
                     .from('project-images')
-                    .upload(filePath, selectedCoverFile);
+                    .upload(filePath, selectedCoverFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
                 
                 if (uploadError) {
+                    console.error('Upload error:', uploadError);
+                    // If bucket doesn't exist, try creating it or use a different bucket
+                    if (uploadError.message.includes('not found')) {
+                        alert('Storage bucket not configured. Please contact administrator.');
+                        throw uploadError;
+                    }
                     throw uploadError;
                 }
+                
+                console.log('Upload successful:', uploadData);
                 
                 // Get public URL
                 const { data: urlData } = window.dcfSupabase.storage
@@ -2223,6 +2263,7 @@
                     .getPublicUrl(filePath);
                 
                 const publicUrl = urlData.publicUrl;
+                console.log('Public URL:', publicUrl);
                 
                 // Update project with new cover URL
                 const { error: updateError } = await window.dcfSupabase
@@ -2231,11 +2272,15 @@
                     .eq('id', window.currentProject.id);
                 
                 if (updateError) {
+                    console.error('Database update error:', updateError);
                     throw updateError;
                 }
                 
+                console.log('✅ Cover photo updated in database');
+                
                 // Update the display
                 setHeroBackground(publicUrl);
+                window.currentProject.main_photo_url = publicUrl;
                 closeCoverEditModal();
                 
                 // Show success message
@@ -2243,7 +2288,7 @@
                 
             } catch (error) {
                 console.error('Error uploading cover:', error);
-                alert('Failed to upload cover photo. Please try again.');
+                alert(`Failed to upload cover photo: ${error.message || 'Unknown error'}`);
             } finally {
                 if (saveBtn) {
                     saveBtn.disabled = false;
@@ -2471,6 +2516,10 @@
         window.runAuthorizationAudit = runAuthorizationAudit;
         window.tryAlternativeAuth = tryAlternativeAuth;
         window.recheckOwnershipAfterAuth = recheckOwnershipAfterAuth;
+        window.openCoverEditModal = openCoverEditModal;
+        window.closeCoverEditModal = closeCoverEditModal;
+        window.previewCoverImage = previewCoverImage;
+        window.saveCoverImage = saveCoverImage;
         
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -2481,6 +2530,18 @@
             
             // Set up auth listener to re-check ownership when auth completes
             setupAuthListener();
+            
+            // Add event listener to Edit Cover button as backup
+            const editCoverBtn = document.getElementById('editCoverBtn');
+            if (editCoverBtn) {
+                console.log('Adding click listener to Edit Cover button');
+                editCoverBtn.addEventListener('click', function(e) {
+                    console.log('Edit Cover button clicked via event listener');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openCoverEditModal();
+                });
+            }
             
             // Run audit after a short delay to ensure everything is loaded
             setTimeout(() => {
