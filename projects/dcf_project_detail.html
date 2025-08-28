@@ -1413,38 +1413,54 @@
         }
 
         // Display project data
-        function displayProject(project) {
+        async function displayProject(project) {
             // Store project globally
             window.currentProject = project;
             
             // Enhanced debugging for ownership detection
             console.log('=== OWNERSHIP DETECTION DEBUG ===');
             console.log('1. Getting current user...');
+            
+            // Try multiple methods to get current user
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            let sessionUserId = null;
+            let sessionUserEmail = null;
             
-            console.log('2. Current User Object:', currentUser);
-            console.log('3. Project Author ID:', project.author_id);
-            console.log('4. Project Author Object:', project.author);
-            
-            if (currentUser) {
-                console.log('5. Current User ID:', currentUser.id);
-                console.log('6. Current User Email:', currentUser.email);
-                console.log('7. Type of Current User ID:', typeof currentUser.id);
-                console.log('8. Type of Project Author ID:', typeof project.author_id);
-            } else {
-                console.log('5. No current user found - user not logged in or getCurrentUser failed');
+            // Also get direct from Supabase session as fallback
+            if (window.dcfSupabase) {
+                try {
+                    const { data: { session } } = await window.dcfSupabase.auth.getSession();
+                    if (session) {
+                        sessionUserId = session.user.id;
+                        sessionUserEmail = session.user.email;
+                    }
+                } catch (e) {
+                    console.error('Error getting session:', e);
+                }
             }
             
-            // Try multiple ways to check ownership
-            const isOwnerById = currentUser && currentUser.id === project.author_id;
-            const isOwnerByEmail = currentUser && project.author && currentUser.email === project.author.email;
+            console.log('2. Current User Object:', currentUser);
+            console.log('3. Session User ID:', sessionUserId);
+            console.log('4. Session User Email:', sessionUserEmail);
+            console.log('5. Project Author ID:', project.author_id);
+            console.log('6. Project Author Object:', project.author);
             
-            console.log('9. Ownership check by ID:', isOwnerById);
-            console.log('10. Ownership check by email:', isOwnerByEmail);
+            // Try all possible ownership checks
+            const checks = {
+                profileIdMatch: currentUser && currentUser.id === project.author_id,
+                sessionIdMatch: sessionUserId && sessionUserId === project.author_id,
+                profileEmailMatch: currentUser && project.author && currentUser.email === project.author.email,
+                sessionEmailMatch: sessionUserEmail && project.author && sessionUserEmail === project.author.email,
+                caseInsensitiveEmail: (currentUser?.email?.toLowerCase() === project.author?.email?.toLowerCase()) ||
+                                     (sessionUserEmail?.toLowerCase() === project.author?.email?.toLowerCase())
+            };
             
-            const isOwner = isOwnerById || isOwnerByEmail;
+            console.log('7. Ownership checks:', checks);
             
-            console.log('11. FINAL OWNERSHIP RESULT:', isOwner);
+            // If ANY check passes, user is owner
+            const isOwner = Object.values(checks).some(check => check === true);
+            
+            console.log('8. FINAL OWNERSHIP RESULT:', isOwner);
             console.log('=== END DEBUG ===');
             
             if (isOwner) {
@@ -1461,8 +1477,15 @@
                     ownerControls.style.display = 'flex';
                     console.log('✅ Showing owner controls for project owner');
                 }
+                
+                // Also update the stats section buttons
+                const joinBtn = document.getElementById('joinProjectBtn');
+                const manageBtn = document.getElementById('manageProjectBtn');
+                if (joinBtn) joinBtn.style.display = 'none';
+                if (manageBtn) manageBtn.style.display = 'inline-flex';
             } else {
                 console.log('❌ User is not the project owner - controls remain hidden');
+                console.log('💡 TIP: You can run forceShowOwnerControls() in console to test owner features');
             }
             
             // Set hero section - only title and goal, no description
