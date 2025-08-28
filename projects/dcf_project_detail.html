@@ -1403,30 +1403,52 @@
             // Store project globally
             window.currentProject = project;
             
-            // Check if current user is project owner
+            // Enhanced debugging for ownership detection
+            console.log('=== OWNERSHIP DETECTION DEBUG ===');
+            console.log('1. Getting current user...');
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
-            const isOwner = currentUser && currentUser.id === project.author_id;
             
-            console.log('Checking project ownership:', {
-                currentUserId: currentUser?.id,
-                projectAuthorId: project.author_id,
-                isOwner: isOwner
-            });
+            console.log('2. Current User Object:', currentUser);
+            console.log('3. Project Author ID:', project.author_id);
+            console.log('4. Project Author Object:', project.author);
+            
+            if (currentUser) {
+                console.log('5. Current User ID:', currentUser.id);
+                console.log('6. Current User Email:', currentUser.email);
+                console.log('7. Type of Current User ID:', typeof currentUser.id);
+                console.log('8. Type of Project Author ID:', typeof project.author_id);
+            } else {
+                console.log('5. No current user found - user not logged in or getCurrentUser failed');
+            }
+            
+            // Try multiple ways to check ownership
+            const isOwnerById = currentUser && currentUser.id === project.author_id;
+            const isOwnerByEmail = currentUser && project.author && currentUser.email === project.author.email;
+            
+            console.log('9. Ownership check by ID:', isOwnerById);
+            console.log('10. Ownership check by email:', isOwnerByEmail);
+            
+            const isOwner = isOwnerById || isOwnerByEmail;
+            
+            console.log('11. FINAL OWNERSHIP RESULT:', isOwner);
+            console.log('=== END DEBUG ===');
             
             if (isOwner) {
                 // Show edit cover button
                 const editCoverBtn = document.getElementById('editCoverBtn');
                 if (editCoverBtn) {
                     editCoverBtn.style.display = 'flex';
-                    console.log('Showing edit cover button for project owner');
+                    console.log('✅ Showing edit cover button for project owner');
                 }
                 
                 // Show owner controls (Manage Project button)
                 const ownerControls = document.getElementById('ownerControls');
                 if (ownerControls) {
                     ownerControls.style.display = 'flex';
-                    console.log('Showing owner controls for project owner');
+                    console.log('✅ Showing owner controls for project owner');
                 }
+            } else {
+                console.log('❌ User is not the project owner - controls remain hidden');
             }
             
             // Set hero section - only title and goal, no description
