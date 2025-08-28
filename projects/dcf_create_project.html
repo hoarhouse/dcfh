@@ -761,6 +761,30 @@
                     <label class="form-label" for="projectDescription">Description *</label>
                     <textarea id="projectDescription" name="projectDescription" class="textarea" placeholder="Describe your project, its purpose, and what you hope to achieve..." required></textarea>
                 </div>
+                
+                <!-- Project Goal Field -->
+                <div class="form-group">
+                    <label class="form-label" for="projectGoal">Project Goal *</label>
+                    <input type="text" id="projectGoal" name="projectGoal" 
+                           class="form-input" 
+                           placeholder="Describe your goal in 10 words or less" 
+                           maxlength="200" required>
+                    <small class="form-help">
+                        <span id="goalWordCount">0/10 words</span>
+                        <span id="goalWarning" style="color: #dc3545; display: none; margin-left: 10px;">
+                            ⚠️ Maximum 10 words allowed
+                        </span>
+                    </small>
+                </div>
+
+                <!-- Project URL Field -->
+                <div class="form-group">
+                    <label class="form-label" for="websiteUrl">Project Website URL (Optional)</label>
+                    <input type="url" id="websiteUrl" name="websiteUrl" class="form-input"
+                           placeholder="https://example.com (optional)">
+                    <small class="form-help">Include full URL with https:// if you have a project website</small>
+                </div>
+                
                 <div class="form-group">
                     <label class="form-label" for="projectCategory">Category *</label>
                     <select id="projectCategory" name="projectCategory" class="form-select" required>
@@ -1323,6 +1347,8 @@
             
             projectData.title = document.getElementById('projectTitle').value;
             projectData.description = document.getElementById('projectDescription').value;
+            projectData.projectGoal = document.getElementById('projectGoal').value.trim();
+            projectData.websiteUrl = document.getElementById('websiteUrl').value.trim() || null;
             projectData.category = document.getElementById('projectCategory').value;
             
             goToStep(2);
@@ -1352,6 +1378,13 @@
                 uploadedPhotosMain: uploadedPhotos.main,
                 previewVisible: mainPhotoPreview?.style.display
             });
+            
+            // Validate project goal word count
+            const goalWords = projectData.projectGoal.trim() === '' ? [] : projectData.projectGoal.trim().split(/\s+/);
+            if (goalWords.length > 10) {
+                alert('Project goal must be 10 words or less');
+                return;
+            }
             
             // Check if main photo is still uploading
             if (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true') {
@@ -1581,6 +1614,29 @@
                 }
             }
         }
+
+        // Project Goal word count validation
+        document.getElementById('projectGoal').addEventListener('input', function(e) {
+            const text = e.target.value.trim();
+            const words = text === '' ? [] : text.split(/\s+/);
+            const wordCount = words.length;
+            const wordCountElement = document.getElementById('goalWordCount');
+            const warningElement = document.getElementById('goalWarning');
+
+            // Update word counter
+            wordCountElement.textContent = `${wordCount}/10 words`;
+
+            // Show warning if over 10 words
+            if (wordCount > 10) {
+                wordCountElement.style.color = '#dc3545';
+                warningElement.style.display = 'inline';
+                e.target.setCustomValidity('Project goal must be 10 words or less');
+            } else {
+                wordCountElement.style.color = '#666';
+                warningElement.style.display = 'none';
+                e.target.setCustomValidity('');
+            }
+        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
