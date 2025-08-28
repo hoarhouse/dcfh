@@ -2165,22 +2165,32 @@
         }
         
         function previewCoverImage(event) {
+            console.log('📸 Preview cover image called');
             const file = event.target.files[0];
-            if (!file) return;
+            
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
+            
+            console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
             
             // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 alert('File size must be less than 5MB');
+                event.target.value = ''; // Clear the input
                 return;
             }
             
             // Check file type
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                alert('Please select an image file (JPG, PNG, GIF, etc.)');
+                event.target.value = ''; // Clear the input
                 return;
             }
             
             selectedCoverFile = file;
+            console.log('File accepted, showing preview');
             
             // Preview the image
             const reader = new FileReader();
@@ -2192,13 +2202,19 @@
                 if (preview) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    console.log('✅ Preview image displayed');
                 }
                 if (placeholder) {
                     placeholder.style.display = 'none';
                 }
                 if (saveBtn) {
                     saveBtn.disabled = false;
+                    console.log('✅ Save button enabled');
                 }
+            };
+            reader.onerror = function(error) {
+                console.error('Error reading file:', error);
+                alert('Error reading file. Please try again.');
             };
             reader.readAsDataURL(file);
         }
