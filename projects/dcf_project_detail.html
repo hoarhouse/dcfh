@@ -643,6 +643,122 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        
+        /* Cover Position Controls */
+        .cover-position-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 400px;
+        }
+        
+        .position-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .position-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .position-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .position-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        #positionSlider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        #positionSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        #positionSlider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .position-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .position-save-btn, .position-cancel-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .position-save-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .position-save-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .position-cancel-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .position-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .cover-photo.repositioning {
+            cursor: ns-resize;
+        }
 
         .about-content {
             display: grid;
@@ -1091,6 +1207,20 @@
                 <span>📷</span> Edit Cover
             </button>
             
+            <!-- Cover Position Controls (hidden by default) -->
+            <div class="cover-position-controls" id="coverPositionControls" style="display: none;">
+                <div class="position-info">Drag image or use controls to adjust vertical position</div>
+                <div class="position-slider-container">
+                    <button class="position-btn" onclick="adjustCoverPosition(-5)" title="Move Up">↑</button>
+                    <input type="range" id="positionSlider" min="0" max="100" value="50" oninput="setCoverPosition(this.value)">
+                    <button class="position-btn" onclick="adjustCoverPosition(5)" title="Move Down">↓</button>
+                </div>
+                <div class="position-actions">
+                    <button class="save-position-btn" onclick="saveCoverPosition()">Save Position</button>
+                    <button class="cancel-position-btn" onclick="cancelRepositioning()">Cancel</button>
+                </div>
+            </div>
+            
             <div class="hero-content">
                 <h1 class="hero-title" id="heroTitle">Title Goes Here</h1>
                 <p class="hero-subtitle" id="heroSubtitle">Project Goal Goes Here</p>
@@ -1295,6 +1425,12 @@
                         <p style="font-size: 0.9rem; color: #666;">Recommended size: 1920x350px</p>
                     </div>
                     <img class="image-preview" id="coverImagePreview" style="display: none;">
+                </div>
+                <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid #e5e5e5; padding-top: 1.5rem;">
+                    <p style="margin-bottom: 1rem; color: #666;">Or adjust the current cover photo:</p>
+                    <button class="btn-save" onclick="startRepositionMode()" style="background: #6c757d;">
+                        Reposition Current Photo
+                    </button>
                 </div>
             </div>
             <div class="cover-modal-footer">
@@ -1802,6 +1938,13 @@
             if (imageUrl) {
                 heroBackground.style.backgroundImage = `url(${imageUrl})`;
             }
+            // Apply saved position if available
+            if (window.currentProject && window.currentProject.cover_position !== undefined) {
+                const position = window.currentProject.cover_position || 50;
+                heroBackground.style.backgroundPosition = `center ${position}%`;
+                currentCoverPosition = position;
+                console.log('Applied saved cover position:', position);
+            }
         }
 
         // Function to set hero title and subtitle
@@ -2255,75 +2398,66 @@
                 
                 console.log('Generated filename:', fileName);
                 
-                // Upload to 'media' bucket (same as avatars)
-                const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
-                    .from('media')
-                    .upload(fileName, selectedCoverFile, {
-                        cacheControl: '3600',
-                        upsert: true // Allow overwriting if needed
-                    });
+                // Try uploading to media bucket first
+                let uploadData = null;
+                let publicUrl = null;
+                let uploadBucket = 'media';
                 
-                if (uploadError) {
+                try {
+                    const { data, error } = await window.dcfSupabase.storage
+                        .from(uploadBucket)
+                        .upload(fileName, selectedCoverFile, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+                    
+                    if (error) throw error;
+                    uploadData = data;
+                    
+                } catch (uploadError) {
                     console.error('Upload error:', uploadError);
                     
-                    // Check if it's a bucket issue
-                    if (uploadError.message && (uploadError.message.includes('bucket') || uploadError.message.includes('not found'))) {
-                        console.log('Storage error detected, trying to diagnose...');
-                        
-                        // Try alternative bucket names
-                        const alternativeBuckets = ['media', 'public', 'avatars', 'project-images', 'projects'];
-                        let uploadSuccessful = false;
-                        
-                        for (const bucketName of alternativeBuckets) {
-                            if (uploadSuccessful) break;
-                            
-                            console.log(`Trying bucket: ${bucketName}`);
-                            try {
-                                const { data: retryData, error: retryError } = await window.dcfSupabase.storage
-                                    .from(bucketName)
-                                    .upload(fileName, selectedCoverFile, {
-                                        cacheControl: '3600',
-                                        upsert: true
-                                    });
-                                    
-                                if (!retryError) {
-                                    console.log(`✅ Upload successful to bucket: ${bucketName}`);
-                                    uploadData = retryData;
-                                    uploadSuccessful = true;
-                                    
-                                    // Update the URL retrieval to use the correct bucket
-                                    const { data: urlData } = window.dcfSupabase.storage
-                                        .from(bucketName)
-                                        .getPublicUrl(fileName);
-                                    
-                                    publicUrl = urlData.publicUrl;
-                                    break;
-                                }
-                            } catch (e) {
-                                console.log(`Bucket ${bucketName} failed:`, e.message);
+                    // Try alternative buckets if media bucket fails
+                    const alternativeBuckets = ['public', 'avatars', 'project-images', 'projects'];
+                    let uploadSuccessful = false;
+                    
+                    for (const bucketName of alternativeBuckets) {
+                        console.log(`Trying alternative bucket: ${bucketName}`);
+                        try {
+                            const { data, error } = await window.dcfSupabase.storage
+                                .from(bucketName)
+                                .upload(fileName, selectedCoverFile, {
+                                    cacheControl: '3600',
+                                    upsert: true
+                                });
+                                
+                            if (!error) {
+                                console.log(`✅ Upload successful to bucket: ${bucketName}`);
+                                uploadData = data;
+                                uploadBucket = bucketName;
+                                uploadSuccessful = true;
+                                break;
                             }
+                        } catch (e) {
+                            console.log(`Bucket ${bucketName} failed:`, e.message);
                         }
-                        
-                        if (!uploadSuccessful) {
-                            alert('Could not find a valid storage bucket. Please ensure Supabase storage is configured.');
-                            throw new Error('No valid storage bucket found');
-                        }
-                    } else {
-                        // Not a bucket issue, throw the original error
-                        throw uploadError;
                     }
                     
-                    throw uploadError;
+                    if (!uploadSuccessful) {
+                        alert('Could not upload to any storage bucket. Please ensure Supabase storage is configured.');
+                        throw new Error('Upload failed to all available buckets');
+                    }
                 }
                 
-                console.log('Upload successful:', uploadData);
+                console.log('Upload successful to bucket:', uploadBucket);
+                console.log('Upload data:', uploadData);
                 
-                // Get public URL for the uploaded file
+                // Get public URL from the successful bucket
                 const { data: urlData } = window.dcfSupabase.storage
-                    .from('media')
+                    .from(uploadBucket)
                     .getPublicUrl(fileName);
                 
-                const publicUrl = urlData.publicUrl;
+                publicUrl = urlData.publicUrl;
                 console.log('Public URL:', publicUrl);
                 
                 // Update the projects table with new main_photo_url and timestamp
@@ -2341,7 +2475,7 @@
                     // Try to delete the uploaded file if database update fails
                     try {
                         await window.dcfSupabase.storage
-                            .from('media')
+                            .from(uploadBucket) // Use the bucket that was successful
                             .remove([fileName]);
                         console.log('Cleaned up uploaded file after database error');
                     } catch (cleanupError) {
@@ -2361,8 +2495,9 @@
                 window.currentProject.main_photo_url = publicUrl;
                 closeCoverEditModal();
                 
-                // Show success message
-                alert('Cover photo updated successfully!');
+                // Show success message and activate repositioning mode
+                alert('Cover photo updated successfully! You can now adjust the vertical position.');
+                enterRepositionMode();
                 
             } catch (error) {
                 console.error('Error uploading cover:', error);
@@ -2725,6 +2860,208 @@
             }, 2000);
         });
         console.log('JavaScript parsing complete');
+        // Cover Photo Repositioning Functions
+        let currentCoverPosition = 50; // Default center position
+        let originalPosition = 50;
+        let isDragging = false;
+        let dragStartY = 0;
+        let dragStartPosition = 50;
+        
+        function startRepositionMode() {
+            // Close the modal first
+            closeCoverEditModal();
+            // Then enter reposition mode
+            enterRepositionMode();
+        }
+        
+        function enterRepositionMode() {
+            console.log('Entering reposition mode');
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (controls && heroBackground) {
+                // Show controls
+                controls.style.display = 'block';
+                
+                // Add repositioning class for cursor
+                heroBackground.classList.add('repositioning');
+                
+                // Get current position if saved
+                const currentBgPosition = heroBackground.style.backgroundPosition;
+                if (currentBgPosition && currentBgPosition.includes('%')) {
+                    const match = currentBgPosition.match(/(\d+)%/);
+                    if (match) {
+                        currentCoverPosition = parseInt(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                }
+                
+                // Set slider value
+                const slider = document.getElementById('positionSlider');
+                if (slider) {
+                    slider.value = currentCoverPosition;
+                }
+                
+                // Enable drag functionality
+                enableDragToReposition();
+            }
+        }
+        
+        function enableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function disableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.removeEventListener('mousedown', startDrag);
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        function startDrag(e) {
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground || !heroBackground.classList.contains('repositioning')) return;
+            
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartPosition = currentCoverPosition;
+            e.preventDefault();
+        }
+        
+        function handleDrag(e) {
+            if (!isDragging) return;
+            
+            const heroBackground = document.getElementById('heroBackground');
+            const deltaY = e.clientY - dragStartY;
+            const heightPercent = (deltaY / heroBackground.offsetHeight) * 100;
+            
+            let newPosition = dragStartPosition + heightPercent;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+        }
+        
+        function adjustCoverPosition(delta) {
+            let newPosition = currentCoverPosition + delta;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+            
+            // Update slider
+            const slider = document.getElementById('positionSlider');
+            if (slider) {
+                slider.value = newPosition;
+            }
+        }
+        
+        function setCoverPosition(position) {
+            currentCoverPosition = parseFloat(position);
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (heroBackground) {
+                heroBackground.style.backgroundPosition = `center ${currentCoverPosition}%`;
+            }
+            
+            // Update slider if called from drag
+            const slider = document.getElementById('positionSlider');
+            if (slider && slider.value != currentCoverPosition) {
+                slider.value = currentCoverPosition;
+            }
+        }
+        
+        async function saveCoverPosition() {
+            try {
+                console.log('Saving cover position:', currentCoverPosition);
+                
+                // Update database with new position
+                const { data: updateData, error: updateError } = await supabase
+                    .from('projects')
+                    .update({ 
+                        cover_position: currentCoverPosition,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', window.currentProject.id);
+                
+                if (updateError) {
+                    console.error('Error updating cover position:', updateError);
+                    alert('Failed to save cover position');
+                    return;
+                }
+                
+                console.log('✅ Cover position saved:', updateData);
+                
+                // Exit reposition mode
+                exitRepositionMode();
+                
+                // Update local data
+                window.currentProject.cover_position = currentCoverPosition;
+                
+                alert('Cover position saved successfully!');
+                
+            } catch (error) {
+                console.error('Error saving cover position:', error);
+                alert('Failed to save cover position');
+            }
+        }
+        
+        function cancelRepositioning() {
+            console.log('Canceling reposition, reverting to:', originalPosition);
+            
+            // Revert to original position
+            setCoverPosition(originalPosition);
+            
+            // Exit reposition mode
+            exitRepositionMode();
+        }
+        
+        function exitRepositionMode() {
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (controls) {
+                controls.style.display = 'none';
+            }
+            
+            if (heroBackground) {
+                heroBackground.classList.remove('repositioning');
+            }
+            
+            // Disable drag
+            disableDragToReposition();
+        }
+        
+        // Apply saved position on page load
+        function applySavedCoverPosition() {
+            if (window.currentProject && window.currentProject.cover_position !== undefined) {
+                const heroBackground = document.getElementById('heroBackground');
+                if (heroBackground) {
+                    const position = window.currentProject.cover_position || 50;
+                    heroBackground.style.backgroundPosition = `center ${position}%`;
+                    currentCoverPosition = position;
+                    console.log('Applied saved cover position:', position);
+                }
+            }
+        }
+        
+        // Add this to the page initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply saved position after a short delay to ensure project data is loaded
+            setTimeout(applySavedCoverPosition, 500);
+        });
+        
    </script>
 </body>
 </html>
