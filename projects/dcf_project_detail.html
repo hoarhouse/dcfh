@@ -2249,6 +2249,102 @@
             console.log('');
         }
         
+        // Manual owner control functions for testing
+        function forceShowOwnerControls() {
+            console.log('🔧 FORCE SHOWING OWNER CONTROLS');
+            
+            const editCoverBtn = document.getElementById('editCoverBtn');
+            const ownerControls = document.getElementById('ownerControls');
+            const manageBtn = document.getElementById('manageProjectBtn');
+            const joinBtn = document.getElementById('joinProjectBtn');
+            
+            if (editCoverBtn) {
+                editCoverBtn.style.display = 'flex';
+                console.log('✅ Edit cover button shown');
+            }
+            
+            if (ownerControls) {
+                ownerControls.style.display = 'flex';
+                console.log('✅ Owner controls shown');
+            }
+            
+            if (manageBtn) {
+                manageBtn.style.display = 'inline-flex';
+                console.log('✅ Manage button shown');
+            }
+            
+            if (joinBtn) {
+                joinBtn.style.display = 'none';
+                console.log('✅ Join button hidden');
+            }
+            
+            console.log('Owner controls forcefully shown - use this to test functionality');
+        }
+        
+        // Try alternative auth comparison
+        async function tryAlternativeAuth() {
+            console.log('🔄 TRYING ALTERNATIVE AUTH APPROACH');
+            
+            // Get fresh session from Supabase
+            if (!window.dcfSupabase) {
+                console.error('No Supabase client');
+                return;
+            }
+            
+            const { data: { session } } = await window.dcfSupabase.auth.getSession();
+            
+            if (!session) {
+                console.log('No session found');
+                return;
+            }
+            
+            const currentUserId = session.user.id;
+            const currentUserEmail = session.user.email;
+            
+            console.log('Current user ID from session:', currentUserId);
+            console.log('Current user email from session:', currentUserEmail);
+            
+            if (window.currentProject) {
+                const projectAuthorId = window.currentProject.author_id;
+                const projectAuthorEmail = window.currentProject.author?.email;
+                
+                console.log('Project author ID:', projectAuthorId);
+                console.log('Project author email:', projectAuthorEmail);
+                
+                // Try different comparison methods
+                console.log('');
+                console.log('COMPARISON RESULTS:');
+                console.log('ID match (strict):', currentUserId === projectAuthorId);
+                console.log('ID match (loose):', currentUserId == projectAuthorId);
+                console.log('Email match:', currentUserEmail === projectAuthorEmail);
+                console.log('Email match (case-insensitive):', 
+                    currentUserEmail?.toLowerCase() === projectAuthorEmail?.toLowerCase());
+                
+                // If any match, show controls
+                if (currentUserId === projectAuthorId || 
+                    currentUserId == projectAuthorId ||
+                    currentUserEmail === projectAuthorEmail ||
+                    currentUserEmail?.toLowerCase() === projectAuthorEmail?.toLowerCase()) {
+                    
+                    console.log('✅ MATCH FOUND - Showing owner controls');
+                    forceShowOwnerControls();
+                } else {
+                    console.log('❌ No match found');
+                    
+                    // Log the actual values for debugging
+                    console.log('');
+                    console.log('DEBUG VALUES:');
+                    console.log('User ID characters:', Array.from(String(currentUserId)));
+                    console.log('Author ID characters:', Array.from(String(projectAuthorId)));
+                }
+            }
+        }
+        
+        // Make functions globally available for console testing
+        window.forceShowOwnerControls = forceShowOwnerControls;
+        window.runAuthorizationAudit = runAuthorizationAudit;
+        window.tryAlternativeAuth = tryAlternativeAuth;
+        
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
@@ -2256,6 +2352,11 @@
             // Run audit after a short delay to ensure everything is loaded
             setTimeout(() => {
                 runAuthorizationAudit();
+                
+                // Also try alternative auth after audit
+                setTimeout(() => {
+                    tryAlternativeAuth();
+                }, 500);
             }, 2000);
         });
         console.log('JavaScript parsing complete');
