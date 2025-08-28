@@ -1004,16 +1004,18 @@
                 // Upload to Supabase storage
                 const photoUrl = await uploadPhotoToStorage(file, photoType);
                 
-                // Store the uploaded photo URL
+                // Store the uploaded photo URL - CRITICAL for validation
                 uploadedPhotos[photoType] = photoUrl;
                 
-                // Mark upload as complete
+                // Mark upload as complete - remove uploading flag and set uploaded flag
                 if (uploadDiv) {
                     uploadDiv.removeAttribute('data-uploading');
                     uploadDiv.setAttribute('data-uploaded', 'true');
+                    uploadDiv.setAttribute('data-photo-url', photoUrl); // Store URL as backup
                 }
                 
                 console.log(`Photo uploaded successfully: ${photoType} -> ${photoUrl}`);
+                console.log('Current uploadedPhotos:', uploadedPhotos);
                 
             } catch (error) {
                 console.error('Photo upload failed:', error);
@@ -1358,9 +1360,10 @@
             }
             
             // Check if a main photo has been successfully uploaded
-            // Fix: Check uploadedPhotos.main first (most reliable indicator)
+            // Fix: Check multiple indicators for successful upload
             const hasMainPhoto = uploadedPhotos.main || 
-                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true');
+                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true') ||
+                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-photo-url'));
             
             if (!hasMainPhoto) {
                 // Only show upload message if preview is visible but no URL stored
