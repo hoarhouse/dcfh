@@ -326,6 +326,102 @@
             color: #0056b3;
             text-decoration: underline;
         }
+        
+        /* Like/Share Button Styles */
+        .interaction-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .interaction-btn:hover {
+            border-color: #333;
+            color: #333;
+        }
+
+        .interaction-btn.active {
+            background: #ff4757;
+            color: white;
+            border-color: #ff4757;
+        }
+
+        .share-dropdown {
+            position: relative;
+        }
+
+        .share-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem;
+            min-width: 200px;
+            z-index: 10;
+            display: none;
+        }
+
+        .share-menu.active {
+            display: block;
+        }
+
+        .share-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .share-item:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Related Projects Card */
+        .related-projects-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .related-project-item {
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .related-project-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: #333;
+        }
+        
+        .related-project-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .related-project-desc {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
 
         .about-content {
             display: grid;
@@ -755,16 +851,49 @@
             <div class="hero-content">
                 <h1 class="hero-title" id="heroTitle">Title Goes Here</h1>
                 <p class="hero-subtitle" id="heroSubtitle">Project Goal Goes Here</p>
+                <a href="#" class="project-website-link" id="projectWebsiteLink" target="_blank" style="display: none; color: white; margin-top: 1rem;">Visit Project Website</a>
             </div>
         </div>
 
         <!-- About Section -->
         <div class="about-section" id="aboutSection">
             <h2 class="about-title" id="aboutTitle">About This Project</h2>
-            <a href="#" class="project-website-link" id="projectWebsiteLink" target="_blank" style="display: none;">Visit Project Website</a>
             <div class="about-content">
                 <div class="about-description" id="aboutDescription">
                     <p>Project description will appear here. This section provides detailed information about the project's goals, mission, and impact.</p>
+                    
+                    <!-- Like/Share Actions -->
+                    <div class="project-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <button class="interaction-btn" id="likeBtn" onclick="toggleLike()">
+                            <span>❤️</span>
+                            <span id="likeText">Like</span>
+                            <span id="likeCount" style="margin-left: 0.25rem;">(0)</span>
+                        </button>
+                        <div class="share-dropdown">
+                            <button class="interaction-btn" onclick="toggleShareMenu()">
+                                <span>📤</span>
+                                <span>Share</span>
+                            </button>
+                            <div class="share-menu" id="shareMenu">
+                                <div class="share-item" onclick="copyLink()">
+                                    <span>🔗</span>
+                                    <span>Copy Link</span>
+                                </div>
+                                <div class="share-item" onclick="shareEmail()">
+                                    <span>📧</span>
+                                    <span>Share via Email</span>
+                                </div>
+                                <div class="share-item" onclick="shareTwitter()">
+                                    <span>🐦</span>
+                                    <span>Share on Twitter</span>
+                                </div>
+                                <div class="share-item" onclick="shareLinkedIn()">
+                                    <span>💼</span>
+                                    <span>Share on LinkedIn</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="author-card" id="authorCard">
@@ -776,6 +905,15 @@
                             <div class="author-title" id="authorTitle">Project Lead</div>
                             <a href="mailto:" class="author-email" id="authorEmail">author@dcfhungary.org</a>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Related Projects Section -->
+                <div class="related-projects-card" id="relatedProjectsCard" style="margin-top: 2rem;">
+                    <div class="author-label">Related Projects</div>
+                    <div id="relatedProjectsList" style="margin-top: 1rem;">
+                        <!-- Related projects will be loaded here -->
+                        <div style="color: #666; font-size: 0.9rem;">Loading related projects...</div>
                     </div>
                 </div>
             </div>
@@ -921,9 +1059,53 @@
                 console.log('DEBUG - Author avatar_url:', project.author?.avatar_url);
 
                 displayProject(project);
+                loadRelatedProjects(project.author_id, projectId);
                 
             } catch (error) {
                 console.error('Error loading project:', error);
+            }
+        }
+        
+        // Load related projects by same author
+        async function loadRelatedProjects(authorId, currentProjectId) {
+            if (!authorId || !window.dcfSupabase) return;
+            
+            try {
+                const { data: relatedProjects, error } = await window.dcfSupabase
+                    .from('projects')
+                    .select('id, title, description')
+                    .eq('author_id', authorId)
+                    .neq('id', currentProjectId)
+                    .limit(3);
+                    
+                const container = document.getElementById('relatedProjectsList');
+                if (!container) return;
+                
+                if (error || !relatedProjects || relatedProjects.length === 0) {
+                    container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No other projects by this author</div>';
+                    return;
+                }
+                
+                container.innerHTML = relatedProjects.map(project => {
+                    const truncatedDesc = project.description ? 
+                        (project.description.length > 100 ? 
+                            project.description.substring(0, 100) + '...' : 
+                            project.description) : 'No description available';
+                            
+                    return `
+                        <div class="related-project-item" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'">
+                            <div class="related-project-title">${project.title}</div>
+                            <div class="related-project-desc">${truncatedDesc}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading related projects:', error);
+                const container = document.getElementById('relatedProjectsList');
+                if (container) {
+                    container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">Error loading related projects</div>';
+                }
             }
         }
 
