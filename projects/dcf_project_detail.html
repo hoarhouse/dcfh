@@ -2246,57 +2246,118 @@
             
             try {
                 console.log('Uploading file:', selectedCoverFile.name);
+                console.log('Project ID:', window.currentProject.id);
                 
-                // Generate unique filename
-                const fileExt = selectedCoverFile.name.split('.').pop();
-                const fileName = `cover-${window.currentProject.id}-${Date.now()}.${fileExt}`;
-                const filePath = `project-covers/${fileName}`;
+                // Generate unique filename following the avatar pattern
+                const timestamp = Date.now();
+                const fileExt = selectedCoverFile.name.split('.').pop().toLowerCase();
+                const fileName = `project_cover_${window.currentProject.id}_${timestamp}.${fileExt}`;
                 
-                console.log('File path:', filePath);
+                console.log('Generated filename:', fileName);
                 
-                // Upload to Supabase Storage
+                // Upload to 'media' bucket (same as avatars)
                 const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
-                    .from('project-images')
-                    .upload(filePath, selectedCoverFile, {
+                    .from('media')
+                    .upload(fileName, selectedCoverFile, {
                         cacheControl: '3600',
-                        upsert: false
+                        upsert: true // Allow overwriting if needed
                     });
                 
                 if (uploadError) {
                     console.error('Upload error:', uploadError);
-                    // If bucket doesn't exist, try creating it or use a different bucket
-                    if (uploadError.message.includes('not found')) {
-                        alert('Storage bucket not configured. Please contact administrator.');
+                    
+                    // Check if it's a bucket issue
+                    if (uploadError.message && (uploadError.message.includes('bucket') || uploadError.message.includes('not found'))) {
+                        console.log('Storage error detected, trying to diagnose...');
+                        
+                        // Try alternative bucket names
+                        const alternativeBuckets = ['media', 'public', 'avatars', 'project-images', 'projects'];
+                        let uploadSuccessful = false;
+                        
+                        for (const bucketName of alternativeBuckets) {
+                            if (uploadSuccessful) break;
+                            
+                            console.log(`Trying bucket: ${bucketName}`);
+                            try {
+                                const { data: retryData, error: retryError } = await window.dcfSupabase.storage
+                                    .from(bucketName)
+                                    .upload(fileName, selectedCoverFile, {
+                                        cacheControl: '3600',
+                                        upsert: true
+                                    });
+                                    
+                                if (!retryError) {
+                                    console.log(`✅ Upload successful to bucket: ${bucketName}`);
+                                    uploadData = retryData;
+                                    uploadSuccessful = true;
+                                    
+                                    // Update the URL retrieval to use the correct bucket
+                                    const { data: urlData } = window.dcfSupabase.storage
+                                        .from(bucketName)
+                                        .getPublicUrl(fileName);
+                                    
+                                    publicUrl = urlData.publicUrl;
+                                    break;
+                                }
+                            } catch (e) {
+                                console.log(`Bucket ${bucketName} failed:`, e.message);
+                            }
+                        }
+                        
+                        if (!uploadSuccessful) {
+                            alert('Could not find a valid storage bucket. Please ensure Supabase storage is configured.');
+                            throw new Error('No valid storage bucket found');
+                        }
+                    } else {
+                        // Not a bucket issue, throw the original error
                         throw uploadError;
                     }
+                    
                     throw uploadError;
                 }
                 
                 console.log('Upload successful:', uploadData);
                 
-                // Get public URL
+                // Get public URL for the uploaded file
                 const { data: urlData } = window.dcfSupabase.storage
-                    .from('project-images')
-                    .getPublicUrl(filePath);
+                    .from('media')
+                    .getPublicUrl(fileName);
                 
                 const publicUrl = urlData.publicUrl;
                 console.log('Public URL:', publicUrl);
                 
-                // Update project with new cover URL
-                const { error: updateError } = await window.dcfSupabase
+                // Update the projects table with new main_photo_url and timestamp
+                const { data: updateData, error: updateError } = await window.dcfSupabase
                     .from('projects')
-                    .update({ main_photo_url: publicUrl })
-                    .eq('id', window.currentProject.id);
+                    .update({ 
+                        main_photo_url: publicUrl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', window.currentProject.id)
+                    .select();
                 
                 if (updateError) {
                     console.error('Database update error:', updateError);
-                    throw updateError;
+                    // Try to delete the uploaded file if database update fails
+                    try {
+                        await window.dcfSupabase.storage
+                            .from('media')
+                            .remove([fileName]);
+                        console.log('Cleaned up uploaded file after database error');
+                    } catch (cleanupError) {
+                        console.error('Could not clean up file:', cleanupError);
+                    }
+                    throw new Error('Failed to update database: ' + updateError.message);
                 }
                 
-                console.log('✅ Cover photo updated in database');
+                console.log('✅ Database updated successfully:', updateData);
                 
-                // Update the display
-                setHeroBackground(publicUrl);
+                // Update the display immediately
+                const heroBackground = document.getElementById('heroBackground');
+                if (heroBackground) {
+                    heroBackground.style.backgroundImage = `url(${publicUrl})`;
+                    console.log('✅ Cover image updated on page');
+                }
                 window.currentProject.main_photo_url = publicUrl;
                 closeCoverEditModal();
                 
@@ -2305,7 +2366,18 @@
                 
             } catch (error) {
                 console.error('Error uploading cover:', error);
-                alert(`Failed to upload cover photo: ${error.message || 'Unknown error'}`);
+                
+                let errorMessage = 'Failed to upload cover photo: ';
+                
+                if (error.message) {
+                    errorMessage += error.message;
+                } else if (typeof error === 'string') {
+                    errorMessage += error;
+                } else {
+                    errorMessage += 'Unknown error occurred';
+                }
+                
+                alert(errorMessage);
             } finally {
                 if (saveBtn) {
                     saveBtn.disabled = false;
