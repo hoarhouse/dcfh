@@ -1938,17 +1938,20 @@
             if (imageUrl) {
                 heroBackground.style.backgroundImage = `url(${imageUrl})`;
             }
-            // Apply saved position from localStorage if available
-            if (window.currentProject && window.currentProject.id && heroBackground) {
-                const storageKey = `cover_position_${window.currentProject.id}`;
-                const savedPosition = localStorage.getItem(storageKey);
-                
-                if (savedPosition !== null) {
-                    const position = parseFloat(savedPosition);
-                    heroBackground.style.backgroundPosition = `center ${position}%`;
-                    currentCoverPosition = position;
-                    window.currentProject.cover_position = position;
-                    console.log('Applied saved cover position from localStorage:', position);
+            // Apply saved position from database if available
+            if (window.currentProject && heroBackground) {
+                if (window.currentProject.cover_position) {
+                    // Apply the position directly from database
+                    heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                    
+                    // Extract percentage for slider
+                    const match = window.currentProject.cover_position.match(/center\s+(\d+)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                    } else {
+                        currentCoverPosition = 50;
+                    }
+                    console.log('Applied saved cover position from database:', window.currentProject.cover_position);
                 } else {
                     // Default to center
                     heroBackground.style.backgroundPosition = `center 50%`;
@@ -3074,16 +3077,21 @@
             if (window.currentProject && window.currentProject.id) {
                 const heroBackground = document.getElementById('heroBackground');
                 if (heroBackground) {
-                    // Try to load position from localStorage
-                    const storageKey = `cover_position_${window.currentProject.id}`;
-                    const savedPosition = localStorage.getItem(storageKey);
-                    
-                    if (savedPosition !== null) {
-                        const position = parseFloat(savedPosition);
-                        heroBackground.style.backgroundPosition = `center ${position}%`;
-                        currentCoverPosition = position;
-                        window.currentProject.cover_position = position;
-                        console.log('Applied saved cover position from localStorage:', position);
+                    // Load position from database (already fetched with project data)
+                    if (window.currentProject.cover_position) {
+                        // Parse the CSS value (e.g., "center 75%")
+                        const match = window.currentProject.cover_position.match(/center\s+(\d+)%/);
+                        if (match) {
+                            const position = parseFloat(match[1]);
+                            heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                            currentCoverPosition = position;
+                            console.log('Applied saved cover position from database:', window.currentProject.cover_position);
+                        } else {
+                            // If format is unexpected, just apply it directly
+                            heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                            currentCoverPosition = 50; // Default for slider
+                            console.log('Applied cover position (direct):', window.currentProject.cover_position);
+                        }
                     } else {
                         // Default to center if no saved position
                         const defaultPosition = 50;
