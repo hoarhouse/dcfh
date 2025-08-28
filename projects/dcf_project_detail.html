@@ -2982,45 +2982,34 @@
             }
         }
         
-        async function saveCoverPosition() {
+        function saveCoverPosition() {
             try {
                 console.log('Saving cover position:', currentCoverPosition);
                 
-                // Check if Supabase client is available
-                if (!window.dcfSupabase) {
-                    console.error('Supabase client not initialized');
-                    alert('Unable to save: Database connection not available. Please refresh the page.');
+                // Check if project ID is available
+                if (!window.currentProject || !window.currentProject.id) {
+                    console.error('Project ID not available');
+                    alert('Unable to save: Project information not loaded.');
                     return;
                 }
                 
-                // Update database with new position
-                const { data: updateData, error: updateError } = await window.dcfSupabase
-                    .from('projects')
-                    .update({ 
-                        cover_position: currentCoverPosition,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', window.currentProject.id);
+                // Save position to localStorage
+                const storageKey = `cover_position_${window.currentProject.id}`;
+                localStorage.setItem(storageKey, currentCoverPosition.toString());
                 
-                if (updateError) {
-                    console.error('Error updating cover position:', updateError);
-                    alert(`Failed to save cover position: ${updateError.message || 'Unknown error'}`);
-                    return;
-                }
-                
-                console.log('✅ Cover position saved:', updateData);
+                console.log('✅ Cover position saved to localStorage:', storageKey, currentCoverPosition);
                 
                 // Exit reposition mode
                 exitRepositionMode();
                 
-                // Update local data
+                // Update local data for current session
                 window.currentProject.cover_position = currentCoverPosition;
                 
                 alert('Cover position saved successfully!');
                 
             } catch (error) {
                 console.error('Error saving cover position:', error);
-                alert('Failed to save cover position');
+                alert('Failed to save cover position: ' + error.message);
             }
         }
         
