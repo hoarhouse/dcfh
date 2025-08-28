@@ -1120,8 +1120,17 @@
             }
             setHeroTitle(project.title, project.goal);
             
-            // Set about section - use project name in title and handle website link
-            setAboutContent(`About ${project.title}`, project.description, project.website_url);
+            // Handle website link in hero section
+            if (project.website_url) {
+                const websiteLink = document.getElementById('projectWebsiteLink');
+                if (websiteLink) {
+                    websiteLink.href = project.website_url;
+                    websiteLink.style.display = 'inline-block';
+                }
+            }
+            
+            // Set about section - use project name in title (no website link here anymore)
+            setAboutContent(`About ${project.title}`, project.description, null);
             
             // Set author details using unified auth system instead of raw database data
             if (project.author) {
@@ -1213,6 +1222,75 @@
         async function initializePage() {
             await loadProject();
         }
+        
+        // Like/Share Functionality
+        let isLiked = false;
+        let likeCount = 0;
+        
+        function toggleLike() {
+            isLiked = !isLiked;
+            const likeBtn = document.getElementById('likeBtn');
+            const likeText = document.getElementById('likeText');
+            const likeCountEl = document.getElementById('likeCount');
+            
+            if (isLiked) {
+                likeBtn.classList.add('active');
+                likeText.textContent = 'Liked';
+                likeCount++;
+            } else {
+                likeBtn.classList.remove('active');
+                likeText.textContent = 'Like';
+                likeCount = Math.max(0, likeCount - 1);
+            }
+            
+            likeCountEl.textContent = `(${likeCount})`;
+        }
+        
+        function toggleShareMenu() {
+            const shareMenu = document.getElementById('shareMenu');
+            shareMenu.classList.toggle('active');
+        }
+        
+        function copyLink() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+                toggleShareMenu();
+            });
+        }
+        
+        function shareEmail() {
+            const project = window.currentProject;
+            const subject = encodeURIComponent(`Check out this project: ${project?.title || 'DCF Project'}`);
+            const body = encodeURIComponent(`I thought you might be interested in this project:\n\n${project?.title || 'Project'}\n${project?.description || ''}\n\nView it here: ${window.location.href}`);
+            window.open(`mailto:?subject=${subject}&body=${body}`);
+            toggleShareMenu();
+        }
+        
+        function shareTwitter() {
+            const project = window.currentProject;
+            const text = encodeURIComponent(`Check out this amazing project: ${project?.title || 'DCF Project'}`);
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`);
+            toggleShareMenu();
+        }
+        
+        function shareLinkedIn() {
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`);
+            toggleShareMenu();
+        }
+        
+        // Close share menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const shareDropdown = e.target.closest('.share-dropdown');
+            if (!shareDropdown) {
+                const shareMenu = document.getElementById('shareMenu');
+                if (shareMenu) {
+                    shareMenu.classList.remove('active');
+                }
+            }
+        });
 
         // Function to set hero background image
         function setHeroBackground(imageUrl) {
