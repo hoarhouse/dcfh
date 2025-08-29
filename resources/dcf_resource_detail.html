@@ -46,17 +46,41 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing resource detail page');
+            
             // Get resource ID from URL
             const urlParams = new URLSearchParams(window.location.search);
             resourceId = urlParams.get('id');
             
             if (!resourceId) {
+                console.error('❌ No resource ID in URL');
                 showError();
                 return;
             }
+            
+            console.log('📋 Resource ID:', resourceId);
 
-            // Wait for auth system to be ready
+            // Wait for auth system and Supabase client to be ready
             currentUser = await waitForAuth();
+            
+            // Wait for Supabase client to be available
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 20) {
+                console.log('⏳ Waiting for Supabase client...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            // Set the supabase client
+            supabase = window.dcfSupabase;
+            
+            if (!supabase) {
+                console.error('❌ Supabase client not available after waiting');
+                showError();
+                return;
+            }
+            
+            console.log('✅ Supabase client ready');
             
             // Load resource data
             await loadResource();
