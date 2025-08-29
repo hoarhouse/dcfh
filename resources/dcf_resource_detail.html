@@ -1242,7 +1242,16 @@
             }
         }
 
+        // Track reply submissions per comment to prevent duplicates
+        const isSubmittingReply = {};
+        
         async function submitReply(commentId) {
+            // Prevent duplicate submissions
+            if (isSubmittingReply[commentId]) {
+                console.log('⚠️ Reply submission already in progress for comment:', commentId);
+                return;
+            }
+            
             const textarea = document.getElementById(`replyText-${commentId}`);
             const content = textarea.value.trim();
             
@@ -1269,6 +1278,10 @@
                 await showAlert('Please log in to post replies', 'warning');
                 return;
             }
+            
+            // Set flag to prevent duplicate submissions
+            isSubmittingReply[commentId] = true;
+            console.log('🚀 Starting reply submission for comment:', commentId);
             
             const submitBtn = document.querySelector(`#replyForm-${commentId} button[onclick*="submitReply"]`);
             const originalText = submitBtn ? submitBtn.textContent : 'Reply';
