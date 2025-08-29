@@ -1278,15 +1278,14 @@
         }
 
         // Track reply submissions per comment to prevent duplicates
-        const isSubmittingReply = {};
+        // This is a permanent fix to prevent duplicate replies from being submitted
+        window.isSubmittingReply = window.isSubmittingReply || {};
         
         async function submitReply(commentId) {
-            console.log('📝 submitReply called for comment:', commentId);
-            
-            // Prevent duplicate submissions
-            if (isSubmittingReply[commentId]) {
-                console.log('⚠️ Reply submission already in progress for comment:', commentId);
-                return;
+            // PERMANENT FIX: Block duplicate submissions for the same comment
+            if (window.isSubmittingReply[commentId]) {
+                console.log('Already submitting reply for comment:', commentId);
+                return; // Exit immediately if already submitting
             }
             
             const textarea = document.getElementById(`replyText-${commentId}`);
@@ -1316,9 +1315,8 @@
                 return;
             }
             
-            // Set flag to prevent duplicate submissions
-            isSubmittingReply[commentId] = true;
-            console.log('🚀 Starting reply submission for comment:', commentId);
+            // Set submission lock to prevent duplicates
+            window.isSubmittingReply[commentId] = true;
             
             const submitBtn = document.querySelector(`#replyForm-${commentId} button[onclick*="submitReply"]`);
             const originalText = submitBtn ? submitBtn.textContent : 'Reply';
