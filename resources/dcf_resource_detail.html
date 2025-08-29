@@ -117,16 +117,26 @@
 
         async function loadResource() {
             try {
+                console.log('📚 Loading resource with ID:', resourceId);
+                console.log('🔌 Supabase client available:', !!supabase);
+                
+                if (!supabase) {
+                    throw new Error('Supabase client not initialized');
+                }
+                
                 const { data: resource, error } = await supabase
                     .from('resources')
                     .select('*')
                     .eq('id', resourceId)
                     .single();
 
+                console.log('📦 Query result:', { resource, error });
+
                 if (error) throw error;
                 if (!resource) throw new Error('Resource not found');
 
                 currentResource = resource;
+                console.log('✅ Resource loaded:', resource.title);
                 
                 // Record view
                 if (currentUser) {
@@ -140,9 +150,10 @@
                 // Show content, hide loading
                 document.getElementById('loadingSpinner').style.display = 'none';
                 document.getElementById('contentWrapper').style.display = 'grid';
+                console.log('✅ UI updated, content displayed');
 
             } catch (error) {
-                console.error('Error loading resource:', error);
+                console.error('❌ Error loading resource:', error);
                 showError();
             }
         }
