@@ -3731,28 +3731,33 @@
 
         // Upload post media
         async function uploadPostMedia(files) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) throw new Error('User not authenticated');
+            
+            const supabase = window.dcfSupabase;
             const uploadedUrls = [];
             
-            for (const file of files) {
-                try {
-                    const fileName = `posts/${Date.now()}_${file.name}`;
-                    const { data, error } = await window.dcfSupabase.storage
-                        .from('media')
-                        .upload(fileName, file);
-                        
-                    if (error) throw error;
-                    
-                    const { data: urlData } = window.dcfSupabase.storage
-                        .from('media')
-                        .getPublicUrl(fileName);
-                        
-                    uploadedUrls.push(urlData.publicUrl);
-                } catch (error) {
-                    console.error('Error uploading file:', error);
-                    throw error;
-                }
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileName = `post_${currentUser.id}_${Date.now()}_${i}.${file.name.split('.').pop()}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('media')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+                
+                if (error) throw error;
+                
+                const { data: urlData } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(fileName);
+                
+                uploadedUrls.push(urlData.publicUrl);
             }
             
+            console.log('Uploaded URLs:', uploadedUrls);
             return uploadedUrls;
         }
 
