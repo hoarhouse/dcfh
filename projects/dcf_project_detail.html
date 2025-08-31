@@ -3582,6 +3582,528 @@
             setTimeout(applySavedCoverPosition, 500);
         });
         
+        // ============= POSTS FUNCTIONALITY - Added from member profile =============
+
+        // Global variables for posts
+        let selectedPostFiles = [];
+        let userCommentLikes = new Set();
+        const postCommentStates = {};
+
+        // Get current user helper
+        function getCurrentUser() {
+            return window.dcfUser?.isLoggedIn ? window.dcfUser.profile : null;
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize post creation
+        function initializePostCreation() {
+            const textarea = document.getElementById('postTextarea');
+            const submitBtn = document.getElementById('postSubmitBtnExpanded');
+            const characterCount = document.getElementById('characterCount');
+            const authorAvatar = document.getElementById('postAuthorAvatar');
+            const authorName = document.getElementById('postAuthorName');
+            
+            if (!textarea || !submitBtn) return;
+            
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                // Set author info
+                if (authorName) {
+                    authorName.textContent = `@${currentUser.username || 'user'}`;
+                }
+                
+                if (authorAvatar) {
+                    if (currentUser.avatar_url) {
+                        authorAvatar.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                        authorAvatar.style.backgroundSize = 'cover';
+                        authorAvatar.style.backgroundPosition = 'center';
+                        authorAvatar.textContent = '';
+                    } else {
+                        const initials = currentUser.username ? 
+                            currentUser.username.substring(0, 2).toUpperCase() : 'U';
+                        authorAvatar.textContent = initials;
+                    }
+                }
+            }
+            
+            // Add input listener
+            textarea.addEventListener('input', handlePostInput);
+            
+            // Initialize media file input
+            const mediaInput = document.getElementById('mediaFileInput');
+            if (mediaInput) {
+                mediaInput.addEventListener('change', (e) => {
+                    if (validateFileSelection(e.target.files)) {
+                        selectedPostFiles = Array.from(e.target.files);
+                        displaySelectedFiles();
+                    } else {
+                        e.target.value = '';
+                    }
+                });
+            }
+        }
+
+        // Handle post input
+        function handlePostInput() {
+            const textarea = document.getElementById('postTextarea');
+            const submitBtn = document.getElementById('postSubmitBtnExpanded');
+            const characterCount = document.getElementById('characterCount');
+            
+            if (!textarea || !submitBtn) return;
+            
+            const content = textarea.value.trim();
+            const charCount = textarea.value.length;
+            
+            if (characterCount) {
+                characterCount.textContent = `${charCount}/2000`;
+                if (charCount > 1800) {
+                    characterCount.style.color = '#dc3545';
+                } else if (charCount > 1500) {
+                    characterCount.style.color = '#ffc107';
+                } else {
+                    characterCount.style.color = '#666';
+                }
+            }
+            
+            submitBtn.disabled = content.length === 0 || charCount > 2000;
+        }
+
+        // Submit post
+        async function submitPost() {
+            const textarea = document.getElementById('postTextarea');
+            const content = textarea.value.trim();
+            const currentUser = getCurrentUser();
+            
+            if (!currentUser) {
+                alert('Please log in to create posts');
+                return;
+            }
+            
+            if (!content) {
+                alert('Please enter some content for your post');
+                return;
+            }
+            
+            try {
+                let mediaUrls = [];
+                if (selectedPostFiles && selectedPostFiles.length > 0) {
+                    try {
+                        mediaUrls = await uploadPostMedia(selectedPostFiles);
+                    } catch (error) {
+                        console.error('Media upload failed:', error);
+                        alert('Failed to upload media files');
+                        return;
+                    }
+                }
+
+                const { data, error } = await window.dcfSupabase
+                    .from('posts')
+                    .insert({
+                        author_id: currentUser.id,
+                        author_email: currentUser.email,
+                        author_name: `@${currentUser.username}`,
+                        username: currentUser.username,
+                        content: content,
+                        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+                        media_count: mediaUrls.length,
+                        media_type: mediaUrls.length > 0 ? 
+                            (selectedPostFiles[0].type.startsWith('image/') ? 'images' : 'video') : null
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                textarea.value = '';
+                handlePostInput();
+                showNotification('Post created successfully!');
+                
+                // Clear media selection
+                selectedPostFiles = [];
+                const mediaPreview = document.getElementById('mediaPreviewArea');
+                if (mediaPreview) {
+                    mediaPreview.style.display = 'none';
+                }
+                
+                // Add post to feed immediately
+                addPostToFeed(data);
+                
+                // Load comments for new post
+                setTimeout(() => {
+                    if (window.loadPostComments) {
+                        loadPostComments(data.id);
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error creating post:', error);
+                alert('Failed to create post. Please try again.');
+            }
+        }
+
+        // Add post to feed
+        function addPostToFeed(post) {
+            const feedContainer = document.getElementById('postsFeed');
+            if (!feedContainer) return;
+            
+            const postHTML = createPostHTML(post);
+            
+            // Remove loading message if it exists
+            const loadingMsg = feedContainer.querySelector('.loading-posts');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+            
+            // Add new post at the top
+            feedContainer.insertAdjacentHTML('afterbegin', postHTML);
+        }
+
+        // Format time ago
+        function formatTimeAgo(dateString) {
+            const now = new Date();
+            const postDate = new Date(dateString);
+            const diffInSeconds = Math.floor((now - postDate) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        }
+
+        // Linkify text
+        function linkifyText(text) {
+            if (!text) return '';
+            
+            // Escape HTML to prevent XSS
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+            
+            let escapedText = escapeHtml(text);
+            
+            // Convert URLs to clickable links
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            escapedText = escapedText.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+            
+            return escapedText;
+        }
+
+        // Create post HTML
+        function createPostHTML(post) {
+            const timeAgo = formatTimeAgo(post.created_at);
+            const authorName = post.author_name || `@${post.username}`;
+            const currentUser = getCurrentUser();
+            
+            // Generate avatar HTML
+            let avatarHTML = '';
+            if (currentUser && currentUser.avatar_url && post.author_email === currentUser.email) {
+                avatarHTML = `<div class="post-avatar" style="background-image: url(${currentUser.avatar_url}); background-size: cover; background-position: center;"></div>`;
+            } else {
+                const initials = post.username ? post.username.substring(0, 2).toUpperCase() : 'UN';
+                avatarHTML = `<div class="post-avatar">${initials}</div>`;
+            }
+            
+            // Generate media HTML if post has media
+            let mediaHTML = '';
+            if (post.media_url && post.media_count > 0) {
+                try {
+                    const mediaUrls = JSON.parse(post.media_url);
+                    if (mediaUrls && mediaUrls.length > 0) {
+                        if (post.media_type === 'video') {
+                            mediaHTML = `
+                                <div class="post-media" style="margin: 1rem 0;">
+                                    <video src="${mediaUrls[0]}" style="width: 100%; max-width: 500px; border-radius: 12px; border: 2px solid #e5e5e5;" controls></video>
+                                </div>
+                            `;
+                        } else {
+                            // Simple image display
+                            if (mediaUrls.length === 1) {
+                                mediaHTML = `
+                                    <div class="post-media" style="margin: 1rem 0;">
+                                        <img src="${mediaUrls[0]}" style="max-width: 100%; border-radius: 12px; cursor: pointer;" onclick="window.open('${mediaUrls[0]}', '_blank')">
+                                    </div>
+                                `;
+                            } else {
+                                // Multiple images grid
+                                mediaHTML = `<div class="post-media" style="margin: 1rem 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">`;
+                                mediaUrls.forEach(url => {
+                                    mediaHTML += `<img src="${url}" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open('${url}', '_blank')">`;
+                                });
+                                mediaHTML += `</div>`;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing media URLs:', e);
+                }
+            }
+            
+            return `
+                <div class="post-card" data-post-id="${post.id}">
+                    <div class="post-header">
+                        <div class="post-author">
+                            ${avatarHTML}
+                            <div class="post-author-info">
+                                <h4>${authorName}</h4>
+                                <div class="post-date">${timeAgo}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="post-content">${linkifyText(post.content)}</div>
+                    ${mediaHTML}
+                    <div class="post-actions">
+                        <button class="post-action-btn" onclick="toggleLike('${post.id}')" id="like-btn-${post.id}">
+                            🤍 Like (${post.like_count || 0})
+                        </button>
+                        <button class="post-action-btn" onclick="toggleComments('${post.id}')">
+                            💬 Comment (<span id="commentCount-${post.id}">0</span>)
+                        </button>
+                        <button class="post-action-btn" onclick="sharePost('${post.id}')">
+                            📤 Share
+                        </button>
+                        ${post.author_email === currentUser?.email ? `
+                            <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+                                <button class="post-action-btn" onclick="editPost('${post.id}')" style="color: #007bff;">
+                                    ✏️ Edit
+                                </button>
+                                <button class="post-action-btn" onclick="deletePost('${post.id}')" style="color: #dc3545;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Comments section placeholder -->
+                    <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                        <div class="comment-form">
+                            <textarea class="comment-textarea" id="commentText-${post.id}" placeholder="Write a comment..."></textarea>
+                            <button class="comment-submit-btn" onclick="submitComment('${post.id}')">Post Comment</button>
+                        </div>
+                        <div id="commentsList-${post.id}">
+                            <em style="color: #666;">No comments yet</em>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load posts feed
+        async function loadPostsFeed() {
+            const feedContainer = document.getElementById('postsFeed');
+            if (!feedContainer) return;
+            
+            console.log('Loading posts feed...');
+            
+            try {
+                const { data: posts, error } = await window.dcfSupabase
+                    .from('posts')
+                    .select('*')
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                    
+                if (error) throw error;
+                
+                if (posts.length === 0) {
+                    feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something!</div>';
+                    return;
+                }
+                
+                feedContainer.innerHTML = posts.map(post => createPostHTML(post)).join('');
+                
+                // After posts are loaded, check like statuses
+                setTimeout(() => {
+                    if (window.loadUserLikeStatuses) {
+                        loadUserLikeStatuses();
+                    }
+                    // Load comments for all posts if function exists
+                    if (window.loadPostComments) {
+                        posts.forEach(post => {
+                            loadPostComments(post.id);
+                        });
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Failed to load posts</div>';
+            }
+        }
+
+        // Validate file selection
+        function validateFileSelection(files) {
+            const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            const videoFiles = Array.from(files).filter(file => videoTypes.includes(file.type));
+            const nonVideoFiles = Array.from(files).filter(file => !videoTypes.includes(file.type));
+            
+            // Only 1 video file allowed
+            if (videoFiles.length > 1) {
+                alert('Only one video file can be uploaded at a time.');
+                return false;
+            }
+            
+            if (videoFiles.length === 1 && files.length > 1) {
+                alert('Videos can only be uploaded one at a time.');
+                return false;
+            }
+            
+            // Up to 4 non-video files allowed
+            if (videoFiles.length === 0 && files.length > 4) {
+                alert('Maximum 4 files allowed for images.');
+                return false;
+            }
+            
+            // Check file size limits
+            for (const file of files) {
+                let maxSize;
+                if (file.type.startsWith('video/')) {
+                    maxSize = 50 * 1024 * 1024; // 50MB for videos
+                } else if (file.type.startsWith('image/')) {
+                    maxSize = 5 * 1024 * 1024; // 5MB for images
+                } else {
+                    alert('Only images and videos are allowed.');
+                    return false;
+                }
+                
+                if (file.size > maxSize) {
+                    const sizeMB = Math.round(maxSize / (1024 * 1024));
+                    alert(`File too large. Max ${sizeMB}MB for ${file.type.startsWith('video/') ? 'videos' : 'images'}.`);
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Upload post media
+        async function uploadPostMedia(files) {
+            const uploadedUrls = [];
+            
+            for (const file of files) {
+                try {
+                    const fileName = `posts/${Date.now()}_${file.name}`;
+                    const { data, error } = await window.dcfSupabase.storage
+                        .from('post-media')
+                        .upload(fileName, file);
+                        
+                    if (error) throw error;
+                    
+                    const { data: urlData } = window.dcfSupabase.storage
+                        .from('post-media')
+                        .getPublicUrl(fileName);
+                        
+                    uploadedUrls.push(urlData.publicUrl);
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    throw error;
+                }
+            }
+            
+            return uploadedUrls;
+        }
+
+        // Display selected files
+        function displaySelectedFiles() {
+            const mediaPreview = document.getElementById('mediaPreviewArea');
+            if (!mediaPreview) return;
+            
+            if (selectedPostFiles.length > 0) {
+                mediaPreview.style.display = 'block';
+                const fileNames = selectedPostFiles.map(f => f.name).join(', ');
+                mediaPreview.textContent = `Selected: ${fileNames}`;
+            } else {
+                mediaPreview.style.display = 'none';
+            }
+        }
+
+        // Delete post
+        async function deletePost(postId) {
+            if (!confirm('Are you sure you want to delete this post?')) return;
+            
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('posts')
+                    .update({ status: 'deleted' })
+                    .eq('id', postId);
+                    
+                if (error) throw error;
+                
+                showNotification('Post deleted');
+                await loadPostsFeed();
+            } catch (error) {
+                console.error('Error deleting post:', error);
+                alert('Failed to delete post');
+            }
+        }
+
+        // Toggle like
+        async function toggleLike(postId) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to like posts');
+                return;
+            }
+            
+            // Implementation for likes would go here
+            console.log('Like toggled for post:', postId);
+        }
+
+        // Toggle comments visibility
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            if (commentsSection) {
+                commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Share post
+        function sharePost(postId) {
+            const url = `${window.location.origin}${window.location.pathname}#post-${postId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('Link copied to clipboard!');
+            });
+        }
+
+        // Edit post (placeholder)
+        function editPost(postId) {
+            console.log('Edit post:', postId);
+            alert('Edit functionality coming soon!');
+        }
+
+        // Submit comment (placeholder)
+        function submitComment(postId) {
+            const textarea = document.getElementById(`commentText-${postId}`);
+            if (!textarea) return;
+            
+            const content = textarea.value.trim();
+            if (!content) {
+                alert('Please enter a comment');
+                return;
+            }
+            
+            console.log('Submit comment for post:', postId, content);
+            alert('Comments functionality coming soon!');
+            textarea.value = '';
+        }
+        
    </script>
 </body>
 </html>
