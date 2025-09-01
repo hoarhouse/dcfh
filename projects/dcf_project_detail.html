@@ -4110,53 +4110,42 @@
             document.getElementById('mediaFileInput').value = '';
         }
 
-        // Delete post
+        // POST EDIT/DELETE FUNCTIONS
         async function deletePost(postId) {
-            if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
-            
-            const projectId = new URLSearchParams(window.location.search).get('id');
-            const currentUser = getCurrentUser();
-            
-            if (!currentUser) {
-                showNotification('Please log in to delete posts', 'error');
+            if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
                 return;
             }
             
             try {
-                // First verify the post belongs to this project and user
-                const { data: post, error: fetchError } = await window.dcfSupabase
-                    .from('posts')
-                    .select('*')
-                    .eq('id', postId)
-                    .eq('context_type', 'project')
-                    .eq('context_id', projectId)
-                    .single();
+                // Show loading state
+                showNotification('Deleting post...', 'info');
                 
-                if (fetchError || !post) {
-                    showNotification('Post not found or does not belong to this project', 'error');
-                    return;
-                }
-                
-                // Verify user owns the post
-                if (post.author_id !== currentUser.id) {
-                    showNotification('You can only delete your own posts', 'error');
-                    return;
-                }
-                
-                // Now delete the post
                 const { error } = await window.dcfSupabase
                     .from('posts')
                     .delete()
-                    .eq('id', postId)
-                    .eq('author_id', currentUser.id); // Extra safety check
+                    .eq('id', postId);
                     
                 if (error) throw error;
                 
-                showNotification('Post deleted successfully');
-                await loadPostsFeed();
+                // Remove post from UI immediately for smooth UX
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                if (postElement) {
+                    postElement.style.transition = 'opacity 0.3s, transform 0.3s';
+                    postElement.style.opacity = '0';
+                    postElement.style.transform = 'scale(0.95)';
+                    setTimeout(() => postElement.remove(), 300);
+                }
+                
+                showNotification('Post deleted', 'success');
+                
+                // Optionally reload feed to ensure consistency
+                // await loadPostsFeed();
+                
             } catch (error) {
                 console.error('Error deleting post:', error);
                 showNotification('Failed to delete post', 'error');
+                // Reload feed to restore consistency
+                await loadPostsFeed();
             }
         }
 
