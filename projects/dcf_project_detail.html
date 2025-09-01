@@ -2376,6 +2376,39 @@
             }
             return 'U';
         }
+        
+        // Cache for user avatars to avoid repeated queries
+        const userAvatarCache = {};
+        
+        // Fetch user avatar from user_profiles table
+        async function fetchUserAvatar(authorId) {
+            // Check cache first
+            if (userAvatarCache[authorId] !== undefined) {
+                return userAvatarCache[authorId];
+            }
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('avatar_url')
+                    .eq('id', authorId)
+                    .single();
+                
+                if (error) {
+                    console.error('Error fetching avatar for user:', authorId, error);
+                    userAvatarCache[authorId] = null;
+                    return null;
+                }
+                
+                // Cache the result
+                userAvatarCache[authorId] = data?.avatar_url || null;
+                return userAvatarCache[authorId];
+            } catch (error) {
+                console.error('Error fetching avatar:', error);
+                userAvatarCache[authorId] = null;
+                return null;
+            }
+        }
 
         // Initialize page
         async function initializePage() {
@@ -4146,15 +4179,10 @@
             console.log('Loading posts for project:', projectId);
             
             try {
-                // STRICTLY filter posts for THIS project only with user avatars
+                // STRICTLY filter posts for THIS project only
                 const { data: posts, error } = await window.dcfSupabase
                     .from('posts')
-                    .select(`
-                        *,
-                        user_profiles!author_id (
-                            avatar_url
-                        )
-                    `)
+                    .select('*')
                     .eq('context_type', 'project')  // Must be project context
                     .eq('context_id', projectId)     // Must match this specific project
                     .neq('status', 'deleted')        // Exclude deleted posts
@@ -4898,15 +4926,10 @@
             console.log('📖 Loading comments for post:', postId, 'Sort:', actualSortType);
             
             try {
-                // Build the query with JOIN to get user avatars
+                // Build the simple query that works
                 let query = window.dcfSupabase
                     .from('comments')
-                    .select(`
-                        *,
-                        user_profiles!author_id (
-                            avatar_url
-                        )
-                    `)
+                    .select('*')
                     .eq('content_type', 'post')
                     .eq('content_id', postId);
                 
@@ -4984,6 +5007,10 @@
                 container.innerHTML = '<div class="comments-empty">No comments yet</div>';
                 return;
             }
+            
+            // Fetch avatars for all comments
+            const uniqueAuthorIds = [...new Set(comments.map(c => c.author_id).filter(id => id))];
+            await Promise.all(uniqueAuthorIds.map(id => fetchUserAvatar(id)));
             
             // Separate main comments and replies
             let mainComments = comments.filter(c => !c.parent_comment_id);
