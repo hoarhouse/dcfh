@@ -5358,16 +5358,35 @@
                 form.style.display = isVisible ? 'none' : 'block';
                 if (!isVisible) {
                     // Update the avatar with current user data when showing the form
-                    const currentUser = window.getCurrentUser();
-                    const avatarElement = form.querySelector('.comment-avatar');
+                    let currentUser = window.getCurrentUser();
+                    
+                    // Fallback to dcfUser if getCurrentUser returns null
+                    if (!currentUser && window.dcfUser && window.dcfUser.isLoggedIn) {
+                        currentUser = window.dcfUser.profile;
+                    }
+                    
+                    const avatarElement = document.getElementById('replyAvatar-' + commentId);
                     if (avatarElement && currentUser) {
-                        let initials = 'U';
-                        if (currentUser.username) {
-                            initials = currentUser.username.substring(0, 2).toUpperCase();
-                        } else if (currentUser.email) {
-                            initials = currentUser.email.substring(0, 2).toUpperCase();
+                        // Use EXACT same logic as updatePostCreationUserDisplay
+                        if (currentUser.avatar_url) {
+                            // User has profile image
+                            avatarElement.style.background = `url(${currentUser.avatar_url}) center/cover`;
+                            avatarElement.textContent = '';
+                        } else {
+                            // Generate initials using same logic as main post box
+                            avatarElement.style.background = '#333';
+                            let initials = '';
+                            if (currentUser.first_name && currentUser.last_name) {
+                                initials = currentUser.first_name[0] + currentUser.last_name[0];
+                            } else if (currentUser.username) {
+                                initials = generateInitials(currentUser.username);
+                            } else if (currentUser.email) {
+                                initials = currentUser.email.substring(0, 2);
+                            } else {
+                                initials = 'U';
+                            }
+                            avatarElement.textContent = initials.toUpperCase();
                         }
-                        avatarElement.textContent = initials;
                     }
                     
                     const textarea = document.getElementById('replyText-' + commentId);
