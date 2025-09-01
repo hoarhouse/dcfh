@@ -1495,6 +1495,20 @@
                 initializePostCreation();
                 loadPostsFeed();
                 
+                // Re-initialize if avatar loads later
+                let retryCount = 0;
+                const avatarCheckInterval = setInterval(() => {
+                    retryCount++;
+                    const user = getCurrentUser();
+                    if (user && user.avatar_url) {
+                        console.log('Avatar URL now available, updating post creation box');
+                        initializePostCreation();
+                        clearInterval(avatarCheckInterval);
+                    } else if (retryCount > 10) {
+                        clearInterval(avatarCheckInterval);
+                    }
+                }, 500);
+                
                 // Add textarea input listener
                 const textarea = document.getElementById('postTextarea');
                 if (textarea) {
@@ -2119,17 +2133,39 @@
 
         // Initialize post creation box with user data
         function initializePostCreation() {
-            const currentUser = window.dcfUser.profile;
-            if (!currentUser) return;
+            // Try both sources for user data
+            const currentUser = getCurrentUser() || window.dcfUser?.profile;
+            if (!currentUser) {
+                console.log('No user data available for post creation box');
+                return;
+            }
+            
+            console.log('Initializing post creation with user:', currentUser);
             
             const authorAvatar = document.getElementById('postAuthorAvatar');
             if (authorAvatar) {
+                // Clear any previous content
+                authorAvatar.style.backgroundImage = '';
+                authorAvatar.textContent = '';
+                
                 if (currentUser.avatar_url) {
-                    authorAvatar.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                    console.log('Setting avatar URL:', currentUser.avatar_url);
+                    // Use background shorthand for better compatibility
+                    authorAvatar.style.background = `url(${currentUser.avatar_url}) center/cover`;
                     authorAvatar.textContent = '';
                 } else {
-                    const initials = window.generateInitials(currentUser.username);
-                    authorAvatar.textContent = initials;
+                    console.log('No avatar URL, using initials');
+                    // Remove any background image
+                    authorAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                    
+                    // Generate initials properly
+                    let initials = 'U';
+                    if (currentUser.first_name && currentUser.last_name) {
+                        initials = currentUser.first_name[0] + currentUser.last_name[0];
+                    } else if (currentUser.username) {
+                        initials = window.generateInitials ? window.generateInitials(currentUser.username) : currentUser.username.substring(0, 2);
+                    }
+                    authorAvatar.textContent = initials.toUpperCase();
                 }
             }
             
