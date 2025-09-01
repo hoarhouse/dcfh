@@ -3909,7 +3909,6 @@
                         author_id: currentUser.id,
                         author_email: currentUser.email,
                         author_name: `@${currentUser.username}`,
-                        author_avatar_url: currentUser.avatar_url || null,
                         username: currentUser.username,
                         content: content,
                         context_type: 'project',
@@ -3995,11 +3994,13 @@
             const authorName = post.author_name || `@${post.username}`;
             const currentUser = getCurrentUser();
             
-            // Generate avatar HTML - use avatar_url from post data or current user
+            // Generate avatar HTML - use avatar_url from joined user_profiles data
             let avatarHTML = '';
-            // First check if post has avatar_url stored
-            if (post.author_avatar_url) {
-                avatarHTML = `<div class="post-avatar" style="background-image: url(${post.author_avatar_url}); background-size: cover; background-position: center;"></div>`;
+            const postAvatarUrl = post.user_profiles?.avatar_url;
+            
+            // First check if post has avatar from join
+            if (postAvatarUrl) {
+                avatarHTML = `<div class="post-avatar" style="background-image: url(${postAvatarUrl}); background-size: cover; background-position: center;"></div>`;
             } 
             // Fallback to current user's avatar if it's their post
             else if (currentUser && currentUser.avatar_url && post.author_email === currentUser.email) {
@@ -4145,10 +4146,15 @@
             console.log('Loading posts for project:', projectId);
             
             try {
-                // STRICTLY filter posts for THIS project only
+                // STRICTLY filter posts for THIS project only with user avatars
                 const { data: posts, error } = await window.dcfSupabase
                     .from('posts')
-                    .select('*')
+                    .select(`
+                        *,
+                        user_profiles!author_id (
+                            avatar_url
+                        )
+                    `)
                     .eq('context_type', 'project')  // Must be project context
                     .eq('context_id', projectId)     // Must match this specific project
                     .neq('status', 'deleted')        // Exclude deleted posts
@@ -4863,7 +4869,6 @@
                         author_id: currentUser.id,
                         author_email: currentUser.email,
                         author_name: '@' + currentUser.username,
-                        author_avatar_url: currentUser.avatar_url || null,
                         comment_text: content,
                         parent_comment_id: null,
                         like_count: 0,
@@ -4893,10 +4898,15 @@
             console.log('📖 Loading comments for post:', postId, 'Sort:', actualSortType);
             
             try {
-                // Build the query
+                // Build the query with JOIN to get user avatars
                 let query = window.dcfSupabase
                     .from('comments')
-                    .select('*')
+                    .select(`
+                        *,
+                        user_profiles!author_id (
+                            avatar_url
+                        )
+                    `)
                     .eq('content_type', 'post')
                     .eq('content_id', postId);
                 
@@ -5057,10 +5067,12 @@
 
         // Create HTML for a full comment with replies
         function createFullCommentHtml(comment, replies, currentUser, postId) {
-            // Generate avatar HTML for main comment
+            // Generate avatar HTML for main comment - check for joined user_profiles data
             let commentAvatarHTML = '';
-            if (comment.author_avatar_url) {
-                commentAvatarHTML = `<div class="comment-avatar" style="background: url(${comment.author_avatar_url}) center/cover;"></div>`;
+            const avatarUrl = comment.user_profiles?.avatar_url;
+            
+            if (avatarUrl) {
+                commentAvatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
             } else {
                 const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
                 commentAvatarHTML = `<div class="comment-avatar">${initials}</div>`;
@@ -5072,10 +5084,12 @@
             // Get replies for this comment
             const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
             const repliesHtml = commentReplies.map(reply => {
-                // Generate avatar HTML for reply
+                // Generate avatar HTML for reply - check for joined user_profiles data
                 let replyAvatarHTML = '';
-                if (reply.author_avatar_url) {
-                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${reply.author_avatar_url}) center/cover;"></div>`;
+                const replyAvatarUrl = reply.user_profiles?.avatar_url;
+                
+                if (replyAvatarUrl) {
+                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${replyAvatarUrl}) center/cover;"></div>`;
                 } else {
                     const replyInitials = reply.author_name ? generateInitials(reply.author_name.replace('@', '')) : 'UN';
                     replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">${replyInitials}</div>`;
@@ -5172,10 +5186,12 @@
 
         // Create HTML for popular comment display
         function createPopularCommentHtml(comment, replyCount, currentUser, postId) {
-            // Generate avatar HTML
+            // Generate avatar HTML - check for joined user_profiles data
             let avatarHTML = '';
-            if (comment.author_avatar_url) {
-                avatarHTML = `<div class="comment-avatar" style="background: url(${comment.author_avatar_url}) center/cover;"></div>`;
+            const avatarUrl = comment.user_profiles?.avatar_url;
+            
+            if (avatarUrl) {
+                avatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
             } else {
                 const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
                 avatarHTML = `<div class="comment-avatar">${initials}</div>`;
@@ -5497,8 +5513,6 @@
             
             try {
                 console.log('🔵 Attempting database insert...');
-                // Add avatar_url to insertData
-                insertData.author_avatar_url = currentUser.avatar_url || null;
                 
                 const { data, error } = await window.dcfSupabase
                     .from('comments')
