@@ -3909,6 +3909,7 @@
                         author_id: currentUser.id,
                         author_email: currentUser.email,
                         author_name: `@${currentUser.username}`,
+                        author_avatar_url: currentUser.avatar_url || null,
                         username: currentUser.username,
                         content: content,
                         context_type: 'project',
@@ -3994,12 +3995,19 @@
             const authorName = post.author_name || `@${post.username}`;
             const currentUser = getCurrentUser();
             
-            // Generate avatar HTML
+            // Generate avatar HTML - use avatar_url from post data or current user
             let avatarHTML = '';
-            if (currentUser && currentUser.avatar_url && post.author_email === currentUser.email) {
+            // First check if post has avatar_url stored
+            if (post.author_avatar_url) {
+                avatarHTML = `<div class="post-avatar" style="background-image: url(${post.author_avatar_url}); background-size: cover; background-position: center;"></div>`;
+            } 
+            // Fallback to current user's avatar if it's their post
+            else if (currentUser && currentUser.avatar_url && post.author_email === currentUser.email) {
                 avatarHTML = `<div class="post-avatar" style="background-image: url(${currentUser.avatar_url}); background-size: cover; background-position: center;"></div>`;
-            } else {
-                const initials = post.username ? post.username.substring(0, 2).toUpperCase() : 'UN';
+            } 
+            // Use initials as last resort
+            else {
+                const initials = post.username ? generateInitials(post.username) : 'UN';
                 avatarHTML = `<div class="post-avatar">${initials}</div>`;
             }
             
