@@ -5037,6 +5037,15 @@
                                 </div>
                             </div>
                             <div class="comment-content">${comment.comment_text}</div>
+                            
+                            <!-- Reply Form -->
+                            <div id="replyForm-${comment.id}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <textarea id="replyText-${comment.id}" placeholder="Write a reply..." style="width: 100%; min-height: 60px; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.85rem; resize: vertical; font-family: inherit;"></textarea>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: flex-end;">
+                                    <button onclick="toggleReplyForm('${comment.id}')" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                                    <button onclick="submitReply('${comment.id}', '${postId}')" style="background: #007bff; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">Submit Reply</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     ${repliesHtml}
@@ -5203,16 +5212,43 @@
             }
         }
         
-        // Reply to comment function
-        async function replyToComment(commentId, postId) {
+        // Toggle reply form visibility
+        function toggleReplyForm(commentId) {
+            const form = document.getElementById('replyForm-' + commentId);
+            if (form) {
+                const isVisible = form.style.display !== 'none';
+                form.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    const textarea = document.getElementById('replyText-' + commentId);
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.value = '';
+                    }
+                }
+            }
+        }
+        
+        // Show reply form when Reply button is clicked
+        function replyToComment(commentId, postId) {
+            toggleReplyForm(commentId);
+        }
+        
+        // Submit reply to a comment
+        async function submitReply(commentId, postId) {
+            const textarea = document.getElementById('replyText-' + commentId);
+            if (!textarea) return;
+            
+            const content = textarea.value.trim();
+            if (!content) {
+                showNotification('Please enter a reply', 'warning');
+                return;
+            }
+            
             const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 showNotification('Please log in to reply', 'error');
                 return;
             }
-            
-            const replyText = prompt('Write your reply:');
-            if (!replyText || !replyText.trim()) return;
             
             try {
                 const { data, error } = await window.dcfSupabase
@@ -5224,13 +5260,17 @@
                         author_name: currentUser.username || currentUser.email.split('@')[0],
                         author_email: currentUser.email,
                         author_id: currentUser.id,
-                        comment_text: replyText.trim(),
+                        comment_text: content,
                         created_at: new Date().toISOString()
                     })
                     .select()
                     .single();
                 
                 if (error) throw error;
+                
+                // Clear and hide the reply form
+                textarea.value = '';
+                toggleReplyForm(commentId);
                 
                 // Reload comments to show the new reply
                 loadPostComments(postId);
