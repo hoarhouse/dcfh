@@ -5093,6 +5093,87 @@
             loadPostComments(postId);
         }
 
+        // Edit comment function
+        async function editComment(commentId) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                showNotification('Please log in to edit comments', 'error');
+                return;
+            }
+            
+            // Get the comment element and its current text
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-content`);
+            if (!commentElement) return;
+            
+            const currentText = commentElement.textContent;
+            const newText = prompt('Edit your comment:', currentText);
+            
+            if (newText === null || newText === currentText) return;
+            
+            if (!newText.trim()) {
+                showNotification('Comment cannot be empty', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('comments')
+                    .update({ 
+                        comment_text: newText.trim(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', commentId)
+                    .eq('author_email', currentUser.email);
+                
+                if (error) throw error;
+                
+                // Update UI
+                commentElement.textContent = newText.trim();
+                showNotification('Comment updated', 'success');
+            } catch (error) {
+                console.error('Error editing comment:', error);
+                showNotification('Failed to update comment', 'error');
+            }
+        }
+        
+        // Reply to comment function
+        async function replyToComment(commentId, postId) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                showNotification('Please log in to reply', 'error');
+                return;
+            }
+            
+            const replyText = prompt('Write your reply:');
+            if (!replyText || !replyText.trim()) return;
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('comments')
+                    .insert({
+                        content_type: 'post',
+                        content_id: postId,
+                        parent_comment_id: commentId,
+                        author_name: currentUser.username || currentUser.email.split('@')[0],
+                        author_email: currentUser.email,
+                        author_id: currentUser.id,
+                        comment_text: replyText.trim(),
+                        created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                // Reload comments to show the new reply
+                loadPostComments(postId);
+                showNotification('Reply posted', 'success');
+            } catch (error) {
+                console.error('Error posting reply:', error);
+                showNotification('Failed to post reply', 'error');
+            }
+        }
+
         // Add keyboard shortcuts for comments
         document.addEventListener('keydown', function(e) {
             if (e.target.id && e.target.id.startsWith('commentText-')) {
