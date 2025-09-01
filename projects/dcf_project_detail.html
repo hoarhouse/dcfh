@@ -1698,17 +1698,19 @@
 
         /* Comment Avatar Styles */
         .comment-avatar {
-            width: 32px !important;
-            height: 32px !important;
-            border-radius: 50% !important;
-            background: #333 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-            flex-shrink: 0 !important;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2); /* Default gradient like working avatars */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
         }
 
         /* Reply Form Styles */
@@ -2432,6 +2434,7 @@
                 if (user) {
                     console.log('✅ User data found, updating display');
                     updatePostCreationUserDisplay();
+                    updateCommentFormAvatars();
                     clearInterval(retryInterval);
                 } else if (retryCount >= maxRetries) {
                     console.log('❌ Max retries reached, user might not be logged in');
@@ -2523,6 +2526,7 @@
                         // Also update post creation user display
                         console.log('🔄 Updating post creation display after auth');
                         updatePostCreationUserDisplay();
+                    updateCommentFormAvatars();
                     }, 100);
                 }
             }, 500);
@@ -3392,6 +3396,7 @@
                     lastAuthState = currentAuthState;
                     console.log('🔄 Auth state changed:', currentAuthState);
                     updatePostCreationUserDisplay();
+                    updateCommentFormAvatars();
                 }
             }, 1000);
             
@@ -3766,6 +3771,56 @@
             updatePostCreationUserDisplay();
         }
         
+        // Update comment form avatars to match post creation avatar logic
+        function updateCommentFormAvatars() {
+            // Get current user (same as post creation)
+            let currentUser = getCurrentUser();
+            if (!currentUser && window.dcfUser && window.dcfUser.isLoggedIn) {
+                currentUser = window.dcfUser.profile;
+            }
+            
+            // Find all comment form avatars
+            const commentAvatars = document.querySelectorAll('[id^="commentAvatar-"]');
+            
+            commentAvatars.forEach(avatar => {
+                if (currentUser) {
+                    if (currentUser.avatar_url) {
+                        // User has profile picture - use exact same logic as post creation
+                        avatar.style.background = `url(${currentUser.avatar_url}) center/cover`;
+                        avatar.textContent = '';
+                    } else {
+                        // Generate initials - exact same logic as post creation
+                        let initials = '';
+                        if (currentUser.first_name && currentUser.last_name) {
+                            initials = currentUser.first_name[0] + currentUser.last_name[0];
+                        } else if (currentUser.username) {
+                            initials = currentUser.username.substring(0, 2);
+                        } else if (currentUser.email) {
+                            initials = currentUser.email.substring(0, 2);
+                        } else {
+                            initials = 'U';
+                        }
+                        avatar.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                        avatar.style.color = 'white';
+                        avatar.style.display = 'flex';
+                        avatar.style.alignItems = 'center';
+                        avatar.style.justifyContent = 'center';
+                        avatar.style.fontWeight = '600';
+                        avatar.textContent = initials.toUpperCase();
+                    }
+                } else {
+                    // Not logged in - show guest indicator
+                    avatar.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                    avatar.style.color = 'white';
+                    avatar.style.display = 'flex';
+                    avatar.style.alignItems = 'center';
+                    avatar.style.justifyContent = 'center';
+                    avatar.style.fontWeight = '600';
+                    avatar.textContent = 'G';
+                }
+            });
+        }
+
         // Separate function to update user display that can be called later
         function updatePostCreationUserDisplay() {
             console.log('📝 Updating post creation user display...');
@@ -4229,6 +4284,10 @@
                     if (window.loadUserLikeStatuses) {
                         loadUserLikeStatuses();
                     }
+                    
+                    // Update comment form avatars with proper user data
+                    updateCommentFormAvatars();
+                    
                     // Load comments for each post
                     projectPosts.forEach(post => {
                         loadPostComments(post.id);
@@ -5536,7 +5595,7 @@
                             avatarElement.textContent = '';
                         } else {
                             // Generate initials using same logic as main post box
-                            avatarElement.style.background = '#333';
+                            avatarElement.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
                             let initials = '';
                             if (currentUser.first_name && currentUser.last_name) {
                                 initials = currentUser.first_name[0] + currentUser.last_name[0];
