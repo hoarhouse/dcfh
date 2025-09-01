@@ -5282,49 +5282,84 @@
         
         // Submit reply to a comment
         async function submitReply(commentId, postId) {
+            console.log('🔵 submitReply called with:', { commentId, postId });
+            
             const textarea = document.getElementById('replyText-' + commentId);
-            if (!textarea) return;
+            console.log('🔵 Textarea element:', textarea);
+            if (!textarea) {
+                console.error('❌ Textarea not found for commentId:', commentId);
+                return;
+            }
             
             const content = textarea.value.trim();
+            console.log('🔵 Reply text content:', content);
+            console.log('🔵 Reply text length:', content.length);
+            
             if (!content) {
+                console.warn('⚠️ Empty reply text');
                 showNotification('Please enter a reply', 'warning');
                 return;
             }
             
             const currentUser = window.getCurrentUser();
+            console.log('🔵 Current user:', currentUser);
+            
             if (!currentUser) {
+                console.error('❌ No current user found');
                 showNotification('Please log in to reply', 'error');
                 return;
             }
             
+            // Prepare insert data
+            const insertData = {
+                content_type: 'post',
+                content_id: postId,
+                parent_comment_id: commentId,
+                author_name: currentUser.username || currentUser.email.split('@')[0],
+                author_email: currentUser.email,
+                author_id: currentUser.id,
+                comment_text: content,
+                created_at: new Date().toISOString()
+            };
+            
+            console.log('🔵 Insert data prepared:', insertData);
+            console.log('🔵 Using comments table with content_type="post"');
+            
             try {
+                console.log('🔵 Attempting database insert...');
                 const { data, error } = await window.dcfSupabase
                     .from('comments')
-                    .insert({
-                        content_type: 'post',
-                        content_id: postId,
-                        parent_comment_id: commentId,
-                        author_name: currentUser.username || currentUser.email.split('@')[0],
-                        author_email: currentUser.email,
-                        author_id: currentUser.id,
-                        comment_text: content,
-                        created_at: new Date().toISOString()
-                    })
+                    .insert(insertData)
                     .select()
                     .single();
                 
-                if (error) throw error;
+                console.log('🔵 Database response:', { data, error });
+                
+                if (error) {
+                    console.error('❌ Database error:', error);
+                    console.error('❌ Error details:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
+                    throw error;
+                }
+                
+                console.log('✅ Reply inserted successfully:', data);
                 
                 // Clear and hide the reply form
                 textarea.value = '';
                 toggleReplyForm(commentId);
                 
                 // Reload comments to show the new reply
+                console.log('🔵 Reloading comments for postId:', postId);
                 loadPostComments(postId);
                 showNotification('Reply posted', 'success');
             } catch (error) {
-                console.error('Error posting reply:', error);
-                showNotification('Failed to post reply', 'error');
+                console.error('❌ Error posting reply:', error);
+                console.error('❌ Full error object:', error);
+                showNotification('Failed to post reply: ' + (error.message || 'Unknown error'), 'error');
             }
         }
 
