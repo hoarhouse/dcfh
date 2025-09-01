@@ -5143,15 +5143,35 @@
             // Get replies for this comment
             const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
             const repliesHtml = commentReplies.map(reply => {
-                // Generate avatar HTML for reply - use cached avatar data
+                // Generate avatar HTML for reply - check if it's current user first (same as post creation box)
                 let replyAvatarHTML = '';
-                const replyAvatarUrl = userAvatarCache[reply.author_id];
+                const isCurrentUserReply = currentUser && reply.author_email === currentUser.email;
                 
-                if (replyAvatarUrl) {
-                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${replyAvatarUrl}) center/cover;"></div>`;
+                if (isCurrentUserReply && currentUser.avatar_url) {
+                    // Current user with avatar - use exact same logic as post creation box
+                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${currentUser.avatar_url}) center/cover;"></div>`;
+                } else if (isCurrentUserReply) {
+                    // Current user without avatar - generate initials same as post creation box
+                    let initials = '';
+                    if (currentUser.first_name && currentUser.last_name) {
+                        initials = currentUser.first_name[0] + currentUser.last_name[0];
+                    } else if (currentUser.username) {
+                        initials = currentUser.username.substring(0, 2);
+                    } else if (currentUser.email) {
+                        initials = currentUser.email.substring(0, 2);
+                    } else {
+                        initials = 'U';
+                    }
+                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">${initials.toUpperCase()}</div>`;
                 } else {
-                    const replyInitials = reply.author_name ? generateInitials(reply.author_name.replace('@', '')) : 'UN';
-                    replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">${replyInitials}</div>`;
+                    // Other users - check cache or use fallback
+                    const replyAvatarUrl = userAvatarCache[reply.author_id];
+                    if (replyAvatarUrl) {
+                        replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${replyAvatarUrl}) center/cover;"></div>`;
+                    } else {
+                        const replyInitials = reply.author_name ? generateInitials(reply.author_name.replace('@', '')) : 'UN';
+                        replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">${replyInitials}</div>`;
+                    }
                 }
                 
                 const replyTimeAgo = formatTimeAgo(reply.created_at);
@@ -5245,15 +5265,35 @@
 
         // Create HTML for popular comment display
         function createPopularCommentHtml(comment, replyCount, currentUser, postId) {
-            // Generate avatar HTML - use cached avatar data
+            // Generate avatar HTML - check if it's current user first (same as post creation box)
             let avatarHTML = '';
-            const avatarUrl = userAvatarCache[comment.author_id];
+            const isCurrentUserComment = currentUser && comment.author_email === currentUser.email;
             
-            if (avatarUrl) {
-                avatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
+            if (isCurrentUserComment && currentUser.avatar_url) {
+                // Current user with avatar - use exact same logic as post creation box
+                avatarHTML = `<div class="comment-avatar" style="background: url(${currentUser.avatar_url}) center/cover;"></div>`;
+            } else if (isCurrentUserComment) {
+                // Current user without avatar - generate initials same as post creation box
+                let initials = '';
+                if (currentUser.first_name && currentUser.last_name) {
+                    initials = currentUser.first_name[0] + currentUser.last_name[0];
+                } else if (currentUser.username) {
+                    initials = currentUser.username.substring(0, 2);
+                } else if (currentUser.email) {
+                    initials = currentUser.email.substring(0, 2);
+                } else {
+                    initials = 'U';
+                }
+                avatarHTML = `<div class="comment-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">${initials.toUpperCase()}</div>`;
             } else {
-                const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
-                avatarHTML = `<div class="comment-avatar">${initials}</div>`;
+                // Other users - check cache or use fallback
+                const avatarUrl = userAvatarCache[comment.author_id];
+                if (avatarUrl) {
+                    avatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
+                } else {
+                    const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
+                    avatarHTML = `<div class="comment-avatar">${initials}</div>`;
+                }
             }
             
             const timeAgo = formatTimeAgo(comment.created_at);
