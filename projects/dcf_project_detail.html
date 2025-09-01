@@ -5104,15 +5104,37 @@
 
         // Create HTML for a full comment with replies
         function createFullCommentHtml(comment, replies, currentUser, postId) {
-            // Generate avatar HTML for main comment - use cached avatar data
+            // Generate avatar HTML for main comment - check if it's current user first
             let commentAvatarHTML = '';
-            const avatarUrl = userAvatarCache[comment.author_id];
             
-            if (avatarUrl) {
-                commentAvatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
+            // Check if comment is from current user (same logic as post creation box)
+            const isCurrentUserComment = currentUser && comment.author_email === currentUser.email;
+            
+            if (isCurrentUserComment && currentUser.avatar_url) {
+                // Current user with avatar - use exact same logic as post creation box
+                commentAvatarHTML = `<div class="comment-avatar" style="background: url(${currentUser.avatar_url}) center/cover;"></div>`;
+            } else if (isCurrentUserComment) {
+                // Current user without avatar - generate initials same as post creation box
+                let initials = '';
+                if (currentUser.first_name && currentUser.last_name) {
+                    initials = currentUser.first_name[0] + currentUser.last_name[0];
+                } else if (currentUser.username) {
+                    initials = currentUser.username.substring(0, 2);
+                } else if (currentUser.email) {
+                    initials = currentUser.email.substring(0, 2);
+                } else {
+                    initials = 'U';
+                }
+                commentAvatarHTML = `<div class="comment-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">${initials.toUpperCase()}</div>`;
             } else {
-                const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
-                commentAvatarHTML = `<div class="comment-avatar">${initials}</div>`;
+                // Other users - check cache or use fallback
+                const avatarUrl = userAvatarCache[comment.author_id];
+                if (avatarUrl) {
+                    commentAvatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
+                } else {
+                    const initials = comment.author_name ? generateInitials(comment.author_name.replace('@', '')) : 'UN';
+                    commentAvatarHTML = `<div class="comment-avatar">${initials}</div>`;
+                }
             }
             
             const timeAgo = formatTimeAgo(comment.created_at);
