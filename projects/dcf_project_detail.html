@@ -4858,20 +4858,74 @@
         }
 
         // Load comments for a post
-        async function loadPostComments(postId) {
-            console.log('📖 Loading comments for post:', postId);
+        async function loadPostComments(postId, sortType = null) {
+            // Use stored preference or default to 'newest'
+            const actualSortType = sortType || postSortPreferences[postId] || 'newest';
+            console.log('📖 Loading comments for post:', postId, 'Sort:', actualSortType);
+            
             try {
-                const { data: comments, error } = await window.dcfSupabase
+                // Build the query
+                let query = window.dcfSupabase
                     .from('comments')
                     .select('*')
                     .eq('content_type', 'post')
-                    .eq('content_id', postId)
-                    .order('created_at', { ascending: false });
+                    .eq('content_id', postId);
+                
+                // Apply sorting based on type
+                switch(actualSortType) {
+                    case 'newest':
+                        query = query.order('created_at', { ascending: false });
+                        break;
+                    case 'oldest':
+                        query = query.order('created_at', { ascending: true });
+                        break;
+                    case 'liked':
+                        // Sort by like_count (or use created_at as fallback if like_count doesn't exist)
+                        query = query.order('like_count', { ascending: false, nullsFirst: false })
+                                    .order('created_at', { ascending: false });
+                        break;
+                    case 'replies':
+                        // This will need special handling after fetching
+                        query = query.order('created_at', { ascending: false });
+                        break;
+                    default:
+                        query = query.order('created_at', { ascending: false });
+                }
+                
+                const { data: comments, error } = await query;
                     
                 if (error) throw error;
                 
-                console.log(`✅ Loaded ${comments?.length || 0} comments for post:`, postId);
-                await displayPostComments(postId, comments || []);
+                // If sorting by replies, we need to count replies for each comment
+                let sortedComments = comments || [];
+                if (actualSortType === 'replies') {
+                    // Count replies for each main comment
+                    const mainComments = sortedComments.filter(c => !c.parent_comment_id);
+                    const commentReplyCounts = {};
+                    
+                    mainComments.forEach(comment => {
+                        const replyCount = sortedComments.filter(c => c.parent_comment_id === comment.id).length;
+                        commentReplyCounts[comment.id] = replyCount;
+                    });
+                    
+                    // Sort main comments by reply count
+                    mainComments.sort((a, b) => {
+                        return (commentReplyCounts[b.id] || 0) - (commentReplyCounts[a.id] || 0);
+                    });
+                    
+                    // Rebuild the array with sorted main comments first, then their replies
+                    const finalSorted = [];
+                    mainComments.forEach(comment => {
+                        finalSorted.push(comment);
+                        const replies = sortedComments.filter(c => c.parent_comment_id === comment.id);
+                        finalSorted.push(...replies);
+                    });
+                    
+                    sortedComments = finalSorted;
+                }
+                
+                console.log(`✅ Loaded ${sortedComments.length} comments for post:`, postId);
+                await displayPostComments(postId, sortedComments, actualSortType);
                 
             } catch (error) {
                 console.error('❌ Error loading comments:', error);
@@ -4883,7 +4937,7 @@
         }
 
         // Display comments for a post
-        async function displayPostComments(postId, comments) {
+        async function displayPostComments(postId, comments, sortType = 'newest') {
             const container = document.getElementById('commentsList-' + postId);
             if (!container) return;
             
@@ -4893,9 +4947,21 @@
             }
             
             // Separate main comments and replies
-            const mainComments = comments.filter(c => !c.parent_comment_id);
+            let mainComments = comments.filter(c => !c.parent_comment_id);
             const replies = comments.filter(c => c.parent_comment_id);
             const currentUser = getCurrentUser();
+            
+            // Apply sorting to main comments based on sortType
+            if (sortType === 'newest') {
+                mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            } else if (sortType === 'oldest') {
+                mainComments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            } else if (sortType === 'liked') {
+                mainComments.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+            } else if (sortType === 'replies') {
+                // Sort by number of replies (already handled in loadPostComments)
+                // Keep the order as received
+            }
             
             // Initialize comment state for this post
             if (!(postId in postCommentStates)) {
