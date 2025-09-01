@@ -2175,6 +2175,45 @@
             }
         }
 
+        // Update comment box avatars (uses exact same logic as post creation box)
+        function updateCommentAvatar(postId) {
+            // Try both sources for user data
+            const currentUser = getCurrentUser() || window.dcfUser?.profile;
+            if (!currentUser) {
+                console.log('No user data available for comment avatar');
+                return;
+            }
+            
+            console.log('Updating comment avatar for post:', postId);
+            
+            const commentAvatar = document.getElementById('commentAvatar-' + postId);
+            if (commentAvatar) {
+                // Clear any previous content
+                commentAvatar.style.backgroundImage = '';
+                commentAvatar.textContent = '';
+                
+                if (currentUser.avatar_url) {
+                    console.log('Setting comment avatar URL:', currentUser.avatar_url);
+                    // Use background shorthand for better compatibility (EXACT COPY FROM POST BOX)
+                    commentAvatar.style.background = `url(${currentUser.avatar_url}) center/cover`;
+                    commentAvatar.textContent = '';
+                } else {
+                    console.log('No avatar URL for comment, using initials');
+                    // Remove any background image (EXACT COPY FROM POST BOX)
+                    commentAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                    
+                    // Generate initials properly (EXACT COPY FROM POST BOX)
+                    let initials = 'U';
+                    if (currentUser.first_name && currentUser.last_name) {
+                        initials = currentUser.first_name[0] + currentUser.last_name[0];
+                    } else if (currentUser.username) {
+                        initials = window.generateInitials ? window.generateInitials(currentUser.username) : currentUser.username.substring(0, 2);
+                    }
+                    commentAvatar.textContent = initials.toUpperCase();
+                }
+            }
+        }
+
         // Handle post input changes
         function handlePostInput() {
             const textarea = document.getElementById('postTextarea');
