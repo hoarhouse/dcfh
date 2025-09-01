@@ -1697,9 +1697,9 @@
                 <!-- Create Post Box -->
                 <div class="create-post-box">
                     <div class="post-author-info">
-                        <div class="author-avatar" id="postAuthorAvatar"></div>
+                        <div class="author-avatar" id="postAuthorAvatar" style="background: linear-gradient(135deg, #e5e5e5, #cacaca); color: #999; display: flex; align-items: center; justify-content: center; font-weight: 600;">?</div>
                         <div class="author-details">
-                            <div class="author-name" id="postAuthorName">Loading...</div>
+                            <div class="author-name" id="postAuthorName" style="color: #999;">Checking auth...</div>
                         </div>
                     </div>
                     
@@ -2097,6 +2097,24 @@
             // Initialize posts functionality
             initializePostCreation();
             loadPostsFeed();
+            
+            // Set up retry mechanism for user display
+            let retryCount = 0;
+            const maxRetries = 10;
+            const retryInterval = setInterval(() => {
+                retryCount++;
+                console.log(`Retry ${retryCount}: Checking for user data...`);
+                
+                const user = getCurrentUser() || window.dcfUser?.profile;
+                if (user) {
+                    console.log('✅ User data found, updating display');
+                    updatePostCreationUserDisplay();
+                    clearInterval(retryInterval);
+                } else if (retryCount >= maxRetries) {
+                    console.log('❌ Max retries reached, user might not be logged in');
+                    clearInterval(retryInterval);
+                }
+            }, 500); // Check every 500ms
         }
         
         // Re-check ownership after authentication completes
@@ -2179,6 +2197,9 @@
                     // Give it a moment for all data to settle
                     setTimeout(() => {
                         recheckOwnershipAfterAuth();
+                        // Also update post creation user display
+                        console.log('🔄 Updating post creation display after auth');
+                        updatePostCreationUserDisplay();
                     }, 100);
                 }
             }, 500);
@@ -3046,7 +3067,8 @@
                 const currentAuthState = window.dcfUser && window.dcfUser.isLoggedIn;
                 if (currentAuthState !== lastAuthState) {
                     lastAuthState = currentAuthState;
-                    updatePostBoxUserInfo();
+                    console.log('🔄 Auth state changed:', currentAuthState);
+                    updatePostCreationUserDisplay();
                 }
             }, 1000);
             
@@ -3377,49 +3399,142 @@
 
         // Initialize post creation
         function initializePostCreation() {
-            console.log('initializePostCreation starting...');
+            console.log('🚀 initializePostCreation starting...');
+            
+            // Debug: Check user data availability
+            console.log('User check via getCurrentUser():', getCurrentUser());
+            console.log('window.dcfUser:', window.dcfUser);
+            console.log('window.dcfUser.profile:', window.dcfUser?.profile);
+            console.log('window.dcfUser.isLoggedIn:', window.dcfUser?.isLoggedIn);
+            
             const mediaInput = document.getElementById('mediaFileInput');
-            console.log('mediaFileInput element found:', mediaInput);
             const textarea = document.getElementById('postTextarea');
             const submitBtn = document.getElementById('postSubmitBtnExpanded');
             const characterCount = document.getElementById('characterCount');
             const authorAvatar = document.getElementById('postAuthorAvatar');
             const authorName = document.getElementById('postAuthorName');
             
-            if (!textarea || !submitBtn) return;
-            
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                // Set author info
-                if (authorName) {
-                    authorName.textContent = `@${currentUser.username || 'user'}`;
-                }
-                
-                if (authorAvatar) {
-                    if (currentUser.avatar_url) {
-                        authorAvatar.style.backgroundImage = `url(${currentUser.avatar_url})`;
-                        authorAvatar.style.backgroundSize = 'cover';
-                        authorAvatar.style.backgroundPosition = 'center';
-                        authorAvatar.textContent = '';
-                    } else {
-                        const initials = currentUser.username ? 
-                            currentUser.username.substring(0, 2).toUpperCase() : 'U';
-                        authorAvatar.textContent = initials;
-                    }
-                }
+            if (!textarea || !submitBtn) {
+                console.log('⚠️ Post creation elements not found, aborting');
+                return;
             }
             
-            // Add input listener
-            textarea.addEventListener('input', handlePostInput);
+            // Update placeholder
+            textarea.placeholder = "What's on your mind about this project?";
             
-            // Initialize media file input
-            if (mediaInput) {
+            // Add input listener (only once)
+            if (!textarea.hasAttribute('data-listener-added')) {
+                textarea.addEventListener('input', handlePostInput);
+                textarea.setAttribute('data-listener-added', 'true');
+            }
+            
+            // Initialize media file input (only once)
+            if (mediaInput && !mediaInput.hasAttribute('data-listener-added')) {
                 mediaInput.addEventListener('change', function(e) {
                     const files = Array.from(e.target.files);
                     if (files.length > 0) {
                         handlePostFileUpload(files);
                     }
                 });
+                mediaInput.setAttribute('data-listener-added', 'true');
+            }
+            
+            // Update user display
+            updatePostCreationUserDisplay();
+        }
+        
+        // Separate function to update user display that can be called later
+        function updatePostCreationUserDisplay() {
+            console.log('📝 Updating post creation user display...');
+            
+            const authorAvatar = document.getElementById('postAuthorAvatar');
+            const authorName = document.getElementById('postAuthorName');
+            const textarea = document.getElementById('postTextarea');
+            
+            // Try to get current user
+            let currentUser = getCurrentUser();
+            
+            // Fallback to dcfUser if getCurrentUser returns null
+            if (!currentUser && window.dcfUser && window.dcfUser.isLoggedIn) {
+                currentUser = window.dcfUser.profile;
+            }
+            
+            console.log('Current user found:', currentUser);
+            
+            if (currentUser) {
+                // Update author name
+                if (authorName) {
+                    const displayName = currentUser.username || 
+                                      currentUser.email?.split('@')[0] || 
+                                      'user';
+                    authorName.textContent = `@${displayName}`;
+                    authorName.style.color = '#333';
+                    console.log('Set author name to:', `@${displayName}`);
+                }
+                
+                // Update avatar
+                if (authorAvatar) {
+                    if (currentUser.avatar_url) {
+                        console.log('Setting avatar image:', currentUser.avatar_url);
+                        authorAvatar.style.backgroundImage = `url(${currentUser.avatar_url})`;
+                        authorAvatar.style.backgroundSize = 'cover';
+                        authorAvatar.style.backgroundPosition = 'center';
+                        authorAvatar.style.background = `url(${currentUser.avatar_url}) center/cover`;
+                        authorAvatar.textContent = '';
+                    } else {
+                        // Generate initials
+                        let initials = '';
+                        if (currentUser.first_name && currentUser.last_name) {
+                            initials = currentUser.first_name[0] + currentUser.last_name[0];
+                        } else if (currentUser.username) {
+                            initials = currentUser.username.substring(0, 2);
+                        } else if (currentUser.email) {
+                            initials = currentUser.email.substring(0, 2);
+                        } else {
+                            initials = 'U';
+                        }
+                        
+                        console.log('Setting avatar initials:', initials.toUpperCase());
+                        authorAvatar.style.backgroundImage = '';
+                        authorAvatar.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                        authorAvatar.style.color = 'white';
+                        authorAvatar.style.display = 'flex';
+                        authorAvatar.style.alignItems = 'center';
+                        authorAvatar.style.justifyContent = 'center';
+                        authorAvatar.style.fontWeight = '600';
+                        authorAvatar.textContent = initials.toUpperCase();
+                    }
+                }
+                
+                // Update placeholder with user's name
+                if (textarea) {
+                    const firstName = currentUser.first_name || 
+                                    currentUser.username || 
+                                    'there';
+                    textarea.placeholder = `What's on your mind, ${firstName}?`;
+                }
+            } else {
+                console.log('⚠️ No user found, showing default state');
+                
+                // Not logged in - show default state
+                if (authorName) {
+                    authorName.textContent = 'Sign in to post';
+                    authorName.style.color = '#999';
+                }
+                
+                if (authorAvatar) {
+                    authorAvatar.style.backgroundImage = '';
+                    authorAvatar.style.background = 'linear-gradient(135deg, #e5e5e5, #cacaca)';
+                    authorAvatar.style.color = '#999';
+                    authorAvatar.style.display = 'flex';
+                    authorAvatar.style.alignItems = 'center';
+                    authorAvatar.style.justifyContent = 'center';
+                    authorAvatar.textContent = '?';
+                }
+                
+                if (textarea) {
+                    textarea.placeholder = 'Sign in to share your thoughts about this project...';
+                }
             }
         }
 
