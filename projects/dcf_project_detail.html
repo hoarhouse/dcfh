@@ -4315,8 +4315,167 @@
         }
 
         // Edit post (placeholder)
+        // INLINE EDITING FUNCTIONS
+        function toggleInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            
+            if (contentDiv.querySelector('textarea')) {
+                // Already editing - trigger save
+                const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
+                if (saveBtn && !saveBtn.disabled) {
+                    saveInlineEdit(postId);
+                }
+            } else {
+                // Start editing
+                startInlineEdit(postId);
+            }
+        }
+
+        function startInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+            
+            // Get current content (strip HTML links)
+            const currentContent = contentDiv.textContent || contentDiv.innerText;
+            
+            // Create textarea with current content
+            const textarea = document.createElement('textarea');
+            textarea.id = `edit-textarea-${postId}`;
+            textarea.value = currentContent;
+            textarea.style.cssText = `
+                width: 100%;
+                min-height: 100px;
+                padding: 1rem;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-family: inherit;
+                resize: vertical;
+                outline: none;
+                background: #f8f9fa;
+            `;
+            
+            // Create save/cancel buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = 'margin-top: 0.5rem; display: flex; gap: 0.5rem; justify-content: flex-end;';
+            buttonContainer.innerHTML = `
+                <button onclick="cancelInlineEdit('${postId}')" style="padding: 0.5rem 1rem; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">Cancel</button>
+                <button onclick="saveInlineEdit('${postId}')" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">Save</button>
+            `;
+            
+            // Store original content
+            contentDiv.setAttribute('data-original-content', contentDiv.innerHTML);
+            
+            // Replace content with textarea
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(textarea);
+            contentDiv.appendChild(buttonContainer);
+            
+            // Update edit button
+            editBtn.textContent = '💾 Save';
+            editBtn.style.color = '#28a745';
+            
+            // Focus textarea
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        async function saveInlineEdit(postId) {
+            const textarea = document.getElementById(`edit-textarea-${postId}`);
+            const newContent = textarea.value.trim();
+            
+            if (!newContent) {
+                showNotification('Post content cannot be empty', 'error');
+                return;
+            }
+            
+            if (newContent.length > 2000) {
+                showNotification('Post content is too long (max 2000 characters)', 'error');
+                return;
+            }
+            
+            // Get save button and disable it
+            const saveBtn = document.querySelector(`button[onclick="saveInlineEdit('${postId}')"]`);
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('posts')
+                    .update({ 
+                        content: newContent,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', postId)
+                    .select()
+                    .single();
+                    
+                if (error) {
+                    console.error('Error updating post:', error);
+                    throw error;
+                }
+                
+                // Update post content
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                const contentDiv = postElement.querySelector('.post-content');
+                const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+                
+                // Restore content with linkified text
+                contentDiv.innerHTML = linkifyText(newContent);
+                
+                // Update edit button
+                editBtn.innerHTML = '✏️ Edit';
+                editBtn.style.color = '#007bff';
+                
+                // Add edited indicator
+                const postDate = postElement.querySelector('.post-date');
+                if (postDate && !postDate.textContent.includes('(edited)')) {
+                    postDate.textContent += ' (edited)';
+                }
+                
+                showNotification('Post updated successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error saving post edit:', error);
+                showNotification('Failed to save changes', 'error');
+                
+                // Restore original content on error
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                const contentDiv = postElement.querySelector('.post-content');
+                const originalContent = contentDiv.getAttribute('data-original-content');
+                if (originalContent) {
+                    contentDiv.innerHTML = originalContent;
+                }
+                
+            } finally {
+                // Reset button state
+                if (saveBtn) {
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                }
+            }
+        }
+
+        function cancelInlineEdit(postId) {
+            const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+            const contentDiv = postElement.querySelector('.post-content');
+            const editBtn = postElement.querySelector('button[onclick*="toggleInlineEdit"]');
+            
+            // Restore original content
+            const originalContent = contentDiv.getAttribute('data-original-content');
+            contentDiv.innerHTML = originalContent;
+            
+            // Reset edit button
+            editBtn.innerHTML = '✏️ Edit';
+            editBtn.style.color = '#007bff';
+        }
+
+        // For backward compatibility with old edit button
         function editPost(postId) {
-            showNotification('Edit functionality coming soon!', 'info');
+            toggleInlineEdit(postId);
         }
         
    </script>
