@@ -4027,15 +4027,15 @@
             const authorName = post.author_name || `@${post.username}`;
             const currentUser = getCurrentUser();
             
-            // Generate avatar HTML - use avatar_url from joined user_profiles data
+            // Generate avatar HTML - use cached avatar data
             let avatarHTML = '';
-            const postAvatarUrl = post.user_profiles?.avatar_url;
+            const postAvatarUrl = userAvatarCache[post.author_id];
             
-            // First check if post has avatar from join
+            // First check if post author has avatar
             if (postAvatarUrl) {
                 avatarHTML = `<div class="post-avatar" style="background-image: url(${postAvatarUrl}); background-size: cover; background-position: center;"></div>`;
             } 
-            // Fallback to current user's avatar if it's their post
+            // Fallback to current user's avatar if it's their post and not cached
             else if (currentUser && currentUser.avatar_url && post.author_email === currentUser.email) {
                 avatarHTML = `<div class="post-avatar" style="background-image: url(${currentUser.avatar_url}); background-size: cover; background-position: center;"></div>`;
             } 
@@ -4195,6 +4195,12 @@
                 }
                 
                 console.log(`Found ${posts?.length || 0} posts for project ${projectId}`);
+                
+                // Fetch avatars for all post authors
+                if (posts && posts.length > 0) {
+                    const uniquePostAuthorIds = [...new Set(posts.map(p => p.author_id).filter(id => id))];
+                    await Promise.all(uniquePostAuthorIds.map(id => fetchUserAvatar(id)));
+                }
                 
                 if (!posts || posts.length === 0) {
                     feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something about this project!</div>';
@@ -5094,9 +5100,9 @@
 
         // Create HTML for a full comment with replies
         function createFullCommentHtml(comment, replies, currentUser, postId) {
-            // Generate avatar HTML for main comment - check for joined user_profiles data
+            // Generate avatar HTML for main comment - use cached avatar data
             let commentAvatarHTML = '';
-            const avatarUrl = comment.user_profiles?.avatar_url;
+            const avatarUrl = userAvatarCache[comment.author_id];
             
             if (avatarUrl) {
                 commentAvatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
@@ -5111,9 +5117,9 @@
             // Get replies for this comment
             const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
             const repliesHtml = commentReplies.map(reply => {
-                // Generate avatar HTML for reply - check for joined user_profiles data
+                // Generate avatar HTML for reply - use cached avatar data
                 let replyAvatarHTML = '';
-                const replyAvatarUrl = reply.user_profiles?.avatar_url;
+                const replyAvatarUrl = userAvatarCache[reply.author_id];
                 
                 if (replyAvatarUrl) {
                     replyAvatarHTML = `<div class="comment-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; background: url(${replyAvatarUrl}) center/cover;"></div>`;
@@ -5213,9 +5219,9 @@
 
         // Create HTML for popular comment display
         function createPopularCommentHtml(comment, replyCount, currentUser, postId) {
-            // Generate avatar HTML - check for joined user_profiles data
+            // Generate avatar HTML - use cached avatar data
             let avatarHTML = '';
-            const avatarUrl = comment.user_profiles?.avatar_url;
+            const avatarUrl = userAvatarCache[comment.author_id];
             
             if (avatarUrl) {
                 avatarHTML = `<div class="comment-avatar" style="background: url(${avatarUrl}) center/cover;"></div>`;
