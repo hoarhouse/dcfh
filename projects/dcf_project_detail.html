@@ -3455,6 +3455,30 @@
                 return;
             }
             
+            if (!projectId) {
+                showNotification('Invalid project URL', 'error');
+                return;
+            }
+            
+            // Authorization check: Verify user can post to this project
+            if (window.currentProject) {
+                const isProjectAuthor = currentUser.id === window.currentProject.author_id;
+                
+                // For now, allow project author and all logged-in users to post
+                // Later can restrict to only project members if needed
+                if (!isProjectAuthor && window.currentProject.posts_restricted) {
+                    // If project has restricted posting (future feature)
+                    showNotification('You are not authorized to post to this project', 'error');
+                    return;
+                }
+                
+                console.log('User authorized to post:', {
+                    userId: currentUser.id,
+                    projectAuthorId: window.currentProject.author_id,
+                    isProjectAuthor: isProjectAuthor
+                });
+            }
+            
             try {
                 let mediaUrls = [];
                 if (selectedPostFiles && selectedPostFiles.length > 0) {
@@ -3642,24 +3666,51 @@
             const feedContainer = document.getElementById('postsFeed');
             if (!feedContainer) return;
             
-            console.log('Loading posts feed...');
+            // Get project ID from URL
+            const projectId = new URLSearchParams(window.location.search).get('id');
+            if (!projectId) {
+                console.error('No project ID found in URL');
+                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Invalid project URL</div>';
+                return;
+            }
+            
+            console.log('Loading posts for project:', projectId);
             
             try {
+                // STRICTLY filter posts for THIS project only
                 const { data: posts, error } = await window.dcfSupabase
                     .from('posts')
                     .select('*')
-                    .eq('status', 'active')
+                    .eq('context_type', 'project')  // Must be project context
+                    .eq('context_id', projectId)     // Must match this specific project
+                    .neq('status', 'deleted')        // Exclude deleted posts
                     .order('created_at', { ascending: false })
-                    .limit(20);
+                    .limit(50);
                     
-                if (error) throw error;
+                if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                }
                 
-                if (posts.length === 0) {
-                    feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something!</div>';
+                console.log(`Found ${posts?.length || 0} posts for project ${projectId}`);
+                
+                if (!posts || posts.length === 0) {
+                    feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something about this project!</div>';
                     return;
                 }
                 
-                feedContainer.innerHTML = posts.map(post => createPostHTML(post)).join('');
+                // Double-check: filter again in JavaScript as safety measure
+                const projectPosts = posts.filter(post => 
+                    post.context_type === 'project' && 
+                    post.context_id === projectId
+                );
+                
+                if (projectPosts.length === 0) {
+                    feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something about this project!</div>';
+                    return;
+                }
+                
+                feedContainer.innerHTML = projectPosts.map(post => createPostHTML(post)).join('');
                 
                 // After posts are loaded, check like statuses
                 setTimeout(() => {
@@ -3670,7 +3721,7 @@
                 
             } catch (error) {
                 console.error('Error loading posts:', error);
-                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Failed to load posts</div>';
+                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Failed to load posts for this project</div>';
             }
         }
 
