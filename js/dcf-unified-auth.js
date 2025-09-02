@@ -1749,13 +1749,68 @@ async function handleNotificationClick(notificationId, relatedType, relatedId) {
     // Mark as read
     await markNotificationRead(notificationId);
     
-    // Navigate to related content
-    if (relatedType === 'post') {
-        // Navigate to post or scroll to it
-        console.log('Navigate to post:', relatedId);
-    } else if (relatedType === 'connection') {
-        // Navigate to connections page
-        console.log('Navigate to connection:', relatedId);
+    // Get current page info for navigation
+    const currentPath = window.location.pathname;
+    const pathParts = currentPath.split('/');
+    const currentFolder = pathParts[pathParts.length - 2];
+    const currentFile = pathParts[pathParts.length - 1];
+    
+    // Navigate to related content based on type
+    if (relatedType === 'post' || relatedType === 'post_like' || relatedType === 'post_comment') {
+        // Navigate to the specific post
+        if (currentFile === 'dcf_member_home.html') {
+            // Already on home page, scroll to post
+            const postElement = document.querySelector(`[data-post-id="${relatedId}"]`);
+            if (postElement) {
+                postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add highlight effect
+                postElement.style.transition = 'background-color 0.5s ease';
+                postElement.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    postElement.style.backgroundColor = '';
+                }, 2000);
+            }
+        } else {
+            // Navigate to member home with post hash
+            if (currentFolder === 'members') {
+                window.location.href = `dcf_member_home.html#post-${relatedId}`;
+            } else {
+                window.location.href = `../members/dcf_member_home.html#post-${relatedId}`;
+            }
+        }
+    } else if (relatedType === 'connection' || relatedType === 'connection_request') {
+        // Navigate to members directory for now (future: dedicated connections page)
+        if (currentFile === 'dcf_members_directory.html') {
+            // Already on members directory
+            console.log('Already on members directory');
+        } else {
+            if (currentFolder === 'members') {
+                window.location.href = 'dcf_members_directory.html';
+            } else {
+                window.location.href = '../members/dcf_members_directory.html';
+            }
+        }
+    } else if (relatedType === 'project' || relatedType === 'project_update') {
+        // Navigate to project detail page
+        if (currentFolder === 'projects') {
+            window.location.href = `dcf_project_detail.html?id=${relatedId}`;
+        } else {
+            window.location.href = `../projects/dcf_project_detail.html?id=${relatedId}`;
+        }
+    } else if (relatedType === 'event' || relatedType === 'event_reminder') {
+        // Navigate to events calendar
+        if (currentFolder === 'events') {
+            window.location.href = `dcf_event_details.html?id=${relatedId}`;
+        } else {
+            window.location.href = `../events/dcf_event_details.html?id=${relatedId}`;
+        }
+    } else {
+        // Default: go to notifications page
+        if (currentFolder === 'members') {
+            window.location.href = 'dcf_notifications.html';
+        } else {
+            window.location.href = '../members/dcf_notifications.html';
+        }
     }
     
     closeNotificationDropdown();
