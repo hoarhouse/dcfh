@@ -1490,6 +1490,30 @@ class NotificationSystem {
         }
     }
 
+    async createConnectionRequestNotification(recipientEmail, recipientName) {
+        try {
+            if (!this.currentUser || recipientEmail === this.currentUser.email) return;
+
+            const { error } = await this.supabase
+                .from('notifications')
+                .insert({
+                    type: 'connection_request',
+                    title: 'New connection request',
+                    message: `${this.currentUser.name} sent you a connection request`,
+                    recipient_email: recipientEmail,
+                    recipient_name: recipientName,
+                    sender_email: this.currentUser.email,
+                    sender_name: this.currentUser.name,
+                    related_id: Date.now().toString(), // Unique ID for this request
+                    related_type: 'connection_request'
+                });
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error creating connection request notification:', error);
+        }
+    }
+
     async getUnreadCount(userEmail = null) {
         try {
             const email = userEmail || this.currentUser?.email;
