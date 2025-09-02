@@ -626,11 +626,8 @@ function closeLogoutModal() {
 }
 
 async function confirmLogout() {
-    if (window.dcfLogoutInProgress) {
-        console.log('🚨 LOGOUT already in progress, ignoring duplicate call');
-        return;
-    }
-    window.dcfLogoutInProgress = true;
+    // Reset the flag at the start in case it was stuck from a previous failed attempt
+    window.dcfLogoutInProgress = false;
     
     console.log('🚨 confirmLogout() FUNCTION CALLED');
     console.trace('LOGOUT CALL STACK:');
@@ -646,20 +643,14 @@ async function confirmLogout() {
         // Update UI to logged out state
         showLoggedOutState();
         
-        // Clear localStorage with small delay to ensure UI update
-        setTimeout(() => {
-            localStorage.removeItem('dcf_user_logged_in');
-            localStorage.removeItem('dcf_user_name');
-            localStorage.removeItem('dcf_user_email');
-        }, 50);
+        // Clear all localStorage and sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
         
-        // Navigate to login page with delay to prevent race conditions
-        setTimeout(() => {
-            console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
-            const basePath = getCorrectBasePath();
-            window.dcfLogoutInProgress = false; // Reset flag before redirect
-            window.location.href = basePath + 'auth/dcf_login_page.html';
-        }, 100);
+        // Navigate to login page immediately
+        console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
+        const basePath = getCorrectBasePath();
+        window.location.href = basePath + 'auth/dcf_login_page.html';
         
     } catch (error) {
         console.error('Error during logout:', error);
@@ -667,17 +658,14 @@ async function confirmLogout() {
         window.dcfUser = { isLoggedIn: false, profile: null, session: null };
         showLoggedOutState();
         
-        setTimeout(() => {
-            localStorage.clear();
-            sessionStorage.clear();
-        }, 50);
+        // Clear all storage
+        localStorage.clear();
+        sessionStorage.clear();
         
-        setTimeout(() => {
-            console.log('🚨 LOGOUT FUNCTION CALLED - redirecting to login');
-            const basePath = getCorrectBasePath();
-            window.dcfLogoutInProgress = false; // Reset flag before redirect
-            window.location.href = basePath + 'auth/dcf_login_page.html';
-        }, 100);
+        // Force redirect to login
+        console.log('🚨 LOGOUT FUNCTION CALLED (error path) - redirecting to login');
+        const basePath = getCorrectBasePath();
+        window.location.href = basePath + 'auth/dcf_login_page.html';
     }
 }
 
