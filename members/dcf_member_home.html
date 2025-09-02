@@ -2608,6 +2608,44 @@
                             postElement.style.backgroundColor = '';
                         }, 3000);
                     }, 500);
+                } else {
+                    // Post not found - show error message
+                    setTimeout(() => {
+                        // Check one more time after a delay (in case posts are still loading)
+                        const retryElement = document.querySelector(`[data-post-id="${postId}"]`);
+                        if (!retryElement) {
+                            // Still not found - show error
+                            const feedContainer = document.getElementById('postsFeed');
+                            if (feedContainer) {
+                                // Add error message at top of feed
+                                const errorMsg = document.createElement('div');
+                                errorMsg.style.cssText = 'background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; color: #856404;';
+                                errorMsg.innerHTML = `
+                                    <strong>⚠️ Post Not Found</strong><br>
+                                    The post you're looking for may have been removed or is no longer available.
+                                `;
+                                feedContainer.insertBefore(errorMsg, feedContainer.firstChild);
+                                
+                                // Remove error message after 5 seconds
+                                setTimeout(() => {
+                                    errorMsg.style.transition = 'opacity 0.5s ease';
+                                    errorMsg.style.opacity = '0';
+                                    setTimeout(() => errorMsg.remove(), 500);
+                                }, 5000);
+                            }
+                            
+                            // Clear the hash
+                            history.replaceState(null, null, window.location.pathname);
+                        } else {
+                            // Found on retry - scroll to it
+                            retryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            retryElement.style.transition = 'background-color 0.5s ease';
+                            retryElement.style.backgroundColor = '#fff3cd';
+                            setTimeout(() => {
+                                retryElement.style.backgroundColor = '';
+                            }, 3000);
+                        }
+                    }, 1500); // Wait 1.5 seconds for posts to fully load
                 }
             }
         }
