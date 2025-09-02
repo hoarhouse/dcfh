@@ -1273,6 +1273,56 @@
                 showError('Failed to reject connection request.');
             }
         }
+        
+        // TEST NOTIFICATION FUNCTIONS - For debugging
+        async function createTestNotification() {
+            try {
+                console.log('Creating test notification...');
+                
+                if (!currentUser) {
+                    console.error('No current user found');
+                    return;
+                }
+                
+                const testNotification = {
+                    type: 'system_update',
+                    title: 'Test Notification',
+                    message: 'This is a test notification created at ' + new Date().toLocaleTimeString(),
+                    recipient_email: currentUser.email,
+                    recipient_name: currentUser.name || 'DCF Member',
+                    sender_email: 'system@dcfhungary.org',
+                    sender_name: 'DCF System',
+                    related_type: 'test',
+                    related_id: 'test_' + Date.now()
+                };
+                
+                console.log('Test notification data:', testNotification);
+                
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .insert(testNotification)
+                    .select();
+                
+                if (error) {
+                    console.error('Error creating test notification:', error);
+                    showError('Failed to create test notification: ' + error.message);
+                } else {
+                    console.log('Test notification created successfully:', data);
+                    showSuccess('Test notification created! Refreshing...');
+                    setTimeout(() => loadPageNotifications(), 1000);
+                }
+            } catch (error) {
+                console.error('Exception creating test notification:', error);
+                showError('Exception: ' + error.message);
+            }
+        }
+        
+        // Add to window for console access
+        window.createTestNotification = createTestNotification;
+        
+        // Log current state for debugging
+        console.log('Notifications page loaded. Current user:', currentUser);
+        console.log('To create a test notification, run: createTestNotification()');
     </script>
 </body>
 </html>
