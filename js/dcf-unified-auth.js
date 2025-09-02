@@ -1569,9 +1569,40 @@ function toggleNotificationDropdown(event) {
     }
 }
 
+function getNotificationPagePath() {
+    const pathname = window.location.pathname;
+    const pathParts = pathname.split('/').filter(p => p);
+    
+    // Check if we're in a subfolder
+    const knownFolders = ['members', 'projects', 'events', 'resources', 'auth', 'admin', 'public'];
+    let currentFolder = null;
+    
+    for (let i = pathParts.length - 2; i >= 0; i--) {
+        if (knownFolders.includes(pathParts[i])) {
+            currentFolder = pathParts[i];
+            break;
+        }
+    }
+    
+    // If we're already in the members folder, use direct path
+    if (currentFolder === 'members') {
+        return 'dcf_notifications.html';
+    }
+    // If we're in another folder, go up and into members
+    else if (currentFolder) {
+        return '../members/dcf_notifications.html';
+    }
+    // If we're at root level, go into members folder
+    else {
+        return 'members/dcf_notifications.html';
+    }
+}
+
 function createNotificationDropdown() {
     const bell = document.querySelector('.notification-bell');
     if (!bell) return;
+    
+    const notificationPath = getNotificationPagePath();
     
     const dropdownHTML = `
         <div class="notification-dropdown" id="notificationDropdown">
@@ -1583,7 +1614,7 @@ function createNotificationDropdown() {
                 <div class="notification-loading">Loading notifications...</div>
             </div>
             <div class="notification-dropdown-footer">
-                <a href="#" class="view-all-notifications">View All Notifications</a>
+                <a href="${notificationPath}" class="view-all-notifications">View All Notifications</a>
             </div>
         </div>
     `;
