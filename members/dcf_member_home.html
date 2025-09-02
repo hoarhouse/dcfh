@@ -3251,6 +3251,26 @@
                         throw insertError;
                     }
                     console.log('Like added successfully');
+                    
+                    // Create notification for post author
+                    if (window.notificationSystem && !existingLike) {
+                        // Get post details for notification
+                        const { data: postData, error: postError } = await window.dcfSupabase
+                            .from('posts')
+                            .select('author_email, author_name, content')
+                            .eq('id', postId)
+                            .single();
+                        
+                        if (postData && postData.author_email !== currentUser.email) {
+                            console.log('Creating like notification for:', postData.author_email);
+                            await window.notificationSystem.createLikeNotification(
+                                postId,
+                                postData.author_email,
+                                postData.author_name || postData.author_email.split('@')[0],
+                                postData.content
+                            );
+                        }
+                    }
                 }
                 
                 // Count total likes for this post
