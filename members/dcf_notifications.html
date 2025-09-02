@@ -811,29 +811,48 @@
         // Global variables
         let notifications = [];
         let currentFilter = 'all';
-        let currentUser = window.getCurrentUser();
-        if (!currentUser) {
-            console.log('❌ No authenticated user, redirecting to login');
-            window.location.href = getCorrectBasePath() + 'auth/dcf_login_page.html';
-        }
+        let currentUser = null;
 
         // Update user info from auth system
         function updateCurrentUser() {
             const authUser = window.getCurrentUser ? window.getCurrentUser() : null;
-            currentUser.name = authUser?.name || authUser?.username || 'DCF Member';
-            currentUser.email = authUser?.email || 'member@dcfhungary.org';
+            if (authUser) {
+                currentUser = authUser;
+                currentUser.name = authUser?.name || authUser?.username || 'DCF Member';
+                currentUser.email = authUser?.email || 'member@dcfhungary.org';
+                return true;
+            }
+            return false;
         }
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for master script to handle auth and initialization
-            setTimeout(() => {
-                updateCurrentUser();
-                loadPageNotifications();
-                setupFilterListeners();
-                subscribeToNotifications();
-                setInterval(loadPageNotifications, 30000);
-            }, 1000);
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🔐 Notifications page: Checking authentication...');
+            
+            // Wait for unified auth to initialize (it loads user data)
+            // Give dcf-unified-auth.js time to initialize
+            let authCheckAttempts = 0;
+            const maxAttempts = 10;
+            
+            const checkAuth = setInterval(() => {
+                authCheckAttempts++;
+                
+                // Try to get current user
+                if (updateCurrentUser()) {
+                    clearInterval(checkAuth);
+                    console.log('✅ User authenticated, loading notifications...');
+                    
+                    // Now load notifications
+                    loadPageNotifications();
+                    setupFilterListeners();
+                    subscribeToNotifications();
+                    setInterval(loadPageNotifications, 30000);
+                } else if (authCheckAttempts >= maxAttempts) {
+                    clearInterval(checkAuth);
+                    console.log('❌ Authentication timeout, redirecting to login');
+                    window.location.href = '../auth/dcf_login_page.html';
+                }
+            }, 500); // Check every 500ms, up to 5 seconds total
         });
 
         async function loadPageNotifications() {
