@@ -1305,11 +1305,6 @@
             <div class="hero-background" id="heroBackground"></div>
             <div class="hero-overlay"></div>
             
-            <!-- Cover Reposition Button (shown when user has cover photo) -->
-            <button class="reposition-cover-btn" id="repositionCoverBtn" onclick="startRepositionMode()" style="display: none;">
-                📐 Adjust Position
-            </button>
-            
             <!-- Cover Position Controls (hidden by default) -->
             <div class="cover-position-controls" id="coverPositionControls">
                 <div class="position-info">Drag image or use controls to adjust vertical position</div>
@@ -1340,12 +1335,12 @@
                     </div>
                 </div>
             </div>
-            <button class="cover-edit-btn" onclick="openCoverUploadModal()" 
+            <button class="cover-edit-btn" onclick="openCoverEditModal()" id="editCoverBtn"
             style="position: absolute; bottom: 15px; right: 15px; background: #000; 
             color: white; border: none; border-radius: 8px; padding: 8px 12px; 
             display: flex; align-items: center; gap: 8px; cursor: pointer; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 0.9rem; z-index: 10;">
-            📷 Edit Cover Pic
+            📷 Edit Cover
             </button>
         </div>
 
@@ -2242,14 +2237,29 @@
             }
         }
 
-        // Cover image modal functions
-        function openCoverUploadModal() {
-            document.getElementById('coverModal').style.display = 'flex';
+        // Cover edit modal functions
+        function openCoverEditModal() {
+            const modal = document.getElementById('coverModal');
+            const repositionSection = document.getElementById('repositionSection');
+            
+            // Show/hide reposition option based on whether user has a cover
+            if (currentProfile?.cover_image_url) {
+                repositionSection.style.display = 'block';
+            } else {
+                repositionSection.style.display = 'none';
+            }
+            
+            modal.style.display = 'flex';
         }
 
         function closeCoverModal() {
             document.getElementById('coverModal').style.display = 'none';
             document.getElementById('coverInput').value = '';
+        }
+        
+        function startRepositionFromModal() {
+            closeCoverModal();
+            setTimeout(() => enterRepositionMode(), 300);
         }
 
         async function uploadCoverImage() {
@@ -2458,19 +2468,26 @@
                 
                 // Save position to database as CSS background-position value
                 const positionValue = `center ${currentCoverPosition}%`;
-                await updateProfile({ cover_position: positionValue });
                 
-                console.log('✅ Cover position saved to database:', positionValue);
-                
-                // Exit reposition mode
-                exitRepositionMode();
+                // NOTE: cover_position field doesn't exist in database yet
+                // Position will be saved in memory only for this session
+                console.log('⚠️ Cover position saved in session only (database field not available):', positionValue);
                 
                 // Update local data for current session
                 if (currentProfile) {
                     currentProfile.cover_position = positionValue;
                 }
                 
-                showNotification('Cover position saved successfully!', 'success');
+                // Apply position to current view
+                const heroBackground = document.getElementById('heroBackground');
+                if (heroBackground) {
+                    heroBackground.style.backgroundPosition = positionValue;
+                }
+                
+                // Exit reposition mode
+                exitRepositionMode();
+                
+                showNotification('Cover position saved for this session', 'info');
                 
             } catch (error) {
                 console.error('Error saving cover position:', error);
