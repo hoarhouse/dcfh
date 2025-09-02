@@ -870,28 +870,32 @@
                 if (notifError) throw notifError;
 
                 // Get current user ID for connection requests
-                const { data: userData } = await supabase
+                const { data: userData, error: userError } = await supabase
                     .from('user_profiles')
                     .select('id')
                     .eq('email', currentUser.email)
                     .single();
+                
+                if (userError) {
+                    console.error('Error fetching user profile:', userError);
+                }
 
                 let connectionRequests = [];
-                if (userData) {
+                if (userData && userData.id) {
                     // Load connection requests
+                    console.log('Loading connection requests for user ID:', userData.id);
                     const { data: connData, error: connError } = await supabase
                         .from('connections')
-                        .select(`
-                            id, 
-                            created_at, 
-                            status,
-                            requester_id,
-                            recipient_id
-                        `)
+                        .select('*')  // Simplified select to avoid syntax issues
                         .eq('recipient_id', userData.id)
                         .eq('status', 'pending');
 
-                    if (!connError) connectionRequests = connData || [];
+                    if (connError) {
+                        console.error('Error loading connection requests:', connError);
+                    } else {
+                        connectionRequests = connData || [];
+                        console.log('Connection requests loaded:', connectionRequests);
+                    }
                 }
 
             
