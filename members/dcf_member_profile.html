@@ -1133,6 +1133,141 @@
             color: #721c24 !important;
         }
 
+        /* Cover Photo Repositioning Controls */
+        .cover-position-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 400px;
+            display: none;
+        }
+        
+        .position-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .position-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .position-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .position-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        #positionSlider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+        }
+        
+        #positionSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+        
+        #positionSlider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .position-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .save-position-btn, .cancel-position-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .save-position-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .save-position-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .cancel-position-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .cancel-position-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        #heroBackground.repositioning {
+            cursor: ns-resize !important;
+        }
+
+        .reposition-cover-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .reposition-cover-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-2px);
+        }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
@@ -1169,6 +1304,25 @@
         <div class="profile-hero" id="profileHero">
             <div class="hero-background" id="heroBackground"></div>
             <div class="hero-overlay"></div>
+            
+            <!-- Cover Reposition Button (shown when user has cover photo) -->
+            <button class="reposition-cover-btn" id="repositionCoverBtn" onclick="startRepositionMode()" style="display: none;">
+                📐 Adjust Position
+            </button>
+            
+            <!-- Cover Position Controls (hidden by default) -->
+            <div class="cover-position-controls" id="coverPositionControls">
+                <div class="position-info">Drag image or use controls to adjust vertical position</div>
+                <div class="position-slider-container">
+                    <button class="position-btn" onclick="adjustCoverPosition(-5)" title="Move Up">↑</button>
+                    <input type="range" id="positionSlider" min="0" max="100" value="50" oninput="setCoverPosition(this.value)">
+                    <button class="position-btn" onclick="adjustCoverPosition(5)" title="Move Down">↓</button>
+                </div>
+                <div class="position-actions">
+                    <button class="save-position-btn" onclick="saveCoverPosition()">Save Position</button>
+                    <button class="cancel-position-btn" onclick="cancelRepositioning()">Cancel</button>
+                </div>
+            </div>
             
             <div class="hero-content">
                 <div class="profile-avatar-container">
@@ -1550,15 +1704,16 @@
             try {
                 console.log('📡 Loading profile data...');
                 
-                // Get profile from Supabase
+                // Get profile from Supabase - use * to get all available fields
                 const { data, error } = await window.dcfSupabase
                     .from('user_profiles')
-                    .select('first_name,last_name,role,location,organization,avatar_url,username,bio,cover_image_url')
+                    .select('*')
                     .eq('id', currentUser.id)
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
-                    throw error;
+                    console.error('Profile loading error:', error);
+                    // Don't throw, continue with default profile
                 }
 
                 if (data) {
@@ -1684,12 +1839,32 @@
             const coverUrl = currentProfile?.cover_image_url;
             if (currentProfile && coverUrl) {
                 const heroBackground = document.getElementById('heroBackground');
+                const repositionBtn = document.getElementById('repositionCoverBtn');
+                
                 if (heroBackground) {
                     heroBackground.style.backgroundImage = `url(${coverUrl})`;
                     heroBackground.style.backgroundSize = 'cover';
-                    heroBackground.style.backgroundPosition = 'center';
+                    
+                    // Apply saved position if exists
+                    if (currentProfile.cover_position) {
+                        heroBackground.style.backgroundPosition = currentProfile.cover_position;
+                        // Extract position for slider
+                        const match = currentProfile.cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                        if (match) {
+                            currentCoverPosition = parseFloat(match[1]);
+                            originalPosition = currentCoverPosition;
+                        }
+                    } else {
+                        heroBackground.style.backgroundPosition = 'center';
+                    }
+                    
                     heroBackground.style.backgroundRepeat = 'no-repeat';
                     console.log('🖼️ Updated cover image on page load:', coverUrl);
+                }
+                
+                // Show reposition button if user has cover
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'block';
                 }
             }
             
@@ -2125,12 +2300,215 @@
                 showNotification('✨ Cover image updated!');
                 closeCoverModal();
                 
+                // Show reposition button and activate repositioning mode
+                const repositionBtn = document.getElementById('repositionCoverBtn');
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'block';
+                }
+                showNotification('You can now adjust the vertical position of your cover photo!', 'info');
+                setTimeout(() => enterRepositionMode(), 500);
+                
             } catch (error) {
                 console.error('❌ Cover image upload error:', error);
                 showNotification('💥 Error uploading cover image', 'error');
             }
         }
 
+        // Cover Photo Repositioning Functions
+        let currentCoverPosition = 50;
+        let originalPosition = 50;
+        let isDragging = false;
+        let dragStartY = 0;
+        let dragStartPosition = 50;
+        
+        function startRepositionMode() {
+            enterRepositionMode();
+        }
+        
+        function enterRepositionMode() {
+            console.log('Entering reposition mode');
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            const repositionBtn = document.getElementById('repositionCoverBtn');
+            
+            if (controls && heroBackground) {
+                // Hide the reposition button
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'none';
+                }
+                
+                // Show controls
+                controls.style.display = 'block';
+                
+                // Add repositioning class for cursor
+                heroBackground.classList.add('repositioning');
+                
+                // Get current position if saved
+                const currentBgPosition = heroBackground.style.backgroundPosition;
+                if (currentBgPosition && currentBgPosition.includes('%')) {
+                    const match = currentBgPosition.match(/(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                } else if (currentProfile?.cover_position) {
+                    // Try to extract from database value
+                    const match = currentProfile.cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                }
+                
+                // Set slider value
+                const slider = document.getElementById('positionSlider');
+                if (slider) {
+                    slider.value = currentCoverPosition;
+                }
+                
+                // Enable drag functionality
+                enableDragToReposition();
+            }
+        }
+        
+        function enableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function disableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.removeEventListener('mousedown', startDrag);
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        function startDrag(e) {
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground || !heroBackground.classList.contains('repositioning')) return;
+            
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartPosition = currentCoverPosition;
+            e.preventDefault();
+        }
+        
+        function handleDrag(e) {
+            if (!isDragging) return;
+            
+            const heroBackground = document.getElementById('heroBackground');
+            const deltaY = e.clientY - dragStartY;
+            const heightPercent = (deltaY / heroBackground.offsetHeight) * 100;
+            
+            let newPosition = dragStartPosition + heightPercent;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+        }
+        
+        function adjustCoverPosition(delta) {
+            let newPosition = currentCoverPosition + delta;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+            
+            // Update slider
+            const slider = document.getElementById('positionSlider');
+            if (slider) {
+                slider.value = newPosition;
+            }
+        }
+        
+        function setCoverPosition(position) {
+            currentCoverPosition = parseFloat(position);
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (heroBackground) {
+                heroBackground.style.backgroundPosition = `center ${currentCoverPosition}%`;
+            }
+            
+            // Update slider if called from drag
+            const slider = document.getElementById('positionSlider');
+            if (slider && slider.value != currentCoverPosition) {
+                slider.value = currentCoverPosition;
+            }
+        }
+        
+        async function saveCoverPosition() {
+            try {
+                console.log('Saving cover position:', currentCoverPosition);
+                
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    showNotification('Please log in to save position', 'error');
+                    return;
+                }
+                
+                // Save position to database as CSS background-position value
+                const positionValue = `center ${currentCoverPosition}%`;
+                await updateProfile({ cover_position: positionValue });
+                
+                console.log('✅ Cover position saved to database:', positionValue);
+                
+                // Exit reposition mode
+                exitRepositionMode();
+                
+                // Update local data for current session
+                if (currentProfile) {
+                    currentProfile.cover_position = positionValue;
+                }
+                
+                showNotification('Cover position saved successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error saving cover position:', error);
+                showNotification('Failed to save cover position', 'error');
+            }
+        }
+        
+        function cancelRepositioning() {
+            console.log('Canceling reposition, reverting to:', originalPosition);
+            
+            // Revert to original position
+            setCoverPosition(originalPosition);
+            
+            // Exit reposition mode
+            exitRepositionMode();
+        }
+        
+        function exitRepositionMode() {
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            const repositionBtn = document.getElementById('repositionCoverBtn');
+            
+            if (controls) {
+                controls.style.display = 'none';
+            }
+            
+            if (heroBackground) {
+                heroBackground.classList.remove('repositioning');
+            }
+            
+            // Show reposition button if user has cover
+            if (repositionBtn && currentProfile?.cover_image_url) {
+                repositionBtn.style.display = 'block';
+            }
+            
+            // Disable drag
+            disableDragToReposition();
+        }
 
         // Initialize post creation box with user data
         function initializePostCreation() {
