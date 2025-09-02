@@ -1722,7 +1722,7 @@
                 // Get profile from Supabase
                 const { data, error } = await window.dcfSupabase
                     .from('user_profiles')
-                    .select('first_name,last_name,role,location,organization,avatar_url,username,bio,home_cover_image_url')
+                    .select('first_name,last_name,role,location,organization,avatar_url,username,bio,home_cover_image_url,home_cover_position')
                     .eq('id', currentUser.id)
                     .single();
 
@@ -1853,12 +1853,32 @@
             const coverUrl = currentProfile?.home_cover_image_url;
             if (currentProfile && coverUrl) {
                 const heroBackground = document.getElementById('heroBackground');
+                const repositionBtn = document.getElementById('repositionCoverBtn');
+                
                 if (heroBackground) {
                     heroBackground.style.backgroundImage = `url(${coverUrl})`;
                     heroBackground.style.backgroundSize = 'cover';
-                    heroBackground.style.backgroundPosition = 'center';
+                    
+                    // Apply saved position if exists
+                    if (currentProfile.home_cover_position) {
+                        heroBackground.style.backgroundPosition = currentProfile.home_cover_position;
+                        // Extract position for slider
+                        const match = currentProfile.home_cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                        if (match) {
+                            currentCoverPosition = parseFloat(match[1]);
+                            originalPosition = currentCoverPosition;
+                        }
+                    } else {
+                        heroBackground.style.backgroundPosition = 'center';
+                    }
+                    
                     heroBackground.style.backgroundRepeat = 'no-repeat';
                     console.log('🖼️ Updated home cover image on page load:', coverUrl);
+                }
+                
+                // Show reposition button if user has cover
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'block';
                 }
             }
             
@@ -2294,12 +2314,215 @@
                 showNotification('✨ Cover image updated!');
                 closeCoverModal();
                 
+                // Show reposition button and activate repositioning mode
+                const repositionBtn = document.getElementById('repositionCoverBtn');
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'block';
+                }
+                showNotification('You can now adjust the vertical position of your cover photo!', 'info');
+                setTimeout(() => enterRepositionMode(), 500);
+                
             } catch (error) {
                 console.error('❌ Cover image upload error:', error);
                 showNotification('💥 Error uploading cover image', 'error');
             }
         }
 
+        // Cover Photo Repositioning Functions
+        let currentCoverPosition = 50;
+        let originalPosition = 50;
+        let isDragging = false;
+        let dragStartY = 0;
+        let dragStartPosition = 50;
+        
+        function startRepositionMode() {
+            enterRepositionMode();
+        }
+        
+        function enterRepositionMode() {
+            console.log('Entering reposition mode');
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            const repositionBtn = document.getElementById('repositionCoverBtn');
+            
+            if (controls && heroBackground) {
+                // Hide the reposition button
+                if (repositionBtn) {
+                    repositionBtn.style.display = 'none';
+                }
+                
+                // Show controls
+                controls.style.display = 'block';
+                
+                // Add repositioning class for cursor
+                heroBackground.classList.add('repositioning');
+                
+                // Get current position if saved
+                const currentBgPosition = heroBackground.style.backgroundPosition;
+                if (currentBgPosition && currentBgPosition.includes('%')) {
+                    const match = currentBgPosition.match(/(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                } else if (currentProfile?.home_cover_position) {
+                    // Try to extract from database value
+                    const match = currentProfile.home_cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                }
+                
+                // Set slider value
+                const slider = document.getElementById('positionSlider');
+                if (slider) {
+                    slider.value = currentCoverPosition;
+                }
+                
+                // Enable drag functionality
+                enableDragToReposition();
+            }
+        }
+        
+        function enableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function disableDragToReposition() {
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (!heroBackground) return;
+            
+            heroBackground.removeEventListener('mousedown', startDrag);
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        function startDrag(e) {
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground || !heroBackground.classList.contains('repositioning')) return;
+            
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartPosition = currentCoverPosition;
+            e.preventDefault();
+        }
+        
+        function handleDrag(e) {
+            if (!isDragging) return;
+            
+            const heroBackground = document.getElementById('heroBackground');
+            const deltaY = e.clientY - dragStartY;
+            const heightPercent = (deltaY / heroBackground.offsetHeight) * 100;
+            
+            let newPosition = dragStartPosition + heightPercent;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+        }
+        
+        function adjustCoverPosition(delta) {
+            let newPosition = currentCoverPosition + delta;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+            
+            // Update slider
+            const slider = document.getElementById('positionSlider');
+            if (slider) {
+                slider.value = newPosition;
+            }
+        }
+        
+        function setCoverPosition(position) {
+            currentCoverPosition = parseFloat(position);
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (heroBackground) {
+                heroBackground.style.backgroundPosition = `center ${currentCoverPosition}%`;
+            }
+            
+            // Update slider if called from drag
+            const slider = document.getElementById('positionSlider');
+            if (slider && slider.value != currentCoverPosition) {
+                slider.value = currentCoverPosition;
+            }
+        }
+        
+        async function saveCoverPosition() {
+            try {
+                console.log('Saving cover position:', currentCoverPosition);
+                
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    showNotification('Please log in to save position', 'error');
+                    return;
+                }
+                
+                // Save position to database as CSS background-position value
+                const positionValue = `center ${currentCoverPosition}%`;
+                await updateProfile({ home_cover_position: positionValue });
+                
+                console.log('✅ Cover position saved to database:', positionValue);
+                
+                // Exit reposition mode
+                exitRepositionMode();
+                
+                // Update local data for current session
+                if (currentProfile) {
+                    currentProfile.home_cover_position = positionValue;
+                }
+                
+                showNotification('Cover position saved successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error saving cover position:', error);
+                showNotification('Failed to save cover position', 'error');
+            }
+        }
+        
+        function cancelRepositioning() {
+            console.log('Canceling reposition, reverting to:', originalPosition);
+            
+            // Revert to original position
+            setCoverPosition(originalPosition);
+            
+            // Exit reposition mode
+            exitRepositionMode();
+        }
+        
+        function exitRepositionMode() {
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            const repositionBtn = document.getElementById('repositionCoverBtn');
+            
+            if (controls) {
+                controls.style.display = 'none';
+            }
+            
+            if (heroBackground) {
+                heroBackground.classList.remove('repositioning');
+            }
+            
+            // Show reposition button if user has cover
+            if (repositionBtn && currentProfile?.home_cover_image_url) {
+                repositionBtn.style.display = 'block';
+            }
+            
+            // Disable drag
+            disableDragToReposition();
+        }
 
         // Initialize post creation box with user data
         function initializePostCreation() {
