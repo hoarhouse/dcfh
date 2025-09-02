@@ -1746,7 +1746,7 @@ function getNotificationIcon(type) {
 }
 
 async function handleNotificationClick(notificationId, relatedType, relatedId) {
-    // Mark as read
+    // Always mark as read first, even if content is missing
     await markNotificationRead(notificationId);
     
     // Get current page info for navigation
@@ -1755,62 +1755,96 @@ async function handleNotificationClick(notificationId, relatedType, relatedId) {
     const currentFolder = pathParts[pathParts.length - 2];
     const currentFile = pathParts[pathParts.length - 1];
     
-    // Navigate to related content based on type
-    if (relatedType === 'post' || relatedType === 'post_like' || relatedType === 'post_comment') {
-        // Navigate to the specific post
-        if (currentFile === 'dcf_member_home.html') {
-            // Already on home page, scroll to post
-            const postElement = document.querySelector(`[data-post-id="${relatedId}"]`);
-            if (postElement) {
-                postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Add highlight effect
-                postElement.style.transition = 'background-color 0.5s ease';
-                postElement.style.backgroundColor = '#fff3cd';
-                setTimeout(() => {
-                    postElement.style.backgroundColor = '';
-                }, 2000);
-            }
-        } else {
-            // Navigate to member home with post hash
-            if (currentFolder === 'members') {
-                window.location.href = `dcf_member_home.html#post-${relatedId}`;
-            } else {
-                window.location.href = `../members/dcf_member_home.html#post-${relatedId}`;
-            }
-        }
-    } else if (relatedType === 'connection' || relatedType === 'connection_request') {
-        // Navigate to members directory for now (future: dedicated connections page)
-        if (currentFile === 'dcf_members_directory.html') {
-            // Already on members directory
-            console.log('Already on members directory');
-        } else {
-            if (currentFolder === 'members') {
-                window.location.href = 'dcf_members_directory.html';
-            } else {
-                window.location.href = '../members/dcf_members_directory.html';
-            }
-        }
-    } else if (relatedType === 'project' || relatedType === 'project_update') {
-        // Navigate to project detail page
-        if (currentFolder === 'projects') {
-            window.location.href = `dcf_project_detail.html?id=${relatedId}`;
-        } else {
-            window.location.href = `../projects/dcf_project_detail.html?id=${relatedId}`;
-        }
-    } else if (relatedType === 'event' || relatedType === 'event_reminder') {
-        // Navigate to events calendar
-        if (currentFolder === 'events') {
-            window.location.href = `dcf_event_details.html?id=${relatedId}`;
-        } else {
-            window.location.href = `../events/dcf_event_details.html?id=${relatedId}`;
-        }
-    } else {
-        // Default: go to notifications page
+    // Helper function to navigate to notifications page with message
+    const navigateToNotificationsWithError = (message) => {
+        alert(message);
         if (currentFolder === 'members') {
             window.location.href = 'dcf_notifications.html';
         } else {
             window.location.href = '../members/dcf_notifications.html';
         }
+        closeNotificationDropdown();
+    };
+    
+    // Helper function to check if content exists (can be expanded with API calls)
+    const checkContentExists = async (type, id) => {
+        // For now, if we're on the target page, we can check DOM
+        // In the future, this could make an API call to verify
+        if (type === 'post' && currentFile === 'dcf_member_home.html') {
+            return document.querySelector(`[data-post-id="${id}"]`) !== null;
+        }
+        // For other types, assume they exist and let navigation handle it
+        return true;
+    };
+    
+    try {
+        // Navigate to related content based on type
+        if (relatedType === 'post' || relatedType === 'post_like' || relatedType === 'post_comment') {
+            // Navigate to the specific post
+            if (currentFile === 'dcf_member_home.html') {
+                // Already on home page, check if post exists
+                const postElement = document.querySelector(`[data-post-id="${relatedId}"]`);
+                if (postElement) {
+                    postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Add highlight effect
+                    postElement.style.transition = 'background-color 0.5s ease';
+                    postElement.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        postElement.style.backgroundColor = '';
+                    }, 2000);
+                } else {
+                    // Post not found on current page
+                    navigateToNotificationsWithError('This post may have been removed or is no longer available.');
+                    return;
+                }
+            } else {
+                // Navigate to member home with post hash
+                // We'll check if post exists after navigation via the hash handler
+                if (currentFolder === 'members') {
+                    window.location.href = `dcf_member_home.html#post-${relatedId}`;
+                } else {
+                    window.location.href = `../members/dcf_member_home.html#post-${relatedId}`;
+                }
+            }
+        } else if (relatedType === 'connection' || relatedType === 'connection_request') {
+            // Navigate to members directory for now (future: dedicated connections page)
+            if (currentFile === 'dcf_members_directory.html') {
+                // Already on members directory
+                console.log('Already on members directory');
+            } else {
+                if (currentFolder === 'members') {
+                    window.location.href = 'dcf_members_directory.html';
+                } else {
+                    window.location.href = '../members/dcf_members_directory.html';
+                }
+            }
+        } else if (relatedType === 'project' || relatedType === 'project_update') {
+            // Navigate to project detail page
+            // Add check parameter to verify project exists on load
+            if (currentFolder === 'projects') {
+                window.location.href = `dcf_project_detail.html?id=${relatedId}&check=true`;
+            } else {
+                window.location.href = `../projects/dcf_project_detail.html?id=${relatedId}&check=true`;
+            }
+        } else if (relatedType === 'event' || relatedType === 'event_reminder') {
+            // Navigate to events detail page
+            // Add check parameter to verify event exists on load
+            if (currentFolder === 'events') {
+                window.location.href = `dcf_event_details.html?id=${relatedId}&check=true`;
+            } else {
+                window.location.href = `../events/dcf_event_details.html?id=${relatedId}&check=true`;
+            }
+        } else {
+            // Default: go to notifications page
+            if (currentFolder === 'members') {
+                window.location.href = 'dcf_notifications.html';
+            } else {
+                window.location.href = '../members/dcf_notifications.html';
+            }
+        }
+    } catch (error) {
+        console.error('Error handling notification click:', error);
+        navigateToNotificationsWithError('An error occurred while navigating to this content.');
     }
     
     closeNotificationDropdown();
