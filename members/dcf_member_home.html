@@ -1315,11 +1315,6 @@
             <div class="hero-background" id="heroBackground"></div>
             <div class="hero-overlay"></div>
             
-            <!-- Cover Reposition Button (shown when user has cover photo) -->
-            <button class="reposition-cover-btn" id="repositionCoverBtn" onclick="startRepositionMode()" style="display: none;">
-                📐 Adjust Position
-            </button>
-            
             <!-- Cover Position Controls (hidden by default) -->
             <div class="cover-position-controls" id="coverPositionControls">
                 <div class="position-info">Drag image or use controls to adjust vertical position</div>
@@ -1348,12 +1343,12 @@
                     <div class="profile-location" style="display: none;"></div>
                 </div>
             </div>
-            <button class="cover-edit-btn" onclick="openCoverUploadModal()" 
+            <button class="cover-edit-btn" onclick="openCoverEditModal()" id="editCoverBtn"
             style="position: absolute; bottom: 15px; right: 15px; background: #000; 
             color: white; border: none; border-radius: 8px; padding: 8px 12px; 
             display: flex; align-items: center; gap: 8px; cursor: pointer; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 0.9rem; z-index: 10;">
-            📷 Edit Cover Pic
+            📷 Edit Cover
             </button>
         </div>
 
@@ -2257,14 +2252,29 @@
             }
         }
 
-        // Cover image modal functions
-        function openCoverUploadModal() {
-            document.getElementById('coverModal').style.display = 'flex';
+        // Cover edit modal functions
+        function openCoverEditModal() {
+            const modal = document.getElementById('coverModal');
+            const repositionSection = document.getElementById('repositionSection');
+            
+            // Show/hide reposition option based on whether user has a cover
+            if (currentProfile?.home_cover_image_url) {
+                repositionSection.style.display = 'block';
+            } else {
+                repositionSection.style.display = 'none';
+            }
+            
+            modal.style.display = 'flex';
         }
 
         function closeCoverModal() {
             document.getElementById('coverModal').style.display = 'none';
             document.getElementById('coverInput').value = '';
+        }
+        
+        function startRepositionFromModal() {
+            closeCoverModal();
+            setTimeout(() => enterRepositionMode(), 300);
         }
 
         async function uploadCoverImage() {
@@ -2312,16 +2322,12 @@
                     heroBackground.style.backgroundPosition = 'center';
                 }
                 
-                showNotification('✨ Cover image updated!');
+                showNotification('✨ Cover image uploaded successfully!', 'success');
                 closeCoverModal();
                 
-                // Show reposition button and activate repositioning mode
-                const repositionBtn = document.getElementById('repositionCoverBtn');
-                if (repositionBtn) {
-                    repositionBtn.style.display = 'block';
-                }
-                showNotification('You can now adjust the vertical position of your cover photo!', 'info');
-                setTimeout(() => enterRepositionMode(), 500);
+                // Reload profile to update UI with new cover
+                await loadProfile();
+                updateUI();
                 
             } catch (error) {
                 console.error('❌ Cover image upload error:', error);
@@ -2344,14 +2350,13 @@
             console.log('Entering reposition mode');
             const controls = document.getElementById('coverPositionControls');
             const heroBackground = document.getElementById('heroBackground');
-            const repositionBtn = document.getElementById('repositionCoverBtn');
+            
+            if (!currentProfile?.home_cover_image_url) {
+                showNotification('Please upload a cover photo first', 'warning');
+                return;
+            }
             
             if (controls && heroBackground) {
-                // Hide the reposition button
-                if (repositionBtn) {
-                    repositionBtn.style.display = 'none';
-                }
-                
                 // Show controls
                 controls.style.display = 'block';
                 
@@ -2463,33 +2468,66 @@
         
         async function saveCoverPosition() {
             try {
+                // Show loading state on button
+                const saveBtn = document.querySelector('.save-position-btn');
+                if (saveBtn) {
+                    saveBtn.textContent = 'Saving...';
+                    saveBtn.disabled = true;
+                }
+                
                 console.log('Saving cover position:', currentCoverPosition);
                 
                 const currentUser = getCurrentUser();
                 if (!currentUser) {
                     showNotification('Please log in to save position', 'error');
+                    if (saveBtn) {
+                        saveBtn.textContent = 'Save Position';
+                        saveBtn.disabled = false;
+                    }
                     return;
                 }
                 
                 // Save position to database as CSS background-position value
                 const positionValue = `center ${currentCoverPosition}%`;
-                await updateProfile({ home_cover_position: positionValue });
+                
+                // Use Supabase directly for better error handling
+                const { error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .update({ 
+                        home_cover_position: positionValue,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentUser.id);
+                
+                if (error) {
+                    throw error;
+                }
                 
                 console.log('✅ Cover position saved to database:', positionValue);
-                
-                // Exit reposition mode
-                exitRepositionMode();
                 
                 // Update local data for current session
                 if (currentProfile) {
                     currentProfile.home_cover_position = positionValue;
                 }
                 
-                showNotification('Cover position saved successfully!', 'success');
+                // Show success notification
+                showNotification('✅ Cover position saved successfully!', 'success');
+                
+                // Exit reposition mode after short delay
+                setTimeout(() => {
+                    exitRepositionMode();
+                }, 1000);
                 
             } catch (error) {
                 console.error('Error saving cover position:', error);
-                showNotification('Failed to save cover position', 'error');
+                showNotification('❌ Failed to save cover position', 'error');
+                
+                // Reset button state
+                const saveBtn = document.querySelector('.save-position-btn');
+                if (saveBtn) {
+                    saveBtn.textContent = 'Save Position';
+                    saveBtn.disabled = false;
+                }
             }
         }
         
@@ -2506,7 +2544,6 @@
         function exitRepositionMode() {
             const controls = document.getElementById('coverPositionControls');
             const heroBackground = document.getElementById('heroBackground');
-            const repositionBtn = document.getElementById('repositionCoverBtn');
             
             if (controls) {
                 controls.style.display = 'none';
@@ -2514,11 +2551,6 @@
             
             if (heroBackground) {
                 heroBackground.classList.remove('repositioning');
-            }
-            
-            // Show reposition button if user has cover
-            if (repositionBtn && currentProfile?.home_cover_image_url) {
-                repositionBtn.style.display = 'block';
             }
             
             // Disable drag
@@ -4932,19 +4964,41 @@
         </div>
     </div>
 
-    <!-- Cover Image Upload Modal -->
+    <!-- Unified Cover Edit Modal -->
     <div id="coverModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
         <div class="modal-content" style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Update Cover Image</h3>
+                <h3 style="margin: 0;">Edit Cover Photo</h3>
                 <button onclick="closeCoverModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
             </div>
-            <div class="form-group">
-                <input type="file" id="coverInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px;">
+            
+            <!-- Upload New Photo Section -->
+            <div style="margin-bottom: 2rem;">
+                <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">📸 Upload New Photo</h4>
+                <div class="form-group">
+                    <input type="file" id="coverInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px;">
+                </div>
+                <button onclick="uploadCoverImage()" class="btn btn-primary" style="width: 100%; padding: 0.75rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    Upload New Cover Photo
+                </button>
             </div>
-            <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                <button onclick="closeCoverModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="uploadCoverImage()" class="btn btn-primary">Upload</button>
+            
+            <!-- Divider -->
+            <div style="text-align: center; margin: 1.5rem 0; position: relative;">
+                <div style="border-top: 1px solid #e5e5e5;"></div>
+                <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: white; padding: 0 1rem; color: #999;">OR</span>
+            </div>
+            
+            <!-- Reposition Current Photo Section -->
+            <div id="repositionSection" style="margin-bottom: 1rem;">
+                <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">📐 Adjust Current Photo Position</h4>
+                <button onclick="startRepositionFromModal()" class="btn btn-secondary" style="width: 100%; padding: 0.75rem; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    Reposition Current Photo
+                </button>
+            </div>
+            
+            <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e5e5;">
+                <button onclick="closeCoverModal()" class="btn btn-secondary" style="padding: 0.5rem 1.5rem; background: #f8f9fa; color: #333; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer;">Cancel</button>
             </div>
         </div>
     </div>
