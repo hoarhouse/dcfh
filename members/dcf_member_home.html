@@ -3491,6 +3491,26 @@
                 // Store mentions
                 await storeMentions(data.id, content, currentUser.id);
                 
+                // Create notification for post author
+                if (window.notificationSystem) {
+                    // Get post details for notification
+                    const { data: postData, error: postError } = await window.dcfSupabase
+                        .from('posts')
+                        .select('author_email, author_name, content')
+                        .eq('id', postId)
+                        .single();
+                    
+                    if (postData && postData.author_email !== currentUser.email) {
+                        console.log('Creating comment notification for:', postData.author_email);
+                        await window.notificationSystem.createCommentNotification(
+                            postId,
+                            postData.author_email,
+                            postData.author_name || postData.author_email.split('@')[0],
+                            content
+                        );
+                    }
+                }
+                
                 textarea.value = '';
                 await loadPostComments(postId);
                 
