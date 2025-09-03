@@ -1694,6 +1694,33 @@ const { data: user } = await window.masterSupabase
         // Removed - now handled in DOMContentLoaded
 
         // Event delegation for dynamic buttons
+        // Helper function to check if users are connected
+        async function canMessage(userId) {
+            if (!currentUser || !userId || currentUser.id === userId) {
+                return false;
+            }
+
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(requester_id.eq.${userId},recipient_id.eq.${currentUser.id})`)
+                    .eq('status', 'accepted')
+                    .single();
+
+                return !error && data;
+            } catch (error) {
+                console.error('Error checking connection status:', error);
+                return false;
+            }
+        }
+
+        // Function to open messaging with a specific user
+        function openMessaging(recipientId, recipientName) {
+            const url = `dcf_private_messaging.html?recipient=${recipientId}&name=${encodeURIComponent(recipientName)}`;
+            window.location.href = url;
+        }
+
         document.addEventListener('click', function(e) {
             if (e.target.closest('.connect-btn')) {
                 e.stopPropagation();
@@ -1702,9 +1729,28 @@ const { data: user } = await window.masterSupabase
                 handleConnectClick(button, userId);
             } else if (e.target.closest('.message-btn')) {
                 e.stopPropagation();
-                showAlert('Messaging functionality would be implemented here.', 'info', 'Send Message');
+                const btn = e.target.closest('.message-btn');
+                const memberItem = btn.closest('.member-card') || btn.closest('.member-list-item');
+                if (memberItem) {
+                    const userId = memberItem.dataset.userId;
+                    const nameElement = memberItem.querySelector('.member-list-name') || memberItem.querySelector('.member-name');
+                    const userName = nameElement ? nameElement.textContent.replace('@', '') : 'User';
+                    
+                    // Check if connected before opening messaging
+                    canMessage(userId).then(canSend => {
+                        if (canSend) {
+                            openMessaging(userId, userName);
+                        } else {
+                            showAlert('You must be connected to message this user', 'info');
+                        }
+                    });
+                }
             } else if (e.target.closest('.member-list-item')) {
-                showAlert('Member profile view would be implemented here.', 'info', 'View Profile');
+                const memberItem = e.target.closest('.member-list-item');
+                const userId = memberItem.dataset.userId;
+                if (userId) {
+                    window.location.href = `dcf_member_profile.html?id=${userId}`;
+                }
             }
         });
 
