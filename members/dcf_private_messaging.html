@@ -1242,19 +1242,11 @@
         // Global variables
         let currentUser = null;
         let supabase = null;
-        let currentConversation = 'mary-aiken';
+        let currentConversation = null; // Will be set to actual user ID
+        let currentRecipient = null; // Current conversation recipient
         let conversations = {};
-        let isTyping = false;
-
-        // Sample members data
-        const members = [
-            { id: 'mary-aiken', name: 'Dr. Mary Aiken', role: 'Cyberpsychologist', avatar: 'MA' },
-            { id: 'michael-torres', name: 'Fr. Michael Torres', role: 'Theologian', avatar: 'MT' },
-            { id: 'antal-kuthy', name: 'Dr. Antal Kuthy', role: 'AI Technology Director', avatar: 'AK' },
-            { id: 'alessio-pecorario', name: 'Dr. Alessio Pecorario', role: 'Policy Analyst', avatar: 'AP' },
-            { id: 'greg-sim', name: 'Greg Sim', role: 'Cybersecurity Expert', avatar: 'GS' },
-            { id: 'zoltan-papp', name: 'Zoltan Papp', role: 'Technology Advisor', avatar: 'ZP' }
-        ];
+        let connectedUsers = []; // Will be loaded from database
+        let messageSubscription = null; // For real-time updates
 
         // Initialize messaging with unified auth
         document.addEventListener('DOMContentLoaded', async function() {
@@ -1342,8 +1334,18 @@
                 // Initialize messaging interface now that auth is confirmed
                 setupMessageInput();
                 setupConversationSearch();
+                
+                // Load connected users and setup real messaging
+                await loadConnectedUsers();
                 setupConversationListeners();
-                loadConversation(currentConversation);
+                
+                // Load first conversation or handle URL params
+                if (connectedUsers.length > 0 && !currentConversation) {
+                    // Set first connected user as default conversation
+                    currentConversation = connectedUsers[0].id;
+                    currentRecipient = connectedUsers[0];
+                    await loadConversation(currentConversation);
+                }
                 
                 // Check URL parameters for pre-selected recipient
                 const urlParams = new URLSearchParams(window.location.search);
