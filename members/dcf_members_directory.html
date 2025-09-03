@@ -1433,7 +1433,14 @@
         }
 
         async function cancelConnectionRequest(userId, button) {
-            if (!currentUser || !userId) return;
+            // Ensure currentUser is set
+            if (!currentUser) {
+                currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            }
+            if (!currentUser || !userId) {
+                showAlert('Please log in to manage connections', 'warning');
+                return;
+            }
 
             // Show loading state
             button.innerHTML = '⏳ Canceling...';
@@ -1556,7 +1563,9 @@
                 showAlert('Connection request sent!', 'success', 'Request Sent');
                 
                 // Refresh the connection status
-                await refreshMemberConnectionStatus(targetUserId);
+                if (typeof refreshMemberConnectionStatus === 'function') {
+                    await refreshMemberConnectionStatus(targetUserId);
+                }
 
             } catch (error) {
                 console.error('Error sending connection request:', error);
