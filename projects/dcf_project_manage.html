@@ -1474,6 +1474,60 @@
     </div>
 
     <script>
+        // Word counting and limiting functions
+        function countWords(text) {
+            return text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+        }
+
+        function enforceWordLimit(textarea, limit, counterId) {
+            const counter = document.getElementById(counterId);
+            const text = textarea.value;
+            const wordCount = countWords(text);
+            
+            // Update counter display
+            counter.textContent = `${wordCount}/${limit} words`;
+            
+            // Check if limit is reached
+            if (wordCount >= limit) {
+                counter.classList.add('limit-reached');
+                
+                // If over limit, prevent further input of new words
+                if (wordCount > limit) {
+                    const words = text.trim().split(/\s+/);
+                    const truncatedText = words.slice(0, limit).join(' ');
+                    textarea.value = truncatedText;
+                    counter.textContent = `${limit}/${limit} words`;
+                }
+            } else {
+                counter.classList.remove('limit-reached');
+            }
+            
+            return wordCount <= limit;
+        }
+
+        function setupWordLimitHandlers() {
+            const briefDesc = document.getElementById('projectBriefDescription');
+            const fullDesc = document.getElementById('projectFullDescription');
+            
+            if (briefDesc) {
+                briefDesc.addEventListener('input', function() {
+                    enforceWordLimit(this, 40, 'briefDescriptionCounterManage');
+                });
+                briefDesc.addEventListener('paste', function() {
+                    setTimeout(() => enforceWordLimit(this, 40, 'briefDescriptionCounterManage'), 10);
+                });
+            }
+            
+            if (fullDesc) {
+                fullDesc.addEventListener('input', function() {
+                    enforceWordLimit(this, 500, 'fullDescriptionCounterManage');
+                });
+                fullDesc.addEventListener('paste', function() {
+                    setTimeout(() => enforceWordLimit(this, 500, 'fullDescriptionCounterManage'), 10);
+                });
+            }
+        }
+
        // Section navigation
         function showSection(sectionId) {
             // Hide all sections
@@ -1759,9 +1813,27 @@
             e.preventDefault();
             
             const projectId = getProjectIdFromUrl();
+            // Validate word limits before submitting
+            const briefDesc = document.getElementById('projectBriefDescription').value;
+            const fullDesc = document.getElementById('projectFullDescription').value;
+            
+            const briefWordCount = countWords(briefDesc);
+            const fullWordCount = countWords(fullDesc);
+            
+            if (briefWordCount > 40) {
+                alert('Brief description must be 40 words or less. Currently: ' + briefWordCount + ' words');
+                return;
+            }
+            
+            if (fullWordCount > 500) {
+                alert('Full description must be 500 words or less. Currently: ' + fullWordCount + ' words');
+                return;
+            }
+
             const updatedData = {
                 title: document.getElementById('projectTitle').value.trim(),
-                description: document.getElementById('projectDescription').value.trim(),
+                brief_description: briefDesc,
+                full_description: fullDesc,
                 category: document.getElementById('projectCategory').value,
                 status: document.getElementById('projectStatus').value,
                 skills: document.getElementById('projectTags').value.trim()
@@ -2141,7 +2213,16 @@
         // Load project settings into form
         function loadProjectSettings(project) {
             document.getElementById('projectTitle').value = project.title || '';
-            document.getElementById('projectDescription').value = project.description || '';
+            document.getElementById('projectBriefDescription').value = project.brief_description || '';
+            document.getElementById('projectFullDescription').value = project.full_description || '';
+            
+            // Update word counters
+            if (project.brief_description) {
+                enforceWordLimit(document.getElementById('projectBriefDescription'), 40, 'briefDescriptionCounterManage');
+            }
+            if (project.full_description) {
+                enforceWordLimit(document.getElementById('projectFullDescription'), 500, 'fullDescriptionCounterManage');
+            }
             document.getElementById('projectCategory').value = project.category || '';
             document.getElementById('projectStatus').value = project.status || 'active';
             
@@ -2670,6 +2751,7 @@
 
         // Initialize with safe auth pattern
         document.addEventListener('DOMContentLoaded', async function() {
+            setupWordLimitHandlers();
             updateProgressBar();
             
             // Wait for auth system to be ready
