@@ -1367,12 +1367,98 @@
             return connectionMatch ? parseInt(connectionMatch[1]) : 0;
         }
 
+        // Connection action functions
+        async function acceptConnectionRequest(userId, button) {
+            if (!currentUser || !userId) return;
+
+            // Show loading state
+            button.innerHTML = '⏳ Accepting...';
+            button.disabled = true;
+
+            try {
+                // Find the connection request
+                const { data: connections, error: fetchError } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .eq('requester_id', userId)
+                    .eq('recipient_id', currentUser.id)
+                    .eq('status', 'pending');
+
+                if (fetchError || !connections || connections.length === 0) {
+                    throw new Error('Connection request not found');
+                }
+
+                const connectionId = connections[0].id;
+
+                // Accept the connection
+                const { error: updateError } = await window.dcfSupabase
+                    .from('connections')
+                    .update({ 
+                        status: 'accepted',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', connectionId);
+
+                if (updateError) throw updateError;
+
+                // Create notification for requester
+                if (window.notificationSystem) {
+                    await window.notificationSystem.createConnectionAcceptedNotification(
+                        userId,
+                        currentUser.username || currentUser.email
+                    );
+                }
+
+                showAlert('Connection accepted!', 'success');
+                
+                // Refresh the connection status
+                await refreshMemberConnectionStatus(userId);
+                
+            } catch (error) {
+                console.error('Error accepting connection:', error);
+                showAlert('Failed to accept connection', 'error');
+                button.innerHTML = '✓ Accept Request';
+                button.disabled = false;
+            }
+        }
+
+        async function cancelConnectionRequest(userId, button) {
+            if (!currentUser || !userId) return;
+
+            // Show loading state
+            button.innerHTML = '⏳ Canceling...';
+            button.disabled = true;
+
+            try {
+                // Cancel the pending request
+                const { error } = await window.dcfSupabase
+                    .from('connections')
+                    .delete()
+                    .eq('requester_id', currentUser.id)
+                    .eq('recipient_id', userId)
+                    .eq('status', 'pending');
+
+                if (error) throw error;
+
+                showAlert('Connection request cancelled', 'info');
+                
+                // Refresh the connection status
+                await refreshMemberConnectionStatus(userId);
+                
+            } catch (error) {
+                console.error('Error canceling request:', error);
+                showAlert('Failed to cancel request', 'error');
+                button.innerHTML = '⏳ Request Sent';
+                button.disabled = false;
+            }
+        }
+
         // Connect/Message functionality will be handled by event delegation
         async function handleConnectClick(button, targetUserId) {
             // Prevent double-clicking
             if (button.disabled) return;
             button.disabled = true;
-            button.textContent = 'Sending...';
+            button.innerHTML = '⏳ Sending...';
             
             try {
                 const currentUserId = await getCurrentUserId();
