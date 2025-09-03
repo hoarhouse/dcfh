@@ -1015,6 +1015,63 @@
         let uploadedFiles = [];
         let uploadedPhotos = {};
 
+        // Word counting and limiting functions
+        function countWords(text) {
+            return text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+        }
+
+        function enforceWordLimit(textarea, limit, counterId) {
+            const counter = document.getElementById(counterId);
+            const text = textarea.value;
+            const wordCount = countWords(text);
+            
+            // Update counter display
+            counter.textContent = `${wordCount}/${limit} words`;
+            
+            // Check if limit is reached
+            if (wordCount >= limit) {
+                counter.classList.add('limit-reached');
+                
+                // If over limit, prevent further input of new words
+                if (wordCount > limit) {
+                    const words = text.trim().split(/\s+/);
+                    const truncatedText = words.slice(0, limit).join(' ');
+                    textarea.value = truncatedText;
+                    counter.textContent = `${limit}/${limit} words`;
+                }
+            } else {
+                counter.classList.remove('limit-reached');
+            }
+            
+            return wordCount <= limit;
+        }
+
+        function setupWordLimitHandlers() {
+            const briefDesc = document.getElementById('projectBriefDescription');
+            const fullDesc = document.getElementById('projectFullDescription');
+            
+            if (briefDesc) {
+                briefDesc.addEventListener('input', function() {
+                    enforceWordLimit(this, 40, 'briefDescriptionCounter');
+                });
+                briefDesc.addEventListener('paste', function() {
+                    setTimeout(() => enforceWordLimit(this, 40, 'briefDescriptionCounter'), 10);
+                });
+            }
+            
+            if (fullDesc) {
+                fullDesc.addEventListener('input', function() {
+                    enforceWordLimit(this, 500, 'fullDescriptionCounter');
+                });
+                fullDesc.addEventListener('paste', function() {
+                    setTimeout(() => enforceWordLimit(this, 500, 'fullDescriptionCounter'), 10);
+                });
+            }
+        }
+
+        // Initialize word limit handlers when DOM is ready
+        document.addEventListener('DOMContentLoaded', setupWordLimitHandlers);
+
         // Photo upload handling
         async function handlePhotoUpload(input, photoType) {
             const file = input.files[0];
@@ -1364,8 +1421,26 @@
         document.getElementById('basicForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Validate word limits before proceeding
+            const briefDesc = document.getElementById('projectBriefDescription').value;
+            const fullDesc = document.getElementById('projectFullDescription').value;
+            
+            const briefWordCount = countWords(briefDesc);
+            const fullWordCount = countWords(fullDesc);
+            
+            if (briefWordCount > 40) {
+                alert('Brief description must be 40 words or less. Currently: ' + briefWordCount + ' words');
+                return;
+            }
+            
+            if (fullWordCount > 500) {
+                alert('Full description must be 500 words or less. Currently: ' + fullWordCount + ' words');
+                return;
+            }
+            
             projectData.title = document.getElementById('projectTitle').value;
-            projectData.description = document.getElementById('projectDescription').value;
+            projectData.brief_description = briefDesc;
+            projectData.full_description = fullDesc;
             projectData.projectGoal = document.getElementById('projectGoal').value.trim();
             projectData.websiteUrl = document.getElementById('websiteUrl').value.trim() || null;
             projectData.category = document.getElementById('projectCategory').value;
@@ -1561,7 +1636,8 @@
                 // Insert project record
                 const projectRecord = {
                     title: projectData.title,
-                    description: projectData.description,
+                    brief_description: projectData.brief_description,
+                    full_description: projectData.full_description,
                     goal: projectData.projectGoal,
                     website_url: projectData.websiteUrl,
                     category: projectData.category,
