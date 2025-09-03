@@ -2688,7 +2688,285 @@ window.showPrompt = showPrompt;
 window.closeAlert = closeAlert;
 
 // =============================================================================
-// 18. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
+// 18. UNIFIED QUICK ACTIONS SYSTEM
+// =============================================================================
+function detectPageType() {
+    const path = window.location.pathname;
+    const filename = path.substring(path.lastIndexOf('/') + 1);
+    
+    // Check for data attribute first
+    if (document.body.dataset.pageType) {
+        return document.body.dataset.pageType;
+    }
+    
+    // Auto-detect from filename
+    const pageTypeMap = {
+        'dcf_member_home.html': 'member_home',
+        'dcf_member_profile.html': 'member_profile',
+        'dcf_members_directory.html': 'members_directory',
+        'dcf_my_connections.html': 'my_connections',
+        'dcf_private_messaging.html': 'messaging',
+        'dcf_notifications.html': 'notifications',
+        'dcf_profile_dashboard.html': 'profile_dashboard',
+        'dcf_personal_analytics.html': 'analytics',
+        'dcf_projects_home.html': 'projects_home',
+        'dcf_projects.html': 'projects',
+        'dcf_project_detail.html': 'project_detail',
+        'dcf_project_manage.html': 'project_manage',
+        'dcf_create_project.html': 'create_project',
+        'dcf_events_calendar.html': 'events_calendar',
+        'dcf_event_details.html': 'event_details',
+        'dcf_event_manage.html': 'event_manage',
+        'dcf_create_event.html': 'create_event',
+        'dcf_resources_library.html': 'resources_library',
+        'dcf_resource_detail.html': 'resource_detail',
+        'dcf_resource_upload.html': 'resource_upload',
+        'dcf_admin_dashboard.html': 'admin_dashboard'
+    };
+    
+    return pageTypeMap[filename] || 'default';
+}
+
+function getQuickActionsConfig(pageType) {
+    const basePath = getCorrectBasePath();
+    
+    const quickActionsConfig = {
+        'member_home': [
+            { icon: '👤', text: 'My Profile', href: 'dcf_member_profile.html' },
+            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
+            { icon: '💬', text: 'My Messages', href: 'dcf_private_messaging.html' },
+            { icon: '📁', text: 'Browse Projects', href: basePath + 'projects/dcf_projects_home.html' }
+        ],
+        'member_profile': [
+            { icon: '✏️', text: 'Edit Profile', action: 'editProfile()' },
+            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
+            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'members_directory': [
+            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
+            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
+            { icon: '🔍', text: 'Find Members', action: 'document.getElementById("search").focus()' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'my_connections': [
+            { icon: '👥', text: 'Find Members', href: 'dcf_members_directory.html' },
+            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'messaging': [
+            { icon: '✉️', text: 'New Message', action: 'openNewMessageModal()' },
+            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'notifications': [
+            { icon: '✓', text: 'Mark All Read', action: 'markAllAsRead()' },
+            { icon: '🗑️', text: 'Clear All', action: 'clearAllNotifications()' },
+            { icon: '⚙️', text: 'Settings', action: 'openNotificationSettings()' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'profile_dashboard': [
+            { icon: '✏️', text: 'Edit Profile', href: 'dcf_member_profile.html' },
+            { icon: '📊', text: 'View Analytics', href: 'dcf_personal_analytics.html' },
+            { icon: '💳', text: 'Donate', href: 'dcf_donate.html' },
+            { icon: '🏠', text: 'Member Home', href: 'dcf_member_home.html' }
+        ],
+        'analytics': [
+            { icon: '📊', text: 'Export Data', action: 'exportAnalytics()' },
+            { icon: '👤', text: 'My Profile', href: 'dcf_member_profile.html' },
+            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+        ],
+        'projects_home': [
+            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
+            { icon: '🔍', text: 'Browse Projects', action: 'document.getElementById("searchInput").focus()' },
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+        ],
+        'projects': [
+            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
+            { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
+        ],
+        'project_detail': [
+            { icon: '➕', text: 'Create Task', action: 'createTask()' },
+            { icon: '📤', text: 'Upload Files', action: 'uploadFiles()' },
+            { icon: '📊', text: 'View Analytics', action: 'viewAnalytics()' },
+            { icon: '🔙', text: 'All Projects', href: 'dcf_projects_home.html' }
+        ],
+        'project_manage': [
+            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📊', text: 'Export Data', action: 'exportProjectData()' },
+            { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
+        ],
+        'events_calendar': [
+            { icon: '➕', text: 'Create Event', href: 'dcf_create_event.html' },
+            { icon: '📅', text: 'My Events', action: 'filterMyEvents()' },
+            { icon: '📤', text: 'Export Calendar', action: 'exportCalendar()' },
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+        ],
+        'event_details': [
+            { icon: '✓', text: 'Register Now', action: 'registerForEvent()' },
+            { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
+            { icon: '🔗', text: 'Share Event', action: 'shareEvent()' },
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+        ],
+        'event_manage': [
+            { icon: '🚀', text: 'Create Event', href: 'dcf_create_event.html' },
+            { icon: '📊', text: 'Export Data', action: 'exportEventData()' },
+            { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
+            { icon: '👥', text: 'All Registrations', action: 'showAllRegistrations()' }
+        ],
+        'resources_library': [
+            { icon: '📤', text: 'Upload Resource', href: 'dcf_resource_upload.html' },
+            { icon: '🔍', text: 'Search Library', action: 'document.getElementById("searchInput").focus()' },
+            { icon: '📚', text: 'My Resources', action: 'filterMyResources()' },
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+        ],
+        'resource_detail': [
+            { icon: '📥', text: 'Download', action: 'downloadResource()' },
+            { icon: '🔗', text: 'Share Resource', action: 'shareResource()' },
+            { icon: '🚨', text: 'Report Issue', action: 'reportIssue()' },
+            { icon: '📚', text: 'Back to Library', href: 'dcf_resources_library.html' }
+        ],
+        'resource_upload': [
+            { icon: '📚', text: 'Resource Library', href: 'dcf_resources_library.html' },
+            { icon: '📋', text: 'My Uploads', action: 'viewMyUploads()' },
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+        ],
+        'admin_dashboard': [
+            { icon: '👤', text: 'Add User', action: 'openModal("userModal")' },
+            { icon: '📢', text: 'Broadcast', action: 'openModal("broadcastModal")' },
+            { icon: '📊', text: 'Export Data', action: 'exportData()' },
+            { icon: '🔧', text: 'Maintenance', action: 'openMaintenanceMode()' }
+        ],
+        'default': [
+            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' },
+            { icon: '👤', text: 'My Profile', href: basePath + 'members/dcf_member_profile.html' },
+            { icon: '📋', text: 'Projects', href: basePath + 'projects/dcf_projects_home.html' },
+            { icon: '📅', text: 'Events', href: basePath + 'events/dcf_events_calendar.html' }
+        ]
+    };
+    
+    return quickActionsConfig[pageType] || quickActionsConfig['default'];
+}
+
+function populateQuickActions() {
+    const container = document.getElementById('quickActionsContainer');
+    if (!container) {
+        console.log('Quick Actions container not found on this page');
+        return;
+    }
+    
+    const pageType = detectPageType();
+    const actions = getQuickActionsConfig(pageType);
+    
+    console.log(`Populating Quick Actions for page type: ${pageType}`);
+    
+    // Clear existing content
+    container.innerHTML = '';
+    
+    // Add CSS if not already present
+    if (!document.getElementById('quickActionsStyles')) {
+        const style = document.createElement('style');
+        style.id = 'quickActionsStyles';
+        style.textContent = `
+            #quickActionsContainer {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .quick-action-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+                text-decoration: none;
+                color: #333;
+                transition: all 0.2s ease;
+                border: none;
+                width: 100%;
+                cursor: pointer;
+                font-size: 0.9rem;
+                text-align: left;
+            }
+            
+            .quick-action-btn:hover {
+                background: #e5e5e5;
+            }
+            
+            .quick-action-icon {
+                font-size: 1.2rem;
+                flex-shrink: 0;
+            }
+            
+            .quick-action-text {
+                font-size: 0.9rem;
+            }
+            
+            .quick-action-btn.primary {
+                background: #333;
+                color: white;
+            }
+            
+            .quick-action-btn.primary:hover {
+                background: #555;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Create action buttons
+    actions.forEach((action, index) => {
+        if (action.href) {
+            // Create link
+            const link = document.createElement('a');
+            link.href = action.href;
+            link.className = 'quick-action-btn';
+            if (index === 0 && pageType === 'event_details') {
+                link.className += ' primary';
+            }
+            link.innerHTML = `
+                <span class="quick-action-icon">${action.icon}</span>
+                <span class="quick-action-text">${action.text}</span>
+            `;
+            container.appendChild(link);
+        } else if (action.action) {
+            // Create button
+            const button = document.createElement('button');
+            button.className = 'quick-action-btn';
+            if (index === 0 && (pageType === 'event_details' || pageType === 'notifications')) {
+                button.className += ' primary';
+            }
+            button.onclick = () => eval(action.action);
+            button.innerHTML = `
+                <span class="quick-action-icon">${action.icon}</span>
+                <span class="quick-action-text">${action.text}</span>
+            `;
+            container.appendChild(button);
+        }
+    });
+    
+    console.log(`✅ Quick Actions populated with ${actions.length} items`);
+}
+
+// Initialize Quick Actions when DOM is ready
+function initializeQuickActions() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', populateQuickActions);
+    } else {
+        populateQuickActions();
+    }
+}
+
+// Export Quick Actions functions
+window.populateQuickActions = populateQuickActions;
+window.initializeQuickActions = initializeQuickActions;
+
+// =============================================================================
+// 19. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
 // =============================================================================
 // Handle missing tables gracefully - REMOVED SINCE TABLES EXIST
 // Comments table is called 'post_comments' not 'comments'
