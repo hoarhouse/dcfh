@@ -1412,6 +1412,326 @@
             }
         }
 
+        // Database functions for real messaging
+        async function loadConnectedUsers() {
+            try {
+                console.log('📋 Loading connected users...');
+                
+                // Get all accepted connections for current user
+                const { data: connections, error } = await supabase
+                    .from('connections')
+                    .select(`
+                        *,
+                        requester:user_profiles!connections_requester_id_fkey (
+                            id, username, first_name, last_name, avatar_url, role
+                        ),
+                        recipient:user_profiles!connections_recipient_id_fkey (
+                            id, username, first_name, last_name, avatar_url, role
+                        )
+                    `)
+                    .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+                    .eq('status', 'accepted');
+
+                if (error) {
+                    console.error('Error loading connections:', error);
+                    return;
+                }
+
+                // Extract connected users
+                connectedUsers = [];
+                connections.forEach(conn => {
+                    const otherUser = conn.requester_id === currentUser.id ? 
+                        conn.recipient : conn.requester;
+                    
+                    if (otherUser) {
+                        connectedUsers.push({
+                            id: otherUser.id,
+                            name: [otherUser.first_name, otherUser.last_name].filter(Boolean).join(' ') || 
+                                  otherUser.username || 'User',
+                            username: otherUser.username,
+                            role: otherUser.role || 'Member',
+                            avatar_url: otherUser.avatar_url,
+                            avatar: otherUser.first_name ? 
+                                (otherUser.first_name.charAt(0) + (otherUser.last_name?.charAt(0) || '')).toUpperCase() :
+                                (otherUser.username ? otherUser.username.substring(0, 2).toUpperCase() : 'U')
+                        });
+                    }
+                });
+
+                console.log('✅ Loaded connected users:', connectedUsers.length);
+                
+                // Update conversation list UI
+                updateConversationList();
+                
+            } catch (error) {
+                console.error('Error in loadConnectedUsers:', error);
+            }
+        }
+
+        async function loadConversation(recipientId) {
+            if (!recipientId || !currentUser) return;
+
+            try {
+                console.log('💬 Loading conversation with:', recipientId);
+                
+                // Find recipient info
+                const recipient = connectedUsers.find(u => u.id === recipientId);
+                if (!recipient) {
+                    console.error('Recipient not found in connected users');
+                    return;
+                }
+
+                currentConversation = recipientId;
+                currentRecipient = recipient;
+
+                // Update chat header
+                document.querySelector('.chat-user-name').textContent = recipient.name;
+                document.querySelector('.chat-avatar').textContent = recipient.avatar;
+                document.querySelector('.chat-user-status').textContent = 'Active member';
+
+                // Load messages from database
+                const { data: messages, error } = await supabase
+                    .from('messages')
+                    .select(`
+                        *,
+                        sender:user_profiles!messages_sender_id_fkey (
+                            id, username, first_name, last_name, avatar_url
+                        )
+                    `)
+                    .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${currentUser.id})`)
+                    .order('created_at', { ascending: true });
+
+                if (error) {
+                    console.error('Error loading messages:', error);
+                    return;
+                }
+
+                // Clear and display messages
+                const messagesContainer = document.getElementById('chatMessages');
+                messagesContainer.innerHTML = '';
+
+                if (messages && messages.length > 0) {
+                    messages.forEach(msg => {
+                        displayMessage(msg);
+                    });
+                } else {
+                    messagesContainer.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #666;">
+                            <p>Start your conversation with ${recipient.name}</p>
+                        </div>
+                    `;
+                }
+
+                // Mark messages as read
+                await markMessagesAsRead(recipientId);
+
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            } catch (error) {
+                console.error('Error in loadConversation:', error);
+            }
+        }
+
+        async function sendRealMessage(content) {
+            if (!content || !currentRecipient) return;
+
+            try {
+                console.log('📤 Sending message to:', currentRecipient.name);
+
+                // Insert message into database
+                const { data, error } = await supabase
+                    .from('messages')
+                    .insert({
+                        sender_id: currentUser.id,
+                        recipient_id: currentRecipient.id,
+                        content: content,
+                        message_type: 'text',
+                        is_read: false
+                    })
+                    .select(`
+                        *,
+                        sender:user_profiles!messages_sender_id_fkey (
+                            id, username, first_name, last_name, avatar_url
+                        )
+                    `)
+                    .single();
+
+                if (error) throw error;
+
+                // Display message immediately
+                displayMessage(data);
+
+                // Update conversation preview
+                updateConversationPreview(currentRecipient.id, content);
+
+                // Scroll to bottom
+                const messagesContainer = document.getElementById('chatMessages');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                // Create notification for recipient (if they're not currently viewing this conversation)
+                if (window.notificationSystem) {
+                    await window.notificationSystem.createMessageNotification(
+                        currentRecipient.id,
+                        currentUser.username || currentUser.email,
+                        content
+                    );
+                }
+
+                console.log('✅ Message sent successfully');
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showError('Failed to send message. Please try again.');
+            }
+        }
+
+        function displayMessage(message) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+            const isSent = message.sender_id === currentUser.id;
+            messageElement.className = `message ${isSent ? 'sent' : ''}`;
+
+            const time = new Date(message.created_at);
+            const timeString = `${time.toLocaleDateString()} at ${time.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            })}`;
+
+            const senderName = isSent ? 'You' : 
+                (message.sender ? 
+                    [message.sender.first_name, message.sender.last_name].filter(Boolean).join(' ') || 
+                    message.sender.username : 
+                    'User');
+
+            const avatar = isSent ? '' : 
+                (currentRecipient ? currentRecipient.avatar : 'U');
+
+            messageElement.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <div class="message-sender">${senderName}</div>
+                        <div class="message-time">${timeString}</div>
+                    </div>
+                    <div class="message-bubble">${message.content}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageElement);
+        }
+
+        async function markMessagesAsRead(senderId) {
+            try {
+                // Mark all messages from this sender as read
+                const { error } = await supabase
+                    .from('messages')
+                    .update({ is_read: true })
+                    .eq('sender_id', senderId)
+                    .eq('recipient_id', currentUser.id)
+                    .eq('is_read', false);
+
+                if (error) {
+                    console.error('Error marking messages as read:', error);
+                }
+            } catch (error) {
+                console.error('Error in markMessagesAsRead:', error);
+            }
+        }
+
+        function updateConversationList() {
+            const conversationList = document.querySelector('.conversation-list');
+            conversationList.innerHTML = '';
+
+            if (connectedUsers.length === 0) {
+                conversationList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: #666;">
+                        <p>No connections yet</p>
+                        <a href="dcf_members_directory.html" style="color: #007bff; text-decoration: none;">
+                            Find members to connect with
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Add each connected user as a conversation
+            connectedUsers.forEach(user => {
+                const conversationItem = document.createElement('div');
+                conversationItem.className = 'conversation-item';
+                conversationItem.dataset.userId = user.id;
+                conversationItem.dataset.conversation = user.id;
+                
+                conversationItem.innerHTML = `
+                    <div class="conversation-avatar">${user.avatar}</div>
+                    <div class="conversation-info">
+                        <div class="conversation-header">
+                            <span class="conversation-name">${user.name}</span>
+                            <span class="conversation-time"></span>
+                        </div>
+                        <div class="conversation-preview">${user.role}</div>
+                    </div>
+                `;
+
+                conversationItem.addEventListener('click', () => {
+                    selectConversation(user.id);
+                });
+
+                conversationList.appendChild(conversationItem);
+            });
+
+            // Load unread counts for each conversation
+            loadUnreadCounts();
+        }
+
+        async function loadUnreadCounts() {
+            try {
+                // Get unread message counts for all conversations
+                const { data, error } = await supabase
+                    .from('messages')
+                    .select('sender_id')
+                    .eq('recipient_id', currentUser.id)
+                    .eq('is_read', false);
+
+                if (!error && data) {
+                    // Count unread per sender
+                    const unreadCounts = {};
+                    data.forEach(msg => {
+                        unreadCounts[msg.sender_id] = (unreadCounts[msg.sender_id] || 0) + 1;
+                    });
+
+                    // Update UI with unread badges
+                    Object.keys(unreadCounts).forEach(senderId => {
+                        const conversationItem = document.querySelector(`[data-user-id="${senderId}"]`);
+                        if (conversationItem) {
+                            const preview = conversationItem.querySelector('.conversation-preview');
+                            if (preview && unreadCounts[senderId] > 0) {
+                                preview.innerHTML = `<strong>${unreadCounts[senderId]} unread message${unreadCounts[senderId] > 1 ? 's' : ''}</strong>`;
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading unread counts:', error);
+            }
+        }
+
+        async function selectConversation(userId) {
+            // Remove active class from all items
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Add active class to selected
+            const selectedItem = document.querySelector(`[data-user-id="${userId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('active');
+            }
+
+            // Load the conversation
+            await loadConversation(userId);
+        }
+
         function showError(message) {
             const messagesContainer = document.querySelector('.messages-container');
             if (messagesContainer) {
