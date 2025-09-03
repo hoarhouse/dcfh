@@ -1688,9 +1688,23 @@
             currentUser = window.dcfUser.profile;
             console.log('✅ Current user:', currentUser);
             
-            await loadProfile();
+            // Check URL params for viewing another user's profile
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewUserId = urlParams.get('id');
+            if (viewUserId && viewUserId !== currentUser.id) {
+                profileUserId = viewUserId;
+                // Load the other user's profile
+                await loadOtherUserProfile(viewUserId);
+            } else {
+                profileUserId = currentUser.id;
+                await loadProfile();
+            }
+            
             await loadUserStats();
             updateUI();
+            
+            // Load connection buttons
+            await updateConnectionButtons();
             
             // Initialize post creation after profile loads
             setTimeout(() => {
