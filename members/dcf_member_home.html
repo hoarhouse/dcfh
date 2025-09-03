@@ -2688,6 +2688,8 @@
             
             const textarea = document.getElementById('postTextarea');
             const content = textarea.value.trim();
+            const privacySelect = document.getElementById('postPrivacy');
+            const privacy = privacySelect ? privacySelect.value : 'public';
             
             if (!content) {
                 showNotification('Please enter some content for your post', 'error');
@@ -2714,6 +2716,7 @@
                         author_name: `@${currentUser.username}`,
                         username: currentUser.username,
                         content: content,
+                        privacy: privacy, // Save privacy setting
                         media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
                         media_count: mediaUrls.length,
                         media_type: mediaUrls.length > 0 ? (selectedPostFiles[0].type.startsWith('image/') ? 'images' : 'video') : null
@@ -3075,28 +3078,77 @@
         // Listen for hash changes
         window.addEventListener('hashchange', checkHashNavigation);
         
-        async function loadPostsFeed() {
+        async function loadPostsFeed(filter = 'all') {
             const feedContainer = document.getElementById('postsFeed');
             if (!feedContainer) return;
             
-            console.log('loadPostsFeed called');
+            console.log('loadPostsFeed called with filter:', filter);
             
             try {
-                const { data: posts, error } = await window.dcfSupabase
+                const currentUser = window.getCurrentUser();
+                
+                // First, get all connections for the current user
+                let connectedUserIds = [];
+                if (currentUser) {
+                    const { data: connections } = await window.dcfSupabase
+                        .from('connections')
+                        .select('requester_id, recipient_id')
+                        .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+                        .eq('status', 'accepted');
+                    
+                    if (connections) {
+                        connectedUserIds = connections.map(conn => 
+                            conn.requester_id === currentUser.id ? conn.recipient_id : conn.requester_id
+                        );
+                    }
+                }
+                
+                // Load posts
+                let query = window.dcfSupabase
                     .from('posts')
                     .select('*')
                     .eq('status', 'active')
                     .order('created_at', { ascending: false })
-                    .limit(20);
+                    .limit(50); // Increase limit since we'll filter client-side
+                    
+                const { data: posts, error } = await query;
                     
                 if (error) throw error;
                 
-                if (posts.length === 0) {
-                    feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No posts yet. Be the first to share something!</div>';
+                // Filter posts based on privacy and connection status
+                const filteredPosts = posts.filter(post => {
+                    // Always show user's own posts
+                    if (currentUser && post.author_id === currentUser.id) return true;
+                    
+                    // Apply filter based on selected tab
+                    if (filter === 'network' && !connectedUserIds.includes(post.author_id)) {
+                        return false;
+                    } else if (filter === 'public' && post.privacy === 'connections') {
+                        return false;
+                    }
+                    
+                    // Check post privacy
+                    if (post.privacy === 'connections' && currentUser) {
+                        // Only show connection-only posts to connected users
+                        return connectedUserIds.includes(post.author_id);
+                    }
+                    
+                    // Show public posts to everyone
+                    return post.privacy !== 'connections';
+                });
+                
+                if (filteredPosts.length === 0) {
+                    let emptyMessage = 'No posts yet. Be the first to share something!';
+                    if (filter === 'network') {
+                        emptyMessage = 'No posts from your network yet. Connect with more members!';
+                    } else if (filter === 'public') {
+                        emptyMessage = 'No public posts available.';
+                    }
+                    feedContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: #666;">${emptyMessage}</div>`;
                     return;
                 }
                 
-                feedContainer.innerHTML = posts.map(post => createPostHTML(post)).join('');
+                feedContainer.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
                 
                 // After posts are loaded, check like statuses
                 setTimeout(() => {
