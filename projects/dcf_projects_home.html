@@ -477,6 +477,19 @@
             line-height: 1.6;
             margin-bottom: 1rem;
         }
+        
+        .project-description a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+            margin-left: 0.5rem;
+            transition: color 0.2s ease;
+        }
+        
+        .project-description a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
 
         .project-tags {
             display: flex;
@@ -1248,6 +1261,7 @@
             </div>
             <p class="project-description">
                 ${escapeHtml(project.brief_description.substring(0, 150))}${project.brief_description.length > 150 ? '...' : ''}
+                ${project.full_description && project.full_description.trim() ? `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); showProjectDescription('${project.id}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 500; margin-left: 0.5rem;">Read More</a>` : ''}
             </p>
             <div class="project-tags">
                 ${tagsHTML}
@@ -1919,7 +1933,10 @@ const myProjects = allProjects.filter(project =>
                             <button class="btn btn-primary btn-small" onclick="window.location.href='dcf_project_manage.html?id=${project.id}'">📝 Manage</button>
                         </div>
                     </div>
-                    <p class="project-description">${project.brief_description}</p>
+                    <p class="project-description">
+                        ${project.brief_description}
+                        ${project.full_description && project.full_description.trim() ? `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); showProjectDescription('${project.id}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 500; margin-left: 0.5rem;">Read More</a>` : ''}
+                    </p>
                     <div class="project-tags">
                         ${project.skills ? (Array.isArray(project.skills) ? project.skills : project.skills.split(',')).map(skill => `<span class="tag">${skill.trim()}</span>`).join('') : ''}
                     </div>
@@ -2191,6 +2208,101 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.classList.add('active');
         }
     }
-</script>       
+
+    // Project Description Modal Functions
+    let currentProjectData = null;
+
+    async function showProjectDescription(projectId) {
+        // First try to find in cache
+        let project = Array.from(projectsCache.values())
+            .flatMap(cache => cache.projects || [])
+            .find(p => p.id === projectId);
+        
+        // If not in cache, fetch it directly
+        if (!project) {
+            try {
+                const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?id=eq.${projectId}&select=*`, {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzEyMjQzMDMsImV4cCI6MjA0NjgwMDMwM30.d-Oxs6t7UI16fXsJVpnR8rnJPwvJ9ylz_z49m_CF3LU',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const projects = await response.json();
+                project = projects[0];
+            } catch (error) {
+                console.error('Error fetching project:', error);
+                return;
+            }
+        }
+        
+        if (!project) {
+            console.error('Project not found:', projectId);
+            return;
+        }
+
+        currentProjectData = project;
+        
+        // Populate modal content
+        document.getElementById('modalProjectTitle').textContent = project.title || 'Project';
+        document.getElementById('modalBriefDescription').textContent = project.brief_description || '';
+        
+        const fullDescElement = document.getElementById('modalFullDescription');
+        if (project.full_description && project.full_description.trim()) {
+            fullDescElement.textContent = project.full_description;
+            fullDescElement.style.display = 'block';
+        } else {
+            fullDescElement.style.display = 'none';
+        }
+        
+        // Show modal
+        const modal = document.getElementById('descriptionModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeDescriptionModal() {
+        const modal = document.getElementById('descriptionModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        currentProjectData = null;
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('descriptionModal');
+        if (event.target === modal) {
+            closeDescriptionModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDescriptionModal();
+        }
+    });
+</script>
+
+<!-- Project Description Modal -->
+<div class="modal" id="descriptionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: white; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+        <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="modal-title" id="modalProjectTitle" style="margin: 0; font-size: 1.5rem; color: #333;">Project Title</h2>
+            <button class="close-btn" onclick="closeDescriptionModal()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #666; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem;">
+            <div id="modalBriefDescription" style="font-weight: 500; margin-bottom: 1.5rem; color: #333; font-size: 1.1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e5e5;"></div>
+            <div id="modalFullDescription" style="color: #666; line-height: 1.8; white-space: pre-wrap; font-size: 1rem;"></div>
+        </div>
+        <div class="modal-footer" style="padding: 1rem 1.5rem; border-top: 1px solid #e5e5e5; display: flex; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="closeDescriptionModal()">Close</button>
+        </div>
+    </div>
+</div>
+       
 </body>
 </html>
