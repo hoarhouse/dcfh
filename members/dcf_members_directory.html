@@ -1665,11 +1665,28 @@ const { data: user } = await window.masterSupabase
             console.warn('Grid view container not found, using list view instead');
         }
 
-        function createMemberListItem(user, stats = { projects: 0, connections: 0 }) {
+        async function createMemberListItem(user, stats = { projects: 0, connections: 0 }) {
             const initials = user.first_name && user.last_name ? (user.first_name.charAt(0) + user.last_name.charAt(0)).toUpperCase() : (user.username ? user.username.substring(0, 2).toUpperCase() : 'DC');
             const avatarHtml = user.avatar_url ? 
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">` : 
                 initials;
+            
+            // Check connection status
+            let connectionStatus = 'none';
+            if (userConnections.has(user.id)) {
+                const conn = userConnections.get(user.id);
+                if (conn.status === 'accepted') {
+                    connectionStatus = 'connected';
+                } else if (conn.status === 'pending') {
+                    connectionStatus = conn.isRequester ? 'request_sent' : 'request_received';
+                } else if (conn.status === 'declined') {
+                    connectionStatus = 'declined';
+                }
+            }
+            
+            const connectionButton = getConnectionButton(user.id, connectionStatus);
+            const showMessageBtn = connectionStatus === 'connected';
+            
             const listHtml = `
                 <div class="member-list-item" data-user-id="${user.id}">
                     <div class="member-list-avatar">${avatarHtml}</div>
@@ -1682,8 +1699,8 @@ const { data: user } = await window.masterSupabase
                         <span>${stats.connections} Connections</span>
                     </div>
                     <div class="member-list-actions">
-                        <button class="btn btn-secondary btn-small message-btn">💬</button>
-                        <button class="btn btn-primary btn-small connect-btn" data-user-id="${user.id}">Connect</button>
+                        <button class="btn btn-secondary btn-small message-btn" ${showMessageBtn ? '' : 'style="display:none"'}>💬</button>
+                        ${connectionButton}
                     </div>
                 </div>
             `;
