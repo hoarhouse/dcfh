@@ -2108,7 +2108,7 @@
             try {
                 const { data: relatedProjects, error } = await window.dcfSupabase
                     .from('projects')
-                    .select('id, title, description')
+                    .select('id, title, brief_description, full_description')
                     .eq('author_id', authorId)
                     .neq('id', currentProjectId)
                     .limit(2);  // Changed from 3 to 2
@@ -2122,10 +2122,10 @@
                 }
                 
                 container.innerHTML = relatedProjects.map(project => {
-                    const truncatedDesc = project.description ? 
-                        (project.description.length > 100 ? 
-                            project.description.substring(0, 100) + '...' : 
-                            project.description) : 'No description available';
+                    const truncatedDesc = project.brief_description ? 
+                        (project.brief_description.length > 100 ? 
+                            project.brief_description.substring(0, 100) + '...' : 
+                            project.brief_description) : 'No description available';
                             
                     return `
                         <div class="related-project-item" onclick="window.location.href='dcf_project_detail.html?id=${project.id}'">
@@ -2261,7 +2261,10 @@
             }
             
             // Set about section - use project name in title (no website link here anymore)
-            setAboutContent(`About ${project.title}`, project.description, null);
+            // Use brief_description primarily, with full_description for expanded content
+            const primaryDescription = project.brief_description || project.description || '';
+            const expandedDescription = project.full_description || '';
+            setAboutContent(`About ${project.title}`, primaryDescription, expandedDescription, null);
             
             // Set author details using unified auth system instead of raw database data
             if (project.author) {
@@ -2587,7 +2590,7 @@
         function shareEmail() {
             const project = window.currentProject;
             const subject = encodeURIComponent(`Check out this project: ${project?.title || 'DCF Project'}`);
-            const body = encodeURIComponent(`I thought you might be interested in this project:\n\n${project?.title || 'Project'}\n${project?.description || ''}\n\nView it here: ${window.location.href}`);
+            const body = encodeURIComponent(`I thought you might be interested in this project:\n\n${project?.title || 'Project'}\n${project?.brief_description || project?.description || ''}\n\nView it here: ${window.location.href}`);
             window.open(`mailto:?subject=${subject}&body=${body}`);
             toggleShareMenu();
         }
@@ -2656,7 +2659,7 @@
         }
 
         // Function to set about section content with word limit and website link
-        function setAboutContent(title, description, websiteUrl) {
+        function setAboutContent(title, description, expandedDescription, websiteUrl) {
             const aboutTitle = document.getElementById('aboutTitle');
             const aboutDescription = document.getElementById('aboutDescription');
             const websiteLink = document.getElementById('projectWebsiteLink');
@@ -2677,21 +2680,21 @@
                 // Save the Like/Share buttons before modifying innerHTML
                 const projectActions = aboutDescription.querySelector('.project-actions');
                 
-                const words = description.split(' ');
+                // Use brief description as primary, full description for expansion
+                const hasExpandedContent = expandedDescription && expandedDescription.trim() !== '';
                 
-                if (words.length > 75) {
-                    const truncatedText = words.slice(0, 75).join(' ');
-                    const remainingText = words.slice(75, 110).join(' '); // Max 110 words total
-                    
+                if (hasExpandedContent) {
+                    // Show brief description with option to expand to full description
                     aboutDescription.innerHTML = `
                         <p>
-                            <span id="truncatedDesc">${truncatedText}</span>
-                            <span id="fullDesc" style="display: none;">${truncatedText} ${remainingText}</span>
-                            <span class="description-more" id="moreLink" onclick="showFullDescription()"> more</span>
-                            <span class="description-more" id="lessLink" style="display: none;" onclick="showLessDescription()"> less</span>
+                            <span id="truncatedDesc">${description}</span>
+                            <span id="fullDesc" style="display: none;">${description}<br><br>${expandedDescription}</span>
+                            <span class="description-more" id="moreLink" onclick="showFullDescription()"> read more</span>
+                            <span class="description-more" id="lessLink" style="display: none;" onclick="showLessDescription()"> show less</span>
                         </p>
                     `;
                 } else {
+                    // Just show the brief description if no full description available
                     aboutDescription.innerHTML = `<p>${description}</p>`;
                 }
                 
