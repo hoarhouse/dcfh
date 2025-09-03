@@ -1355,35 +1355,15 @@
                 if (recipientId && recipientName) {
                     console.log('📧 Opening conversation with:', recipientName);
                     // Small delay to let interface initialize
-                    setTimeout(() => {
-                        // Check if conversation exists
-                        const existingConv = document.querySelector(`.conversation-item[data-user-id="${recipientId}"]`);
-                        if (existingConv) {
-                            existingConv.click();
+                    setTimeout(async () => {
+                        // Check if user is in connected users
+                        const connectedUser = connectedUsers.find(u => u.id === recipientId);
+                        if (connectedUser) {
+                            // Select this conversation
+                            await selectConversation(recipientId);
                         } else {
-                            // Start new conversation by selecting the recipient
-                            const decodedName = decodeURIComponent(recipientName);
-                            // Update the conversation header
-                            const conversationHeader = document.querySelector('.conversation-header h3');
-                            if (conversationHeader) {
-                                conversationHeader.textContent = decodedName;
-                            }
-                            // Set current conversation to this recipient
-                            currentConversation = recipientId;
-                            // Clear messages and show new conversation UI
-                            const messagesContainer = document.querySelector('.messages-container');
-                            if (messagesContainer) {
-                                messagesContainer.innerHTML = `
-                                    <div style="text-align: center; padding: 3rem; color: #666;">
-                                        <p>Start a conversation with ${decodedName}</p>
-                                    </div>
-                                `;
-                            }
-                            // Enable message input
-                            const messageInput = document.getElementById('messageInput');
-                            if (messageInput) {
-                                messageInput.focus();
-                            }
+                            console.warn('User not in connections:', recipientId);
+                            showError('You must be connected to message this user');
                         }
                     }, 500);
                 }
