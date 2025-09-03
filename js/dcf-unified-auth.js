@@ -441,7 +441,8 @@ function addNavigationItems() {
     const navigationItems = [
         { href: basePath + 'members/dcf_member_home.html', icon: '🏠', text: 'My Feed' },
         { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
-        { href: basePath + 'members/dcf_members_directory.html', icon: '👥', text: 'My Connections' },
+        { href: basePath + 'members/dcf_private_messaging.html', icon: '💬', text: 'My Messages' },
+        { href: basePath + 'members/dcf_my_connections.html', icon: '👥', text: 'My Connections' },
         { href: basePath + 'projects/dcf_projects_home.html', icon: '📋', text: 'My Projects' },
         { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
         { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' }
