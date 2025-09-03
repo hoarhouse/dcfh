@@ -658,6 +658,99 @@
             font-weight: 600;
         }
 
+        /* Cover Picture Upload Styles */
+        .cover-pic-section {
+            margin-bottom: 2rem;
+        }
+
+        .cover-pic-upload {
+            border: 2px dashed #e5e5e5;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .cover-pic-upload:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .cover-pic-upload.has-image {
+            padding: 0;
+            border: 2px solid #e5e5e5;
+            overflow: hidden;
+        }
+
+        .cover-pic-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: none;
+        }
+
+        .cover-pic-content {
+            text-align: center;
+        }
+
+        .cover-pic-icon {
+            font-size: 2rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .cover-pic-text {
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .cover-pic-subtext {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .cover-pic-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .cover-pic-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid #e5e5e5;
+            transition: all 0.2s;
+        }
+
+        .cover-pic-remove:hover {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .cover-pic-upload.has-image .cover-pic-remove {
+            display: flex;
+        }
+
         .form-select {
             width: 100%;
             padding: 0.75rem;
@@ -1323,6 +1416,23 @@
 <input type="text" id="projectTitle" class="form-input" value="" required>
                         </div>
 
+                        <!-- Cover Picture Section -->
+                        <div class="cover-pic-section">
+                            <label class="form-label">Cover Picture</label>
+                            <div class="cover-pic-upload" id="coverPicUpload" onclick="document.getElementById('coverPicInput').click()">
+                                <img class="cover-pic-preview" id="coverPicPreview" alt="Cover picture preview">
+                                <div class="cover-pic-content" id="coverPicContent">
+                                    <div class="cover-pic-icon">📸</div>
+                                    <div class="cover-pic-text">Click to upload cover picture</div>
+                                    <div class="cover-pic-subtext">JPG or PNG, max 5MB</div>
+                                </div>
+                                <div class="cover-pic-remove" id="coverPicRemove" onclick="removeCoverPic(event)">
+                                    <span style="font-size: 1.2rem;">×</span>
+                                </div>
+                            </div>
+                            <input type="file" id="coverPicInput" accept="image/*" style="display: none;" onchange="handleCoverPicUpload(this)">
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label" for="projectBriefDescription">Brief Description (Maximum 40 words) *</label>
                             <textarea id="projectBriefDescription" class="form-textarea" placeholder="Provide a concise overview of your project (max 40 words)..." required></textarea>
@@ -1474,6 +1584,151 @@
     </div>
 
     <script>
+        // Cover Picture Upload Variables
+        let currentCoverPicUrl = null;
+        let uploadedCoverPicUrl = null;
+
+        // Cover Picture Upload Functions
+        async function handleCoverPicUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Photo size must be less than 5MB');
+                input.value = '';
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file');
+                input.value = '';
+                return;
+            }
+
+            try {
+                // Show preview immediately
+                showCoverPicPreview(file);
+                
+                // Upload to Supabase storage
+                const photoUrl = await uploadCoverPicToStorage(file);
+                
+                if (photoUrl) {
+                    uploadedCoverPicUrl = photoUrl;
+                    console.log('Cover pic uploaded successfully:', photoUrl);
+                }
+            } catch (error) {
+                console.error('Cover pic upload failed:', error);
+                alert('Cover pic upload failed. Please try again.');
+                removeCoverPic();
+                input.value = '';
+            }
+        }
+
+        function showCoverPicPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('coverPicPreview');
+                const content = document.getElementById('coverPicContent');
+                const uploadDiv = document.getElementById('coverPicUpload');
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                if (content) {
+                    content.style.display = 'none';
+                }
+                if (uploadDiv) {
+                    uploadDiv.classList.add('has-image');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadCoverPicToStorage(file) {
+            // Check if Supabase client is available
+            if (!window.supabase && window.dcfSupabase) {
+                window.supabase = window.dcfSupabase;
+            }
+            
+            if (!window.supabase) {
+                console.error('Supabase client not available');
+                throw new Error('Storage service not available');
+            }
+
+            const fileName = `cover_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+            const filePath = `project-photos/${fileName}`;
+
+            const { data, error } = await window.supabase.storage
+                .from('project-files')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) {
+                console.error('Storage upload error:', error);
+                throw error;
+            }
+
+            // Get the public URL
+            const { data: { publicUrl } } = window.supabase.storage
+                .from('project-files')
+                .getPublicUrl(filePath);
+
+            return publicUrl;
+        }
+
+        function removeCoverPic(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const preview = document.getElementById('coverPicPreview');
+            const content = document.getElementById('coverPicContent');
+            const uploadDiv = document.getElementById('coverPicUpload');
+            const input = document.getElementById('coverPicInput');
+            
+            if (preview) {
+                preview.style.display = 'none';
+                preview.src = '';
+            }
+            if (content) {
+                content.style.display = 'flex';
+            }
+            if (uploadDiv) {
+                uploadDiv.classList.remove('has-image');
+            }
+            if (input) {
+                input.value = '';
+            }
+            
+            uploadedCoverPicUrl = null;
+        }
+
+        function loadCoverPic(url) {
+            if (!url) return;
+            
+            currentCoverPicUrl = url;
+            const preview = document.getElementById('coverPicPreview');
+            const content = document.getElementById('coverPicContent');
+            const uploadDiv = document.getElementById('coverPicUpload');
+            
+            if (preview) {
+                preview.src = url;
+                preview.style.display = 'block';
+            }
+            if (content) {
+                content.style.display = 'none';
+            }
+            if (uploadDiv) {
+                uploadDiv.classList.add('has-image');
+            }
+        }
+
         // Word counting and limiting functions
         function countWords(text) {
             return text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
@@ -1838,6 +2093,11 @@
                 status: document.getElementById('projectStatus').value,
                 skills: document.getElementById('projectTags').value.trim()
             };
+
+            // Add cover picture URL if changed
+            if (uploadedCoverPicUrl) {
+                updatedData.main_photo_url = uploadedCoverPicUrl;
+            }
             
             try {
                 const { error } = await supabase
@@ -2215,6 +2475,11 @@
             document.getElementById('projectTitle').value = project.title || '';
             document.getElementById('projectBriefDescription').value = project.brief_description || '';
             document.getElementById('projectFullDescription').value = project.full_description || '';
+            
+            // Load cover picture
+            if (project.main_photo_url) {
+                loadCoverPic(project.main_photo_url);
+            }
             
             // Update word counters
             if (project.brief_description) {
