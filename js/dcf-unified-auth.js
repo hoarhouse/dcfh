@@ -2799,10 +2799,10 @@ function getQuickActionsConfig(pageType) {
             { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
         ],
         'events_calendar': [
-            { icon: '➕', text: 'Create Event', href: 'dcf_create_event.html' },
-            { icon: '📅', text: 'My Events', action: 'filterMyEvents()' },
-            { icon: '📤', text: 'Export Calendar', action: 'exportCalendar()' },
-            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+            { icon: '📅', text: 'Create Event', href: 'dcf_create_event.html' },
+            { icon: '🎟️', text: 'My Events', action: 'filterMyEvents()' },
+            { icon: '📊', text: 'Event Analytics', href: 'dcf_event_analytics.html' },
+            { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'event_details': [
             { icon: '✓', text: 'Register Now', action: 'registerForEvent()' },
