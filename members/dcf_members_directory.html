@@ -1715,6 +1715,154 @@ const { data: user } = await window.masterSupabase
             }
         }
 
+        // Check connection status for a user
+        async function getConnectionStatus(userId) {
+            if (!currentUser || !userId || currentUser.id === userId) {
+                return 'self';
+            }
+
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(requester_id.eq.${userId},recipient_id.eq.${currentUser.id})`);
+
+                if (error || !data || data.length === 0) {
+                    return 'none';
+                }
+
+                const connection = data[0];
+                
+                if (connection.status === 'accepted') {
+                    return 'connected';
+                } else if (connection.status === 'pending') {
+                    if (connection.requester_id === currentUser.id) {
+                        return 'request_sent';
+                    } else {
+                        return 'request_received';
+                    }
+                } else if (connection.status === 'declined') {
+                    return 'declined';
+                }
+
+                return 'none';
+            } catch (error) {
+                console.error('Error checking connection status:', error);
+                return 'none';
+            }
+        }
+
+        // Load all connections for current user to optimize status checks
+        let userConnections = new Map();
+        
+        async function loadUserConnections() {
+            if (!currentUser) return;
+
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`);
+
+                if (!error && data) {
+                    userConnections.clear();
+                    data.forEach(conn => {
+                        const otherUserId = conn.requester_id === currentUser.id ? 
+                            conn.recipient_id : conn.requester_id;
+                        userConnections.set(otherUserId, {
+                            status: conn.status,
+                            isRequester: conn.requester_id === currentUser.id,
+                            connection: conn
+                        });
+                    });
+                    console.log('✅ Loaded user connections:', userConnections.size);
+                }
+            } catch (error) {
+                console.error('Error loading connections:', error);
+            }
+        }
+
+        // Get connection button HTML based on status
+        function getConnectionButton(userId, status) {
+            switch(status) {
+                case 'self':
+                    return '';
+                case 'connected':
+                    return `
+                        <button class="btn btn-secondary btn-small connect-btn" data-user-id="${userId}" disabled>
+                            ✓ Connected
+                        </button>
+                    `;
+                case 'request_sent':
+                    return `
+                        <button class="btn btn-secondary btn-small connect-btn" data-user-id="${userId}" data-status="pending" onclick="cancelConnectionRequest('${userId}', this)">
+                            ⏳ Request Sent
+                        </button>
+                    `;
+                case 'request_received':
+                    return `
+                        <button class="btn btn-success btn-small connect-btn" data-user-id="${userId}" onclick="acceptConnectionRequest('${userId}', this)">
+                            ✓ Accept Request
+                        </button>
+                    `;
+                case 'declined':
+                    return `
+                        <button class="btn btn-secondary btn-small connect-btn" data-user-id="${userId}" disabled>
+                            Request Declined
+                        </button>
+                    `;
+                default: // 'none'
+                    return `
+                        <button class="btn btn-primary btn-small connect-btn" data-user-id="${userId}" onclick="handleConnectClick(this, '${userId}')">
+                            🤝 Connect
+                        </button>
+                    `;
+            }
+        }
+
+        // Refresh connection status for a specific member card
+        async function refreshMemberConnectionStatus(userId) {
+            const memberItem = document.querySelector(`[data-user-id="${userId}"]`);
+            if (!memberItem) return;
+
+            const connectBtn = memberItem.querySelector('.connect-btn');
+            if (!connectBtn) return;
+
+            // Add loading state
+            const originalContent = connectBtn.innerHTML;
+            connectBtn.innerHTML = '⏳ Loading...';
+            connectBtn.disabled = true;
+
+            // Get fresh status
+            const status = await getConnectionStatus(userId);
+            
+            // Update button
+            const newButton = getConnectionButton(userId, status);
+            const actionsDiv = memberItem.querySelector('.member-list-actions') || 
+                             memberItem.querySelector('.member-actions');
+            if (actionsDiv) {
+                const messageBtn = actionsDiv.querySelector('.message-btn');
+                actionsDiv.innerHTML = messageBtn ? messageBtn.outerHTML + newButton : newButton;
+                
+                // Update message button visibility
+                if (messageBtn) {
+                    messageBtn.style.display = status === 'connected' ? '' : 'none';
+                }
+            }
+        }
+
+        // Refresh all connection statuses
+        async function refreshAllConnectionStatuses() {
+            await loadUserConnections();
+            const memberItems = document.querySelectorAll('[data-user-id]');
+            memberItems.forEach(item => {
+                const userId = item.dataset.userId;
+                if (userId && userId !== currentUser?.id) {
+                    refreshMemberConnectionStatus(userId);
+                }
+            });
+        }
+
         // Function to open messaging with a specific user
         function openMessaging(recipientId, recipientName) {
             const url = `dcf_private_messaging.html?recipient=${recipientId}&name=${encodeURIComponent(recipientName)}`;
