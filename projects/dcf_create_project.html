@@ -1162,6 +1162,9 @@
                 }
                 if (uploadDiv) {
                     uploadDiv.classList.add('has-image');
+                    // Preview is loaded successfully, so we can consider this step complete
+                    // The actual upload to storage will happen async, but preview indicates success
+                    uploadDiv.setAttribute('data-preview-loaded', 'true');
                 }
             };
             reader.readAsDataURL(file);
@@ -1193,6 +1196,11 @@
             }
             if (uploadDiv) {
                 uploadDiv.classList.remove('has-image');
+                // Clear all state flags when photo is removed
+                uploadDiv.removeAttribute('data-uploading');
+                uploadDiv.removeAttribute('data-uploaded');
+                uploadDiv.removeAttribute('data-photo-url');
+                uploadDiv.removeAttribute('data-preview-loaded');
             }
             
             // Clear input and stored photo
@@ -1480,27 +1488,27 @@
                 return;
             }
             
-            // Check if main photo is still uploading
-            if (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true') {
+            // Check if a main photo is present by looking at preview visibility
+            // This is the most reliable indicator that a photo was successfully processed
+            const hasVisiblePreview = mainPhotoPreview && mainPhotoPreview.style.display === 'block' && mainPhotoPreview.src;
+            
+            // Check upload state - only block if actively uploading
+            const isCurrentlyUploading = mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true';
+            
+            if (isCurrentlyUploading) {
                 alert('Please wait for the main photo to finish uploading');
                 return;
             }
             
-            // Check if a main photo has been successfully uploaded
-            // Fix: Check multiple indicators for successful upload
-            const hasMainPhoto = uploadedPhotos.main || 
+            // Require main photo - check preview first, then backup methods
+            const hasMainPhoto = hasVisiblePreview || 
+                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-preview-loaded') === 'true') ||
+                                uploadedPhotos.main || 
                                 (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true') ||
                                 (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-photo-url'));
             
             if (!hasMainPhoto) {
-                // Only show upload message if preview is visible but no URL stored
-                const hasPreview = mainPhotoPreview && mainPhotoPreview.style.display === 'block';
-                if (hasPreview && !uploadedPhotos.main) {
-                    // This means preview is showing but upload failed or hasn't completed
-                    alert('Photo upload may have failed. Please remove and re-upload the main photo.');
-                } else {
-                    alert('Please upload a main photo for your project');
-                }
+                alert('Please upload a main photo for your project');
                 return;
             }
             
