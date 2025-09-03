@@ -1344,6 +1344,47 @@
                 setupConversationSearch();
                 setupConversationListeners();
                 loadConversation(currentConversation);
+                
+                // Check URL parameters for pre-selected recipient
+                const urlParams = new URLSearchParams(window.location.search);
+                const recipientId = urlParams.get('recipient');
+                const recipientName = urlParams.get('name');
+                
+                if (recipientId && recipientName) {
+                    console.log('📧 Opening conversation with:', recipientName);
+                    // Small delay to let interface initialize
+                    setTimeout(() => {
+                        // Check if conversation exists
+                        const existingConv = document.querySelector(`.conversation-item[data-user-id="${recipientId}"]`);
+                        if (existingConv) {
+                            existingConv.click();
+                        } else {
+                            // Start new conversation by selecting the recipient
+                            const decodedName = decodeURIComponent(recipientName);
+                            // Update the conversation header
+                            const conversationHeader = document.querySelector('.conversation-header h3');
+                            if (conversationHeader) {
+                                conversationHeader.textContent = decodedName;
+                            }
+                            // Set current conversation to this recipient
+                            currentConversation = recipientId;
+                            // Clear messages and show new conversation UI
+                            const messagesContainer = document.querySelector('.messages-container');
+                            if (messagesContainer) {
+                                messagesContainer.innerHTML = `
+                                    <div style="text-align: center; padding: 3rem; color: #666;">
+                                        <p>Start a conversation with ${decodedName}</p>
+                                    </div>
+                                `;
+                            }
+                            // Enable message input
+                            const messageInput = document.getElementById('messageInput');
+                            if (messageInput) {
+                                messageInput.focus();
+                            }
+                        }
+                    }, 500);
+                }
 
             } catch (error) {
                 console.error('Error initializing messaging page:', error);
