@@ -1884,38 +1884,23 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const messageText = messageInput.value.trim();
             
             if (!messageText) return;
+            if (!currentRecipient) {
+                showError('Please select a conversation first');
+                return;
+            }
 
-            // Add message to chat
-            const now = new Date();
-            const timeString = `Today at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-            
-            addMessageToChat({
-                sender: 'self',
-                text: messageText,
-                time: timeString
-            });
-
-            // Clear input
+            // Clear input immediately for better UX
             messageInput.value = '';
             messageInput.style.height = 'auto';
             document.getElementById('sendButton').disabled = true;
             
-            // Update conversation preview
-            updateConversationPreview(currentConversation, messageText);
-            
-            // Simulate typing response after a delay
-            setTimeout(() => {
-                showTypingIndicator();
-                setTimeout(() => {
-                    hideTypingIndicator();
-                    simulateResponse();
-                }, 2000);
-            }, 1000);
+            // Send the real message to database
+            await sendRealMessage(messageText);
         }
 
         function simulateResponse() {
