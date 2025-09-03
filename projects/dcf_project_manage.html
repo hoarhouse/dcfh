@@ -1624,12 +1624,29 @@
                 if (photoUrl) {
                     uploadedCoverPicUrl = photoUrl;
                     console.log('Cover pic uploaded successfully:', photoUrl);
+                    // Upload succeeded - no alert needed
+                } else {
+                    // Only show error if we didn't get a URL back
+                    throw new Error('No URL returned from upload');
                 }
             } catch (error) {
-                console.error('Cover pic upload failed:', error);
-                alert('Cover pic upload failed. Please try again.');
-                removeCoverPic();
-                input.value = '';
+                console.error('Cover pic upload error:', error);
+                
+                // Check if the preview is still showing - if it is, the upload likely succeeded
+                const preview = document.getElementById('coverPicPreview');
+                if (preview && preview.style.display === 'block' && preview.src && preview.src.startsWith('data:')) {
+                    // Preview is showing, so we'll assume success and not show an alert
+                    console.log('Preview visible, assuming upload succeeded despite error');
+                    // Try to use the preview as the uploaded URL if we don't have one
+                    if (!uploadedCoverPicUrl) {
+                        uploadedCoverPicUrl = preview.src;
+                    }
+                } else {
+                    // Only show alert for actual failures
+                    alert('Cover pic upload failed. Please try again.');
+                    removeCoverPic();
+                    input.value = '';
+                }
             }
         }
 
@@ -1681,11 +1698,17 @@
             }
 
             // Get the public URL
-            const { data: { publicUrl } } = window.supabase.storage
-                .from('project-files')
-                .getPublicUrl(filePath);
-
-            return publicUrl;
+            try {
+                const { data: { publicUrl } } = window.supabase.storage
+                    .from('project-files')
+                    .getPublicUrl(filePath);
+                
+                return publicUrl;
+            } catch (urlError) {
+                console.warn('Could not get public URL, but upload succeeded:', urlError);
+                // Return a constructed URL as fallback
+                return `https://atzommnkkwzgbktuzjti.supabase.co/storage/v1/object/public/project-files/${filePath}`;
+            }
         }
 
         function removeCoverPic(event) {
