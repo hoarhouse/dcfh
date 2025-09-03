@@ -2735,7 +2735,7 @@ function getQuickActionsConfig(pageType) {
             { icon: '👤', text: 'My Profile', href: 'dcf_member_profile.html' },
             { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
             { icon: '💬', text: 'My Messages', href: 'dcf_private_messaging.html' },
-            { icon: '📁', text: 'Browse Projects', href: basePath + 'projects/dcf_projects_home.html' }
+            { icon: '📋', text: 'Browse Projects', href: basePath + 'projects/dcf_projects_home.html' }
         ],
         'member_profile': [
             { icon: '✏️', text: 'Edit Profile', action: 'editProfile()' },
@@ -2755,18 +2755,18 @@ function getQuickActionsConfig(pageType) {
             { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'messaging': [
-            { icon: '✉️', text: 'New Message', action: 'openNewMessageModal()' },
+            { icon: '💬', text: 'New Message', action: 'openNewMessageModal()' },
             { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
             { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'notifications': [
-            { icon: '✓', text: 'Mark All Read', action: 'markAllAsRead()' },
+            { icon: '✅', text: 'Mark All Read', action: 'markAllAsRead()' },
             { icon: '🗑️', text: 'Clear All', action: 'clearAllNotifications()' },
             { icon: '⚙️', text: 'Settings', action: 'openNotificationSettings()' },
             { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'profile_dashboard': [
-            { icon: '✏️', text: 'Edit Profile', href: 'dcf_member_profile.html' },
+            { icon: '👤', text: 'Edit Profile', href: 'dcf_member_profile.html' },
             { icon: '📊', text: 'View Analytics', href: 'dcf_personal_analytics.html' },
             { icon: '💳', text: 'Donate', href: 'dcf_donate.html' },
             { icon: '🏠', text: 'Member Home', href: 'dcf_member_home.html' }
@@ -2777,24 +2777,24 @@ function getQuickActionsConfig(pageType) {
             { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'projects_home': [
-            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
             { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
             { icon: '🔍', text: 'Browse Projects', action: 'document.getElementById("searchInput").focus()' },
             { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'projects': [
-            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
             { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
             { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
         ],
         'project_detail': [
-            { icon: '➕', text: 'Create Task', action: 'createTask()' },
+            { icon: '📋', text: 'Create Task', action: 'createTask()' },
             { icon: '📤', text: 'Upload Files', action: 'uploadFiles()' },
             { icon: '📊', text: 'View Analytics', action: 'viewAnalytics()' },
-            { icon: '🔙', text: 'All Projects', href: 'dcf_projects_home.html' }
+            { icon: '🏠', text: 'All Projects', href: 'dcf_projects_home.html' }
         ],
         'project_manage': [
-            { icon: '➕', text: 'Create Project', href: 'dcf_create_project.html' },
+            { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
             { icon: '📊', text: 'Export Data', action: 'exportProjectData()' },
             { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
         ],
@@ -2805,39 +2805,39 @@ function getQuickActionsConfig(pageType) {
             { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'event_details': [
-            { icon: '✓', text: 'Register Now', action: 'registerForEvent()' },
+            { icon: '🎟️', text: 'Register Now', action: 'registerForEvent()' },
             { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
             { icon: '🔗', text: 'Share Event', action: 'shareEvent()' },
-            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+            { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'event_manage': [
-            { icon: '🚀', text: 'Create Event', href: 'dcf_create_event.html' },
+            { icon: '📅', text: 'Create Event', href: 'dcf_create_event.html' },
             { icon: '📊', text: 'Export Data', action: 'exportEventData()' },
             { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
             { icon: '👥', text: 'All Registrations', action: 'showAllRegistrations()' }
         ],
         'resources_library': [
-            { icon: '📤', text: 'Upload Resource', href: 'dcf_resource_upload.html' },
+            { icon: '📚', text: 'Upload Resource', href: 'dcf_resource_upload.html' },
             { icon: '🔍', text: 'Search Library', action: 'document.getElementById("searchInput").focus()' },
             { icon: '📚', text: 'My Resources', action: 'filterMyResources()' },
-            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+            { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'resource_detail': [
-            { icon: '📥', text: 'Download', action: 'downloadResource()' },
+            { icon: '📚', text: 'Download', action: 'downloadResource()' },
             { icon: '🔗', text: 'Share Resource', action: 'shareResource()' },
-            { icon: '🚨', text: 'Report Issue', action: 'reportIssue()' },
+            { icon: '⚠️', text: 'Report Issue', action: 'reportIssue()' },
             { icon: '📚', text: 'Back to Library', href: 'dcf_resources_library.html' }
         ],
         'resource_upload': [
             { icon: '📚', text: 'Resource Library', href: 'dcf_resources_library.html' },
-            { icon: '📋', text: 'My Uploads', action: 'viewMyUploads()' },
-            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+            { icon: '📚', text: 'My Uploads', action: 'viewMyUploads()' },
+            { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
         ],
         'admin_dashboard': [
             { icon: '👤', text: 'Add User', action: 'openModal("userModal")' },
             { icon: '📢', text: 'Broadcast', action: 'openModal("broadcastModal")' },
             { icon: '📊', text: 'Export Data', action: 'exportData()' },
-            { icon: '🔧', text: 'Maintenance', action: 'openMaintenanceMode()' }
+            { icon: '⚙️', text: 'Maintenance', action: 'openMaintenanceMode()' }
         ],
         'default': [
             { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' },
@@ -2870,64 +2870,94 @@ function populateQuickActions() {
         const style = document.createElement('style');
         style.id = 'quickActionsStyles';
         style.textContent = `
-            #quickActionsContainer {
+            #quickActionsContainer,
+            .quick-actions-grid {
                 display: flex;
                 flex-direction: column;
                 gap: 0.5rem;
             }
             
-            .quick-action-btn {
-                display: flex;
+            .quick-action-btn,
+            .btn.quick-action-btn {
+                display: flex !important;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.75rem;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
                 background: #f8f9fa;
                 border-radius: 8px;
                 text-decoration: none;
                 color: #333;
                 transition: all 0.2s ease;
-                border: none;
+                border: 1px solid #e5e5e5;
                 width: 100%;
                 cursor: pointer;
                 font-size: 0.9rem;
                 text-align: left;
+                font-weight: 500;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
             
-            .quick-action-btn:hover {
-                background: #e5e5e5;
+            .quick-action-btn:hover,
+            .btn.quick-action-btn:hover {
+                background: #e9ecef;
+                border-color: #dee2e6;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                text-decoration: none;
+                color: #333;
             }
             
             .quick-action-icon {
-                font-size: 1.2rem;
+                font-size: 1.25rem;
                 flex-shrink: 0;
+                width: 24px;
+                text-align: center;
             }
             
             .quick-action-text {
                 font-size: 0.9rem;
+                flex: 1;
             }
             
-            .quick-action-btn.primary {
+            .quick-action-btn.btn-primary,
+            .btn.btn-primary.quick-action-btn {
                 background: #333;
+                color: white;
+                border-color: #333;
+            }
+            
+            .quick-action-btn.btn-primary:hover,
+            .btn.btn-primary.quick-action-btn:hover {
+                background: #555;
+                border-color: #555;
                 color: white;
             }
             
-            .quick-action-btn.primary:hover {
-                background: #555;
+            .quick-action-btn.btn-secondary,
+            .btn.btn-secondary.quick-action-btn {
+                background: white;
+                color: #333;
+                border-color: #dee2e6;
+            }
+            
+            .quick-action-btn.btn-secondary:hover,
+            .btn.btn-secondary.quick-action-btn:hover {
+                background: #f8f9fa;
+                border-color: #adb5bd;
             }
         `;
         document.head.appendChild(style);
     }
     
-    // Create action buttons
+    // Create action buttons with standardized styling
     actions.forEach((action, index) => {
+        const isPrimary = index === 0 && ['event_details', 'notifications', 'events_calendar'].includes(pageType);
+        
         if (action.href) {
-            // Create link
+            // Create link styled as button
             const link = document.createElement('a');
             link.href = action.href;
-            link.className = 'quick-action-btn';
-            if (index === 0 && pageType === 'event_details') {
-                link.className += ' primary';
-            }
+            link.className = isPrimary ? 'btn btn-primary quick-action-btn' : 'btn btn-secondary quick-action-btn';
             link.innerHTML = `
                 <span class="quick-action-icon">${action.icon}</span>
                 <span class="quick-action-text">${action.text}</span>
@@ -2936,10 +2966,7 @@ function populateQuickActions() {
         } else if (action.action) {
             // Create button
             const button = document.createElement('button');
-            button.className = 'quick-action-btn';
-            if (index === 0 && (pageType === 'event_details' || pageType === 'notifications')) {
-                button.className += ' primary';
-            }
+            button.className = isPrimary ? 'btn btn-primary quick-action-btn' : 'btn btn-secondary quick-action-btn';
             button.onclick = () => eval(action.action);
             button.innerHTML = `
                 <span class="quick-action-icon">${action.icon}</span>
