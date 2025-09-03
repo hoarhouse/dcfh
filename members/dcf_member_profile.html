@@ -1618,6 +1618,8 @@
         let currentProfile = null;
         let selectedPostFiles = [];
         let userCommentLikes = new Set();
+        let connectionStatus = 'none'; // Track connection status
+        let profileUserId = null; // Track the profile being viewed
         
         // Comment display state per post
         const postCommentStates = {};
@@ -1786,6 +1788,315 @@
             } catch (error) {
                 console.error('❌ Error loading profile:', error);
                 showNotification('Error loading profile', 'error');
+            }
+        }
+
+        // Connection Management Functions
+        async function checkConnectionStatus(targetUserId) {
+            if (!currentUser || !targetUserId || currentUser.id === targetUserId) {
+                return 'self'; // Viewing own profile
+            }
+
+            try {
+                // Check for existing connection in either direction
+                const { data, error } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},recipient_id.eq.${currentUser.id})`);
+
+                if (error) {
+                    console.error('Error checking connection status:', error);
+                    return 'none';
+                }
+
+                if (!data || data.length === 0) {
+                    return 'none';
+                }
+
+                const connection = data[0];
+                
+                if (connection.status === 'accepted') {
+                    return 'connected';
+                } else if (connection.status === 'pending') {
+                    if (connection.requester_id === currentUser.id) {
+                        return 'request_sent';
+                    } else {
+                        return 'request_received';
+                    }
+                } else if (connection.status === 'declined') {
+                    return 'declined';
+                }
+
+                return 'none';
+            } catch (error) {
+                console.error('Error checking connection:', error);
+                return 'none';
+            }
+        }
+
+        async function updateConnectionButtons() {
+            const buttonsContainer = document.getElementById('connectionButtons');
+            if (!buttonsContainer) return;
+
+            // Hide buttons if viewing own profile
+            if (!profileUserId || profileUserId === currentUser?.id) {
+                buttonsContainer.style.display = 'none';
+                return;
+            }
+
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.innerHTML = '<span style="color: #999;">Loading...</span>';
+
+            const status = await checkConnectionStatus(profileUserId);
+            connectionStatus = status;
+
+            let buttonsHTML = '';
+
+            switch(status) {
+                case 'none':
+                    buttonsHTML = `
+                        <button class="btn btn-primary connection-btn" onclick="sendConnectionRequest()">
+                            👥 Connect
+                        </button>
+                    `;
+                    break;
+                case 'request_sent':
+                    buttonsHTML = `
+                        <button class="btn btn-secondary connection-btn" disabled>
+                            ⏳ Request Sent
+                        </button>
+                        <button class="btn btn-secondary connection-btn" onclick="cancelConnectionRequest()">
+                            Cancel
+                        </button>
+                    `;
+                    break;
+                case 'request_received':
+                    buttonsHTML = `
+                        <button class="btn btn-success connection-btn" onclick="acceptConnectionRequest()">
+                            ✓ Accept
+                        </button>
+                        <button class="btn btn-danger connection-btn" onclick="declineConnectionRequest()">
+                            ✗ Decline
+                        </button>
+                    `;
+                    break;
+                case 'connected':
+                    buttonsHTML = `
+                        <button class="btn btn-secondary connection-btn" disabled>
+                            ✓ Connected
+                        </button>
+                        <button class="btn btn-secondary connection-btn" onclick="confirmDisconnect()">
+                            Disconnect
+                        </button>
+                    `;
+                    break;
+                case 'declined':
+                    buttonsHTML = `
+                        <button class="btn btn-secondary connection-btn" disabled>
+                            Connection Declined
+                        </button>
+                    `;
+                    break;
+            }
+
+            buttonsContainer.innerHTML = buttonsHTML;
+        }
+
+        async function sendConnectionRequest() {
+            if (!currentUser || !profileUserId) return;
+
+            const button = event.target;
+            button.classList.add('loading');
+            button.innerHTML = '⏳ Sending...';
+
+            try {
+                // Create connection request
+                const { data, error } = await window.dcfSupabase
+                    .from('connections')
+                    .insert({
+                        requester_id: currentUser.id,
+                        recipient_id: profileUserId,
+                        status: 'pending'
+                    })
+                    .select();
+
+                if (error) throw error;
+
+                // Create notification for recipient
+                if (window.notificationSystem) {
+                    await window.notificationSystem.createConnectionRequestNotification(
+                        profileUserId,
+                        currentUser.username || currentUser.email
+                    );
+                }
+
+                showNotification('Connection request sent!', 'success');
+                await updateConnectionButtons();
+                
+            } catch (error) {
+                console.error('Error sending connection request:', error);
+                showNotification('Failed to send connection request', 'error');
+                button.classList.remove('loading');
+                button.innerHTML = '👥 Connect';
+            }
+        }
+
+        async function acceptConnectionRequest() {
+            if (!currentUser || !profileUserId) return;
+
+            const button = event.target;
+            button.classList.add('loading');
+            button.innerHTML = '⏳ Accepting...';
+
+            try {
+                // Find and update the connection
+                const { data: connections, error: fetchError } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .eq('requester_id', profileUserId)
+                    .eq('recipient_id', currentUser.id)
+                    .eq('status', 'pending');
+
+                if (fetchError) throw fetchError;
+                if (!connections || connections.length === 0) {
+                    throw new Error('Connection request not found');
+                }
+
+                const connectionId = connections[0].id;
+
+                const { error: updateError } = await window.dcfSupabase
+                    .from('connections')
+                    .update({ 
+                        status: 'accepted',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', connectionId);
+
+                if (updateError) throw updateError;
+
+                // Create notification for requester
+                if (window.notificationSystem) {
+                    await window.notificationSystem.createConnectionAcceptedNotification(
+                        profileUserId,
+                        currentUser.username || currentUser.email
+                    );
+                }
+
+                showNotification('Connection accepted!', 'success');
+                await updateConnectionButtons();
+                await loadUserStats(); // Update connection count
+
+            } catch (error) {
+                console.error('Error accepting connection:', error);
+                showNotification('Failed to accept connection', 'error');
+                button.classList.remove('loading');
+                button.innerHTML = '✓ Accept';
+            }
+        }
+
+        async function declineConnectionRequest() {
+            if (!currentUser || !profileUserId) return;
+
+            const button = event.target;
+            button.classList.add('loading');
+            button.innerHTML = '⏳ Declining...';
+
+            try {
+                // Find and update/delete the connection
+                const { data: connections, error: fetchError } = await window.dcfSupabase
+                    .from('connections')
+                    .select('*')
+                    .eq('requester_id', profileUserId)
+                    .eq('recipient_id', currentUser.id)
+                    .eq('status', 'pending');
+
+                if (fetchError) throw fetchError;
+                if (!connections || connections.length === 0) {
+                    throw new Error('Connection request not found');
+                }
+
+                const connectionId = connections[0].id;
+
+                // Delete the declined request
+                const { error: deleteError } = await window.dcfSupabase
+                    .from('connections')
+                    .delete()
+                    .eq('id', connectionId);
+
+                if (deleteError) throw deleteError;
+
+                showNotification('Connection request declined', 'info');
+                await updateConnectionButtons();
+
+            } catch (error) {
+                console.error('Error declining connection:', error);
+                showNotification('Failed to decline connection', 'error');
+                button.classList.remove('loading');
+                button.innerHTML = '✗ Decline';
+            }
+        }
+
+        async function cancelConnectionRequest() {
+            if (!currentUser || !profileUserId) return;
+
+            const button = event.target;
+            button.classList.add('loading');
+            button.innerHTML = '⏳ Canceling...';
+
+            try {
+                // Find and delete the pending connection
+                const { error } = await window.dcfSupabase
+                    .from('connections')
+                    .delete()
+                    .eq('requester_id', currentUser.id)
+                    .eq('recipient_id', profileUserId)
+                    .eq('status', 'pending');
+
+                if (error) throw error;
+
+                showNotification('Connection request cancelled', 'info');
+                await updateConnectionButtons();
+
+            } catch (error) {
+                console.error('Error canceling connection:', error);
+                showNotification('Failed to cancel request', 'error');
+                button.classList.remove('loading');
+                button.innerHTML = 'Cancel';
+            }
+        }
+
+        function confirmDisconnect() {
+            if (confirm(`Are you sure you want to disconnect from ${currentProfile?.first_name || 'this user'}?`)) {
+                disconnectUser();
+            }
+        }
+
+        async function disconnectUser() {
+            if (!currentUser || !profileUserId) return;
+
+            const button = event.target;
+            button.classList.add('loading');
+            button.innerHTML = '⏳ Disconnecting...';
+
+            try {
+                // Delete the connection (works in either direction)
+                const { error } = await window.dcfSupabase
+                    .from('connections')
+                    .delete()
+                    .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${profileUserId}),and(requester_id.eq.${profileUserId},recipient_id.eq.${currentUser.id})`)
+                    .eq('status', 'accepted');
+
+                if (error) throw error;
+
+                showNotification('Disconnected successfully', 'info');
+                await updateConnectionButtons();
+                await loadUserStats(); // Update connection count
+
+            } catch (error) {
+                console.error('Error disconnecting:', error);
+                showNotification('Failed to disconnect', 'error');
+                button.classList.remove('loading');
+                button.innerHTML = 'Disconnect';
             }
         }
 
