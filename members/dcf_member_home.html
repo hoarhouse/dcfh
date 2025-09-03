@@ -1425,10 +1425,58 @@
             <!-- RIGHT MAIN CONTENT - WIDE (POSTS FOCUS) -->
             <div class="main-content">
                 <div class="activity-feed" style="padding: 2rem;">
-                    <div class="feed-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e5e5;">
-                        <h2 style="font-size: 1.5rem; font-weight: 600; color: #333;">Activity Feed</h2>
-                        <div class="feed-controls">
-                            <button class="btn btn-primary" onclick="scrollToCreatePost()">Create Post</button>
+                    <div class="feed-header" style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2 style="font-size: 1.5rem; font-weight: 600; color: #333;">Activity Feed</h2>
+                            <div class="feed-controls">
+                                <button class="btn btn-primary" onclick="scrollToCreatePost()">Create Post</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Feed Filter Tabs -->
+                        <div class="feed-filter-tabs" style="display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 2px solid #e5e5e5;">
+                            <button class="feed-filter-tab active" data-filter="all" onclick="switchFeedFilter('all')" style="
+                                padding: 0.5rem 1rem;
+                                background: #000;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                                font-weight: 500;
+                                transition: all 0.3s ease;
+                            ">
+                                All Posts
+                            </button>
+                            <button class="feed-filter-tab" data-filter="network" onclick="switchFeedFilter('network')" style="
+                                padding: 0.5rem 1rem;
+                                background: #f8f9fa;
+                                color: #666;
+                                border: 1px solid #e5e5e5;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                                font-weight: 500;
+                                transition: all 0.3s ease;
+                            ">
+                                My Network
+                            </button>
+                            <button class="feed-filter-tab" data-filter="public" onclick="switchFeedFilter('public')" style="
+                                padding: 0.5rem 1rem;
+                                background: #f8f9fa;
+                                color: #666;
+                                border: 1px solid #e5e5e5;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                                font-weight: 500;
+                                transition: all 0.3s ease;
+                            ">
+                                Public Only
+                            </button>
+                            <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem; color: #666; font-size: 0.85rem;">
+                                <span id="postCount">0 posts</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1674,7 +1722,13 @@
             // Initialize post creation after profile loads
             setTimeout(() => {
                 initializePostCreation();
-                loadPostsFeed();
+                // Restore filter preference
+                const savedFilter = localStorage.getItem('feedFilter') || 'all';
+                if (savedFilter !== 'all') {
+                    switchFeedFilter(savedFilter);
+                } else {
+                    loadPostsFeed();
+                }
                 
                 // Re-initialize if avatar loads later
                 let retryCount = 0;
@@ -3155,6 +3209,12 @@
                 
                 feedContainer.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
                 
+                // Update post count
+                const postCountElement = document.getElementById('postCount');
+                if (postCountElement) {
+                    postCountElement.textContent = `${filteredPosts.length} post${filteredPosts.length !== 1 ? 's' : ''}`;
+                }
+                
                 // After posts are loaded, check like statuses
                 setTimeout(() => {
                     loadUserLikeStatuses();
@@ -3441,6 +3501,36 @@
                 const textarea = document.getElementById('postTextarea');
                 if (textarea) textarea.focus();
             }, 500);
+        }
+        
+        // Feed filter functionality
+        let currentFeedFilter = 'all';
+        
+        function switchFeedFilter(filter) {
+            currentFeedFilter = filter;
+            
+            // Update active tab styling
+            document.querySelectorAll('.feed-filter-tab').forEach(tab => {
+                if (tab.dataset.filter === filter) {
+                    tab.style.background = '#000';
+                    tab.style.color = 'white';
+                    tab.style.border = 'none';
+                    tab.classList.add('active');
+                } else {
+                    tab.style.background = '#f8f9fa';
+                    tab.style.color = '#666';
+                    tab.style.border = '1px solid #e5e5e5';
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Save filter preference
+            if (window.localStorage) {
+                localStorage.setItem('feedFilter', filter);
+            }
+            
+            // Reload posts with new filter
+            loadPostsFeed(filter);
         }
 
         // Site alert wrapper functions (using unified auth system)
