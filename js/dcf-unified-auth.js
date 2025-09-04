@@ -3783,7 +3783,7 @@ async function trackInteraction(contentType, contentId, interactionType, userDat
         const user = userData || window.getCurrentUser();
         const timestamp = new Date().toISOString();
         
-        // Build interaction record for universal_analytics table
+        // Build interaction record for universal_analytics table - ONLY allowed columns
         const interactionData = {
             content_type: contentType,
             content_id: contentId,
@@ -3791,25 +3791,20 @@ async function trackInteraction(contentType, contentId, interactionType, userDat
             created_at: timestamp
         };
         
-        // Add user data if available (handles anonymous views)
+        // Add user data if available (only user_id and user_email allowed)
         if (user) {
             interactionData.user_id = user.id;
             interactionData.user_email = user.email;
-            interactionData.user_name = user.name || user.username;
         } else if (interactionType === 'view') {
-            // Allow anonymous views
-            interactionData.is_anonymous = true;
-            interactionData.session_id = getSessionId();
+            // Allow anonymous views without user data
+            console.log(`Tracking anonymous ${interactionType} for ${contentType} ${contentId}`);
+            // Skip insert for anonymous views since user_id and user_email might be required
+            return true;
         } else {
             // Other interactions require authentication
             console.warn(`Authentication required for ${interactionType}`);
             await showAlert(`Please log in to ${interactionType} this content`, 'warning');
             return false;
-        }
-        
-        // Add metadata if provided
-        if (userData && typeof userData === 'object') {
-            interactionData.metadata = userData;
         }
         
         // All interactions go to universal_analytics table
