@@ -4066,41 +4066,39 @@ async function toggleInteraction(contentType, contentId, interactionType, option
  * @param {HTMLElement} button - Button element
  * @param {boolean} isActive - Whether interaction is active
  * @param {number} count - Current count
- * @param {string} interactionType - Type of interaction
+ * @param {object} options - Options including emojis
  */
-function updateInteractionUI(button, isActive, count, interactionType) {
+function updateInteractionUI(button, isActive, count, options = {}) {
     if (!button) return;
     
     // Update button state
     if (isActive) {
-        button.classList.add('active', `${interactionType}d`);
+        button.classList.add('active');
     } else {
-        button.classList.remove('active', `${interactionType}d`);
+        button.classList.remove('active');
     }
     
-    // Update icon and count
-    const iconElement = button.querySelector('.icon') || button.querySelector('span:first-child');
-    const countElement = button.querySelector('.count') || button.querySelector('span:last-child');
-    
-    if (iconElement) {
-        switch (interactionType) {
-            case 'like':
-                iconElement.textContent = isActive ? '❤️' : '🤍';
-                break;
-            case 'bookmark':
-                iconElement.textContent = isActive ? '🔖' : '📌';
-                break;
-            case 'share':
-                iconElement.textContent = '📤';
-                break;
-            case 'download':
-                iconElement.textContent = '⬇️';
-                break;
+    // Update icon if emojis provided
+    if (options.activeEmoji && options.inactiveEmoji) {
+        const iconElement = button.querySelector('.icon') || button.querySelector('span:first-child');
+        if (iconElement) {
+            iconElement.textContent = isActive ? options.activeEmoji : options.inactiveEmoji;
         }
     }
     
-    if (countElement && countElement !== iconElement) {
-        countElement.textContent = count > 0 ? count.toString() : '';
+    // Update text if element exists
+    const textElement = button.querySelector('.text') || button.querySelector('span:last-child');
+    if (textElement && textElement.id && textElement.id.includes('Text')) {
+        const baseText = textElement.textContent.replace('d', ''); // Remove 'd' from 'Liked'
+        textElement.textContent = isActive ? baseText + 'd' : baseText;
+    }
+    
+    // Update count if provided
+    if (count !== null && count !== undefined) {
+        const countElement = button.querySelector('.count') || document.getElementById(button.id + 'Count');
+        if (countElement) {
+            countElement.textContent = count > 0 ? `(${count})` : '';
+        }
     }
     
     // Update button style
