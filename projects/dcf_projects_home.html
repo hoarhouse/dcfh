@@ -1673,6 +1673,38 @@
         }
     }
 
+    async function leaveProject(projectId, projectTitle) {
+        const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+        const userEmail = currentUser ? currentUser.email : null;
+        
+        if (!userEmail) {
+            showAlert('Please log in to manage membership', 'warning', 'Login Required');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to leave "${projectTitle}"?`)) {
+            return;
+        }
+        
+        try {
+            const { error } = await window.dcfSupabase
+                .from('project_members')
+                .delete()
+                .eq('project_id', projectId)
+                .eq('user_email', userEmail);
+            
+            if (error) throw error;
+            
+            updateJoinButton(projectId, null);
+            updateMemberCounts();
+            showAlert(`You have left ${projectTitle}`, 'success', 'Left Project');
+            
+        } catch (error) {
+            console.error('Error leaving project:', error);
+            showAlert('Failed to leave project. Please try again.', 'error', 'Error');
+        }
+    }
+    
     function updateJoinButton(projectId, userStatus) {
         const button = document.querySelector(`[data-project-id="${projectId}"] .join-btn`);
         if (!button) return;
@@ -1697,8 +1729,15 @@
                                userStatus === 'contributor' ? 'Contributor' : 'Member';
                 button.textContent = `✓ ${roleText}`;
                 button.className = 'btn btn-secondary btn-small join-btn';
-                button.disabled = true;
-                button.onclick = null;
+                button.style.background = '#28a745';
+                button.style.color = 'white';
+                button.style.border = '2px solid #28a745';
+                button.disabled = false;
+                button.onclick = (e) => {
+                    e.stopPropagation();
+                    leaveProject(projectId, button.dataset.projectTitle);
+                };
+                button.title = 'Click to leave project';
                 break;
             case 'pending':
                 button.textContent = '⏳ Request Pending';
@@ -1707,7 +1746,7 @@
                 button.onclick = null;
                 break;
             default:
-                button.textContent = '🤝 Join Project';
+                button.textContent = '🤝 Join';
                 button.className = 'btn btn-primary btn-small join-btn';
                 button.style.background = '';
                 button.style.color = '';
@@ -1717,6 +1756,7 @@
                     e.stopPropagation();
                     joinProject(projectId, button.dataset.projectTitle);
                 };
+                button.title = 'Click to join project';
         }
     }
 
