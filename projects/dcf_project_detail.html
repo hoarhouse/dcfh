@@ -2312,8 +2312,8 @@
                 }
             }
             
-            // Set stats (you can enhance this with actual counts later)
-            setStatsData(1, 0, 0, 0, 'Project Statistics');
+            // Load real statistics from database
+            await loadProjectStatistics(project.id);
             
             // Check if current user is the project author and show appropriate buttons
             updateProjectButtons(project);
@@ -2799,6 +2799,87 @@
             }
         }
 
+        // Load real project statistics from database
+        async function loadProjectStatistics(projectId) {
+            try {
+                // Get member count
+                let membersCount = 0;
+                try {
+                    const { count: memberCount, error: memberError } = await window.dcfSupabase
+                        .from('project_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('project_id', projectId);
+                    
+                    if (!memberError && memberCount !== null) {
+                        membersCount = memberCount;
+                    }
+                } catch (error) {
+                    console.log('Error loading member count:', error);
+                }
+                
+                // Get follower count
+                let followersCount = 0;
+                try {
+                    const { count: followerCount, error: followerError } = await window.dcfSupabase
+                        .from('project_follows')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('project_id', projectId);
+                    
+                    if (!followerError && followerCount !== null) {
+                        followersCount = followerCount;
+                    }
+                } catch (error) {
+                    console.log('Error loading follower count:', error);
+                }
+                
+                // Get file count
+                let filesCount = 0;
+                try {
+                    const { count: fileCount, error: fileError } = await window.dcfSupabase
+                        .from('project_files')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('project_id', projectId);
+                    
+                    if (!fileError && fileCount !== null) {
+                        filesCount = fileCount;
+                    }
+                } catch (error) {
+                    console.log('Error loading file count:', error);
+                }
+                
+                // Get task count (may not exist, so we handle gracefully)
+                let tasksCount = 0;
+                try {
+                    const { count: taskCount, error: taskError } = await window.dcfSupabase
+                        .from('project_tasks')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('project_id', projectId);
+                    
+                    if (!taskError && taskCount !== null) {
+                        tasksCount = taskCount;
+                    }
+                } catch (error) {
+                    // Tasks table might not exist, which is okay
+                    console.log('Tasks table not available or error:', error.message);
+                }
+                
+                // Set the stats with real data
+                console.log('Setting project statistics:', {
+                    members: membersCount,
+                    tasks: tasksCount,
+                    followers: followersCount,
+                    files: filesCount
+                });
+                
+                setStatsData(membersCount, tasksCount, followersCount, filesCount, 'Project Statistics');
+                
+            } catch (error) {
+                console.error('Error loading project statistics:', error);
+                // Fallback to minimal stats if there's an error
+                setStatsData(0, 0, 0, 0, 'Project Statistics');
+            }
+        }
+
         // Function to set stats data
         function setStatsData(members, tasks, followers, files, views, shares) {
             console.log('=== setStatsData CALL DEBUG ===');
@@ -2887,6 +2968,9 @@
                     joinBtn.classList.remove('following');
                     showNotification('Unfollowed project successfully', 'success');
                     
+                    // Refresh statistics after unfollow
+                    await loadProjectStatistics(projectId);
+                    
                 } else {
                     // Follow the project
                     const { error } = await window.dcfSupabase
@@ -2904,6 +2988,9 @@
                     joinBtn.innerHTML = '✓ Following';
                     joinBtn.classList.add('following');
                     showNotification('Following project successfully', 'success');
+                    
+                    // Refresh statistics after follow
+                    await loadProjectStatistics(projectId);
                 }
                 
             } catch (error) {
