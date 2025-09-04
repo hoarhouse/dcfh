@@ -3901,7 +3901,7 @@ async function hasUserInteracted(contentType, contentId, interactionType, userId
             return true;
         }
         
-        // Query universal_analytics table
+        // Query universal_analytics table - use maybeSingle() to avoid 406 errors
         const { data, error } = await window.dcfSupabase
             .from('universal_analytics')
             .select('id')
@@ -3909,9 +3909,9 @@ async function hasUserInteracted(contentType, contentId, interactionType, userId
             .eq('content_id', contentId)
             .eq('interaction_type', interactionType)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
         
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        if (error) {
             console.error(`Error checking interaction:`, error);
         }
         
