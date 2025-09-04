@@ -2837,9 +2837,101 @@
             if (buttonText && joinProjectBtn) joinProjectBtn.innerHTML = buttonText;
         }
 
-        // Handle join project action
-        function handleJoinProject() {
-            alert('Join project functionality will be implemented here');
+        // Handle join project action (Follow/Unfollow)
+        async function handleJoinProject() {
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (!currentUser || !currentUser.email) {
+                showNotification('Please log in to follow projects', 'warning');
+                return;
+            }
+            
+            const projectId = getProjectIdFromURL();
+            if (!projectId || !window.currentProject) {
+                showNotification('Project information not loaded', 'error');
+                return;
+            }
+            
+            const joinBtn = document.getElementById('joinProjectBtn');
+            if (!joinBtn) return;
+            
+            // Check current follow status
+            const isFollowing = joinBtn.textContent.includes('Following');
+            
+            try {
+                if (isFollowing) {
+                    // Unfollow the project
+                    const { error } = await window.dcfSupabase
+                        .from('project_follows')
+                        .delete()
+                        .eq('user_email', currentUser.email)
+                        .eq('project_id', projectId);
+                    
+                    if (error) throw error;
+                    
+                    // Update button state
+                    joinBtn.innerHTML = '➕ Follow Project';
+                    joinBtn.classList.remove('following');
+                    showNotification('Unfollowed project successfully', 'success');
+                    
+                } else {
+                    // Follow the project
+                    const { error } = await window.dcfSupabase
+                        .from('project_follows')
+                        .insert({
+                            user_email: currentUser.email,
+                            user_name: currentUser.name || currentUser.email.split('@')[0],
+                            project_id: projectId,
+                            project_name: window.currentProject.title
+                        });
+                    
+                    if (error) throw error;
+                    
+                    // Update button state
+                    joinBtn.innerHTML = '✓ Following';
+                    joinBtn.classList.add('following');
+                    showNotification('Following project successfully', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error updating follow status:', error);
+                showNotification('Failed to update follow status: ' + error.message, 'error');
+            }
+        }
+        
+        // Check follow status on page load
+        async function checkFollowStatus() {
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (!currentUser || !currentUser.email) return;
+            
+            const projectId = getProjectIdFromURL();
+            if (!projectId) return;
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('project_follows')
+                    .select('id')
+                    .eq('user_email', currentUser.email)
+                    .eq('project_id', projectId)
+                    .single();
+                
+                const joinBtn = document.getElementById('joinProjectBtn');
+                if (joinBtn) {
+                    if (data) {
+                        joinBtn.innerHTML = '✓ Following';
+                        joinBtn.classList.add('following');
+                    } else {
+                        joinBtn.innerHTML = '➕ Follow Project';
+                        joinBtn.classList.remove('following');
+                    }
+                }
+            } catch (error) {
+                // No follow record found is expected, not an error
+                const joinBtn = document.getElementById('joinProjectBtn');
+                if (joinBtn) {
+                    joinBtn.innerHTML = '➕ Follow Project';
+                    joinBtn.classList.remove('following');
+                }
+            }
         }
 
         // Function to set join card content
