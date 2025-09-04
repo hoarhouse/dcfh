@@ -138,11 +138,12 @@
                 currentResource = resource;
                 console.log('✅ Resource loaded:', resource.title);
                 
-                // Record view
-                if (currentUser) {
-                    await recordAnalytics('view');
-                    await incrementViewCount();
-                }
+                // Record view using Universal Analytics System
+                await window.trackInteraction('resource', resourceId, 'view', {
+                    title: resource.title,
+                    category: resource.category
+                });
+                await incrementViewCount();
 
                 // Update UI
                 await displayResource(resource);
@@ -1822,43 +1823,42 @@
         }
 
         async function loadUserInteractions() {
-            if (!currentUser) return;
+            if (!resourceId) return;
 
             try {
-                // Load user likes
-                const { data: likes } = await supabase
-                    .from('resource_likes')
-                    .select('resource_id')
-                    .eq('author_email', currentUser.email);
+                // Check if user has liked this resource using Universal Analytics System
+                const hasLiked = await window.hasUserInteracted('resource', resourceId, 'like');
+                const hasBookmarked = await window.hasUserInteracted('resource', resourceId, 'bookmark');
                 
-                userLikes = new Set((likes || []).map(l => l.resource_id));
-
-                // Load user bookmarks
-                const { data: bookmarks } = await supabase
-                    .from('resource_bookmarks')
-                    .select('resource_id')
-                    .eq('author_email', currentUser.email);
-                
-                userBookmarks = new Set((bookmarks || []).map(b => b.resource_id));
-
                 // Update UI
-                updateInteractionButtons();
+                updateInteractionButtons(hasLiked, hasBookmarked);
+                
+                // Get interaction counts
+                const likeCount = await window.getInteractionCount('resource', resourceId, 'like');
+                const bookmarkCount = await window.getInteractionCount('resource', resourceId, 'bookmark');
+                
+                // Update count displays if elements exist
+                const likeCountEl = document.getElementById('likeCount');
+                const bookmarkCountEl = document.getElementById('bookmarkCount');
+                
+                if (likeCountEl) likeCountEl.textContent = likeCount;
+                if (bookmarkCountEl) bookmarkCountEl.textContent = bookmarkCount;
 
             } catch (error) {
                 console.error('Error loading user interactions:', error);
             }
         }
 
-        function updateInteractionButtons() {
+        function updateInteractionButtons(hasLiked, hasBookmarked) {
             const likeBtn = document.getElementById('likeBtn');
             const bookmarkBtn = document.getElementById('bookmarkBtn');
 
-            if (userLikes.has(resourceId)) {
+            if (hasLiked && likeBtn) {
                 likeBtn.classList.add('active');
                 likeBtn.querySelector('span:last-child').textContent = 'Liked';
             }
 
-            if (userBookmarks.has(resourceId)) {
+            if (hasBookmarked && bookmarkBtn) {
                 bookmarkBtn.classList.add('active');
                 bookmarkBtn.querySelector('span:last-child').textContent = 'Saved';
             }
@@ -1872,10 +1872,11 @@
             }
 
             try {
-                // Record download analytics
-                if (currentUser) {
-                    await recordAnalytics('download');
-                }
+                // Record download using Universal Analytics System
+                await window.trackInteraction('resource', resourceId, 'download', {
+                    title: currentResource.title,
+                    filename: currentResource.file_url
+                });
 
                 // Increment download count
                 await incrementDownloadCount();
@@ -1997,6 +1998,9 @@
             
             const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
             
+            // Track email share using Universal Analytics System
+            window.trackInteraction('resource', resourceId, 'share', { method: 'email' });
+            
             try {
                 window.open(mailtoLink);
                 recordShareAnalytics('email');
@@ -2019,6 +2023,9 @@
             const hashtags = encodeURIComponent('DCFHungary,AIethics,TechForGood');
             
             const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`;
+            
+            // Track Twitter share using Universal Analytics System
+            window.trackInteraction('resource', resourceId, 'share', { method: 'twitter' });
             
             try {
                 window.open(twitterUrl, '_blank', 'width=600,height=400,scrollbars=yes,resizable=yes');
