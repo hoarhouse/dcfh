@@ -2594,14 +2594,8 @@
         let isLiked = false;
         let likeCount = 0;
         
-        // Initialize Supabase client if available
-        const SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || '';
-        const SUPABASE_KEY = localStorage.getItem('SUPABASE_KEY') || '';
-        let supabaseClient = null;
-        
-        if (SUPABASE_URL && SUPABASE_KEY && typeof window.supabase !== 'undefined') {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
+        // Use the global Supabase client from dcf-unified-auth.js
+        // No need to create a new client - use window.dcfSupabase directly
         
         // Get current user email
         function getCurrentUserEmail() {
@@ -2619,10 +2613,10 @@
             const projectId = getProjectId();
             const userEmail = getCurrentUserEmail();
             
-            if (supabaseClient) {
+            if (window.dcfSupabase) {
                 try {
                     // Check if user has liked this project
-                    const { data: userLike, error: likeError } = await supabaseClient
+                    const { data: userLike, error: likeError } = await window.dcfSupabase
                         .from('project_likes')
                         .select('*')
                         .eq('project_id', projectId)
@@ -2630,7 +2624,7 @@
                         .single();
                     
                     // Get total like count for this project
-                    const { count, error: countError } = await supabaseClient
+                    const { count, error: countError } = await window.dcfSupabase
                         .from('project_likes')
                         .select('*', { count: 'exact', head: true })
                         .eq('project_id', projectId);
