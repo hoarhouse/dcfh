@@ -1343,39 +1343,27 @@
         }
 
         async function toggleLike() {
-            const currentUser = window.getCurrentUser();
-            if (!currentUser) {
-                await showAlert('Please log in to like events', 'warning');
+            const eventId = currentEvent?.id || getEventIdFromUrl();
+            if (!eventId) {
+                console.error('No event ID available');
                 return;
             }
-
-            try {
-                if (isLiked) {
-                    await supabase
-                        .from('event_likes')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', currentUser.email);
-                    
-                    isLiked = false;
-                } else {
-                    await supabase
-                        .from('event_likes')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: currentUser.email,
-                            user_name: currentUser.name
-                        }]);
-                    
-                    isLiked = true;
-                }
-                
-                updateActionButtons('user');
-                loadEventStats(currentEvent.id);
-                
-            } catch (error) {
-                console.error('Error toggling like:', error);
-                await showAlert('Failed to update like. Please try again.', 'error');
+            
+            const eventTitle = currentEvent?.title || 'Event';
+            
+            // Use Universal Analytics System
+            const result = await window.toggleInteraction('event', eventId, 'like', {
+                buttonId: 'likeBtn',
+                activeEmoji: '❤️',
+                inactiveEmoji: '🤍',
+                metadata: { title: eventTitle }
+            });
+            
+            if (!result.success) {
+                await showAlert('Failed to update like status', 'warning');
+            } else {
+                // Update stats display
+                loadEventStats(eventId);
             }
         }
 
