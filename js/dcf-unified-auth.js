@@ -3754,7 +3754,628 @@ window.escapeHtml = escapeHtml;
 console.log('✅ Universal Comment System loaded - supports: project, resource, event, post, profile');
 
 // =============================================================================
-// 20. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
+// 20. UNIVERSAL ANALYTICS SYSTEM - TRACKS ALL INTERACTIONS
+// =============================================================================
+// Supports all content types: 'project', 'resource', 'event', 'post', 'profile'
+// Tracks all interactions: 'like', 'view', 'share', 'bookmark', 'download'
+
+// Global state for user interactions
+const userInteractions = {
+    likes: new Set(),
+    bookmarks: new Set(),
+    shares: new Set(),
+    downloads: new Set()
+};
+
+// Cache for interaction counts
+const interactionCache = new Map();
+
+/**
+ * Track any user interaction with any content type
+ * @param {string} contentType - Type of content ('project', 'resource', 'event', 'post', 'profile')
+ * @param {string} contentId - Unique identifier for the content
+ * @param {string} interactionType - Type of interaction ('like', 'view', 'share', 'bookmark', 'download')
+ * @param {object} userData - Optional user data (defaults to current user)
+ * @returns {Promise<boolean>} Success status
+ */
+async function trackInteraction(contentType, contentId, interactionType, userData = null) {
+    try {
+        const user = userData || window.getCurrentUser();
+        const timestamp = new Date().toISOString();
+        
+        // Build interaction record
+        const interactionData = {
+            content_type: contentType,
+            content_id: contentId,
+            interaction_type: interactionType,
+            created_at: timestamp
+        };
+        
+        // Add user data if available (handles anonymous views)
+        if (user) {
+            interactionData.user_id = user.id;
+            interactionData.user_email = user.email;
+            interactionData.user_name = user.name || user.username;
+        } else if (interactionType === 'view') {
+            // Allow anonymous views
+            interactionData.is_anonymous = true;
+            interactionData.session_id = getSessionId();
+        } else {
+            // Other interactions require authentication
+            console.warn(`Authentication required for ${interactionType}`);
+            await showAlert(`Please log in to ${interactionType} this content`, 'warning');
+            return false;
+        }
+        
+        // Determine table based on interaction type
+        let tableName = 'analytics';
+        let operation = 'insert';
+        
+        // Special handling for different interaction types
+        switch (interactionType) {
+            case 'like':
+                tableName = contentType === 'comment' ? 'comment_likes' : 
+                           contentType === 'project' ? 'project_likes' : 
+                           'content_likes';
+                break;
+            case 'bookmark':
+                tableName = 'bookmarks';
+                break;
+            case 'view':
+                tableName = 'page_views';
+                break;
+            case 'share':
+                tableName = 'shares';
+                break;
+            case 'download':
+                tableName = 'downloads';
+                break;
+        }
+        
+        // Insert interaction record
+        const { data, error } = await window.dcfSupabase
+            .from(tableName)
+            .insert([interactionData]);
+        
+        if (error) {
+            // Handle duplicate key errors gracefully
+            if (error.code === '23505') {
+                console.log(`Interaction already tracked: ${interactionType} on ${contentType} ${contentId}`);
+                return true;
+            }
+            throw error;
+        }
+        
+        // Update local cache
+        const cacheKey = `${contentType}_${contentId}_${interactionType}`;
+        if (interactionCache.has(cacheKey)) {
+            const current = interactionCache.get(cacheKey);
+            interactionCache.set(cacheKey, current + 1);
+        }
+        
+        // Add to user's interaction set
+        if (user && interactionType !== 'view') {
+            const setKey = `${contentType}_${contentId}`;
+            userInteractions[`${interactionType}s`]?.add(setKey);
+        }
+        
+        console.log(`✅ Tracked ${interactionType} for ${contentType} ${contentId}`);
+        return true;
+        
+    } catch (error) {
+        console.error(`Error tracking ${interactionType}:`, error);
+        return false;
+    }
+}
+
+/**
+ * Get interaction count for specific content
+ * @param {string} contentType - Type of content
+ * @param {string} contentId - Content identifier
+ * @param {string} interactionType - Type of interaction
+ * @returns {Promise<number>} Count of interactions
+ */
+async function getInteractionCount(contentType, contentId, interactionType) {
+    try {
+        // Check cache first
+        const cacheKey = `${contentType}_${contentId}_${interactionType}`;
+        if (interactionCache.has(cacheKey)) {
+            return interactionCache.get(cacheKey);
+        }
+        
+        // Determine table
+        let tableName = 'analytics';
+        let query;
+        
+        switch (interactionType) {
+            case 'like':
+                tableName = contentType === 'comment' ? 'comment_likes' : 
+                           contentType === 'project' ? 'project_likes' : 
+                           'content_likes';
+                break;
+            case 'bookmark':
+                tableName = 'bookmarks';
+                break;
+            case 'view':
+                tableName = 'page_views';
+                break;
+            case 'share':
+                tableName = 'shares';
+                break;
+            case 'download':
+                tableName = 'downloads';
+                break;
+        }
+        
+        // Build query based on content type
+        if (contentType === 'event' && interactionType === 'like') {
+            query = window.dcfSupabase
+                .from('event_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_id', contentId);
+        } else {
+            query = window.dcfSupabase
+                .from(tableName)
+                .select('*', { count: 'exact', head: true })
+                .eq('content_type', contentType)
+                .eq('content_id', contentId);
+                
+            if (interactionType !== 'view') {
+                // Don't filter views by interaction_type as they might not have it
+                query = query.eq('interaction_type', interactionType);
+            }
+        }
+        
+        const { count, error } = await query;
+        
+        if (error) {
+            console.error(`Error getting ${interactionType} count:`, error);
+            return 0;
+        }
+        
+        // Cache the result
+        interactionCache.set(cacheKey, count || 0);
+        
+        return count || 0;
+        
+    } catch (error) {
+        console.error(`Error getting interaction count:`, error);
+        return 0;
+    }
+}
+
+/**
+ * Check if user has interacted with content
+ * @param {string} contentType - Type of content
+ * @param {string} contentId - Content identifier  
+ * @param {string} interactionType - Type of interaction
+ * @param {string} userId - User ID (defaults to current user)
+ * @returns {Promise<boolean>} True if user has interacted
+ */
+async function hasUserInteracted(contentType, contentId, interactionType, userId = null) {
+    try {
+        const user = userId ? { id: userId } : window.getCurrentUser();
+        if (!user) return false;
+        
+        // Check local cache first
+        const setKey = `${contentType}_${contentId}`;
+        if (userInteractions[`${interactionType}s`]?.has(setKey)) {
+            return true;
+        }
+        
+        // Determine table
+        let tableName = 'analytics';
+        let query;
+        
+        switch (interactionType) {
+            case 'like':
+                tableName = contentType === 'comment' ? 'comment_likes' : 
+                           contentType === 'project' ? 'project_likes' : 
+                           'content_likes';
+                break;
+            case 'bookmark':
+                tableName = 'bookmarks';
+                break;
+            case 'share':
+                tableName = 'shares';
+                break;
+            case 'download':
+                tableName = 'downloads';
+                break;
+            default:
+                tableName = 'analytics';
+        }
+        
+        // Check database
+        if (contentType === 'event' && interactionType === 'like') {
+            query = window.dcfSupabase
+                .from('event_likes')
+                .select('id')
+                .eq('event_id', contentId)
+                .eq('user_id', user.id)
+                .single();
+        } else {
+            query = window.dcfSupabase
+                .from(tableName)
+                .select('id')
+                .eq('content_type', contentType)
+                .eq('content_id', contentId)
+                .eq('user_id', user.id);
+                
+            if (tableName === 'analytics') {
+                query = query.eq('interaction_type', interactionType);
+            }
+            
+            query = query.single();
+        }
+        
+        const { data, error } = await query;
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+            console.error(`Error checking interaction:`, error);
+        }
+        
+        const hasInteracted = !!data;
+        
+        // Update cache
+        if (hasInteracted) {
+            userInteractions[`${interactionType}s`]?.add(setKey);
+        }
+        
+        return hasInteracted;
+        
+    } catch (error) {
+        console.error(`Error checking user interaction:`, error);
+        return false;
+    }
+}
+
+/**
+ * Toggle interaction (like/unlike, bookmark/unbookmark, etc.)
+ * @param {string} contentType - Type of content
+ * @param {string} contentId - Content identifier
+ * @param {string} interactionType - Type of interaction
+ * @param {object} options - Additional options (contentTitle, etc.)
+ * @returns {Promise<object>} Result with new state and count
+ */
+async function toggleInteraction(contentType, contentId, interactionType, options = {}) {
+    try {
+        const user = window.getCurrentUser();
+        if (!user) {
+            await showAlert(`Please log in to ${interactionType} this content`, 'warning');
+            return { success: false, isActive: false, count: 0 };
+        }
+        
+        // Check current state
+        const isCurrentlyActive = await hasUserInteracted(contentType, contentId, interactionType, user.id);
+        
+        // Determine table
+        let tableName = 'analytics';
+        switch (interactionType) {
+            case 'like':
+                tableName = contentType === 'comment' ? 'comment_likes' : 
+                           contentType === 'project' ? 'project_likes' : 
+                           'content_likes';
+                break;
+            case 'bookmark':
+                tableName = 'bookmarks';
+                break;
+            default:
+                tableName = 'analytics';
+        }
+        
+        if (isCurrentlyActive) {
+            // Remove interaction
+            let deleteQuery;
+            
+            if (contentType === 'event' && interactionType === 'like') {
+                deleteQuery = window.dcfSupabase
+                    .from('event_likes')
+                    .delete()
+                    .eq('event_id', contentId)
+                    .eq('user_id', user.id);
+            } else {
+                deleteQuery = window.dcfSupabase
+                    .from(tableName)
+                    .delete()
+                    .eq('content_type', contentType)
+                    .eq('content_id', contentId)
+                    .eq('user_id', user.id);
+                    
+                if (tableName === 'analytics') {
+                    deleteQuery = deleteQuery.eq('interaction_type', interactionType);
+                }
+            }
+            
+            const { error } = await deleteQuery;
+            
+            if (error) throw error;
+            
+            // Update cache
+            const setKey = `${contentType}_${contentId}`;
+            userInteractions[`${interactionType}s`]?.delete(setKey);
+            
+            // Update count cache
+            const cacheKey = `${contentType}_${contentId}_${interactionType}`;
+            if (interactionCache.has(cacheKey)) {
+                const current = interactionCache.get(cacheKey);
+                interactionCache.set(cacheKey, Math.max(0, current - 1));
+            }
+            
+            console.log(`✅ Removed ${interactionType} from ${contentType} ${contentId}`);
+            
+        } else {
+            // Add interaction
+            const interactionData = {
+                content_type: contentType,
+                content_id: contentId,
+                user_id: user.id,
+                user_email: user.email,
+                user_name: user.name || user.username,
+                created_at: new Date().toISOString()
+            };
+            
+            // Add optional fields
+            if (options.contentTitle) {
+                interactionData.content_title = options.contentTitle;
+            }
+            
+            // Special handling for different content types
+            if (contentType === 'event' && interactionType === 'like') {
+                interactionData.event_id = contentId;
+                delete interactionData.content_type;
+                delete interactionData.content_id;
+            } else if (contentType === 'project' && interactionType === 'like') {
+                interactionData.project_id = contentId;
+                interactionData.project_title = options.contentTitle;
+            } else if (contentType === 'comment' && interactionType === 'like') {
+                interactionData.comment_id = contentId;
+            }
+            
+            if (tableName === 'analytics') {
+                interactionData.interaction_type = interactionType;
+            }
+            
+            const { error } = await window.dcfSupabase
+                .from(contentType === 'event' && interactionType === 'like' ? 'event_likes' : tableName)
+                .insert([interactionData]);
+            
+            if (error) {
+                if (error.code === '23505') {
+                    // Already exists, treat as success
+                    console.log(`${interactionType} already exists`);
+                } else {
+                    throw error;
+                }
+            }
+            
+            // Update cache
+            const setKey = `${contentType}_${contentId}`;
+            userInteractions[`${interactionType}s`]?.add(setKey);
+            
+            // Update count cache
+            const cacheKey = `${contentType}_${contentId}_${interactionType}`;
+            if (interactionCache.has(cacheKey)) {
+                const current = interactionCache.get(cacheKey);
+                interactionCache.set(cacheKey, current + 1);
+            }
+            
+            console.log(`✅ Added ${interactionType} to ${contentType} ${contentId}`);
+        }
+        
+        // Get new count
+        const newCount = await getInteractionCount(contentType, contentId, interactionType);
+        
+        return {
+            success: true,
+            isActive: !isCurrentlyActive,
+            count: newCount
+        };
+        
+    } catch (error) {
+        console.error(`Error toggling ${interactionType}:`, error);
+        await showAlert(`Failed to update ${interactionType}`, 'error');
+        return { success: false, isActive: false, count: 0 };
+    }
+}
+
+/**
+ * Update UI for interaction button
+ * @param {HTMLElement} button - Button element
+ * @param {boolean} isActive - Whether interaction is active
+ * @param {number} count - Current count
+ * @param {string} interactionType - Type of interaction
+ */
+function updateInteractionUI(button, isActive, count, interactionType) {
+    if (!button) return;
+    
+    // Update button state
+    if (isActive) {
+        button.classList.add('active', `${interactionType}d`);
+    } else {
+        button.classList.remove('active', `${interactionType}d`);
+    }
+    
+    // Update icon and count
+    const iconElement = button.querySelector('.icon') || button.querySelector('span:first-child');
+    const countElement = button.querySelector('.count') || button.querySelector('span:last-child');
+    
+    if (iconElement) {
+        switch (interactionType) {
+            case 'like':
+                iconElement.textContent = isActive ? '❤️' : '🤍';
+                break;
+            case 'bookmark':
+                iconElement.textContent = isActive ? '🔖' : '📌';
+                break;
+            case 'share':
+                iconElement.textContent = '📤';
+                break;
+            case 'download':
+                iconElement.textContent = '⬇️';
+                break;
+        }
+    }
+    
+    if (countElement && countElement !== iconElement) {
+        countElement.textContent = count > 0 ? count.toString() : '';
+    }
+    
+    // Update button style
+    if (isActive) {
+        switch (interactionType) {
+            case 'like':
+                button.style.color = '#e74c3c';
+                button.style.borderColor = '#e74c3c';
+                button.style.background = '#fff5f5';
+                break;
+            case 'bookmark':
+                button.style.color = '#f39c12';
+                button.style.borderColor = '#f39c12';
+                button.style.background = '#fffbf0';
+                break;
+        }
+    } else {
+        button.style.color = '';
+        button.style.borderColor = '';
+        button.style.background = '';
+    }
+}
+
+/**
+ * Initialize all interaction buttons on page
+ * @param {string} contentType - Type of content on current page
+ */
+async function initializeInteractionButtons(contentType = null) {
+    // Find all interaction buttons
+    const buttons = document.querySelectorAll('[data-interaction-type]');
+    
+    for (const button of buttons) {
+        const btnContentType = button.getAttribute('data-content-type') || contentType;
+        const contentId = button.getAttribute('data-content-id');
+        const interactionType = button.getAttribute('data-interaction-type');
+        
+        if (btnContentType && contentId && interactionType) {
+            // Check if user has interacted
+            const isActive = await hasUserInteracted(btnContentType, contentId, interactionType);
+            const count = await getInteractionCount(btnContentType, contentId, interactionType);
+            
+            // Update UI
+            updateInteractionUI(button, isActive, count, interactionType);
+            
+            // Add click handler
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Get content title if available
+                const contentTitle = button.getAttribute('data-content-title') || 
+                                   document.querySelector('h1')?.textContent;
+                
+                // Toggle interaction
+                const result = await toggleInteraction(
+                    btnContentType, 
+                    contentId, 
+                    interactionType,
+                    { contentTitle }
+                );
+                
+                if (result.success) {
+                    updateInteractionUI(button, result.isActive, result.count, interactionType);
+                }
+            });
+        }
+    }
+    
+    console.log(`✅ Initialized ${buttons.length} interaction buttons`);
+}
+
+/**
+ * Track page view automatically
+ * @param {string} contentType - Type of content
+ * @param {string} contentId - Content identifier
+ */
+async function trackPageView(contentType, contentId) {
+    // Auto-track view when page loads
+    await trackInteraction(contentType, contentId, 'view');
+}
+
+/**
+ * Get session ID for anonymous tracking
+ * @returns {string} Session identifier
+ */
+function getSessionId() {
+    let sessionId = sessionStorage.getItem('dcf_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('dcf_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+/**
+ * Load user's interactions for current session
+ */
+async function loadUserInteractions() {
+    const user = window.getCurrentUser();
+    if (!user) return;
+    
+    try {
+        // Load likes
+        const { data: likes } = await window.dcfSupabase
+            .from('content_likes')
+            .select('content_type, content_id')
+            .eq('user_id', user.id);
+            
+        if (likes) {
+            likes.forEach(like => {
+                userInteractions.likes.add(`${like.content_type}_${like.content_id}`);
+            });
+        }
+        
+        // Load bookmarks
+        const { data: bookmarks } = await window.dcfSupabase
+            .from('bookmarks')
+            .select('content_type, content_id')
+            .eq('user_id', user.id);
+            
+        if (bookmarks) {
+            bookmarks.forEach(bookmark => {
+                userInteractions.bookmarks.add(`${bookmark.content_type}_${bookmark.content_id}`);
+            });
+        }
+        
+        console.log('✅ Loaded user interactions:', {
+            likes: userInteractions.likes.size,
+            bookmarks: userInteractions.bookmarks.size
+        });
+        
+    } catch (error) {
+        console.error('Error loading user interactions:', error);
+    }
+}
+
+// ============= EXPORT ANALYTICS FUNCTIONS =============
+window.trackInteraction = trackInteraction;
+window.getInteractionCount = getInteractionCount;
+window.hasUserInteracted = hasUserInteracted;
+window.toggleInteraction = toggleInteraction;
+window.updateInteractionUI = updateInteractionUI;
+window.initializeInteractionButtons = initializeInteractionButtons;
+window.trackPageView = trackPageView;
+window.loadUserInteractions = loadUserInteractions;
+window.userInteractions = userInteractions;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadUserInteractions();
+    initializeInteractionButtons();
+});
+
+console.log('✅ Universal Analytics System loaded - tracks all interactions for all content types');
+
+// =============================================================================
+// 21. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
 // =============================================================================
 // Handle missing tables gracefully - REMOVED SINCE TABLES EXIST
 // Comments table is called 'post_comments' not 'comments'
