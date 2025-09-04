@@ -3205,13 +3205,26 @@ function createReplyHtml(reply) {
     `;
 }
 
-async function submitComment() {
-    const textarea = document.getElementById('commentText');
-    if (!textarea) return;
+// UNIVERSAL SUBMIT COMMENT - Works for ANY content type
+async function submitComment(contentType, contentId, commentText = null, textareaId = null) {
+    // Support multiple ways to get comment text
+    let text = commentText;
+    if (!text && textareaId) {
+        const textarea = document.getElementById(textareaId);
+        if (textarea) {
+            text = textarea.value.trim();
+        }
+    }
+    // Fallback to generic commentText field
+    if (!text) {
+        const defaultTextarea = document.getElementById(`commentText-${contentId}`) || 
+                               document.getElementById('commentText');
+        if (defaultTextarea) {
+            text = defaultTextarea.value.trim();
+        }
+    }
     
-    const commentText = textarea.value.trim();
-    
-    if (!commentText) {
+    if (!text) {
         await showAlert('Please enter a comment', 'warning');
         return;
     }
@@ -3223,28 +3236,66 @@ async function submitComment() {
     }
     
     try {
+        // Build comment data based on content type
+        const commentData = {
+            comment_text: text,
+            author_id: currentUser.id,
+            author_email: currentUser.email,
+            author_name: currentUser.name || currentUser.username || `@${currentUser.username}` || currentUser.email.split('@')[0],
+            created_at: new Date().toISOString(),
+            like_count: 0
+        };
+        
+        // Handle different table structures
+        let tableName = 'comments';
+        if (contentType === 'event') {
+            tableName = 'event_comments';
+            commentData.event_id = contentId;
+            commentData.user_id = currentUser.id;
+        } else {
+            // Standard comments table
+            commentData.content_type = contentType;
+            commentData.content_id = contentId;
+        }
+        
         const { error } = await window.dcfSupabase
-            .from('comments')
-            .insert([{
-                content_type: 'profile',
-                content_id: currentUser.id,
-                comment_text: commentText,
-                author_id: currentUser.id,
-                author_email: currentUser.email,
-                author_name: currentUser.name || currentUser.username || currentUser.email.split('@')[0],
-                created_at: new Date().toISOString()
-            }]);
+            .from(tableName)
+            .insert([commentData]);
         
         if (error) throw error;
         
-        textarea.value = '';
-        await loadComments();
+        // Clear textarea
+        if (textareaId) {
+            const textarea = document.getElementById(textareaId);
+            if (textarea) textarea.value = '';
+        } else {
+            const defaultTextarea = document.getElementById(`commentText-${contentId}`) || 
+                                   document.getElementById('commentText');
+            if (defaultTextarea) defaultTextarea.value = '';
+        }
+        
+        // Reload comments for this content
+        const stateKey = `${contentType}_${contentId}`;
+        const containerId = commentStates[stateKey]?.container || 'commentsList';
+        await loadComments(contentType, contentId, containerId);
+        
         await showAlert('Comment posted successfully', 'success');
+        console.log(`✅ Posted comment for ${contentType} ID: ${contentId}`);
         
     } catch (error) {
-        console.error('Error posting comment:', error);
+        console.error(`Error posting ${contentType} comment:`, error);
         await showAlert('Failed to post comment', 'error');
     }
+}
+
+// Backward compatibility wrapper
+async function postComment(contentType, contentId, commentText) {
+    return submitComment(contentType, contentId, commentText);
+}
+
+// For post-specific comments (backward compatibility)
+async function submitPostComment(postId) {
+    return submitComment('post', postId, null, `commentText-${postId}`);
 }
 
 async function submitReply(parentId) {
@@ -3291,25 +3342,54 @@ async function submitReply(parentId) {
     }
 }
 
-async function deleteComment(commentId) {
+// UNIVERSAL DELETE COMMENT - Works for ANY content type
+async function deleteComment(commentId, contentType = null) {
     const confirmed = await showConfirm('Are you sure you want to delete this comment?');
     if (!confirmed) return;
     
     try {
-        const { error } = await window.dcfSupabase
+        // Determine table based on content type or try both
+        let deleted = false;
+        
+        // Try standard comments table first
+        const { error: commentError } = await window.dcfSupabase
             .from('comments')
             .delete()
             .eq('id', commentId);
         
-        if (error) throw error;
-        
-        const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
-        if (commentElement) {
-            commentElement.remove();
+        if (!commentError) {
+            deleted = true;
+        } else if (contentType === 'event' || !deleted) {
+            // Try event_comments table
+            const { error: eventError } = await window.dcfSupabase
+                .from('event_comments')
+                .delete()
+                .eq('id', commentId);
+            
+            if (!eventError) {
+                deleted = true;
+            }
         }
         
-        await showAlert('Comment deleted successfully', 'success');
-        await loadComments();
+        if (deleted) {
+            // Remove from UI
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (commentElement) {
+                // Find parent post card to reload its comments
+                const postCard = commentElement.closest('[data-post-id]');
+                if (postCard) {
+                    const postId = postCard.getAttribute('data-post-id');
+                    await loadComments('post', postId, `commentsList-${postId}`);
+                } else {
+                    commentElement.remove();
+                }
+            }
+            
+            await showAlert('Comment deleted successfully', 'success');
+            console.log('✅ Comment deleted:', commentId);
+        } else {
+            throw new Error('Failed to delete comment from any table');
+        }
         
     } catch (error) {
         console.error('Error deleting comment:', error);
