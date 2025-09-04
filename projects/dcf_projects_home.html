@@ -2184,30 +2184,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            // Check membership status
-            const memberResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_members?user_email=eq.${userEmail}&select=project_id,role`, {
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                }
-            });
+            // Check membership status using Supabase client
+            const { data: memberData, error: memberError } = await window.dcfSupabase
+                .from('project_members')
+                .select('project_id, role')
+                .eq('user_email', userEmail);
             
-            const memberData = await memberResponse.json();
+            if (memberError) {
+                console.error('Error fetching membership:', memberError);
+                return;
+            }
+            
             const memberProjects = memberData.reduce((acc, m) => {
                 acc[m.project_id] = m.role;
                 return acc;
             }, {});
-            
-            // Check pending join requests
-            const requestResponse = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests?user_email=eq.${userEmail}&status=eq.pending&select=project_id`, {
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                }
-            });
-            
-            const requestData = await requestResponse.json();
-            const pendingRequests = requestData.map(r => r.project_id);
             
             // Update all join buttons based on current status
             const joinButtons = document.querySelectorAll('.join-btn');
