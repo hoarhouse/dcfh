@@ -553,6 +553,14 @@
             color: white;
             border-color: #ff4757;
         }
+        
+        .interaction-btn span:first-child {
+            transition: transform 0.3s ease;
+        }
+        
+        .interaction-btn:disabled {
+            cursor: not-allowed;
+        }
 
         .share-dropdown {
             position: relative;
@@ -1855,8 +1863,8 @@
                         
                         <!-- Like/Share Actions -->
                         <div class="project-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-                            <button class="interaction-btn" id="likeBtn" onclick="toggleLike()">
-                                <span>❤️</span>
+                            <button class="interaction-btn" id="likeBtn" onclick="toggleLike()" style="transition: all 0.3s ease;">
+                                <span style="transition: transform 0.3s ease;">🤍</span>
                                 <span id="likeText">Like</span>
                                 <span id="likeCount" style="margin-left: 0.25rem;">(0)</span>
                             </button>
@@ -2582,28 +2590,214 @@
             }
         }
         
-        // Like/Share Functionality
+        // Like/Share Functionality with Database Operations
         let isLiked = false;
         let likeCount = 0;
         
-        function toggleLike() {
-            isLiked = !isLiked;
+        // Initialize Supabase client if available
+        const SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || '';
+        const SUPABASE_KEY = localStorage.getItem('SUPABASE_KEY') || '';
+        let supabaseClient = null;
+        
+        if (SUPABASE_URL && SUPABASE_KEY && typeof window.supabase !== 'undefined') {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        
+        // Get current user email
+        function getCurrentUserEmail() {
+            return localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || 'user@example.com';
+        }
+        
+        // Get project ID from URL or use default
+        function getProjectId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id') || 'ai-ethics-curriculum';
+        }
+        
+        // Initialize project like status on page load
+        async function initializeProjectLike() {
+            const projectId = getProjectId();
+            const userEmail = getCurrentUserEmail();
+            
+            if (supabaseClient) {
+                try {
+                    // Check if user has liked this project
+                    const { data: userLike, error: likeError } = await supabaseClient
+                        .from('project_likes')
+                        .select('*')
+                        .eq('project_id', projectId)
+                        .eq('user_email', userEmail)
+                        .single();
+                    
+                    // Get total like count for this project
+                    const { count, error: countError } = await supabaseClient
+                        .from('project_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('project_id', projectId);
+                    
+                    if (!likeError || likeError.code === 'PGRST116') { // PGRST116 = no rows found
+                        isLiked = !!userLike;
+                        likeCount = count || 0;
+                        updateLikeButton();
+                    }
+                } catch (err) {
+                    console.log('Using localStorage fallback:', err);
+                    initializeFromLocalStorage();
+                }
+            } else {
+                initializeFromLocalStorage();
+            }
+        }
+        
+        // Fallback to localStorage if database is not available
+        function initializeFromLocalStorage() {
+            const projectId = getProjectId();
+            const userEmail = getCurrentUserEmail();
+            const likes = JSON.parse(localStorage.getItem('projectLikes') || '{}');
+            
+            if (!likes[projectId]) {
+                likes[projectId] = { users: [], count: 0 };
+            }
+            
+            isLiked = likes[projectId].users.includes(userEmail);
+            likeCount = likes[projectId].count;
+            updateLikeButton();
+        }
+        
+        // Update like button UI
+        function updateLikeButton() {
             const likeBtn = document.getElementById('likeBtn');
             const likeText = document.getElementById('likeText');
             const likeCountEl = document.getElementById('likeCount');
             
+            if (!likeBtn) return;
+            
             if (isLiked) {
                 likeBtn.classList.add('active');
                 likeText.textContent = 'Liked';
-                likeCount++;
+                likeBtn.querySelector('span:first-child').textContent = '❤️';
             } else {
                 likeBtn.classList.remove('active');
                 likeText.textContent = 'Like';
-                likeCount = Math.max(0, likeCount - 1);
+                likeBtn.querySelector('span:first-child').textContent = '🤍';
             }
             
             likeCountEl.textContent = `(${likeCount})`;
         }
+        
+        // Toggle like with database operations
+        async function toggleLike() {
+            const projectId = getProjectId();
+            const userEmail = getCurrentUserEmail();
+            const projectTitle = document.querySelector('.profile-name')?.textContent || 'Project';
+            
+            // Disable button during operation
+            const likeBtn = document.getElementById('likeBtn');
+            likeBtn.disabled = true;
+            likeBtn.style.opacity = '0.6';
+            
+            if (supabaseClient) {
+                try {
+                    if (isLiked) {
+                        // Unlike: Remove from database
+                        const { error } = await supabaseClient
+                            .from('project_likes')
+                            .delete()
+                            .eq('project_id', projectId)
+                            .eq('user_email', userEmail);
+                        
+                        if (!error) {
+                            isLiked = false;
+                            likeCount = Math.max(0, likeCount - 1);
+                        } else {
+                            console.error('Error removing like:', error);
+                            alert('Unable to unlike. Please try again.');
+                        }
+                    } else {
+                        // Like: Add to database
+                        const { error } = await supabaseClient
+                            .from('project_likes')
+                            .insert([
+                                {
+                                    project_id: projectId,
+                                    user_email: userEmail,
+                                    created_at: new Date().toISOString()
+                                }
+                            ]);
+                        
+                        if (!error) {
+                            isLiked = true;
+                            likeCount++;
+                        } else if (error.code === '23505') { // Duplicate key error
+                            // User already liked this project
+                            isLiked = true;
+                            console.log('Already liked');
+                        } else {
+                            console.error('Error adding like:', error);
+                            alert('Unable to like. Please try again.');
+                        }
+                    }
+                } catch (err) {
+                    console.error('Database error:', err);
+                    // Fall back to localStorage
+                    toggleLikeLocalStorage();
+                }
+            } else {
+                // Use localStorage as fallback
+                toggleLikeLocalStorage();
+            }
+            
+            // Update UI
+            updateLikeButton();
+            
+            // Re-enable button
+            likeBtn.disabled = false;
+            likeBtn.style.opacity = '1';
+            
+            // Animate heart
+            const heartIcon = likeBtn.querySelector('span:first-child');
+            heartIcon.style.transform = 'scale(1.3)';
+            setTimeout(() => {
+                heartIcon.style.transform = 'scale(1)';
+            }, 200);
+        }
+        
+        // Fallback like toggle using localStorage
+        function toggleLikeLocalStorage() {
+            const projectId = getProjectId();
+            const userEmail = getCurrentUserEmail();
+            let likes = JSON.parse(localStorage.getItem('projectLikes') || '{}');
+            
+            if (!likes[projectId]) {
+                likes[projectId] = { users: [], count: 0 };
+            }
+            
+            if (isLiked) {
+                // Unlike
+                const index = likes[projectId].users.indexOf(userEmail);
+                if (index > -1) {
+                    likes[projectId].users.splice(index, 1);
+                    likes[projectId].count = Math.max(0, likes[projectId].count - 1);
+                    isLiked = false;
+                    likeCount = likes[projectId].count;
+                }
+            } else {
+                // Like
+                if (!likes[projectId].users.includes(userEmail)) {
+                    likes[projectId].users.push(userEmail);
+                    likes[projectId].count++;
+                    isLiked = true;
+                    likeCount = likes[projectId].count;
+                }
+            }
+            
+            localStorage.setItem('projectLikes', JSON.stringify(likes));
+        }
+        
+        // Initialize like status when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeProjectLike();
+        });
         
         function toggleShareMenu() {
             const shareMenu = document.getElementById('shareMenu');
