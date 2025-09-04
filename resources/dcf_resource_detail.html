@@ -2137,104 +2137,44 @@
             }
         }
 
-        // Like and bookmark functionality
+        // Like and bookmark functionality using Universal Analytics System
         async function toggleLike() {
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
-            if (!currentUser) {
-                showAlert('Please log in to like resources', 'warning', 'Login Required');
+            if (!resourceId) {
+                console.error('No resource ID available');
                 return;
             }
-
-            try {
-                const isLiked = userLikes.has(resourceId);
-                
-                if (isLiked) {
-                    await supabase
-                        .from('resource_likes')
-                        .delete()
-                        .eq('resource_id', resourceId)
-                        .eq('author_email', currentUser.email);
-                    
-                    userLikes.delete(resourceId);
-                    document.getElementById('likeBtn').classList.remove('active');
-                    document.getElementById('likeBtn').querySelector('span:last-child').textContent = 'Like';
-                } else {
-                    await supabase
-                        .from('resource_likes')
-                        .insert({
-                            resource_id: resourceId,
-                            author_email: currentUser.email,
-                            user_name: currentUser.name
-                        });
-                    
-                    userLikes.add(resourceId);
-                    document.getElementById('likeBtn').classList.add('active');
-                    document.getElementById('likeBtn').querySelector('span:last-child').textContent = 'Liked';
-                    
-                    await recordAnalytics('like');
-                }
-
-                // Update like count
-                await updateLikeCount();
-
-            } catch (error) {
-                console.error('Error toggling like:', error);
+            
+            const resourceTitle = currentResource?.title || 'Resource';
+            
+            // Use Universal Analytics System
+            const result = await window.toggleInteraction('resource', resourceId, 'like', {
+                buttonId: 'likeBtn',
+                metadata: { title: resourceTitle }
+            });
+            
+            if (!result.success) {
                 showAlert('Failed to update like status', 'error', 'Like Error');
+            } else {
+                // Update like count display
+                await updateLikeCount();
             }
         }
 
         async function toggleBookmark() {
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
-            if (!currentUser) {
-                showAlert('Please log in to save resources', 'warning', 'Login Required');
+            if (!resourceId) {
+                console.error('No resource ID available');
                 return;
             }
-
-            try {
-                const isBookmarked = userBookmarks.has(resourceId);
-                
-                if (isBookmarked) {
-                    await supabase
-                        .from('resource_bookmarks')
-                        .delete()
-                        .eq('resource_id', resourceId)
-                        .eq('author_email', currentUser.email);
-                    
-                    userBookmarks.delete(resourceId);
-                    document.getElementById('bookmarkBtn').classList.remove('active');
-                    document.getElementById('bookmarkBtn').querySelector('span:last-child').textContent = 'Save';
-                } else {
-                    await supabase
-                        .from('resource_bookmarks')
-                        .insert({
-                            resource_id: resourceId,
-                            author_email: currentUser.email,
-                            user_name: currentUser.name
-                        });
-                    
-                    userBookmarks.add(resourceId);
-                    document.getElementById('bookmarkBtn').classList.add('active');
-                    document.getElementById('bookmarkBtn').querySelector('span:last-child').textContent = 'Saved';
-                    
-                    await recordAnalytics('bookmark');
-                }
-
-            } catch (error) {
-                console.error('Error toggling bookmark:', error);
+            
+            const resourceTitle = currentResource?.title || 'Resource';
+            
+            // Use Universal Analytics System
+            const result = await window.toggleInteraction('resource', resourceId, 'bookmark', {
+                buttonId: 'bookmarkBtn',
+                metadata: { title: resourceTitle }
+            });
+            
+            if (!result.success) {
                 showAlert('Failed to update bookmark status', 'error', 'Bookmark Error');
             }
         }
