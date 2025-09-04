@@ -3597,40 +3597,40 @@ async function loadUserCommentInteractions() {
     }
 }
 
-async function sortComments(sortType) {
-    currentSort = sortType;
+// UNIVERSAL SORT COMMENTS - Works for ANY content type
+async function sortComments(sortType, contentType, contentId) {
+    const stateKey = `${contentType}_${contentId}`;
     
-    // Update sort button states
-    document.querySelectorAll('.sort-btn').forEach(btn => {
+    // Update state
+    if (commentStates[stateKey]) {
+        commentStates[stateKey].sort = sortType;
+    }
+    
+    // Update sort button states (supports multiple comment sections on same page)
+    const postCard = document.querySelector(`[data-post-id="${contentId}"]`) || 
+                    document.querySelector(`[data-${contentType}-id="${contentId}"]`);
+    
+    const container = postCard || document;
+    
+    container.querySelectorAll('.sort-btn').forEach(btn => {
         btn.classList.remove('active');
-        btn.style.background = 'white';
+        btn.style.background = '#f8f9fa';
         btn.style.color = '#666';
         btn.style.border = '1px solid #e5e5e5';
     });
     
-    const activeBtn = document.getElementById(`sort-${sortType}`);
+    const activeBtn = container.querySelector(`[data-sort="${sortType}"]`) || 
+                     document.getElementById(`sort-${sortType}`);
     if (activeBtn) {
         activeBtn.classList.add('active');
-        activeBtn.style.background = '#000';
+        activeBtn.style.background = 'linear-gradient(135deg, #000, #333)';
         activeBtn.style.color = 'white';
         activeBtn.style.border = 'none';
     }
     
-    let sortedComments = [...currentComments];
-    
-    switch(sortType) {
-        case 'newest':
-            sortedComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            break;
-        case 'liked':
-            sortedComments.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
-            break;
-        case 'replies':
-            sortedComments.sort((a, b) => (b.reply_count || 0) - (a.reply_count || 0));
-            break;
-    }
-    
-    await displayComments(sortedComments);
+    // Reload comments with new sort
+    const containerId = commentStates[stateKey]?.container || 'commentsList';
+    await loadComments(contentType, contentId, containerId, sortType);
 }
 
 async function getTotalCommentCount() {
