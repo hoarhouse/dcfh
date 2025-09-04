@@ -3681,15 +3681,62 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Export comment functions to window for global access
+// ============= BACKWARD COMPATIBILITY FUNCTIONS =============
+// These ensure existing HTML pages continue to work without modification
+
+// For pages that call loadPostComments
+async function loadPostComments(postId, sortType = null) {
+    return loadComments('post', postId, `commentsList-${postId}`, sortType);
+}
+
+// For resource pages
+async function loadResourceComments(resourceId) {
+    return loadComments('resource', resourceId, 'commentsList');
+}
+
+// For event pages  
+async function loadEventComments(eventId) {
+    return loadComments('event', eventId, 'event-comments-container');
+}
+
+// Generic post comment for any content type
+async function postCommentToContent(contentType, contentId, text) {
+    return submitComment(contentType, contentId, text);
+}
+
+// Handle comment editing for posts
+async function editPostComment(commentId, newText) {
+    return editComment(commentId, newText);
+}
+
+// Handle comment deletion for posts
+async function deletePostComment(commentId) {
+    return deleteComment(commentId, 'post');
+}
+
+// ============= EXPORT ALL FUNCTIONS FOR GLOBAL ACCESS =============
+// Universal comment functions
 window.initComments = initComments;
 window.loadComments = loadComments;
 window.displayComments = displayComments;
+window.submitComment = submitComment;
+window.postComment = postComment;
+window.deleteComment = deleteComment;
+window.sortComments = sortComments;
+
+// Backward compatibility functions
+window.loadPostComments = loadPostComments;
+window.submitPostComment = submitPostComment;
+window.loadResourceComments = loadResourceComments;
+window.loadEventComments = loadEventComments;
+window.postCommentToContent = postCommentToContent;
+window.editPostComment = editPostComment;
+window.deletePostComment = deletePostComment;
+
+// UI and helper functions
 window.createCommentHtml = createCommentHtml;
 window.createReplyHtml = createReplyHtml;
-window.submitComment = submitComment;
 window.submitReply = submitReply;
-window.deleteComment = deleteComment;
 window.toggleReplyForm = toggleReplyForm;
 window.startEditComment = startEditComment;
 window.saveEditComment = saveEditComment;
@@ -3699,11 +3746,12 @@ window.toggleCommentLike = toggleCommentLike;
 window.updateCommentLikeCount = updateCommentLikeCount;
 window.updateLikeUI = updateLikeUI;
 window.loadUserCommentInteractions = loadUserCommentInteractions;
-window.sortComments = sortComments;
 window.getTotalCommentCount = getTotalCommentCount;
 window.updateAllCommentUIs = updateAllCommentUIs;
 window.getTimeAgo = getTimeAgo;
 window.escapeHtml = escapeHtml;
+
+console.log('✅ Universal Comment System loaded - supports: project, resource, event, post, profile');
 
 // =============================================================================
 // 20. MISSING TABLE HANDLERS - GRACEFUL DEGRADATION
