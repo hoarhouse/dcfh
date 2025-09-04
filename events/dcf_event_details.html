@@ -1368,35 +1368,28 @@
         }
 
         async function toggleFollow() {
-            const currentUser = window.getCurrentUser();
-            if (!currentUser) {
-                await showAlert('Please log in to follow events', 'warning');
+            const eventId = currentEvent?.id || getEventIdFromUrl();
+            if (!eventId) {
+                console.error('No event ID available');
                 return;
             }
-
-            try {
-                if (isFollowing) {
-                    await supabase
-                        .from('event_follows')
-                        .delete()
-                        .eq('event_id', currentEvent.id)
-                        .eq('user_email', currentUser.email);
-                    
-                    isFollowing = false;
-                } else {
-                    await supabase
-                        .from('event_follows')
-                        .insert([{
-                            event_id: currentEvent.id,
-                            user_email: currentUser.email,
-                            user_name: currentUser.name
-                        }]);
-                    
-                    isFollowing = true;
-                }
-                
-                updateActionButtons('user');
-                loadEventStats(currentEvent.id);
+            
+            const eventTitle = currentEvent?.title || 'Event';
+            
+            // Use Universal Analytics System for bookmarking (following)
+            const result = await window.toggleInteraction('event', eventId, 'bookmark', {
+                buttonId: 'followBtn',
+                activeEmoji: '⭐',
+                inactiveEmoji: '⭐',
+                metadata: { title: eventTitle }
+            });
+            
+            if (!result.success) {
+                await showAlert('Failed to update follow status', 'warning');
+            } else {
+                // Update stats display
+                loadEventStats(eventId);
+            }
                 
             } catch (error) {
                 console.error('Error toggling follow:', error);
