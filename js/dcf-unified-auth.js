@@ -2993,61 +2993,111 @@ window.populateQuickActions = populateQuickActions;
 window.initializeQuickActions = initializeQuickActions;
 
 // =============================================================================
-// 19. COMMENT SYSTEM FUNCTIONS
+// 19. UNIVERSAL COMMENT SYSTEM - WORKS FOR ANY CONTENT TYPE
 // =============================================================================
+// Supports: 'project', 'resource', 'event', 'post', 'profile'
+// Single source of truth for ALL comment functionality across the entire platform
+
 // Global variables for comment management
-let currentComments = [];
-let currentSort = 'newest';
+let commentStates = {}; // Stores state for each content type/id combination
 let userCommentLikes = new Set();
 
-// Initialize comments when profile loads
-async function initComments() {
-    const contentId = window.getCurrentUser() ? window.getCurrentUser().id : null;
-    if (!contentId) {
-        console.error('No user ID available for comments');
-        return;
+// Universal comment initialization
+async function initComments(contentType, contentId, containerId = 'commentsList') {
+    console.log(`🔄 Initializing ${contentType} comments for ID: ${contentId}`);
+    
+    // Create state key for this content
+    const stateKey = `${contentType}_${contentId}`;
+    if (!commentStates[stateKey]) {
+        commentStates[stateKey] = {
+            comments: [],
+            sort: 'newest',
+            container: containerId,
+            showingAll: false
+        };
     }
-    await loadComments();
+    
+    // Load comments for this content
+    await loadComments(contentType, contentId, containerId);
 }
 
-async function loadComments() {
+// UNIVERSAL LOAD COMMENTS - Works for ANY content type
+async function loadComments(contentType, contentId, containerId = 'commentsList', sortType = null) {
     try {
-        const contentId = window.getCurrentUser() ? window.getCurrentUser().id : null;
-        if (!contentId) return;
-
-        const { data: comments, error } = await window.dcfSupabase
-            .from('comments')
-            .select('*')
-            .eq('content_type', 'profile')
-            .eq('content_id', contentId)
-            .order('created_at', { ascending: false });
+        console.log(`📥 Loading ${contentType} comments for ID: ${contentId}`);
+        
+        // Handle different table names based on content type
+        let tableName = 'comments';
+        let query;
+        
+        // Special handling for events which use a different table
+        if (contentType === 'event') {
+            tableName = 'event_comments';
+            query = window.dcfSupabase
+                .from(tableName)
+                .select('*')
+                .eq('event_id', contentId);
+        } else {
+            // Standard comments table for all other types
+            query = window.dcfSupabase
+                .from(tableName)
+                .select('*')
+                .eq('content_type', contentType)
+                .eq('content_id', contentId);
+        }
+        
+        // Add sorting
+        const stateKey = `${contentType}_${contentId}`;
+        const currentSort = sortType || commentStates[stateKey]?.sort || 'newest';
+        
+        if (currentSort === 'newest') {
+            query = query.order('created_at', { ascending: false });
+        } else if (currentSort === 'oldest') {
+            query = query.order('created_at', { ascending: true });
+        } else if (currentSort === 'liked') {
+            query = query.order('like_count', { ascending: false });
+        }
+        
+        const { data: comments, error } = await query;
 
         if (error) throw error;
 
-        // Store comments globally for sorting
-        currentComments = comments || [];
+        // Store comments in state
+        if (commentStates[stateKey]) {
+            commentStates[stateKey].comments = comments || [];
+            commentStates[stateKey].sort = currentSort;
+        }
         
         // Load user interactions
         await loadUserCommentInteractions();
         
-        // Apply current sort
-        await sortComments(currentSort);
+        // Display comments
+        await displayComments(comments, containerId, contentType, contentId);
         
         // Update comment count
-        const totalComments = await getTotalCommentCount();
-        const commentCountElement = document.getElementById('totalComments');
+        const totalComments = comments ? comments.length : 0;
+        const commentCountElement = document.getElementById(`totalComments-${contentId}`) || 
+                                   document.getElementById('totalComments');
         if (commentCountElement) {
             commentCountElement.textContent = totalComments;
         }
+        
+        console.log(`✅ Loaded ${totalComments} ${contentType} comments`);
 
     } catch (error) {
-        console.error('Error loading comments:', error);
+        console.error(`Error loading ${contentType} comments:`, error);
         await showAlert('Failed to load comments', 'error');
     }
 }
 
-async function displayComments(comments) {
-    const container = document.getElementById('commentsList');
+// UNIVERSAL DISPLAY COMMENTS - Renders comments for any content type
+async function displayComments(comments, containerId = 'commentsList', contentType = 'profile', contentId = null) {
+    // Support multiple container formats
+    let container = document.getElementById(containerId);
+    if (!container && contentId) {
+        // Try with contentId suffix (for post comments)
+        container = document.getElementById(`${containerId}-${contentId}`);
+    }
     if (!container) return;
     
     if (comments.length === 0) {
