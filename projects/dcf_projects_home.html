@@ -1629,29 +1629,47 @@
         }
         
         try {
-            const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_join_requests', {
-                method: 'POST',
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_email: userEmail,
-                    user_name: userName,
-                    project_id: projectId,
-                    message: `${userName} would like to join ${projectTitle}`
-                })
-            });
+            // Check if already a member
+            const { data: existingMember, error: checkError } = await window.dcfSupabase
+                .from('project_members')
+                .select('id')
+                .eq('project_id', projectId)
+                .eq('user_email', userEmail)
+                .single();
             
-            if (response.ok) {
-                updateJoinButton(projectId, 'pending');
-                console.log(`Join request sent for: ${projectTitle}`);
-            } else if (response.status === 409) {
-                showAlert('You have already requested to join this project', 'warning', 'Already Requested');
+            if (existingMember) {
+                showAlert('You are already a member of this project', 'info', 'Already Member');
+                updateJoinButton(projectId, 'member');
+                return;
             }
+            
+            // Join the project as a member
+            const { data, error } = await window.dcfSupabase
+                .from('project_members')
+                .insert({
+                    project_id: projectId,
+                    user_id: currentUser?.id || null,
+                    user_email: userEmail,
+                    user_name: userName || userEmail.split('@')[0],
+                    role: 'member',
+                    joined_at: new Date().toISOString()
+                });
+            
+            if (error) throw error;
+            
+            updateJoinButton(projectId, 'member');
+            updateMemberCounts();
+            showAlert(`Successfully joined ${projectTitle}!`, 'success', 'Joined');
+            console.log(`Joined project: ${projectTitle}`);
+            
         } catch (error) {
             console.error('Error joining project:', error);
+            if (error.message?.includes('duplicate')) {
+                showAlert('You are already a member of this project', 'info', 'Already Member');
+                updateJoinButton(projectId, 'member');
+            } else {
+                showAlert('Failed to join project. Please try again.', 'error', 'Error');
+            }
         }
     }
 
