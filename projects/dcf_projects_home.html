@@ -1540,27 +1540,25 @@
         }
         
         try {
-            const response = await fetch('https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows', {
-                method: 'POST',
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
+            const { data, error } = await window.dcfSupabase
+                .from('project_follows')
+                .insert({
                     user_email: userEmail,
-                    user_name: userName,
-                    project_id: projectId
-                })
-            });
+                    user_name: userName || userEmail.split('@')[0],
+                    project_id: projectId,
+                    project_name: projectTitle
+                });
             
-            if (response.ok) {
-                updateFollowButton(projectId, true);
-                updateStats(); // Refresh stats to show new following count
-                console.log(`Successfully followed: ${projectTitle}`);
-            }
+            if (error) throw error;
+            
+            updateFollowButton(projectId, true);
+            updateStats(); // Refresh stats to show new following count
+            console.log(`Successfully followed: ${projectTitle}`);
+            showAlert(`Now following ${projectTitle}`, 'success', 'Following');
+            
         } catch (error) {
             console.error('Error following project:', error);
+            showAlert('Failed to follow project', 'error', 'Error');
         }
     }
 
@@ -1569,28 +1567,29 @@
         const userEmail = currentUser ? currentUser.email : null;
         
         try {
-            const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/project_follows?user_email=eq.${userEmail}&project_id=eq.${projectId}`, {
-                method: 'DELETE',
-                headers: {
-                    'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
-                    'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
-                }
-            });
+            const { error } = await window.dcfSupabase
+                .from('project_follows')
+                .delete()
+                .eq('user_email', userEmail)
+                .eq('project_id', projectId);
             
-            if (response.ok) {
-                updateFollowButton(projectId, false);
-                updateStats(); // Refresh stats to show new following count
-                
-                // If we're on the Following tab, refresh it to remove the unfollowed project
-                const followingTab = document.getElementById('following');
-                if (followingTab.classList.contains('active')) {
-                    loadFollowingProjects();
-                }
-                
-                console.log(`Successfully unfollowed: ${projectTitle}`);
+            if (error) throw error;
+            
+            updateFollowButton(projectId, false);
+            updateStats(); // Refresh stats to show new following count
+            
+            // If we're on the Following tab, refresh it to remove the unfollowed project
+            const followingTab = document.getElementById('following');
+            if (followingTab.classList.contains('active')) {
+                loadFollowingProjects();
             }
+            
+            console.log(`Successfully unfollowed: ${projectTitle}`);
+            showAlert(`Unfollowed ${projectTitle}`, 'success', 'Unfollowed');
+            
         } catch (error) {
             console.error('Error unfollowing project:', error);
+            showAlert('Failed to unfollow project', 'error', 'Error');
         }
     }
 
