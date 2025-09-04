@@ -4100,17 +4100,6 @@ function updateInteractionUI(button, isActive, count, options = {}) {
             countElement.textContent = count > 0 ? `(${count})` : '';
         }
     }
-            case 'bookmark':
-                button.style.color = '#f39c12';
-                button.style.borderColor = '#f39c12';
-                button.style.background = '#fffbf0';
-                break;
-        }
-    } else {
-        button.style.color = '';
-        button.style.borderColor = '';
-        button.style.background = '';
-    }
 }
 
 /**
