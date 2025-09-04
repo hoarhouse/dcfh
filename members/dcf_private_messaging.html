@@ -1523,18 +1523,16 @@
                 const { data, error } = await supabase
                     .from('messages')
                     .insert({
-                        sender_id: currentUser.id,
+                        sender_id: currentUser.id || currentUser.user_id,
+                        sender_email: currentUser.email,
                         recipient_id: currentRecipient.id,
+                        recipient_email: currentRecipient.email || currentRecipient.username,
                         content: content,
                         message_type: 'text',
-                        is_read: false
+                        is_read: false,
+                        created_at: new Date().toISOString()
                     })
-                    .select(`
-                        *,
-                        sender:user_profiles!messages_sender_id_fkey (
-                            id, username, first_name, last_name, avatar_url
-                        )
-                    `)
+                    .select('*')
                     .single();
 
                 if (error) throw error;
