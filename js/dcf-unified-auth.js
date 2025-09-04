@@ -3975,24 +3975,15 @@ async function toggleInteraction(contentType, contentId, interactionType, option
             console.log(`✅ Removed ${interactionType} from ${contentType} ${contentId}`);
             
         } else {
-            // Add interaction to universal_analytics table
+            // Add interaction to universal_analytics table - ONLY allowed columns
             const interactionData = {
                 content_type: contentType,
                 content_id: contentId,
                 interaction_type: interactionType,
                 user_id: user.id,
                 user_email: user.email,
-                user_name: user.name || user.username,
                 created_at: new Date().toISOString()
             };
-            
-            // Add metadata if provided
-            if (options.metadata || options.contentTitle) {
-                interactionData.metadata = {
-                    ...(options.metadata || {}),
-                    title: options.contentTitle || options.metadata?.title
-                };
-            }
             
             const { error } = await window.dcfSupabase
                 .from('universal_analytics')
