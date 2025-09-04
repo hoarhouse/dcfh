@@ -1696,12 +1696,50 @@
             if (error) throw error;
             
             updateJoinButton(projectId, null);
-            updateMemberCounts();
+            updateMemberCounts(projectId);
             showAlert(`You have left ${projectTitle}`, 'success', 'Left Project');
             
         } catch (error) {
             console.error('Error leaving project:', error);
             showAlert('Failed to leave project. Please try again.', 'error', 'Error');
+        }
+    }
+    
+    async function updateMemberCounts(projectId = null) {
+        try {
+            // If projectId is provided, update just that project
+            if (projectId) {
+                const { count, error } = await window.dcfSupabase
+                    .from('project_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('project_id', projectId);
+                
+                if (!error && count !== null) {
+                    // Update the member count in the project card
+                    const projectCard = document.querySelector(`[data-project-id="${projectId}"]`)?.closest('.project-card');
+                    if (projectCard) {
+                        const memberCount = projectCard.querySelector('.member-count');
+                        if (memberCount) {
+                            // Add at least 1 for the owner if no members
+                            const totalMembers = count > 0 ? count : 1;
+                            const memberText = totalMembers === 1 ? '1 member' : `${totalMembers} members`;
+                            const timeAgo = memberCount.textContent.split('•')[1]?.trim() || '';
+                            memberCount.textContent = `${memberText}${timeAgo ? ' • ' + timeAgo : ''}`;
+                        }
+                    }
+                }
+            } else {
+                // Update all project member counts
+                const projectCards = document.querySelectorAll('.project-card');
+                for (const card of projectCards) {
+                    const projectId = card.querySelector('[data-project-id]')?.getAttribute('data-project-id');
+                    if (projectId) {
+                        updateMemberCounts(projectId);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating member counts:', error);
         }
     }
     
