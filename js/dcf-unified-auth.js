@@ -4215,6 +4215,161 @@ async function loadUserInteractions() {
     }
 }
 
+// ============= HELPER FUNCTIONS =============
+
+/**
+ * Get or create session ID for anonymous tracking
+ * @returns {string} Session ID
+ */
+function getSessionId() {
+    let sessionId = sessionStorage.getItem('dcf_session_id');
+    if (!sessionId) {
+        sessionId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('dcf_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+/**
+ * Track a project view (convenience function)
+ * @param {string} projectId - Project ID
+ * @param {object} metadata - Additional metadata
+ */
+async function trackProjectView(projectId, metadata = {}) {
+    return await trackInteraction('project', projectId, 'view', metadata);
+}
+
+/**
+ * Get project ID from current URL
+ * @returns {string|null} Project ID or null
+ */
+function getProjectIdFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id') || urlParams.get('project_id') || urlParams.get('projectId');
+}
+
+/**
+ * Get analytics summary for a content item
+ * @param {string} contentType - Type of content
+ * @param {string} contentId - Content ID
+ * @returns {Promise<object>} Summary of all interactions
+ */
+async function getAnalyticsSummary(contentType, contentId) {
+    const summary = {
+        views: await getInteractionCount(contentType, contentId, 'view'),
+        likes: await getInteractionCount(contentType, contentId, 'like'),
+        shares: await getInteractionCount(contentType, contentId, 'share'),
+        bookmarks: await getInteractionCount(contentType, contentId, 'bookmark'),
+        downloads: await getInteractionCount(contentType, contentId, 'download')
+    };
+    return summary;
+}
+
+/**
+ * Get bulk interaction counts for multiple items
+ * @param {string} contentType - Type of content
+ * @param {string[]} contentIds - Array of content IDs
+ * @param {string} interactionType - Type of interaction
+ * @returns {Promise<object>} Map of contentId to count
+ */
+async function getBulkInteractionCounts(contentType, contentIds, interactionType) {
+    try {
+        const { data, error } = await window.dcfSupabase
+            .from('universal_analytics')
+            .select('content_id')
+            .eq('content_type', contentType)
+            .in('content_id', contentIds)
+            .eq('interaction_type', interactionType);
+        
+        if (error) throw error;
+        
+        // Count by content_id
+        const counts = {};
+        contentIds.forEach(id => counts[id] = 0);
+        data.forEach(row => {
+            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+        });
+        
+        return counts;
+    } catch (error) {
+        console.error('Error getting bulk counts:', error);
+        return {};
+    }
+}
+
+/**
+ * Get user's interaction history
+ * @param {string} userId - User ID (defaults to current user)
+ * @param {number} limit - Maximum number of results
+ * @returns {Promise<array>} Array of interactions
+ */
+async function getUserInteractionHistory(userId = null, limit = 50) {
+    try {
+        const user = userId ? { id: userId } : window.getCurrentUser();
+        if (!user) return [];
+        
+        const { data, error } = await window.dcfSupabase
+            .from('universal_analytics')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+        
+        if (error) throw error;
+        
+        return data || [];
+    } catch (error) {
+        console.error('Error getting user history:', error);
+        return [];
+    }
+}
+
+/**
+ * Initialize analytics buttons with data attributes
+ */
+async function initializeAnalyticsButtons() {
+    // Find all elements with data-analytics attributes
+    const buttons = document.querySelectorAll('[data-interaction-type]');
+    
+    buttons.forEach(button => {
+        const contentType = button.dataset.contentType;
+        const contentId = button.dataset.contentId;
+        const interactionType = button.dataset.interactionType;
+        
+        if (!contentType || !contentId || !interactionType) return;
+        
+        // Add click handler
+        button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const result = await toggleInteraction(contentType, contentId, interactionType, {
+                buttonId: button.id,
+                activeEmoji: button.dataset.activeEmoji,
+                inactiveEmoji: button.dataset.inactiveEmoji
+            });
+            
+            if (result.success) {
+                console.log(`Toggled ${interactionType} on ${contentType} ${contentId}`);
+            }
+        });
+        
+        // Initialize button state
+        hasUserInteracted(contentType, contentId, interactionType).then(isActive => {
+            updateInteractionUI(button, isActive, null, {
+                activeEmoji: button.dataset.activeEmoji,
+                inactiveEmoji: button.dataset.inactiveEmoji
+            });
+        });
+        
+        // Get and display count
+        getInteractionCount(contentType, contentId, interactionType).then(count => {
+            const countEl = document.getElementById(button.id + 'Count');
+            if (countEl) {
+                countEl.textContent = count > 0 ? `(${count})` : '';
+            }
+        });
+    });
+}
+
 // ============= EXPORT ANALYTICS FUNCTIONS =============
 window.trackInteraction = trackInteraction;
 window.getInteractionCount = getInteractionCount;
@@ -4225,6 +4380,13 @@ window.initializeInteractionButtons = initializeInteractionButtons;
 window.trackPageView = trackPageView;
 window.loadUserInteractions = loadUserInteractions;
 window.userInteractions = userInteractions;
+window.getSessionId = getSessionId;
+window.trackProjectView = trackProjectView;
+window.getProjectIdFromURL = getProjectIdFromURL;
+window.getAnalyticsSummary = getAnalyticsSummary;
+window.getBulkInteractionCounts = getBulkInteractionCounts;
+window.getUserInteractionHistory = getUserInteractionHistory;
+window.initializeAnalyticsButtons = initializeAnalyticsButtons;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
