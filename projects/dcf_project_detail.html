@@ -2649,67 +2649,33 @@
             }
         }
         
-        // Fallback function for compatibility
-        function toggleLikeLocalStorage() {
-                // Use localStorage as fallback
-                toggleLikeLocalStorage();
-            }
-            
-            // Update UI
-            updateLikeButton();
-            
-            // Re-enable button
-            likeBtn.disabled = false;
-            likeBtn.style.opacity = '1';
-            
-            // Animate heart
-            const heartIcon = likeBtn.querySelector('span:first-child');
-            heartIcon.style.transform = 'scale(1.3)';
-            setTimeout(() => {
-                heartIcon.style.transform = 'scale(1)';
-            }, 200);
-        }
-        
-        // Fallback like toggle using localStorage
-        function toggleLikeLocalStorage() {
+        // Initialize like status and track view when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
             const projectId = getProjectId();
-            const userEmail = getCurrentUserEmail();
-            let likes = JSON.parse(localStorage.getItem('projectLikes') || '{}');
             
-            if (!likes[projectId]) {
-                likes[projectId] = { users: [], count: 0 };
-            }
-            
-            if (isLiked) {
-                // Unlike
-                const index = likes[projectId].users.indexOf(userEmail);
-                if (index > -1) {
-                    likes[projectId].users.splice(index, 1);
-                    likes[projectId].count = Math.max(0, likes[projectId].count - 1);
-                    isLiked = false;
-                    likeCount = likes[projectId].count;
-                }
-            } else {
-                // Like
-                if (!likes[projectId].users.includes(userEmail)) {
-                    likes[projectId].users.push(userEmail);
-                    likes[projectId].count++;
-                    isLiked = true;
-                    likeCount = likes[projectId].count;
-                }
-            }
-            
-            localStorage.setItem('projectLikes', JSON.stringify(likes));
-        }
-        
-        // Initialize like status when page loads
-        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize like status
             initializeProjectLike();
+            
+            // Track page view
+            await window.trackInteraction('project', projectId, 'view', {
+                title: document.querySelector('.profile-name')?.textContent || 'Project'
+            });
+            
+            // Update view count if element exists
+            const viewCountEl = document.getElementById('viewCount');
+            if (viewCountEl) {
+                const viewCount = await window.getInteractionCount('project', projectId, 'view');
+                viewCountEl.textContent = `${viewCount} views`;
+            }
         });
         
         function toggleShareMenu() {
             const shareMenu = document.getElementById('shareMenu');
             shareMenu.classList.toggle('active');
+            
+            // Track share button click
+            const projectId = getProjectId();
+            window.trackInteraction('project', projectId, 'share');
         }
         
         function copyLink() {
@@ -2717,6 +2683,9 @@
             navigator.clipboard.writeText(url).then(() => {
                 alert('Link copied to clipboard!');
                 toggleShareMenu();
+                // Track copy link interaction
+                const projectId = getProjectId();
+                window.trackInteraction('project', projectId, 'share', { method: 'copy_link' });
             });
         }
         
@@ -2726,6 +2695,9 @@
             const body = encodeURIComponent(`I thought you might be interested in this project:\n\n${project?.title || 'Project'}\n${project?.brief_description || project?.description || ''}\n\nView it here: ${window.location.href}`);
             window.open(`mailto:?subject=${subject}&body=${body}`);
             toggleShareMenu();
+            // Track email share
+            const projectId = getProjectId();
+            window.trackInteraction('project', projectId, 'share', { method: 'email' });
         }
         
         function shareTwitter() {
@@ -2734,12 +2706,18 @@
             const url = encodeURIComponent(window.location.href);
             window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`);
             toggleShareMenu();
+            // Track Twitter share
+            const projectId = getProjectId();
+            window.trackInteraction('project', projectId, 'share', { method: 'twitter' });
         }
         
         function shareLinkedIn() {
             const url = encodeURIComponent(window.location.href);
             window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`);
             toggleShareMenu();
+            // Track LinkedIn share
+            const projectId = getProjectId();
+            window.trackInteraction('project', projectId, 'share', { method: 'linkedin' });
         }
         
         // Close share menu when clicking outside
