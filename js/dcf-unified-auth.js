@@ -4100,15 +4100,6 @@ function updateInteractionUI(button, isActive, count, options = {}) {
             countElement.textContent = count > 0 ? `(${count})` : '';
         }
     }
-    
-    // Update button style
-    if (isActive) {
-        switch (interactionType) {
-            case 'like':
-                button.style.color = '#e74c3c';
-                button.style.borderColor = '#e74c3c';
-                button.style.background = '#fff5f5';
-                break;
             case 'bookmark':
                 button.style.color = '#f39c12';
                 button.style.borderColor = '#f39c12';
