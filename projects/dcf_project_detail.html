@@ -2590,17 +2590,7 @@
             }
         }
         
-        // Like/Share Functionality with Database Operations
-        let isLiked = false;
-        let likeCount = 0;
-        
-        // Use the global Supabase client from dcf-unified-auth.js
-        // No need to create a new client - use window.dcfSupabase directly
-        
-        // Get current user email
-        function getCurrentUserEmail() {
-            return localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || 'user@example.com';
-        }
+        // Like/Share Functionality using Universal Analytics System
         
         // Get project ID from URL or use default
         function getProjectId() {
@@ -2608,135 +2598,59 @@
             return urlParams.get('id') || 'ai-ethics-curriculum';
         }
         
-        // Initialize project like status on page load
+        // Initialize project like status using Universal Analytics System
         async function initializeProjectLike() {
             const projectId = getProjectId();
-            const userEmail = getCurrentUserEmail();
             
-            if (window.dcfSupabase) {
-                try {
-                    // Check if user has liked this project
-                    const { data: userLike, error: likeError } = await window.dcfSupabase
-                        .from('project_likes')
-                        .select('*')
-                        .eq('project_id', projectId)
-                        .eq('user_email', userEmail)
-                        .single();
-                    
-                    // Get total like count for this project
-                    const { count, error: countError } = await window.dcfSupabase
-                        .from('project_likes')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('project_id', projectId);
-                    
-                    if (!likeError || likeError.code === 'PGRST116') { // PGRST116 = no rows found
-                        isLiked = !!userLike;
-                        likeCount = count || 0;
-                        updateLikeButton();
-                    }
-                } catch (err) {
-                    console.log('Using localStorage fallback:', err);
-                    initializeFromLocalStorage();
+            try {
+                // Check if user has liked this project
+                const hasLiked = await window.hasUserInteracted('project', projectId, 'like');
+                const likeCount = await window.getInteractionCount('project', projectId, 'like');
+                
+                // Update UI
+                const likeBtn = document.getElementById('likeBtn');
+                const likeText = document.getElementById('likeText');
+                const likeCountEl = document.getElementById('likeCount');
+                
+                if (!likeBtn) return;
+                
+                if (hasLiked) {
+                    likeBtn.classList.add('active');
+                    likeText.textContent = 'Liked';
+                    likeBtn.querySelector('span:first-child').textContent = '❤️';
+                } else {
+                    likeBtn.classList.remove('active');
+                    likeText.textContent = 'Like';
+                    likeBtn.querySelector('span:first-child').textContent = '🤍';
                 }
-            } else {
-                initializeFromLocalStorage();
+                
+                likeCountEl.textContent = `(${likeCount})`;
+            } catch (err) {
+                console.error('Error initializing like status:', err);
             }
         }
         
-        // Fallback to localStorage if database is not available
-        function initializeFromLocalStorage() {
-            const projectId = getProjectId();
-            const userEmail = getCurrentUserEmail();
-            const likes = JSON.parse(localStorage.getItem('projectLikes') || '{}');
-            
-            if (!likes[projectId]) {
-                likes[projectId] = { users: [], count: 0 };
-            }
-            
-            isLiked = likes[projectId].users.includes(userEmail);
-            likeCount = likes[projectId].count;
-            updateLikeButton();
-        }
-        
-        // Update like button UI
-        function updateLikeButton() {
-            const likeBtn = document.getElementById('likeBtn');
-            const likeText = document.getElementById('likeText');
-            const likeCountEl = document.getElementById('likeCount');
-            
-            if (!likeBtn) return;
-            
-            if (isLiked) {
-                likeBtn.classList.add('active');
-                likeText.textContent = 'Liked';
-                likeBtn.querySelector('span:first-child').textContent = '❤️';
-            } else {
-                likeBtn.classList.remove('active');
-                likeText.textContent = 'Like';
-                likeBtn.querySelector('span:first-child').textContent = '🤍';
-            }
-            
-            likeCountEl.textContent = `(${likeCount})`;
-        }
-        
-        // Toggle like with database operations
+        // Toggle like using Universal Analytics System
         async function toggleLike() {
             const projectId = getProjectId();
-            const userEmail = getCurrentUserEmail();
             const projectTitle = document.querySelector('.profile-name')?.textContent || 'Project';
             
-            // Disable button during operation
-            const likeBtn = document.getElementById('likeBtn');
-            likeBtn.disabled = true;
-            likeBtn.style.opacity = '0.6';
+            // Use Universal Analytics System toggle
+            const result = await window.toggleInteraction('project', projectId, 'like', {
+                buttonId: 'likeBtn',
+                countElementId: 'likeCount',
+                activeEmoji: '❤️',
+                inactiveEmoji: '🤍',
+                metadata: { title: projectTitle }
+            });
             
-            if (window.dcfSupabase) {
-                try {
-                    if (isLiked) {
-                        // Unlike: Remove from database
-                        const { error } = await window.dcfSupabase
-                            .from('project_likes')
-                            .delete()
-                            .eq('project_id', projectId)
-                            .eq('user_email', userEmail);
-                        
-                        if (!error) {
-                            isLiked = false;
-                            likeCount = Math.max(0, likeCount - 1);
-                        } else {
-                            console.error('Error removing like:', error);
-                            alert('Unable to unlike. Please try again.');
-                        }
-                    } else {
-                        // Like: Add to database
-                        const { error } = await window.dcfSupabase
-                            .from('project_likes')
-                            .insert([
-                                {
-                                    project_id: projectId,
-                                    user_email: userEmail,
-                                    created_at: new Date().toISOString()
-                                }
-                            ]);
-                        
-                        if (!error) {
-                            isLiked = true;
-                            likeCount++;
-                        } else if (error.code === '23505') { // Duplicate key error
-                            // User already liked this project
-                            isLiked = true;
-                            console.log('Already liked');
-                        } else {
-                            console.error('Error adding like:', error);
-                            alert('Unable to like. Please try again.');
-                        }
-                    }
-                } catch (err) {
-                    console.error('Database error:', err);
-                    // Fall back to localStorage
-                    toggleLikeLocalStorage();
-                }
-            } else {
+            if (!result.success) {
+                console.error('Failed to toggle like:', result.error);
+            }
+        }
+        
+        // Fallback function for compatibility
+        function toggleLikeLocalStorage() {
                 // Use localStorage as fallback
                 toggleLikeLocalStorage();
             }
