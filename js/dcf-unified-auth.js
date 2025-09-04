@@ -3783,7 +3783,7 @@ async function trackInteraction(contentType, contentId, interactionType, userDat
         const user = userData || window.getCurrentUser();
         const timestamp = new Date().toISOString();
         
-        // Build interaction record
+        // Build interaction record for universal_analytics table
         const interactionData = {
             content_type: contentType,
             content_id: contentId,
@@ -3807,34 +3807,14 @@ async function trackInteraction(contentType, contentId, interactionType, userDat
             return false;
         }
         
-        // Determine table based on interaction type
-        let tableName = 'analytics';
-        let operation = 'insert';
-        
-        // Special handling for different interaction types
-        switch (interactionType) {
-            case 'like':
-                tableName = contentType === 'comment' ? 'comment_likes' : 
-                           contentType === 'project' ? 'project_likes' : 
-                           'content_likes';
-                break;
-            case 'bookmark':
-                tableName = 'bookmarks';
-                break;
-            case 'view':
-                tableName = 'page_views';
-                break;
-            case 'share':
-                tableName = 'shares';
-                break;
-            case 'download':
-                tableName = 'downloads';
-                break;
+        // Add metadata if provided
+        if (userData && typeof userData === 'object') {
+            interactionData.metadata = userData;
         }
         
-        // Insert interaction record
+        // All interactions go to universal_analytics table
         const { data, error } = await window.dcfSupabase
-            .from(tableName)
+            .from('universal_analytics')
             .insert([interactionData]);
         
         if (error) {
@@ -3883,50 +3863,13 @@ async function getInteractionCount(contentType, contentId, interactionType) {
             return interactionCache.get(cacheKey);
         }
         
-        // Determine table
-        let tableName = 'analytics';
-        let query;
-        
-        switch (interactionType) {
-            case 'like':
-                tableName = contentType === 'comment' ? 'comment_likes' : 
-                           contentType === 'project' ? 'project_likes' : 
-                           'content_likes';
-                break;
-            case 'bookmark':
-                tableName = 'bookmarks';
-                break;
-            case 'view':
-                tableName = 'page_views';
-                break;
-            case 'share':
-                tableName = 'shares';
-                break;
-            case 'download':
-                tableName = 'downloads';
-                break;
-        }
-        
-        // Build query based on content type
-        if (contentType === 'event' && interactionType === 'like') {
-            query = window.dcfSupabase
-                .from('event_likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('event_id', contentId);
-        } else {
-            query = window.dcfSupabase
-                .from(tableName)
-                .select('*', { count: 'exact', head: true })
-                .eq('content_type', contentType)
-                .eq('content_id', contentId);
-                
-            if (interactionType !== 'view') {
-                // Don't filter views by interaction_type as they might not have it
-                query = query.eq('interaction_type', interactionType);
-            }
-        }
-        
-        const { count, error } = await query;
+        // Query universal_analytics table
+        const { count, error } = await window.dcfSupabase
+            .from('universal_analytics')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_type', contentType)
+            .eq('content_id', contentId)
+            .eq('interaction_type', interactionType);
         
         if (error) {
             console.error(`Error getting ${interactionType} count:`, error);
@@ -3963,55 +3906,17 @@ async function hasUserInteracted(contentType, contentId, interactionType, userId
             return true;
         }
         
-        // Determine table
-        let tableName = 'analytics';
-        let query;
+        // Query universal_analytics table
+        const { data, error } = await window.dcfSupabase
+            .from('universal_analytics')
+            .select('id')
+            .eq('content_type', contentType)
+            .eq('content_id', contentId)
+            .eq('interaction_type', interactionType)
+            .eq('user_id', user.id)
+            .single();
         
-        switch (interactionType) {
-            case 'like':
-                tableName = contentType === 'comment' ? 'comment_likes' : 
-                           contentType === 'project' ? 'project_likes' : 
-                           'content_likes';
-                break;
-            case 'bookmark':
-                tableName = 'bookmarks';
-                break;
-            case 'share':
-                tableName = 'shares';
-                break;
-            case 'download':
-                tableName = 'downloads';
-                break;
-            default:
-                tableName = 'analytics';
-        }
-        
-        // Check database
-        if (contentType === 'event' && interactionType === 'like') {
-            query = window.dcfSupabase
-                .from('event_likes')
-                .select('id')
-                .eq('event_id', contentId)
-                .eq('user_id', user.id)
-                .single();
-        } else {
-            query = window.dcfSupabase
-                .from(tableName)
-                .select('id')
-                .eq('content_type', contentType)
-                .eq('content_id', contentId)
-                .eq('user_id', user.id);
-                
-            if (tableName === 'analytics') {
-                query = query.eq('interaction_type', interactionType);
-            }
-            
-            query = query.single();
-        }
-        
-        const { data, error } = await query;
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
             console.error(`Error checking interaction:`, error);
         }
         
@@ -4049,45 +3954,15 @@ async function toggleInteraction(contentType, contentId, interactionType, option
         // Check current state
         const isCurrentlyActive = await hasUserInteracted(contentType, contentId, interactionType, user.id);
         
-        // Determine table
-        let tableName = 'analytics';
-        switch (interactionType) {
-            case 'like':
-                tableName = contentType === 'comment' ? 'comment_likes' : 
-                           contentType === 'project' ? 'project_likes' : 
-                           'content_likes';
-                break;
-            case 'bookmark':
-                tableName = 'bookmarks';
-                break;
-            default:
-                tableName = 'analytics';
-        }
-        
         if (isCurrentlyActive) {
-            // Remove interaction
-            let deleteQuery;
-            
-            if (contentType === 'event' && interactionType === 'like') {
-                deleteQuery = window.dcfSupabase
-                    .from('event_likes')
-                    .delete()
-                    .eq('event_id', contentId)
-                    .eq('user_id', user.id);
-            } else {
-                deleteQuery = window.dcfSupabase
-                    .from(tableName)
-                    .delete()
-                    .eq('content_type', contentType)
-                    .eq('content_id', contentId)
-                    .eq('user_id', user.id);
-                    
-                if (tableName === 'analytics') {
-                    deleteQuery = deleteQuery.eq('interaction_type', interactionType);
-                }
-            }
-            
-            const { error } = await deleteQuery;
+            // Remove interaction from universal_analytics table
+            const { error } = await window.dcfSupabase
+                .from('universal_analytics')
+                .delete()
+                .eq('content_type', contentType)
+                .eq('content_id', contentId)
+                .eq('interaction_type', interactionType)
+                .eq('user_id', user.id);
             
             if (error) throw error;
             
@@ -4105,39 +3980,27 @@ async function toggleInteraction(contentType, contentId, interactionType, option
             console.log(`✅ Removed ${interactionType} from ${contentType} ${contentId}`);
             
         } else {
-            // Add interaction
+            // Add interaction to universal_analytics table
             const interactionData = {
                 content_type: contentType,
                 content_id: contentId,
+                interaction_type: interactionType,
                 user_id: user.id,
                 user_email: user.email,
                 user_name: user.name || user.username,
                 created_at: new Date().toISOString()
             };
             
-            // Add optional fields
-            if (options.contentTitle) {
-                interactionData.content_title = options.contentTitle;
-            }
-            
-            // Special handling for different content types
-            if (contentType === 'event' && interactionType === 'like') {
-                interactionData.event_id = contentId;
-                delete interactionData.content_type;
-                delete interactionData.content_id;
-            } else if (contentType === 'project' && interactionType === 'like') {
-                interactionData.project_id = contentId;
-                interactionData.project_title = options.contentTitle;
-            } else if (contentType === 'comment' && interactionType === 'like') {
-                interactionData.comment_id = contentId;
-            }
-            
-            if (tableName === 'analytics') {
-                interactionData.interaction_type = interactionType;
+            // Add metadata if provided
+            if (options.metadata || options.contentTitle) {
+                interactionData.metadata = {
+                    ...(options.metadata || {}),
+                    title: options.contentTitle || options.metadata?.title
+                };
             }
             
             const { error } = await window.dcfSupabase
-                .from(contentType === 'event' && interactionType === 'like' ? 'event_likes' : tableName)
+                .from('universal_analytics')
                 .insert([interactionData]);
             
             if (error) {
@@ -4163,8 +4026,27 @@ async function toggleInteraction(contentType, contentId, interactionType, option
             console.log(`✅ Added ${interactionType} to ${contentType} ${contentId}`);
         }
         
+        // Update UI if options provided
+        if (options.buttonId) {
+            const button = document.getElementById(options.buttonId);
+            if (button) {
+                updateInteractionUI(button, !isCurrentlyActive, null, {
+                    activeEmoji: options.activeEmoji,
+                    inactiveEmoji: options.inactiveEmoji
+                });
+            }
+        }
+        
         // Get new count
         const newCount = await getInteractionCount(contentType, contentId, interactionType);
+        
+        // Update count element if provided
+        if (options.countElementId) {
+            const countEl = document.getElementById(options.countElementId);
+            if (countEl) {
+                countEl.textContent = `(${newCount})`;
+            }
+        }
         
         return {
             success: true,
