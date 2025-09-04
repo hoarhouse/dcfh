@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Universal Analytics System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/dcf-unified-auth.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Universal Analytics System Test</h1>
+    
+    <div class="test-section">
+        <h2>Function Availability Test</h2>
+        <button onclick="testFunctions()">Run Function Tests</button>
+        <div id="function-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Interaction Tests</h2>
+        <button onclick="testInteractions()">Test Interactions</button>
+        <div id="interaction-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Like Button Test</h2>
+        <button id="test-like-btn" data-interaction-type="like" data-content-type="project" data-content-id="test-123">
+            <span>🤍</span> Like
+        </button>
+        <span id="test-like-count">(0)</span>
+    </div>
+
+    <script>
+        async function testFunctions() {
+            const resultsDiv = document.getElementById('function-results');
+            resultsDiv.innerHTML = '';
+            
+            const functions = [
+                'trackInteraction',
+                'getInteractionCount',
+                'hasUserInteracted',
+                'toggleInteraction',
+                'getAnalyticsSummary',
+                'getBulkInteractionCounts',
+                'getUserInteractionHistory',
+                'updateInteractionUI',
+                'initializeAnalyticsButtons'
+            ];
+            
+            functions.forEach(func => {
+                const exists = typeof window[func] === 'function';
+                const result = document.createElement('div');
+                result.className = 'test-result ' + (exists ? 'success' : 'error');
+                result.textContent = `${func}: ${exists ? '✓ Available' : '✗ Not Found'}`;
+                resultsDiv.appendChild(result);
+            });
+        }
+        
+        async function testInteractions() {
+            const resultsDiv = document.getElementById('interaction-results');
+            resultsDiv.innerHTML = '<div class="test-result">Running tests...</div>';
+            
+            try {
+                // Test tracking an interaction
+                await window.trackInteraction('test', 'test-item-1', 'view', {
+                    title: 'Test Item'
+                });
+                
+                // Test getting interaction count
+                const count = await window.getInteractionCount('test', 'test-item-1', 'view');
+                
+                // Test checking if user has interacted
+                const hasInteracted = await window.hasUserInteracted('test', 'test-item-1', 'view');
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-result success">✓ Track Interaction: Success</div>
+                    <div class="test-result success">✓ Get Count: ${count} views</div>
+                    <div class="test-result success">✓ Check User Interaction: ${hasInteracted}</div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-result error">✗ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // Test the like button
+        document.getElementById('test-like-btn').addEventListener('click', async function() {
+            const result = await window.toggleInteraction('project', 'test-123', 'like', {
+                buttonId: 'test-like-btn',
+                countElementId: 'test-like-count',
+                activeEmoji: '❤️',
+                inactiveEmoji: '🤍'
+            });
+            
+            if (result.success) {
+                console.log('Like toggled successfully');
+            } else {
+                console.error('Failed to toggle like:', result.error);
+            }
+        });
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page loaded. Universal Analytics System ready.');
+        });
+    </script>
+</body>
+</html>
