@@ -3033,7 +3033,20 @@ function openCreateEventModal() {
     if (createBtn) {
         createBtn.click();
     } else {
-        window.location.href = getPath('events', 'dcf_create_event.html');
+        // Get path helper
+        const currentPath = window.location.pathname;
+        const pathParts = currentPath.split('/');
+        const currentFolder = pathParts[pathParts.length - 2];
+        
+        let createEventPath;
+        if (currentFolder === 'events') {
+            createEventPath = 'dcf_create_event.html';
+        } else if (currentFolder === 'dcfh' || !currentFolder) {
+            createEventPath = 'events/dcf_create_event.html';
+        } else {
+            createEventPath = '../events/dcf_create_event.html';
+        }
+        window.location.href = createEventPath;
     }
 }
 
