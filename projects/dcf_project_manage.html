@@ -2117,6 +2117,7 @@
             // Load enhanced settings when Settings section is shown
             if (sectionId === 'settings' && window.currentProject) {
                 loadProjectSettingsEnhanced(window.currentProject.id);
+                loadPermissionTemplates(window.currentProject.id);
             }
         }
 
@@ -3789,6 +3790,175 @@
             if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
             
             return formatDate(dateString);
+        }
+        
+        // Permission Template Modal Functions
+        function openPermissionTemplateModal() {
+            const modal = document.getElementById('permissionTemplateModal');
+            if (modal) {
+                modal.classList.add('active');
+                // Reset form
+                document.getElementById('permissionTemplateForm').reset();
+            }
+        }
+        
+        function closePermissionTemplateModal() {
+            const modal = document.getElementById('permissionTemplateModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        async function savePermissionTemplate(event) {
+            event.preventDefault();
+            
+            if (!window.currentProject) {
+                showAlert('No project loaded', 'error');
+                return;
+            }
+            
+            const templateName = document.getElementById('templateName').value.trim();
+            const templateDescription = document.getElementById('templateDescription').value.trim();
+            
+            // Collect all permissions
+            const permissions = {
+                can_edit_project: document.getElementById('perm_can_edit_project').checked,
+                can_manage_members: document.getElementById('perm_can_manage_members').checked,
+                can_upload_files: document.getElementById('perm_can_upload_files').checked,
+                can_create_posts: document.getElementById('perm_can_create_posts').checked,
+                can_moderate_comments: document.getElementById('perm_can_moderate_comments').checked,
+                can_manage_settings: document.getElementById('perm_can_manage_settings').checked,
+                can_view_analytics: document.getElementById('perm_can_view_analytics').checked,
+                can_manage_tasks: document.getElementById('perm_can_manage_tasks').checked
+            };
+            
+            try {
+                const { data, error } = await supabase
+                    .from('permission_templates')
+                    .insert({
+                        project_id: window.currentProject.id,
+                        template_name: templateName,
+                        description: templateDescription,
+                        ...permissions,
+                        created_at: new Date().toISOString(),
+                        created_by: window.getCurrentUser()?.id
+                    });
+                
+                if (error) throw error;
+                
+                showAlert('Permission template created successfully!', 'success');
+                closePermissionTemplateModal();
+                
+                // Reload permission templates list if it exists
+                loadPermissionTemplates(window.currentProject.id);
+                
+            } catch (error) {
+                console.error('Error creating permission template:', error);
+                showAlert('Failed to create permission template', 'error');
+            }
+        }
+        
+        // Load and display permission templates
+        async function loadPermissionTemplates(projectId) {
+            try {
+                const { data: templates, error } = await supabase
+                    .from('permission_templates')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false });
+                
+                const templatesList = document.getElementById('permissionTemplatesList');
+                if (!templatesList) return;
+                
+                if (!templates || templates.length === 0) {
+                    templatesList.innerHTML = `
+                        <div style="color: #666; font-size: 0.9rem; padding: 0.5rem 0;">
+                            No custom templates yet. Create one to define specific permission levels for your team.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                templatesList.innerHTML = templates.map(template => {
+                    const permCount = Object.keys(template).filter(key => 
+                        key.startsWith('can_') && template[key] === true
+                    ).length;
+                    
+                    return `
+                        <div style="background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong style="color: #333;">${template.template_name}</strong>
+                                    ${template.description ? `<div style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">${template.description}</div>` : ''}
+                                    <div style="color: #999; font-size: 0.8rem; margin-top: 0.5rem;">${permCount} permissions granted</div>
+                                </div>
+                                <button class="btn btn-secondary" style="font-size: 0.85rem; padding: 4px 12px;" onclick="deletePermissionTemplate('${template.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading permission templates:', error);
+            }
+        }
+        
+        // Delete permission template
+        async function deletePermissionTemplate(templateId) {
+            if (!confirm('Delete this permission template?')) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('permission_templates')
+                    .delete()
+                    .eq('id', templateId);
+                
+                if (error) throw error;
+                
+                showAlert('Template deleted successfully', 'info');
+                loadPermissionTemplates(window.currentProject.id);
+                
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                showAlert('Failed to delete template', 'error');
+            }
+        }
+        
+        // Edit member permissions (opens a modal or inline editor)
+        function editMemberPermissions(memberId) {
+            // This would open a modal similar to permission template modal
+            // but for editing individual member permissions
+            showAlert('Permission editing interface coming soon!', 'info');
+        }
+        
+        // Execute bulk actions on selected members
+        function executeBulkAction() {
+            const action = document.getElementById('bulkActionSelect').value;
+            const selectedMembers = document.querySelectorAll('.member-checkbox:checked');
+            
+            if (!action) {
+                showAlert('Please select an action', 'warning');
+                return;
+            }
+            
+            if (selectedMembers.length === 0) {
+                showAlert('Please select members', 'warning');
+                return;
+            }
+            
+            // Handle bulk actions
+            switch(action) {
+                case 'change-role':
+                    // Would open a modal to select new role
+                    showAlert('Bulk role change coming soon!', 'info');
+                    break;
+                case 'remove':
+                    if (confirm(`Remove ${selectedMembers.length} selected members?`)) {
+                        // Would remove selected members
+                        showAlert('Bulk removal coming soon!', 'info');
+                    }
+                    break;
+            }
         }
         
         // ==================== END NEW MANAGEMENT FUNCTIONS ====================
