@@ -2830,12 +2830,7 @@ function getQuickActionsConfig(pageType) {
             { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
             { icon: '👥', text: 'All Registrations', action: 'showAllRegistrations()' }
         ],
-        'resources_library': [
-            { icon: '📚', text: 'Upload Resource', href: 'dcf_resource_upload.html' },
-            { icon: '🔍', text: 'Search Library', action: 'document.getElementById("searchInput").focus()' },
-            { icon: '📚', text: 'My Resources', action: 'filterMyResources()' },
-            { icon: '🏠', text: 'Back to Home', href: basePath + 'members/dcf_member_home.html' }
-        ],
+        'resources_library': standardActions,
         'resource_detail': [
             { icon: '📚', text: 'Download', action: 'downloadResource()' },
             { icon: '🔗', text: 'Share Resource', action: 'shareResource()' },
