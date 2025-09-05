@@ -1559,9 +1559,41 @@
         document.getElementById('detailsForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Collect existing project details
             projectData.timeline = document.getElementById('timeline').value;
             projectData.teamSize = document.getElementById('teamSize').value;
             projectData.skills = Array.from(document.querySelectorAll('input[name="skills"]:checked')).map(cb => cb.value);
+            
+            // Collect project settings
+            const visibilityRadio = document.querySelector('input[name="visibility"]:checked');
+            const joinPolicyRadio = document.querySelector('input[name="joinPolicy"]:checked');
+            
+            projectData.visibility = visibilityRadio ? visibilityRadio.value : 'public';
+            projectData.joinPolicy = joinPolicyRadio ? joinPolicyRadio.value : 'open';
+            projectData.defaultPermissions = document.getElementById('defaultPermissions').value;
+            
+            // If application required, validate and collect application questions
+            if (projectData.joinPolicy === 'application') {
+                const applicationQuestions = document.getElementById('applicationQuestions').value.trim();
+                if (applicationQuestions) {
+                    projectData.applicationQuestions = applicationQuestions.split('\n').filter(q => q.trim());
+                } else {
+                    // If application required but no questions provided, add default questions
+                    projectData.applicationQuestions = [
+                        'Why are you interested in this project?',
+                        'What skills or experience can you contribute?'
+                    ];
+                }
+            } else {
+                projectData.applicationQuestions = null;
+            }
+            
+            console.log('Project settings collected:', {
+                visibility: projectData.visibility,
+                joinPolicy: projectData.joinPolicy,
+                defaultPermissions: projectData.defaultPermissions,
+                applicationQuestions: projectData.applicationQuestions
+            });
             
             goToStep(3);
         });
