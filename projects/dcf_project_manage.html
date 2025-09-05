@@ -2117,7 +2117,7 @@
             // Load enhanced settings when Settings section is shown
             if (sectionId === 'settings' && window.currentProject) {
                 loadProjectSettingsEnhanced(window.currentProject.id);
-                loadPermissionTemplates(window.currentProject.id);
+                loadPermissionTemplates(); // System-wide templates, no project_id needed
             }
         }
 
@@ -3836,7 +3836,6 @@
                 const { data, error } = await supabase
                     .from('project_permission_templates')
                     .insert({
-                        project_id: window.currentProject.id,
                         template_name: templateName,
                         description: templateDescription,
                         ...permissions,
@@ -3850,7 +3849,7 @@
                 closePermissionTemplateModal();
                 
                 // Reload permission templates list if it exists
-                loadPermissionTemplates(window.currentProject.id);
+                loadPermissionTemplates();
                 
             } catch (error) {
                 console.error('Error creating permission template:', error);
@@ -3858,13 +3857,12 @@
             }
         }
         
-        // Load and display permission templates
-        async function loadPermissionTemplates(projectId) {
+        // Load and display permission templates (system-wide, not project-specific)
+        async function loadPermissionTemplates() {
             try {
                 const { data: templates, error } = await supabase
                     .from('project_permission_templates')
                     .select('*')
-                    .eq('project_id', projectId)
                     .order('created_at', { ascending: false });
                 
                 const templatesList = document.getElementById('permissionTemplatesList');
@@ -3916,7 +3914,7 @@
                 if (error) throw error;
                 
                 showAlert('Template deleted successfully', 'info');
-                loadPermissionTemplates(window.currentProject.id);
+                loadPermissionTemplates();
                 
             } catch (error) {
                 console.error('Error deleting template:', error);
