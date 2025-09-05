@@ -2128,14 +2128,17 @@
                 displayProject(project);
                 loadRelatedProjects(project.author_id, projectId);
                 
-                // Track project view using Universal Analytics System
-                if (window.trackInteraction) {
+                // Track project view using Universal Analytics System (only once)
+                if (window.trackInteraction && !window.projectViewTracked) {
+                    window.projectViewTracked = true; // Set flag to prevent duplicate tracking
                     window.trackInteraction('project', projectId, 'view', {
                         title: project.title || 'Project',
                         author_id: project.author_id
                     });
-                } else {
+                } else if (!window.trackInteraction) {
                     console.log('View tracking not available yet');
+                } else {
+                    console.log('View already tracked for this project');
                 }
                 
             } catch (error) {
@@ -2664,17 +2667,16 @@
             }
         }
         
-        // Initialize like status and track view when page loads
+        // Initialize like status when page loads (removed duplicate view tracking)
         document.addEventListener('DOMContentLoaded', async () => {
             const projectId = getProjectId();
             
             // Initialize like status
             initializeProjectLike();
             
-            // Track page view
-            await window.trackInteraction('project', projectId, 'view', {
-                title: document.querySelector('.profile-name')?.textContent || 'Project'
-            });
+            // REMOVED duplicate view tracking from here
+            // View tracking is already done in loadProject() function above
+            // This prevents the view count from incrementing by 2
             
             // Update view count if element exists
             const viewCountEl = document.getElementById('viewCount');
