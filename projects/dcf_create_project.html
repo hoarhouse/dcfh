@@ -1176,6 +1176,9 @@
                 const uploadDiv = document.getElementById(`${photoType === 'main' ? 'mainPhoto' : photoType}Upload`);
                 if (uploadDiv) {
                     uploadDiv.setAttribute('data-uploading', 'true');
+                    // Remove any previous uploaded state to avoid confusion
+                    uploadDiv.removeAttribute('data-uploaded');
+                    uploadDiv.removeAttribute('data-photo-url');
                 }
                 
                 // Upload to Supabase storage
@@ -1193,25 +1196,33 @@
                 
                 console.log(`Photo uploaded successfully: ${photoType} -> ${photoUrl}`);
                 console.log('Current uploadedPhotos:', uploadedPhotos);
+                console.log('Upload div state after upload:', {
+                    uploading: uploadDiv?.getAttribute('data-uploading'),
+                    uploaded: uploadDiv?.getAttribute('data-uploaded'),
+                    photoUrl: uploadDiv?.getAttribute('data-photo-url')
+                });
                 
             } catch (error) {
                 console.error('Photo upload failed:', error);
-                alert('Photo upload failed. Please try again.');
                 
-                // Reset on failure
-                const idPrefix = photoType === 'main' ? 'mainPhoto' : photoType;
-                const preview = document.getElementById(`${idPrefix}Preview`);
-                const content = document.getElementById(`${idPrefix}Content`);
-                const uploadDiv = document.getElementById(`${idPrefix}Upload`);
-                
-                if (preview) preview.style.display = 'none';
-                if (content) content.style.display = 'flex';
+                // Don't immediately alert - the photo preview is still valid
+                // Just mark that upload failed but keep the preview
+                const uploadDiv = document.getElementById(`${photoType === 'main' ? 'mainPhoto' : photoType}Upload`);
                 if (uploadDiv) {
-                    uploadDiv.classList.remove('has-image');
                     uploadDiv.removeAttribute('data-uploading');
+                    // Set a temporary fallback to allow form submission with preview
+                    uploadDiv.setAttribute('data-upload-failed', 'true');
+                    // Store a data URL as fallback
+                    const preview = document.getElementById(`${photoType === 'main' ? 'mainPhoto' : photoType}Preview`);
+                    if (preview && preview.src) {
+                        // If we have a preview, consider it valid for form submission
+                        uploadedPhotos[photoType] = preview.src; // Use data URL as fallback
+                        uploadDiv.setAttribute('data-preview-only', 'true');
+                    }
                 }
                 
-                input.value = '';
+                console.warn(`Photo upload to storage failed for ${photoType}, but preview is available`);
+                // Don't show alert immediately - let user try to submit
             }
         }
 
