@@ -2955,7 +2955,8 @@ function populateQuickActions() {
     
     // Create action buttons with standardized styling
     actions.forEach((action, index) => {
-        const isPrimary = index === 0 && ['event_details', 'notifications', 'events_calendar'].includes(pageType);
+        // Check if action has primary flag or is first action in certain pages
+        const isPrimary = action.primary === true || (index === 0 && ['event_details', 'notifications'].includes(pageType));
         
         if (action.href) {
             // Create link styled as button
