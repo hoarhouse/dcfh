@@ -1581,18 +1581,23 @@
         
         async function updateChart(chartType, timeRange) {
             const ctx = document.getElementById('activityChart');
-            if (!ctx) return;
+            if (!ctx) {
+                console.log('Chart canvas element not found, skipping chart update');
+                return;
+            }
             
             // Destroy existing chart
             if (activityChartInstance) {
                 activityChartInstance.destroy();
+                activityChartInstance = null;
             }
             
             // Fetch time series data
             const chartData = await fetchTimeSeriesData(timeRange);
             
             // Create new chart
-            activityChartInstance = new Chart(ctx, {
+            try {
+                activityChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: chartData,
                 options: {
@@ -1636,8 +1641,11 @@
                     }
                 }
             });
-            
-            console.log(`Chart updated: ${chartType} for ${timeRange}`);
+                
+                console.log(`Chart updated: ${chartType} for ${timeRange}`);
+            } catch (error) {
+                console.error('Error creating chart:', error);
+            }
         }
 
         async function updateMetrics(timeRange) {
