@@ -1989,7 +1989,7 @@
                 <h2 class="feed-title" id="projectFeedTitle">Project Feed</h2>
                 
                 <!-- Create Post Box -->
-                <div class="create-post-box">
+                <div class="create-post-box" data-requires-post-permission="true">
                     <div class="post-author-info">
                         <div class="author-avatar" id="postAuthorAvatar" style="background: linear-gradient(135deg, #e5e5e5, #cacaca); color: #999; display: flex; align-items: center; justify-content: center; font-weight: 600;"></div>
                         <div class="author-details">
@@ -2337,6 +2337,9 @@
             
             // Load real statistics from database
             await loadProjectStatistics(project.id);
+            
+            // Check user permissions and update UI accordingly
+            await updateUIBasedOnPermissions(project.id);
             
             // Check if current user is the project author and show appropriate buttons
             updateProjectButtons(project);
@@ -3062,6 +3065,295 @@
             console.log('=== END setStatsData DEBUG ===');
         }
 
+        // Check user permissions for the project
+        async function checkUserPermissions(projectId, userId) {
+            if (!projectId || !userId || !window.dcfSupabase) {
+                return null;
+            }
+            
+            try {
+                // First check if user is a member of the project
+                const { data: memberData, error: memberError } = await window.dcfSupabase
+                    .from('project_members')
+                    .select('role, permission_template_id, custom_permissions')
+                    .eq('project_id', projectId)
+                    .eq('user_id', userId)
+                    .eq('status', 'active')
+                    .maybeSingle();
+                
+                if (memberError || !memberData) {
+                    console.log('User is not a member of this project');
+                    return null;
+                }
+                
+                // If user has custom permissions, use those
+                if (memberData.custom_permissions) {
+                    return {
+                        role: memberData.role,
+                        permissions: memberData.custom_permissions,
+                        isMember: true
+                    };
+                }
+                
+                // Otherwise, fetch permission template if exists
+                if (memberData.permission_template_id) {
+                    const { data: templateData, error: templateError } = await window.dcfSupabase
+                        .from('permission_templates')
+                        .select('*')
+                        .eq('id', memberData.permission_template_id)
+                        .maybeSingle();
+                    
+                    if (!templateError && templateData) {
+                        return {
+                            role: memberData.role,
+                            permissions: {
+                                can_edit_project: templateData.can_edit_project || false,
+                                can_manage_members: templateData.can_manage_members || false,
+                                can_upload_files: templateData.can_upload_files || false,
+                                can_create_posts: templateData.can_create_posts || false,
+                                can_moderate_comments: templateData.can_moderate_comments || false,
+                                can_manage_settings: templateData.can_manage_settings || false
+                            },
+                            isMember: true
+                        };
+                    }
+                }
+                
+                // Default permissions based on role
+                const defaultPermissions = getDefaultPermissionsByRole(memberData.role);
+                return {
+                    role: memberData.role,
+                    permissions: defaultPermissions,
+                    isMember: true
+                };
+                
+            } catch (error) {
+                console.error('Error checking user permissions:', error);
+                return null;
+            }
+        }
+        
+        // Get default permissions based on role
+        function getDefaultPermissionsByRole(role) {
+            switch(role) {
+                case 'owner':
+                case 'admin':
+                    return {
+                        can_edit_project: true,
+                        can_manage_members: true,
+                        can_upload_files: true,
+                        can_create_posts: true,
+                        can_moderate_comments: true,
+                        can_manage_settings: true
+                    };
+                case 'moderator':
+                    return {
+                        can_edit_project: false,
+                        can_manage_members: false,
+                        can_upload_files: true,
+                        can_create_posts: true,
+                        can_moderate_comments: true,
+                        can_manage_settings: false
+                    };
+                case 'contributor':
+                    return {
+                        can_edit_project: false,
+                        can_manage_members: false,
+                        can_upload_files: true,
+                        can_create_posts: true,
+                        can_moderate_comments: false,
+                        can_manage_settings: false
+                    };
+                case 'viewer':
+                default:
+                    return {
+                        can_edit_project: false,
+                        can_manage_members: false,
+                        can_upload_files: false,
+                        can_create_posts: false,
+                        can_moderate_comments: false,
+                        can_manage_settings: false
+                    };
+            }
+        }
+        
+        // Check project join policy
+        async function checkProjectJoinPolicy(projectId) {
+            if (!projectId || !window.dcfSupabase) {
+                return 'open'; // Default to open if can't check
+            }
+            
+            try {
+                const { data: settingsData, error } = await window.dcfSupabase
+                    .from('project_settings')
+                    .select('join_policy')
+                    .eq('project_id', projectId)
+                    .maybeSingle();
+                
+                if (!error && settingsData && settingsData.join_policy) {
+                    return settingsData.join_policy;
+                }
+                
+                // Default to open if no settings found
+                return 'open';
+                
+            } catch (error) {
+                console.error('Error checking project join policy:', error);
+                return 'open';
+            }
+        }
+        
+        // Update UI based on user permissions
+        async function updateUIBasedOnPermissions(projectId) {
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (!currentUser) {
+                console.log('No user logged in, showing public view');
+                return;
+            }
+            
+            // Check user permissions
+            const userPermissions = await checkUserPermissions(projectId, currentUser.id);
+            
+            // Store permissions globally for other functions to use
+            window.currentUserProjectPermissions = userPermissions;
+            
+            if (userPermissions) {
+                console.log('User permissions:', userPermissions);
+                
+                // Update manage/edit button visibility based on permissions
+                const ownerControls = document.getElementById('ownerControls');
+                const manageBtn = document.getElementById('manageProjectBtn');
+                
+                if (userPermissions.permissions.can_edit_project || userPermissions.permissions.can_manage_settings) {
+                    if (ownerControls) ownerControls.style.display = 'flex';
+                    if (manageBtn) manageBtn.style.display = 'inline-flex';
+                    
+                    // Also show edit cover button if they can edit
+                    const editCoverBtn = document.getElementById('editCoverBtn');
+                    if (editCoverBtn && userPermissions.permissions.can_edit_project) {
+                        editCoverBtn.style.display = 'flex';
+                    }
+                } else {
+                    if (ownerControls) ownerControls.style.display = 'none';
+                    if (manageBtn) manageBtn.style.display = 'none';
+                }
+                
+                // Update join button to show member status
+                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinCardTitle = document.getElementById('joinCardTitle');
+                const joinCardDescription = document.getElementById('joinCardDescription');
+                
+                if (joinBtn) {
+                    joinBtn.style.display = 'none'; // Hide join button for members
+                }
+                
+                if (joinCardTitle) {
+                    joinCardTitle.textContent = `You're a ${userPermissions.role}`;
+                }
+                
+                if (joinCardDescription) {
+                    const permCount = Object.values(userPermissions.permissions).filter(p => p === true).length;
+                    joinCardDescription.textContent = `You have ${permCount} active permissions in this project`;
+                }
+                
+                // Control file upload sections visibility
+                const fileUploadElements = document.querySelectorAll('[data-requires-upload-permission]');
+                fileUploadElements.forEach(element => {
+                    const originalDisplay = element.style.display || 'block';
+                    element.style.display = userPermissions.permissions.can_upload_files ? originalDisplay : 'none';
+                });
+                
+                // Control post/comment form visibility
+                const postFormElements = document.querySelectorAll('[data-requires-post-permission]');
+                postFormElements.forEach(element => {
+                    const originalDisplay = window.getComputedStyle(element).display;
+                    element.style.display = userPermissions.permissions.can_create_posts ? 
+                        (originalDisplay === 'none' ? 'block' : originalDisplay) : 'none';
+                });
+                
+            } else {
+                // User is not a member - check join policy and update button accordingly
+                const joinPolicy = await checkProjectJoinPolicy(projectId);
+                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinCardTitle = document.getElementById('joinCardTitle');
+                const joinCardDescription = document.getElementById('joinCardDescription');
+                
+                if (joinBtn) {
+                    if (joinPolicy === 'application') {
+                        joinBtn.innerHTML = '📝 Apply to Join';
+                        joinBtn.onclick = () => applyToJoinProject(projectId);
+                    } else {
+                        joinBtn.innerHTML = '🤝 Join Project';
+                        joinBtn.onclick = () => joinProject(projectId);
+                    }
+                    joinBtn.style.display = 'inline-flex';
+                }
+                
+                if (joinCardTitle) {
+                    joinCardTitle.textContent = joinPolicy === 'application' ? 
+                        'Apply to Join This Project' : 
+                        'Join This Project';
+                }
+                
+                if (joinCardDescription) {
+                    joinCardDescription.textContent = joinPolicy === 'application' ?
+                        'Submit an application to become a project member' :
+                        'Become a member to contribute and participate';
+                }
+                
+                // Hide manage buttons for non-members
+                const ownerControls = document.getElementById('ownerControls');
+                const manageBtn = document.getElementById('manageProjectBtn');
+                if (ownerControls) ownerControls.style.display = 'none';
+                if (manageBtn) manageBtn.style.display = 'none';
+            }
+        }
+        
+        // Join project directly (for open projects)
+        async function joinProject(projectId) {
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (!currentUser) {
+                showNotification('Please log in to join projects', 'warning');
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('project_members')
+                    .insert({
+                        project_id: projectId,
+                        user_id: currentUser.id,
+                        role: 'viewer',
+                        status: 'active',
+                        joined_at: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                
+                showNotification('Successfully joined the project!', 'success');
+                
+                // Refresh the page to update permissions
+                await updateUIBasedOnPermissions(projectId);
+                await loadProjectStatistics(projectId);
+                
+            } catch (error) {
+                console.error('Error joining project:', error);
+                showNotification('Failed to join project', 'error');
+            }
+        }
+        
+        // Apply to join project (for application-only projects)
+        async function applyToJoinProject(projectId) {
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (!currentUser) {
+                showNotification('Please log in to apply to projects', 'warning');
+                return;
+            }
+            
+            // For now, just show a message - full implementation would create an application record
+            showNotification('Application feature coming soon! Contact the project owner for now.', 'info');
+        }
+
         // Function to set join card content
         function setJoinCardContent(title, description, buttonText = '🤝 Join Now') {
             const joinCardTitle = document.getElementById('joinCardTitle');
@@ -3073,21 +3365,33 @@
             if (buttonText && joinProjectBtn) joinProjectBtn.innerHTML = buttonText;
         }
 
-        // Handle join project action (Follow/Unfollow)
+        // Handle join project action (Follow/Unfollow) - Legacy function for backward compatibility
         async function handleJoinProject() {
+            // Check if this should redirect to new join functions
+            const projectId = getProjectIdFromURL();
+            const joinBtn = document.getElementById('joinProjectBtn');
+            
+            if (joinBtn && (joinBtn.textContent.includes('Join') || joinBtn.textContent.includes('Apply'))) {
+                // Use new permission-based join system
+                if (joinBtn.textContent.includes('Apply')) {
+                    return applyToJoinProject(projectId);
+                } else {
+                    return joinProject(projectId);
+                }
+            }
+            
+            // Otherwise, handle follow/unfollow (legacy behavior)
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser || !currentUser.email) {
                 showNotification('Please log in to follow projects', 'warning');
                 return;
             }
             
-            const projectId = getProjectIdFromURL();
             if (!projectId || !window.currentProject) {
                 showNotification('Project information not loaded', 'error');
                 return;
             }
             
-            const joinBtn = document.getElementById('joinProjectBtn');
             if (!joinBtn) return;
             
             // Check current follow status
