@@ -1131,15 +1131,8 @@
                 return;
             }
             
-            // Wait for auth to be ready
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
+            // Quick auth check - no waiting loop
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 await showAlert('Please log in to post comments', 'warning');
                 return;
@@ -1147,7 +1140,7 @@
             
             // Set flag to prevent duplicate submissions
             isSubmittingComment = true;
-            console.log('🚀 Starting comment submission');
+            console.log('🚀 Starting comment submission - optimized');
             
             const submitBtn = document.querySelector('.comment-form .btn-primary');
             const originalText = submitBtn.textContent;
@@ -1179,7 +1172,7 @@
                 
                 console.log('📤 Submitting comment data:', commentData);
                 
-                // Database operation with timeout
+                // Database operation with shorter timeout
                 const { data, error } = await Promise.race([
                     dbClient
                         .from('comments')
@@ -1187,7 +1180,7 @@
                         .select()
                         .single(),
                     new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Database operation timed out after 10 seconds')), 10000)
+                        setTimeout(() => reject(new Error('Database operation timed out after 5 seconds')), 5000)
                     )
                 ]);
                 
@@ -1205,18 +1198,21 @@
                 
                 textarea.value = '';
                 
-                // Store mentions and update stats
-                try {
-                    await storeMentions(data.id, content, currentUser.id);
-                    await updateCommentStats(data.id);
-                } catch (statsError) {
+                // Background operations - don't await these to reduce delay
+                Promise.all([
+                    storeMentions(data.id, content, currentUser.id),
+                    updateCommentStats(data.id)
+                ]).catch(statsError => {
                     console.warn('⚠️ Failed to update comment stats:', statsError);
-                    // Don't fail the whole operation for stats errors
-                }
+                });
                 
-                await loadComments();
+                // Load comments after a short delay (non-blocking)
+                setTimeout(() => loadComments(), 1000);
                 
                 console.log('✅ Comment submission completed successfully');
+                
+                // Quick success feedback
+                showAlert('Comment posted!', 'success');
                 
             } catch (error) {
                 console.error('Error submitting comment:', error);
