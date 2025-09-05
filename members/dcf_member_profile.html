@@ -2349,6 +2349,12 @@
                 editProfileBtn.style.display = isOwnProfile ? 'inline-block' : 'none';
             }
             
+            // Show/hide Cover Edit button based on ownership
+            const coverEditBtn = document.getElementById('coverEditButton');
+            if (coverEditBtn) {
+                coverEditBtn.style.display = isOwnProfile ? 'block' : 'none';
+            }
+            
             // Hide post creation box if viewing someone else's profile
             const createPostBox = document.querySelector('.create-post-box');
             if (createPostBox) {
@@ -2473,6 +2479,154 @@
                 window.location.href = `dcf_edit_profile.html?id=${userId}`;
             }
         }
+
+        // Cover Photo Functions
+        let coverFile = null;
+        let coverPosition = 50;
+
+        function openCoverModal() {
+            document.getElementById('coverModal').classList.add('active');
+            // Reset to current position if exists
+            const currentBackground = document.getElementById('heroBackground');
+            if (currentBackground && currentBackground.style.backgroundPosition) {
+                const match = currentBackground.style.backgroundPosition.match(/center (\d+)%/);
+                if (match) {
+                    coverPosition = parseInt(match[1]);
+                    document.getElementById('coverPositionSlider').value = coverPosition;
+                    document.getElementById('coverPositionValue').textContent = coverPosition + '%';
+                }
+            }
+        }
+
+        function closeCoverModal() {
+            document.getElementById('coverModal').classList.remove('active');
+            // Reset preview
+            document.getElementById('coverPreviewContainer').style.display = 'none';
+            document.getElementById('coverUploadArea').style.display = 'block';
+            coverFile = null;
+        }
+
+        function handleCoverFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                coverFile = file;
+                displayCoverPreview(file);
+            }
+        }
+
+        function displayCoverPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImage = document.getElementById('coverPreviewImage');
+                previewImage.src = e.target.result;
+                document.getElementById('coverUploadArea').style.display = 'none';
+                document.getElementById('coverPreviewContainer').style.display = 'block';
+                updateCoverPosition(coverPosition);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateCoverPosition(value) {
+            coverPosition = value;
+            document.getElementById('coverPositionValue').textContent = value + '%';
+            const previewImage = document.getElementById('coverPreviewImage');
+            if (previewImage) {
+                previewImage.style.objectPosition = `center ${value}%`;
+            }
+        }
+
+        async function saveCoverPhoto() {
+            try {
+                if (!currentUser) {
+                    showNotification('You must be logged in to update cover photo', 'error');
+                    return;
+                }
+
+                let coverUrl = null;
+
+                // Upload new cover if selected
+                if (coverFile) {
+                    const fileName = `covers/${currentUser.id}_${Date.now()}_${coverFile.name}`;
+                    const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
+                        .from('user-media')
+                        .upload(fileName, coverFile);
+
+                    if (uploadError) {
+                        console.error('Upload error:', uploadError);
+                        showNotification('Failed to upload cover photo', 'error');
+                        return;
+                    }
+
+                    // Get public URL
+                    const { data: urlData } = window.dcfSupabase.storage
+                        .from('user-media')
+                        .getPublicUrl(fileName);
+                    
+                    coverUrl = urlData.publicUrl;
+                }
+
+                // Update profile with new cover URL and position
+                const updates = {
+                    cover_position: `center ${coverPosition}%`,
+                    updated_at: new Date().toISOString()
+                };
+
+                if (coverUrl) {
+                    updates.cover_image_url = coverUrl;
+                }
+
+                const { error: updateError } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .update(updates)
+                    .eq('id', currentUser.id);
+
+                if (updateError) {
+                    console.error('Update error:', updateError);
+                    showNotification('Failed to update cover photo', 'error');
+                    return;
+                }
+
+                // Update the display immediately
+                const heroBackground = document.getElementById('heroBackground');
+                if (coverUrl) {
+                    heroBackground.style.backgroundImage = `url('${coverUrl}')`;
+                }
+                heroBackground.style.backgroundPosition = `center ${coverPosition}%`;
+
+                closeCoverModal();
+                showNotification('Cover photo updated successfully!', 'success');
+
+            } catch (error) {
+                console.error('Save cover error:', error);
+                showNotification('Failed to save cover photo', 'error');
+            }
+        }
+
+        // Add drag and drop support
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('coverUploadArea');
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type.startsWith('image/')) {
+                        coverFile = files[0];
+                        displayCoverPreview(files[0]);
+                    }
+                });
+            }
+        });
 
 
         // Post functions
