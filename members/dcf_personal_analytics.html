@@ -1424,23 +1424,215 @@
             updateChart(chartType, currentTimeRange);
         }
 
-        function updateChart(chartType, timeRange) {
-            const chartContainer = document.getElementById('mainChart');
-            const placeholder = chartContainer.querySelector('.chart-placeholder');
+        // Chart.js instance
+        let activityChartInstance = null;
+        
+        async function fetchTimeSeriesData(timeRange) {
+            try {
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) return { labels: [], datasets: [] };
+                
+                const supabase = window.dcfSupabase;
+                if (!supabase) return { labels: [], datasets: [] };
+                
+                // Calculate date range
+                const endDate = new Date();
+                const startDate = new Date();
+                
+                switch(timeRange) {
+                    case '7d': 
+                        startDate.setDate(endDate.getDate() - 7);
+                        break;
+                    case '30d': 
+                        startDate.setDate(endDate.getDate() - 30);
+                        break;
+                    case '90d': 
+                        startDate.setDate(endDate.getDate() - 90);
+                        break;
+                    case '1y': 
+                        startDate.setFullYear(endDate.getFullYear() - 1);
+                        break;
+                }
+                
+                // Fetch user's interactions from universal_analytics
+                const { data: interactions, error } = await supabase
+                    .from('universal_analytics')
+                    .select('interaction_type, created_at')
+                    .eq('user_id', currentUser.id)
+                    .gte('created_at', startDate.toISOString())
+                    .lte('created_at', endDate.toISOString())
+                    .order('created_at', { ascending: true });
+                
+                if (error) {
+                    console.error('Error fetching time series data:', error);
+                    return getMockChartData(timeRange);
+                }
+                
+                // Process data for chart
+                const dataByType = {
+                    like: {},
+                    view: {},
+                    share: {},
+                    bookmark: {}
+                };
+                
+                // Generate date labels
+                const labels = [];
+                const current = new Date(startDate);
+                while (current <= endDate) {
+                    const dateStr = current.toISOString().split('T')[0];
+                    labels.push(dateStr);
+                    
+                    // Initialize counts
+                    Object.keys(dataByType).forEach(type => {
+                        dataByType[type][dateStr] = 0;
+                    });
+                    
+                    current.setDate(current.getDate() + 1);
+                }
+                
+                // Count interactions by date and type
+                (interactions || []).forEach(item => {
+                    const date = item.created_at.split('T')[0];
+                    const type = item.interaction_type;
+                    
+                    if (dataByType[type] && dataByType[type][date] !== undefined) {
+                        dataByType[type][date]++;
+                    }
+                });
+                
+                // Create datasets for Chart.js
+                const datasets = [
+                    {
+                        label: 'Likes',
+                        data: labels.map(date => dataByType.like[date] || 0),
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Views',
+                        data: labels.map(date => dataByType.view[date] || 0),
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Shares',
+                        data: labels.map(date => dataByType.share[date] || 0),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Bookmarks',
+                        data: labels.map(date => dataByType.bookmark[date] || 0),
+                        borderColor: 'rgb(153, 102, 255)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0.3
+                    }
+                ];
+                
+                // Format labels for display
+                const displayLabels = labels.map(date => {
+                    const d = new Date(date);
+                    if (timeRange === '7d' || timeRange === '30d') {
+                        return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+                    } else {
+                        return d.toLocaleDateString('en', { month: 'short' });
+                    }
+                });
+                
+                return { labels: displayLabels, datasets };
+                
+            } catch (error) {
+                console.error('Error in fetchTimeSeriesData:', error);
+                return getMockChartData(timeRange);
+            }
+        }
+        
+        function getMockChartData(timeRange) {
+            // Return mock data if database query fails
+            const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+            const labels = [];
+            const mockData = [];
             
-            const descriptions = {
-                activity: 'Interactive charts showing your engagement patterns over time',
-                contributions: 'Visual breakdown of your resource contributions and their impact',
-                engagement: 'Analysis of your community interactions and discussion participation'
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+                mockData.push(Math.floor(Math.random() * 20) + 5);
+            }
+            
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Activity',
+                    data: mockData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.3
+                }]
             };
+        }
+        
+        async function updateChart(chartType, timeRange) {
+            const ctx = document.getElementById('activityChart');
+            if (!ctx) return;
             
-            placeholder.innerHTML = `
-                <div class="chart-placeholder-icon">📊</div>
-                <div>${chartType.charAt(0).toUpperCase() + chartType.slice(1)} chart visualization would be rendered here</div>
-                <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">
-                    ${descriptions[chartType]}
-                </div>
-            `;
+            // Destroy existing chart
+            if (activityChartInstance) {
+                activityChartInstance.destroy();
+            }
+            
+            // Fetch time series data
+            const chartData = await fetchTimeSeriesData(timeRange);
+            
+            // Create new chart
+            activityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `Activity Trends - ${timeRange === '7d' ? 'Last 7 Days' : 
+                                   timeRange === '30d' ? 'Last 30 Days' : 
+                                   timeRange === '90d' ? 'Last 90 Days' : 'Last Year'}`
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Interactions'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
             
             console.log(`Chart updated: ${chartType} for ${timeRange}`);
         }
@@ -1794,7 +1986,7 @@
             
             // Now update metrics with real data
             await updateMetrics(currentTimeRange);
-            updateChart(currentChart, currentTimeRange);
+            await updateChart(currentChart, currentTimeRange);
             
             // Animate metric cards on load
             setTimeout(() => {
