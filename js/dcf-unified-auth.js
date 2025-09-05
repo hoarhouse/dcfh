@@ -2729,6 +2729,9 @@ function detectPageType() {
 }
 
 function getQuickActionsConfig(pageType) {
+    // Define basePath for backward compatibility
+    const basePath = getCorrectBasePath();
+    
     // Get the current location to properly construct paths
     const currentPath = window.location.pathname;
     const pathParts = currentPath.split('/');
