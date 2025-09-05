@@ -2319,6 +2319,41 @@
                     throw error;
                 }
                 
+                // Save advanced project settings
+                const joinPolicy = document.querySelector('input[name="joinPolicy"]:checked')?.value || 'open';
+                const applicationQuestions = joinPolicy === 'application' ? 
+                    document.getElementById('applicationQuestions').value.split('\n').filter(q => q.trim()) : null;
+                const defaultPermissions = document.getElementById('defaultPermissions').value;
+                
+                // Check if settings exist
+                const { data: existingSettings } = await supabase
+                    .from('project_settings')
+                    .select('id')
+                    .eq('project_id', projectId)
+                    .maybeSingle();
+                
+                const settingsData = {
+                    project_id: projectId,
+                    join_policy: joinPolicy,
+                    application_questions: applicationQuestions ? JSON.stringify(applicationQuestions) : null,
+                    default_permission_level: defaultPermissions,
+                    updated_at: new Date().toISOString()
+                };
+                
+                if (existingSettings) {
+                    // Update existing settings
+                    await supabase
+                        .from('project_settings')
+                        .update(settingsData)
+                        .eq('project_id', projectId);
+                } else {
+                    // Create new settings
+                    settingsData.created_at = new Date().toISOString();
+                    await supabase
+                        .from('project_settings')
+                        .insert([settingsData]);
+                }
+                
                 console.log('Project settings updated successfully');
                 
                 // Log activity for project update
