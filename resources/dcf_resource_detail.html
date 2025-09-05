@@ -1302,15 +1302,8 @@
                 return;
             }
             
-            // Wait for auth to be ready
-            let currentUser = window.getCurrentUser();
-            let attempts = 0;
-            while (!currentUser && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                currentUser = window.getCurrentUser();
-                attempts++;
-            }
-            
+            // Quick auth check - no waiting loop
+            const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 await showAlert('Please log in to post replies', 'warning');
                 return;
@@ -1326,11 +1319,59 @@
                 submitBtn.textContent = 'Posting...';
             }
             
+            // OPTIMISTIC UPDATE: Create temporary reply and show immediately
+            const tempReplyId = `temp-${Date.now()}`;
+            const tempReply = {
+                id: tempReplyId,
+                content_type: 'resource',
+                content_id: resourceId,
+                author_id: currentUser.id,
+                author_email: currentUser.email,
+                author_name: `@${currentUser.username || currentUser.email.split('@')[0]}`,
+                comment_text: content,
+                parent_comment_id: commentId,
+                like_count: 0,
+                is_deleted: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            // Clear form immediately and show optimistic reply
+            textarea.value = '';
+            cancelReply(commentId);
+            
+            // Add reply to UI immediately (optimistic update)
+            const parentComment = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (parentComment) {
+                const repliesContainer = parentComment.querySelector('.replies-container') || 
+                                       parentComment.parentElement.querySelector('.replies-container');
+                if (repliesContainer) {
+                    const tempReplyHtml = `
+                        <div class="reply" data-reply-id="${tempReplyId}" style="background: #f8f9fa; border-left: 3px solid #007bff; padding: 0.5rem; margin: 0.5rem 0 0.5rem 2rem; border-radius: 4px; opacity: 0.7;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div style="flex-shrink: 0; width: 32px; height: 32px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;">
+                                    ${tempReply.author_name.substring(1, 3).toUpperCase()}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333; font-size: 0.85rem;">${tempReply.author_name}</div>
+                                    <div style="color: #666; font-size: 0.8rem; margin: 0.25rem 0;">${content}</div>
+                                    <div style="color: #999; font-size: 0.7rem;">Posting...</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    repliesContainer.insertAdjacentHTML('beforeend', tempReplyHtml);
+                }
+            }
+            
             try {
                 // Check if Supabase client is available
                 if (!window.dcfSupabase) {
                     console.error('Supabase client not initialized');
                     await showAlert('System not ready. Please refresh the page.', 'error');
+                    // Remove optimistic reply on error
+                    const tempReplyElement = document.querySelector(`[data-reply-id="${tempReplyId}"]`);
+                    if (tempReplyElement) tempReplyElement.remove();
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalText;
@@ -1352,7 +1393,7 @@
                     updated_at: new Date().toISOString()
                 };
                 
-                // Use consistent database client with timeout
+                // Use consistent database client with shorter timeout
                 const dbClient = supabase || window.dcfSupabase;
                 const { data, error } = await Promise.race([
                     dbClient
@@ -1361,21 +1402,31 @@
                         .select()
                         .single(),
                     new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Reply submission timed out after 10 seconds')), 10000)
+                        setTimeout(() => reject(new Error('Reply submission timed out after 5 seconds')), 5000)
                     )
                 ]);
                 
                 if (error) throw error;
                 
-                textarea.value = '';
-                cancelReply(commentId);
+                // Background operations - don't await these
+                Promise.all([
+                    storeMentions(data.id, content, currentUser.id),
+                    updateCommentStats(data.id),
+                    updateCommentStats(commentId)
+                ]).catch(err => console.warn('Background operations failed:', err));
                 
-                // Store mentions and update stats for both reply and parent
-                await storeMentions(data.id, content, currentUser.id);
-                await updateCommentStats(data.id);
-                await updateCommentStats(commentId); // Update parent comment stats
+                // Remove temporary reply and replace with real one
+                const tempReplyElement = document.querySelector(`[data-reply-id="${tempReplyId}"]`);
+                if (tempReplyElement) {
+                    tempReplyElement.style.opacity = '1';
+                    tempReplyElement.setAttribute('data-reply-id', data.id);
+                    // Update the "Posting..." text to "Just now"
+                    const statusText = tempReplyElement.querySelector('div[style*="color: #999"]');
+                    if (statusText) statusText.textContent = 'Just now';
+                }
                 
-                await loadComments();
+                // Delayed full refresh (non-blocking)
+                setTimeout(() => loadComments(), 2000);
                 
             } catch (error) {
                 console.error('Error submitting reply:', error);
