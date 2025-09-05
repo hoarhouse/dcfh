@@ -2961,44 +2961,97 @@
             const heroBackground = document.getElementById('heroBackground');
             if (!heroBackground) return;
             
+            console.log('📌 Enabling cover dragging');
+            
+            // Remove any existing listeners first to prevent duplicates
+            disableCoverDragging();
+            
             heroBackground.addEventListener('mousedown', handleDragStart);
+            heroBackground.addEventListener('touchstart', handleDragStart, { passive: false });
             document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('touchmove', handleDragMove, { passive: false });
             document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchend', handleDragEnd);
         }
         
         function disableCoverDragging() {
             const heroBackground = document.getElementById('heroBackground');
             if (heroBackground) {
                 heroBackground.removeEventListener('mousedown', handleDragStart);
+                heroBackground.removeEventListener('touchstart', handleDragStart);
             }
             document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('touchmove', handleDragMove);
             document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchend', handleDragEnd);
+            
+            // Reset dragging state
+            isDragging = false;
         }
         
         function handleDragStart(e) {
             const heroBackground = document.getElementById('heroBackground');
             if (!heroBackground || !heroBackground.classList.contains('repositioning')) return;
             
+            // Get the Y position from either mouse or touch
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
             isDragging = true;
-            dragStartY = e.clientY;
+            dragStartY = clientY;
             dragStartPosition = currentCoverPosition;
+            
+            // Prevent default to stop image dragging and touch scrolling
             e.preventDefault();
+            e.stopPropagation();
+            
+            // Add cursor grabbing style
+            heroBackground.style.cursor = 'grabbing';
+            
+            console.log('🎯 Drag started at Y:', clientY, 'Position:', currentCoverPosition);
         }
         
         function handleDragMove(e) {
             if (!isDragging) return;
             
-            const deltaY = e.clientY - dragStartY;
-            const percentChange = (deltaY / window.innerHeight) * 100;
+            // Prevent default to stop scrolling on touch
+            e.preventDefault();
             
+            // Get the Y position from either mouse or touch
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            // Calculate the drag distance as a percentage of the hero height
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground) return;
+            
+            const deltaY = clientY - dragStartY;
+            const heroHeight = heroBackground.offsetHeight;
+            const percentChange = (deltaY / heroHeight) * 100;
+            
+            // Calculate new position (inverted: drag down = higher percentage)
             let newPosition = dragStartPosition + percentChange;
             newPosition = Math.max(0, Math.min(100, newPosition));
             
             setCoverPosition(newPosition);
+            
+            // Update slider to match
+            const slider = document.getElementById('positionSlider');
+            if (slider) {
+                slider.value = newPosition;
+            }
         }
         
         function handleDragEnd(e) {
+            if (!isDragging) return;
+            
             isDragging = false;
+            
+            // Reset cursor
+            const heroBackground = document.getElementById('heroBackground');
+            if (heroBackground) {
+                heroBackground.style.cursor = 'grab';
+            }
+            
+            console.log('🏁 Drag ended at position:', currentCoverPosition);
         }
 
         // Setup Edit Cover button click handler
