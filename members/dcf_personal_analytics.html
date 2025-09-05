@@ -1865,6 +1865,200 @@
                 updateMetricDisplay('network', connectionsCount);
                 updateMetricDisplay('activity', activityCount);
                 
+                // DETAILED BREAKDOWNS FOR EACH CARD
+                
+                // 1. Active Projects Breakdown
+                try {
+                    const { count: leadingCount } = await supabase
+                        .from('project_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('role', 'leader')
+                        .eq('status', 'active');
+                    
+                    const { count: contributingCount } = await supabase
+                        .from('project_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('role', 'contributor')
+                        .eq('status', 'active');
+                    
+                    const { count: completedCount } = await supabase
+                        .from('project_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('status', 'completed');
+                    
+                    // Update project breakdown display
+                    const projectBreakdown = document.querySelectorAll('.metric-card:nth-child(1) .detail-value');
+                    if (projectBreakdown[0]) projectBreakdown[0].textContent = leadingCount || 0;
+                    if (projectBreakdown[1]) projectBreakdown[1].textContent = contributingCount || 0;
+                    if (projectBreakdown[2]) projectBreakdown[2].textContent = completedCount || 0;
+                } catch (err) {
+                    console.log('Could not fetch project breakdown');
+                }
+                
+                // 2. Community Interactions Breakdown
+                try {
+                    const { count: commentCount } = await supabase
+                        .from('universal_analytics')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('interaction_type', 'comment')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: shareCount } = await supabase
+                        .from('universal_analytics')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('interaction_type', 'share')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: likeCount } = await supabase
+                        .from('universal_analytics')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('interaction_type', 'like')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    // Update interactions breakdown display
+                    const interactionsBreakdown = document.querySelectorAll('.metric-card:nth-child(2) .detail-value');
+                    if (interactionsBreakdown[0]) interactionsBreakdown[0].textContent = commentCount || 0;
+                    if (interactionsBreakdown[1]) interactionsBreakdown[1].textContent = shareCount || 0;
+                    if (interactionsBreakdown[2]) interactionsBreakdown[2].textContent = likeCount || 0;
+                } catch (err) {
+                    console.log('Could not fetch interactions breakdown');
+                }
+                
+                // 3. Resources Shared Breakdown
+                try {
+                    const { count: researchCount } = await supabase
+                        .from('user_resources')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('creator_id', currentUser.id)
+                        .eq('category', 'research_paper')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: guideCount } = await supabase
+                        .from('user_resources')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('creator_id', currentUser.id)
+                        .eq('category', 'guide')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: toolCount } = await supabase
+                        .from('user_resources')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('creator_id', currentUser.id)
+                        .eq('category', 'tool')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    // Update resources breakdown display
+                    const resourcesBreakdown = document.querySelectorAll('.metric-card:nth-child(3) .detail-value');
+                    if (resourcesBreakdown[0]) resourcesBreakdown[0].textContent = researchCount || 0;
+                    if (resourcesBreakdown[1]) resourcesBreakdown[1].textContent = guideCount || 0;
+                    if (resourcesBreakdown[2]) resourcesBreakdown[2].textContent = toolCount || 0;
+                } catch (err) {
+                    console.log('user_resources breakdown not available, trying resources table');
+                    // Fallback to resources table with category field
+                    try {
+                        const { count: researchCount } = await supabase
+                            .from('resources')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('author_email', currentUser.email)
+                            .eq('category', 'Research')
+                            .gte('created_at', startDate.toISOString());
+                        
+                        const { count: guideCount } = await supabase
+                            .from('resources')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('author_email', currentUser.email)
+                            .eq('category', 'Guide')
+                            .gte('created_at', startDate.toISOString());
+                        
+                        const { count: toolCount } = await supabase
+                            .from('resources')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('author_email', currentUser.email)
+                            .eq('category', 'Tool')
+                            .gte('created_at', startDate.toISOString());
+                        
+                        const resourcesBreakdown = document.querySelectorAll('.metric-card:nth-child(3) .detail-value');
+                        if (resourcesBreakdown[0]) resourcesBreakdown[0].textContent = researchCount || 0;
+                        if (resourcesBreakdown[1]) resourcesBreakdown[1].textContent = guideCount || 0;
+                        if (resourcesBreakdown[2]) resourcesBreakdown[2].textContent = toolCount || 0;
+                    } catch (err2) {
+                        console.log('Resources breakdown not available');
+                    }
+                }
+                
+                // 4. Professional Connections Breakdown
+                try {
+                    const { count: researcherCount } = await supabase
+                        .from('user_connections')
+                        .select('*', { count: 'exact', head: true })
+                        .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+                        .eq('professional_type', 'researcher')
+                        .eq('status', 'accepted');
+                    
+                    const { count: developerCount } = await supabase
+                        .from('user_connections')
+                        .select('*', { count: 'exact', head: true })
+                        .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+                        .eq('professional_type', 'developer')
+                        .eq('status', 'accepted');
+                    
+                    const { count: policyCount } = await supabase
+                        .from('user_connections')
+                        .select('*', { count: 'exact', head: true })
+                        .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+                        .eq('professional_type', 'policy_maker')
+                        .eq('status', 'accepted');
+                    
+                    // Update connections breakdown display
+                    const connectionsBreakdown = document.querySelectorAll('.metric-card:nth-child(4) .detail-value');
+                    if (connectionsBreakdown[0]) connectionsBreakdown[0].textContent = researcherCount || 0;
+                    if (connectionsBreakdown[1]) connectionsBreakdown[1].textContent = developerCount || 0;
+                    if (connectionsBreakdown[2]) connectionsBreakdown[2].textContent = policyCount || 0;
+                } catch (err) {
+                    console.log('Connections breakdown not available');
+                }
+                
+                // 5. Events Attended Breakdown (6th card)
+                try {
+                    const { count: workshopCount } = await supabase
+                        .from('event_attendees')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('event_type', 'workshop')
+                        .eq('status', 'attended')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: conferenceCount } = await supabase
+                        .from('event_attendees')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('event_type', 'conference')
+                        .eq('status', 'attended')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    const { count: networkingCount } = await supabase
+                        .from('event_attendees')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id)
+                        .eq('event_type', 'networking')
+                        .eq('status', 'attended')
+                        .gte('created_at', startDate.toISOString());
+                    
+                    // Update events breakdown display (6th card)
+                    const eventsBreakdown = document.querySelectorAll('.metric-card:nth-child(6) .detail-value');
+                    if (eventsBreakdown[0]) eventsBreakdown[0].textContent = workshopCount || 0;
+                    if (eventsBreakdown[1]) eventsBreakdown[1].textContent = conferenceCount || 0;
+                    if (eventsBreakdown[2]) eventsBreakdown[2].textContent = networkingCount || 0;
+                } catch (err) {
+                    console.log('Events breakdown not available');
+                }
+                
                 // Log the real data fetched
                 console.log(`Real metrics for ${timeRange}:`, {
                     projects: activeProjectsCount,
