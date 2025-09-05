@@ -1149,12 +1149,15 @@
             
             // Load user connections first (before loading members)
             if (currentUser) {
+                console.log('🔄 Loading user connections for:', currentUser.id);
                 try {
                     await loadUserConnections();
                     console.log('✅ User connections loaded:', userConnections.size, 'connections');
                 } catch (error) {
                     console.error('❌ Error loading user connections:', error);
                 }
+            } else {
+                console.log('⚠️ No user authenticated, connection features will be limited');
             }
             
             // Load members data
@@ -1962,7 +1965,12 @@ const { data: user } = await window.masterSupabase
             if (!currentUser) {
                 currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             }
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('⚠️ No current user for loading connections');
+                return;
+            }
+            
+            console.log('👤 Loading connections for user ID:', currentUser.id);
 
             try {
                 const { data, error } = await window.dcfSupabase
@@ -1970,21 +1978,32 @@ const { data: user } = await window.masterSupabase
                     .select('*')
                     .or(`requester_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`);
 
-                if (!error && data) {
+                if (error) {
+                    console.error('❌ Database error loading connections:', error);
+                    return;
+                }
+                
+                if (data) {
                     userConnections.clear();
+                    console.log(`📊 Found ${data.length} connection records in database`);
+                    
                     data.forEach(conn => {
                         const otherUserId = conn.requester_id === currentUser.id ? 
                             conn.recipient_id : conn.requester_id;
-                        userConnections.set(otherUserId, {
+                        const connectionInfo = {
                             status: conn.status,
                             isRequester: conn.requester_id === currentUser.id,
                             connection: conn
-                        });
+                        };
+                        userConnections.set(otherUserId, connectionInfo);
+                        console.log(`  → User ${otherUserId}: ${conn.status} (${connectionInfo.isRequester ? 'sent request' : 'received request'})`);
                     });
-                    console.log('✅ Loaded user connections:', userConnections.size);
+                    console.log('✅ Loaded connections into map, size:', userConnections.size);
+                } else {
+                    console.log('📊 No connections found for user');
                 }
             } catch (error) {
-                console.error('Error loading connections:', error);
+                console.error('❌ Exception loading connections:', error);
             }
         }
 
@@ -2001,14 +2020,14 @@ const { data: user } = await window.masterSupabase
                     `;
                 case 'request_sent':
                     return `
-                        <button class="btn btn-secondary btn-small connect-btn" data-user-id="${userId}" data-status="pending" onclick="cancelConnectionRequest('${userId}', this)">
-                            ⏳ Request Sent
+                        <button class="btn btn-secondary btn-small connect-btn" data-user-id="${userId}" data-status="pending">
+                            ⏳ Pending
                         </button>
                     `;
                 case 'request_received':
                     return `
-                        <button class="btn btn-success btn-small connect-btn" data-user-id="${userId}" onclick="acceptConnectionRequest('${userId}', this)">
-                            ✓ Accept Request
+                        <button class="btn btn-success btn-small connect-btn" data-user-id="${userId}">
+                            ✓ Accept
                         </button>
                     `;
                 case 'declined':
