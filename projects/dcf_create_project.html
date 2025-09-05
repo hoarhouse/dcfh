@@ -1620,24 +1620,44 @@
                 return;
             }
             
-            // Check if a main photo is present by looking at preview visibility
-            // This is the most reliable indicator that a photo was successfully processed
-            const hasVisiblePreview = mainPhotoPreview && mainPhotoPreview.style.display === 'block' && mainPhotoPreview.src;
+            // Check if a main photo is present - multiple validation methods for reliability
+            // 1. Check if we have a stored URL (most reliable after successful upload)
+            const hasStoredUrl = uploadedPhotos.main && uploadedPhotos.main.length > 0;
             
-            // Check upload state - only block if actively uploading
-            const isCurrentlyUploading = mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploading') === 'true';
+            // 2. Check if preview is visible (indicates file was selected and processed)
+            const hasVisiblePreview = mainPhotoPreview && 
+                                     mainPhotoPreview.style.display === 'block' && 
+                                     mainPhotoPreview.src && 
+                                     mainPhotoPreview.src !== '';
             
+            // 3. Check data attributes on upload div
+            const hasUploadedAttribute = mainPhotoUploadDiv && 
+                                        (mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true' ||
+                                         mainPhotoUploadDiv.getAttribute('data-photo-url'));
+            
+            // 4. Check if currently uploading (should block submission)
+            const isCurrentlyUploading = mainPhotoUploadDiv && 
+                                        mainPhotoUploadDiv.getAttribute('data-uploading') === 'true';
+            
+            // Debug logging to understand the state
+            console.log('Photo validation state:', {
+                hasStoredUrl,
+                hasVisiblePreview,
+                hasUploadedAttribute,
+                isCurrentlyUploading,
+                uploadedPhotosMain: uploadedPhotos.main,
+                previewSrc: mainPhotoPreview?.src,
+                previewDisplay: mainPhotoPreview?.style.display
+            });
+            
+            // Block if actively uploading
             if (isCurrentlyUploading) {
                 alert('Please wait for the main photo to finish uploading');
                 return;
             }
             
-            // Require main photo - check preview first, then backup methods
-            const hasMainPhoto = hasVisiblePreview || 
-                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-preview-loaded') === 'true') ||
-                                uploadedPhotos.main || 
-                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-uploaded') === 'true') ||
-                                (mainPhotoUploadDiv && mainPhotoUploadDiv.getAttribute('data-photo-url'));
+            // Photo is valid if we have a stored URL OR visible preview OR upload completed attribute
+            const hasMainPhoto = hasStoredUrl || hasVisiblePreview || hasUploadedAttribute;
             
             if (!hasMainPhoto) {
                 alert('Please upload a main photo for your project');
@@ -1807,6 +1827,131 @@
                 if (error) throw error;
 
                 console.log('Project created successfully:', data);
+                
+                // Create project settings record
+                try {
+                    const settingsRecord = {
+                        project_id: data.id,
+                        visibility: projectData.visibility || 'public',
+                        join_policy: projectData.joinPolicy || 'open',
+                        application_questions: projectData.applicationQuestions ? JSON.stringify(projectData.applicationQuestions) : null,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+                    
+                    const { error: settingsError } = await supabase
+                        .from('project_settings')
+                        .insert([settingsRecord]);
+                    
+                    if (settingsError) {
+                        console.error('Error creating project settings:', settingsError);
+                        // Don't throw - project is created, just settings failed
+                    } else {
+                        console.log('Project settings created successfully');
+                    }
+                } catch (settingsErr) {
+                    console.error('Failed to create project settings:', settingsErr);
+                }
+                
+                // Create default permission template based on selected permissions
+                try {
+                    const permissionLevel = projectData.defaultPermissions || 'contributor';
+                    let permissions = {};
+                    
+                    switch(permissionLevel) {
+                        case 'viewer':
+                            permissions = {
+                                can_edit_project: false,
+                                can_manage_members: false,
+                                can_upload_files: false,
+                                can_create_posts: false,
+                                can_moderate_comments: false,
+                                can_manage_settings: false
+                            };
+                            break;
+                        case 'contributor':
+                            permissions = {
+                                can_edit_project: false,
+                                can_manage_members: false,
+                                can_upload_files: true,
+                                can_create_posts: true,
+                                can_moderate_comments: false,
+                                can_manage_settings: false
+                            };
+                            break;
+                        case 'moderator':
+                            permissions = {
+                                can_edit_project: false,
+                                can_manage_members: false,
+                                can_upload_files: true,
+                                can_create_posts: true,
+                                can_moderate_comments: true,
+                                can_manage_settings: false
+                            };
+                            break;
+                    }
+                    
+                    const templateRecord = {
+                        project_id: data.id,
+                        template_name: `Default ${permissionLevel} permissions`,
+                        ...permissions,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const { data: templateData, error: templateError } = await supabase
+                        .from('permission_templates')
+                        .insert([templateRecord])
+                        .select()
+                        .single();
+                    
+                    if (templateError) {
+                        console.error('Error creating permission template:', templateError);
+                    } else {
+                        console.log('Permission template created:', templateData);
+                        
+                        // Update project settings with default template ID
+                        if (templateData && templateData.id) {
+                            await supabase
+                                .from('project_settings')
+                                .update({ default_permission_template_id: templateData.id })
+                                .eq('project_id', data.id);
+                        }
+                    }
+                } catch (templateErr) {
+                    console.error('Failed to create permission template:', templateErr);
+                }
+                
+                // Create initial project member record for the creator (as owner)
+                try {
+                    const memberRecord = {
+                        project_id: data.id,
+                        user_id: session.user.id,
+                        role: 'owner',
+                        status: 'active',
+                        joined_at: new Date().toISOString(),
+                        // Owner gets all permissions
+                        custom_permissions: {
+                            can_edit_project: true,
+                            can_manage_members: true,
+                            can_upload_files: true,
+                            can_create_posts: true,
+                            can_moderate_comments: true,
+                            can_manage_settings: true
+                        }
+                    };
+                    
+                    const { error: memberError } = await supabase
+                        .from('project_members')
+                        .insert([memberRecord]);
+                    
+                    if (memberError) {
+                        console.error('Error creating project owner record:', memberError);
+                    } else {
+                        console.log('Project owner record created');
+                    }
+                } catch (memberErr) {
+                    console.error('Failed to create project owner record:', memberErr);
+                }
                 
                 // Now insert file records into project_files table
                 if (uploadedFileDetails.length > 0) {
