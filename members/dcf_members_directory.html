@@ -1134,7 +1134,7 @@
         let currentUser = null;
 
         // Initialize page functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // EMERGENCY - NO REDIRECTS ALLOWED
             console.log('🚨 Page loading - redirects disabled');
 
@@ -1145,6 +1145,16 @@
                 console.log('✅ Page loading with user:', currentUser.username);
             } else {
                 console.log('⚠️ No user authenticated, some features may be limited');
+            }
+            
+            // Load user connections first (before loading members)
+            if (currentUser) {
+                try {
+                    await loadUserConnections();
+                    console.log('✅ User connections loaded:', userConnections.size, 'connections');
+                } catch (error) {
+                    console.error('❌ Error loading user connections:', error);
+                }
             }
             
             // Load members data
@@ -1740,11 +1750,37 @@ const { data: user } = await window.masterSupabase
             }
         }
 
-        function createMemberCard(user, stats = { projects: 0, connections: 0 }) {
+        async function createMemberCard(user, stats = { projects: 0, connections: 0 }) {
             const initials = user.first_name && user.last_name ? (user.first_name.charAt(0) + user.last_name.charAt(0)).toUpperCase() : (user.username ? user.username.substring(0, 2).toUpperCase() : 'DC');
             const avatarHtml = user.avatar_url ? 
                 `<img src="${user.avatar_url}" alt="@${user.username}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">` : 
                 initials;
+            
+            // Check connection status
+            let connectionStatus = 'none';
+            let currentUser = null;
+            
+            // Ensure currentUser is set
+            if (!currentUser) {
+                currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            }
+            
+            if (currentUser && currentUser.id === user.id) {
+                connectionStatus = 'self';
+            } else if (userConnections.has(user.id)) {
+                const conn = userConnections.get(user.id);
+                if (conn.status === 'accepted') {
+                    connectionStatus = 'connected';
+                } else if (conn.status === 'pending') {
+                    connectionStatus = conn.isRequester ? 'request_sent' : 'request_received';
+                } else if (conn.status === 'declined') {
+                    connectionStatus = 'declined';
+                }
+            }
+            
+            // Get appropriate connection button
+            const connectionButton = getConnectionButton(user.id, connectionStatus);
+            
             const gridHtml = `
                 <div class="member-card" data-user-id="${user.id}">
                     <div class="member-status"></div>
@@ -1769,13 +1805,15 @@ const { data: user } = await window.masterSupabase
                         </div>
                         <div class="member-actions">
                             <button class="btn btn-secondary btn-small message-btn">💬 Message</button>
-                            <button class="btn btn-primary btn-small connect-btn" data-user-id="${user.id}">🤝 Connect</button>
+                            ${connectionButton}
                         </div>
                     </div>
                 </div>
             `;
             // Grid view not implemented - using list view only
             console.warn('Grid view container not found, using list view instead');
+            
+            return gridHtml;
         }
 
         async function createMemberListItem(user, stats = { projects: 0, connections: 0 }) {
