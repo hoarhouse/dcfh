@@ -1489,42 +1489,65 @@
             button.disabled = true;
             button.innerHTML = '⏳ Sending...';
             
+            console.log('🔄 Attempting to connect with user:', targetUserId);
+            
             try {
                 const currentUserId = await getCurrentUserId();
                 if (!currentUserId) {
+                    console.error('❌ No current user ID found');
                     showAlert('Please log in to connect with members.', 'warning', 'Login Required');
+                    button.disabled = false;
+                    button.innerHTML = '🤝 Connect';
                     return;
                 }
+                
+                console.log('👤 Current user ID:', currentUserId);
 
-                // Check current connection status
-                const { data: existingConnection } = await window.masterSupabase
+                // Check current connection status - use dcfSupabase instead of masterSupabase
+                console.log('🔍 Checking existing connection status...');
+                const { data: existingConnection, error: checkError } = await window.dcfSupabase
                     .from('user_connections')
                     .select('*')
                     .or(`and(requester_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-                    .single();
+                    .maybeSingle();
+                
+                if (checkError) {
+                    console.error('❌ Error checking connection:', checkError);
+                }
 
                 if (existingConnection) {
+                    console.log('📋 Existing connection found:', existingConnection);
                     if (existingConnection.status === 'pending') {
                         showAlert('Connection request already pending.', 'warning', 'Already Pending');
+                        button.innerHTML = '⏳ Pending';
                         return;
                     } else if (existingConnection.status === 'accepted') {
                         showAlert('You are already connected with this member.', 'info', 'Already Connected');
+                        button.innerHTML = '✓ Connected';
+                        button.disabled = true;
                         return;
                     }
                 }
 
-                // Send connection request
-                const { data: connectionData, error } = await window.masterSupabase
+                // Send connection request with proper created_at timestamp - use dcfSupabase
+                console.log('📤 Sending connection request...');
+                const { data: connectionData, error } = await window.dcfSupabase
                     .from('user_connections')
                     .insert([{
                         requester_id: currentUserId,
                         recipient_id: targetUserId,
-                        status: 'pending'
+                        status: 'pending',
+                        created_at: new Date().toISOString()
                     }])
                     .select('*')
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Error creating connection:', error);
+                    throw error;
+                }
+                
+                console.log('✅ Connection request created:', connectionData);
 
                 // Get current user info for notification
                 const currentUserEmail = window.getCurrentUser()?.email;
