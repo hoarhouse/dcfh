@@ -2729,15 +2729,37 @@ function detectPageType() {
 }
 
 function getQuickActionsConfig(pageType) {
-    const basePath = getCorrectBasePath();
+    // Get the current location to properly construct paths
+    const currentPath = window.location.pathname;
+    const pathParts = currentPath.split('/');
+    const currentFolder = pathParts[pathParts.length - 2];
+    
+    // Helper to get correct path based on current location
+    const getPath = (targetFolder, targetFile) => {
+        if (currentFolder === targetFolder) {
+            // Same folder, direct link
+            return targetFile;
+        } else if (currentFolder === 'dcfh' || !currentFolder) {
+            // At root level
+            return `${targetFolder}/${targetFile}`;
+        } else {
+            // In a different folder, go up then to target
+            return `../${targetFolder}/${targetFile}`;
+        }
+    };
+    
+    // Standardized quick actions for most pages
+    const standardActions = [
+        { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_project_create.html'), primary: true },
+        { icon: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
+        { icon: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
+        { icon: '💬', text: 'Discussion Forum', href: getPath('forum', 'dcf_forum_home.html') },
+        { icon: '👥', text: 'Members Directory', href: getPath('members', 'dcf_members_directory.html') },
+        { icon: '📚', text: 'Resources Library', href: getPath('resources', 'dcf_resources_library.html') }
+    ];
     
     const quickActionsConfig = {
-        'member_home': [
-            { icon: '👤', text: 'My Profile', href: 'dcf_member_profile.html' },
-            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
-            { icon: '💬', text: 'My Messages', href: 'dcf_private_messaging.html' },
-            { icon: '📋', text: 'Browse Projects', href: basePath + 'projects/dcf_projects_home.html' }
-        ],
+        'member_home': standardActions,
         'member_profile': [
             { icon: '✏️', text: 'Edit Profile', action: 'editProfile()' },
             { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
