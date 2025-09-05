@@ -2993,9 +2993,58 @@ function initializeQuickActions() {
     }
 }
 
+// Quick Action Helper Functions
+function focusMemberSearch() {
+    const searchInput = document.querySelector('#search, #searchInput, input[type="search"], input[placeholder*="Search"]');
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function focusProjectSearch() {
+    const searchInput = document.querySelector('#searchInput, #projectSearch, input[placeholder*="Search projects"]');
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function focusResourceSearch() {
+    const searchInput = document.querySelector('#searchInput, #resourceSearch, input[placeholder*="Search resources"]');
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function exportAnalytics() {
+    // Trigger export if function exists on page
+    if (typeof window.exportData === 'function') {
+        window.exportData();
+    } else {
+        alert('Export functionality will be available soon!');
+    }
+}
+
+function openCreateEventModal() {
+    // Open create event modal if exists
+    const createBtn = document.querySelector('.create-event-btn, [onclick*="createEvent"]');
+    if (createBtn) {
+        createBtn.click();
+    } else {
+        window.location.href = getPath('events', 'dcf_create_event.html');
+    }
+}
+
 // Export Quick Actions functions
 window.populateQuickActions = populateQuickActions;
 window.initializeQuickActions = initializeQuickActions;
+window.focusMemberSearch = focusMemberSearch;
+window.focusProjectSearch = focusProjectSearch;
+window.focusResourceSearch = focusResourceSearch;
+window.exportAnalytics = exportAnalytics;
+window.openCreateEventModal = openCreateEventModal;
 
 // =============================================================================
 // 19. UNIVERSAL COMMENT SYSTEM - WORKS FOR ANY CONTENT TYPE
