@@ -76,6 +76,117 @@
             gap: 1rem;
         }
 
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-nav {
+            padding: 0.5rem;
+        }
+
+        .dropdown-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .signout-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .signout-button:hover {
+            background: #333;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -548,22 +659,34 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
         <nav class="nav-container">
             <a href="../index.html" class="logo">
                 <div class="logo-icon"></div>
-                <span>DCF Hungary</span>
+                Domus Communis Foundation
             </a>
-            <ul class="nav-menu">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="../events/dcf_events_calendar.html">Events</a></li>
-                <li><a href="../projects/dcf_project_manage.html">Projects</a></li>
-                <li><a href="../members/dcf_members_directory.html">Members</a></li>
-                <li><a href="../resources/dcf_resources_library.html">Resources</a></li>
+            <ul class="nav-menu" id="navMenu">
+                <!-- Navigation populated by master JS -->
             </ul>
-            <div class="user-menu" id="userMenu">
-                <!-- User menu populated by dcf-unified-auth.js -->
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
+                            </div>
+                        </div>
+                        <div class="dropdown-nav" id="dropdownNav">
+                            <!-- Navigation items populated by dcf-unified-auth.js -->
+                        </div>
+                        <div class="dropdown-footer">
+                            <button class="signout-button" onclick="signOut()">Sign Out</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </nav>
     </header>
@@ -882,7 +1005,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../dcf-unified-auth.js"></script>
+    <script src="../js/dcf-unified-auth.js"></script>
     
     <script>
         // Profile data
@@ -893,6 +1016,18 @@
         let avatarFile = null;
         let coverFile = null;
         let coverPosition = 50;
+
+        // Sign out function
+        async function signOut() {
+            try {
+                const { error } = await window.dcfSupabase.auth.signOut();
+                if (!error) {
+                    window.location.href = '../index.html';
+                }
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        }
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
