@@ -3236,6 +3236,425 @@
             `;
         }
 
+        // ==================== NEW MEMBER & APPLICATION MANAGEMENT FUNCTIONS ====================
+        
+        // Load pending applications
+        async function loadPendingApplications(projectId) {
+            try {
+                const { data: applications, error } = await supabase
+                    .from('project_applications')
+                    .select(`
+                        *,
+                        applicant:user_profiles!applicant_id(username, email, first_name, last_name, avatar_url)
+                    `)
+                    .eq('project_id', projectId)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                
+                const applicationsList = document.getElementById('applicationsList');
+                const applicationsCount = document.getElementById('applicationsCount');
+                
+                if (!applications || applications.length === 0) {
+                    applicationsCount.textContent = '0';
+                    applicationsList.innerHTML = `
+                        <div style="color: #666; text-align: center; padding: 1rem;">
+                            No pending applications
+                        </div>
+                    `;
+                    return;
+                }
+                
+                applicationsCount.textContent = applications.length;
+                applicationsList.innerHTML = applications.map(app => `
+                    <div style="background: white; padding: 1rem; border: 1px solid #e5e5e5; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 1rem;">
+                                <div style="width: 48px; height: 48px; border-radius: 50%; background: ${app.applicant?.avatar_url ? `url(${app.applicant.avatar_url}) center/cover` : '#e5e5e5'}; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #666;">
+                                    ${!app.applicant?.avatar_url ? (app.applicant?.username?.[0] || '?').toUpperCase() : ''}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #333;">${app.applicant?.username || 'Unknown User'}</div>
+                                    <div style="color: #666; font-size: 0.9rem;">${app.applicant?.email || ''}</div>
+                                    <div style="color: #999; font-size: 0.85rem;">Applied ${formatTimeAgo(app.created_at)}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-success" style="font-size: 0.9rem;" onclick="approveApplication('${app.id}')">✓ Approve</button>
+                                <button class="btn btn-danger" style="font-size: 0.9rem;" onclick="rejectApplication('${app.id}')">✗ Reject</button>
+                            </div>
+                        </div>
+                        ${app.application_message ? `
+                            <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                                <strong style="color: #666; font-size: 0.85rem;">Message:</strong>
+                                <p style="margin: 0.5rem 0 0 0; color: #333;">${app.application_message}</p>
+                            </div>
+                        ` : ''}
+                        ${app.application_answers ? `
+                            <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px;">
+                                <strong style="color: #666; font-size: 0.85rem;">Application Answers:</strong>
+                                ${Object.entries(JSON.parse(app.application_answers)).map(([q, a]) => `
+                                    <div style="margin-top: 0.5rem;">
+                                        <div style="color: #666; font-size: 0.85rem;">${q}</div>
+                                        <div style="color: #333; margin-left: 1rem;">${a}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading applications:', error);
+            }
+        }
+        
+        // Approve application
+        async function approveApplication(applicationId) {
+            if (!confirm('Approve this application?')) return;
+            
+            try {
+                // Get application details
+                const { data: app, error: appError } = await supabase
+                    .from('project_applications')
+                    .select('*')
+                    .eq('id', applicationId)
+                    .single();
+                
+                if (appError) throw appError;
+                
+                // Add as project member
+                const { error: memberError } = await supabase
+                    .from('project_members')
+                    .insert({
+                        project_id: app.project_id,
+                        user_id: app.applicant_id,
+                        role: 'member',
+                        status: 'active',
+                        joined_at: new Date().toISOString()
+                    });
+                
+                if (memberError) throw memberError;
+                
+                // Update application status
+                const { error: updateError } = await supabase
+                    .from('project_applications')
+                    .update({ 
+                        status: 'approved',
+                        reviewed_at: new Date().toISOString(),
+                        reviewed_by: window.getCurrentUser()?.id
+                    })
+                    .eq('id', applicationId);
+                
+                if (updateError) throw updateError;
+                
+                showAlert('Application approved successfully!', 'success');
+                loadPendingApplications(window.currentProject.id);
+                loadProjectMembers(window.currentProject.id);
+                
+            } catch (error) {
+                console.error('Error approving application:', error);
+                showAlert('Failed to approve application', 'error');
+            }
+        }
+        
+        // Reject application
+        async function rejectApplication(applicationId) {
+            if (!confirm('Reject this application?')) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('project_applications')
+                    .update({ 
+                        status: 'rejected',
+                        reviewed_at: new Date().toISOString(),
+                        reviewed_by: window.getCurrentUser()?.id
+                    })
+                    .eq('id', applicationId);
+                
+                if (error) throw error;
+                
+                showAlert('Application rejected', 'info');
+                loadPendingApplications(window.currentProject.id);
+                
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                showAlert('Failed to reject application', 'error');
+            }
+        }
+        
+        // Refresh applications
+        function refreshApplications() {
+            if (window.currentProject) {
+                loadPendingApplications(window.currentProject.id);
+            }
+        }
+        
+        // Load project members with enhanced details
+        async function loadProjectMembers(projectId) {
+            try {
+                const { data: members, error } = await supabase
+                    .from('project_members')
+                    .select(`
+                        *,
+                        user_profile:user_profiles!user_id(username, email, first_name, last_name, avatar_url),
+                        permission_template:permission_templates!permission_template_id(*)
+                    `)
+                    .eq('project_id', projectId)
+                    .eq('status', 'active')
+                    .order('joined_at', { ascending: true });
+                
+                if (error) throw error;
+                
+                const membersTableBody = document.getElementById('membersTableBody');
+                
+                if (!members || members.length === 0) {
+                    membersTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
+                                No team members yet
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                membersTableBody.innerHTML = members.map(member => {
+                    const permissions = member.custom_permissions || member.permission_template || {};
+                    const permissionCount = Object.values(permissions).filter(p => p === true).length;
+                    
+                    return `
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 0.75rem;">
+                                <input type="checkbox" class="member-checkbox" data-member-id="${member.id}">
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${member.user_profile?.avatar_url ? `url(${member.user_profile.avatar_url}) center/cover` : '#e5e5e5'}; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #666; font-size: 0.9rem;">
+                                        ${!member.user_profile?.avatar_url ? (member.user_profile?.username?.[0] || '?').toUpperCase() : ''}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 500; color: #333;">${member.user_profile?.username || 'Unknown'}</div>
+                                        <div style="color: #666; font-size: 0.85rem;">${member.user_profile?.email || ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <select class="role-select" data-member-id="${member.id}" onchange="updateMemberRole('${member.id}', this.value)" style="padding: 0.25rem 0.5rem; border: 1px solid #e5e5e5; border-radius: 4px;">
+                                    <option value="owner" ${member.role === 'owner' ? 'selected' : ''}>Owner</option>
+                                    <option value="admin" ${member.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                    <option value="moderator" ${member.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                                    <option value="contributor" ${member.role === 'contributor' ? 'selected' : ''}>Contributor</option>
+                                    <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member</option>
+                                    <option value="viewer" ${member.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                </select>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <span style="color: #666; font-size: 0.9rem;">${permissionCount} permissions</span>
+                                <button style="margin-left: 0.5rem; padding: 2px 8px; font-size: 0.8rem; background: none; border: 1px solid #e5e5e5; border-radius: 4px; cursor: pointer;" onclick="editMemberPermissions('${member.id}')">Edit</button>
+                            </td>
+                            <td style="padding: 0.75rem; color: #666; font-size: 0.9rem;">
+                                ${formatDate(member.joined_at)}
+                            </td>
+                            <td style="padding: 0.75rem; text-align: center;">
+                                <button class="btn btn-danger" style="font-size: 0.85rem; padding: 4px 12px;" onclick="removeMember('${member.id}')" ${member.role === 'owner' ? 'disabled' : ''}>Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading project members:', error);
+            }
+        }
+        
+        // Update member role/permissions
+        async function updateMemberRole(memberId, newRole) {
+            try {
+                // Get default permissions for role
+                const permissions = getDefaultPermissionsForRole(newRole);
+                
+                const { error } = await supabase
+                    .from('project_members')
+                    .update({ 
+                        role: newRole,
+                        custom_permissions: permissions,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', memberId);
+                
+                if (error) throw error;
+                
+                showAlert('Member role updated successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error updating member role:', error);
+                showAlert('Failed to update member role', 'error');
+                loadProjectMembers(window.currentProject.id); // Reload to reset
+            }
+        }
+        
+        // Get default permissions for a role
+        function getDefaultPermissionsForRole(role) {
+            const permissions = {
+                owner: {
+                    can_edit_project: true,
+                    can_manage_members: true,
+                    can_upload_files: true,
+                    can_create_posts: true,
+                    can_moderate_comments: true,
+                    can_manage_settings: true
+                },
+                admin: {
+                    can_edit_project: true,
+                    can_manage_members: true,
+                    can_upload_files: true,
+                    can_create_posts: true,
+                    can_moderate_comments: true,
+                    can_manage_settings: true
+                },
+                moderator: {
+                    can_edit_project: false,
+                    can_manage_members: false,
+                    can_upload_files: true,
+                    can_create_posts: true,
+                    can_moderate_comments: true,
+                    can_manage_settings: false
+                },
+                contributor: {
+                    can_edit_project: false,
+                    can_manage_members: false,
+                    can_upload_files: true,
+                    can_create_posts: true,
+                    can_moderate_comments: false,
+                    can_manage_settings: false
+                },
+                member: {
+                    can_edit_project: false,
+                    can_manage_members: false,
+                    can_upload_files: false,
+                    can_create_posts: true,
+                    can_moderate_comments: false,
+                    can_manage_settings: false
+                },
+                viewer: {
+                    can_edit_project: false,
+                    can_manage_members: false,
+                    can_upload_files: false,
+                    can_create_posts: false,
+                    can_moderate_comments: false,
+                    can_manage_settings: false
+                }
+            };
+            
+            return permissions[role] || permissions.viewer;
+        }
+        
+        // Remove member from project
+        async function removeMember(memberId) {
+            if (!confirm('Remove this member from the project?')) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('project_members')
+                    .update({ 
+                        status: 'removed',
+                        removed_at: new Date().toISOString()
+                    })
+                    .eq('id', memberId);
+                
+                if (error) throw error;
+                
+                showAlert('Member removed from project', 'info');
+                loadProjectMembers(window.currentProject.id);
+                
+            } catch (error) {
+                console.error('Error removing member:', error);
+                showAlert('Failed to remove member', 'error');
+            }
+        }
+        
+        // Toggle all members checkboxes
+        function toggleAllMembers(checkbox) {
+            const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+            memberCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+            
+            // Show/hide bulk actions
+            const hasChecked = document.querySelectorAll('.member-checkbox:checked').length > 0;
+            document.getElementById('bulkActionSelect').style.display = hasChecked ? 'block' : 'none';
+            document.getElementById('bulkActionBtn').style.display = hasChecked ? 'block' : 'none';
+        }
+        
+        // Update join policy visibility
+        function updateJoinPolicy() {
+            const selectedPolicy = document.querySelector('input[name="joinPolicy"]:checked')?.value;
+            const questionsSection = document.getElementById('applicationQuestionsSection');
+            
+            if (selectedPolicy === 'application') {
+                questionsSection.style.display = 'block';
+            } else {
+                questionsSection.style.display = 'none';
+            }
+        }
+        
+        // Load and display project settings
+        async function loadProjectSettingsEnhanced(projectId) {
+            try {
+                const { data: settings, error } = await supabase
+                    .from('project_settings')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .single();
+                
+                if (settings) {
+                    // Set join policy
+                    const policyRadio = document.getElementById(`joinPolicy${settings.join_policy.charAt(0).toUpperCase() + settings.join_policy.slice(1)}`);
+                    if (policyRadio) policyRadio.checked = true;
+                    
+                    // Set application questions if any
+                    if (settings.application_questions) {
+                        const questions = JSON.parse(settings.application_questions);
+                        document.getElementById('applicationQuestions').value = questions.join('\n');
+                    }
+                    
+                    // Set default permissions
+                    const defaultPerms = document.getElementById('defaultPermissions');
+                    if (defaultPerms && settings.default_permission_level) {
+                        defaultPerms.value = settings.default_permission_level;
+                    }
+                    
+                    updateJoinPolicy();
+                }
+            } catch (error) {
+                console.error('Error loading project settings:', error);
+            }
+        }
+        
+        // Format date helper
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+        }
+        
+        // Format time ago helper
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
+            
+            return formatDate(dateString);
+        }
+        
+        // ==================== END NEW MANAGEMENT FUNCTIONS ====================
+        
         // Initialize with safe auth pattern
         document.addEventListener('DOMContentLoaded', async function() {
             setupWordLimitHandlers();
