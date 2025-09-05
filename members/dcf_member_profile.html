@@ -2321,9 +2321,11 @@
         }
 
         function confirmDisconnect() {
-            if (confirm(`Are you sure you want to disconnect from ${currentProfile?.first_name || 'this user'}?`)) {
-                disconnectUser();
-            }
+            showConfirm(`Are you sure you want to disconnect from ${currentProfile?.first_name || 'this user'}?`).then(confirmed => {
+                if (confirmed) {
+                    disconnectUser();
+                }
+            });
         }
 
         async function disconnectUser() {
@@ -2647,14 +2649,14 @@
             
             // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size must be less than 5MB');
+                showAlert('File size must be less than 5MB', 'warning');
                 event.target.value = ''; // Clear the input
                 return;
             }
             
             // Check file type
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file (JPG, PNG, GIF, etc.)');
+                showAlert('Please select an image file (JPG, PNG, GIF, etc.)', 'warning');
                 event.target.value = ''; // Clear the input
                 return;
             }
@@ -2688,17 +2690,17 @@
             console.log('💾 Saving cover image');
             
             if (!selectedCoverFile) {
-                alert('Please select an image first');
+                showAlert('Please select an image first', 'warning');
                 return;
             }
             
             if (!currentUser) {
-                alert('User data not loaded. Please refresh the page.');
+                showAlert('User data not loaded. Please refresh the page.', 'error');
                 return;
             }
             
             if (!window.dcfSupabase) {
-                alert('Authentication system not ready. Please try again.');
+                showAlert('Authentication system not ready. Please try again.', 'error');
                 return;
             }
             
@@ -2717,7 +2719,7 @@
                 
                 if (uploadError) {
                     console.error('Upload error:', uploadError);
-                    alert('Failed to upload image: ' + uploadError.message);
+                    showAlert('Failed to upload image: ' + uploadError.message, 'error');
                     if (saveBtn) {
                         saveBtn.disabled = false;
                         saveBtn.textContent = 'Save Cover Photo';
@@ -2746,7 +2748,7 @@
                 
                 if (updateError) {
                     console.error('Update error:', updateError);
-                    alert('Failed to update profile: ' + updateError.message);
+                    showAlert('Failed to update profile: ' + updateError.message, 'error');
                     if (saveBtn) {
                         saveBtn.disabled = false;
                         saveBtn.textContent = 'Save Cover Photo';
@@ -2773,7 +2775,7 @@
                 
             } catch (error) {
                 console.error('Save error:', error);
-                alert('An error occurred while saving: ' + error.message);
+                showAlert('An error occurred while saving: ' + error.message, 'error');
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Cover Photo';
@@ -3183,7 +3185,7 @@
         }
 
         async function deletePost(postId) {
-            if (!confirm('Are you sure you want to delete this post?')) return;
+            if (!await showConfirm('Are you sure you want to delete this post?')) return;
             try {
                 const { error } = await window.dcfSupabase
                     .from('posts')
@@ -4112,13 +4114,13 @@
                 return showAlert(message, type, title);
             } else {
                 // Fallback to browser alert if unified auth not loaded
-                alert(message);
+                showAlert(message, 'info');
             }
         }
 
         // POST EDIT/DELETE FUNCTIONS
         async function deletePost(postId) {
-            if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            if (!await showConfirm('Are you sure you want to delete this post? This action cannot be undone.')) {
                 return;
             }
             
@@ -4330,7 +4332,7 @@
             
             const currentUser = window.dcfUser.profile;
             if (!currentUser) {
-                alert('Please log in to like posts');
+                showAlert('Please log in to like posts', 'warning');
                 return;
             }
             
@@ -4437,7 +4439,7 @@
                 
             } catch (error) {
                 console.error('Error toggling like:', error);
-                alert('Failed to update like: ' + error.message);
+                showAlert('Failed to update like: ' + error.message, 'error');
             }
         }
 
@@ -5581,11 +5583,11 @@
         async function deleteComment(commentId) {
             const currentUser = window.getCurrentUser();
             if (!currentUser) {
-                alert('Please log in to delete comments');
+                showAlert('Please log in to delete comments', 'warning');
                 return;
             }
 
-            if (!confirm('Are you sure you want to delete this comment?')) {
+            if (!await showConfirm('Are you sure you want to delete this comment?')) {
                 return;
             }
 
