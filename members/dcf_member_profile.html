@@ -1790,6 +1790,15 @@
                     currentProfile = data;
                     profileUserId = userId;
                     console.log('✅ Other user profile loaded:', currentProfile);
+                    
+                    // Hide edit buttons for other user's profile
+                    document.querySelectorAll('.edit-btn').forEach(btn => {
+                        btn.style.display = 'none';
+                    });
+                    
+                    // Check connection status and apply privacy controls
+                    const connectionStatus = await checkConnectionStatus(userId);
+                    applyPrivacyControls(connectionStatus);
                 }
             } catch (error) {
                 console.error('❌ Error loading other user profile:', error);
@@ -1853,9 +1862,9 @@
             }
 
             try {
-                // Check for existing connection in either direction
+                // Check for existing connection in either direction (using correct table name)
                 const { data, error } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .select('*')
                     .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},recipient_id.eq.${currentUser.id})`);
 
@@ -1971,7 +1980,7 @@
             try {
                 // Create connection request
                 const { data, error } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .insert({
                         requester_id: currentUser.id,
                         recipient_id: profileUserId,
@@ -2011,7 +2020,7 @@
             try {
                 // Find and update the connection
                 const { data: connections, error: fetchError } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .select('*')
                     .eq('requester_id', profileUserId)
                     .eq('recipient_id', currentUser.id)
@@ -2025,7 +2034,7 @@
                 const connectionId = connections[0].id;
 
                 const { error: updateError } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .update({ 
                         status: 'accepted',
                         updated_at: new Date().toISOString()
@@ -2064,7 +2073,7 @@
             try {
                 // Find and update/delete the connection
                 const { data: connections, error: fetchError } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .select('*')
                     .eq('requester_id', profileUserId)
                     .eq('recipient_id', currentUser.id)
@@ -2079,7 +2088,7 @@
 
                 // Delete the declined request
                 const { error: deleteError } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .delete()
                     .eq('id', connectionId);
 
@@ -2106,7 +2115,7 @@
             try {
                 // Find and delete the pending connection
                 const { error } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .delete()
                     .eq('requester_id', currentUser.id)
                     .eq('recipient_id', profileUserId)
@@ -2141,7 +2150,7 @@
             try {
                 // Delete the connection (works in either direction)
                 const { error } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .delete()
                     .or(`and(requester_id.eq.${currentUser.id},recipient_id.eq.${profileUserId}),and(requester_id.eq.${profileUserId},recipient_id.eq.${currentUser.id})`)
                     .eq('status', 'accepted');
@@ -2173,7 +2182,7 @@
                 
                 // Count accepted connections
                 const { data: connectionsData } = await window.dcfSupabase
-                    .from('connections')
+                    .from('user_connections')
                     .select('id', { count: 'exact' })
                     .or(`requester_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`)
                     .eq('status', 'accepted');
@@ -2997,6 +3006,113 @@
             
             // Disable drag
             disableDragToReposition();
+        }
+
+        // Apply privacy controls based on connection status
+        function applyPrivacyControls(status) {
+            console.log('Applying privacy controls, connection status:', status);
+            
+            // If viewing own profile or connected, show everything
+            if (status === 'self' || status === 'connected') {
+                // Show all sections
+                showAllSections();
+                return;
+            }
+            
+            // For non-connected users, hide sensitive sections
+            hidePrivateSections();
+            
+            // Show connect prompt instead of post creation
+            showConnectPrompt();
+        }
+        
+        function showAllSections() {
+            // Show all sidebar cards except About (always visible)
+            const sectionsToShow = [
+                document.querySelector('.card:has(#interestsTags)'), // Interests
+                document.querySelector('.card:has(#skillsTags)'), // Skills  
+                document.querySelector('.card:has(#contactInfo)'), // Contact
+                document.querySelector('.card:has(#quickActionsContainer)') // Quick Actions
+            ];
+            
+            sectionsToShow.forEach(section => {
+                if (section) section.style.display = 'block';
+            });
+            
+            // Show post creation and feed
+            const postBox = document.querySelector('.create-post-box');
+            if (postBox) postBox.style.display = 'block';
+            
+            const feed = document.getElementById('feedContainer');
+            if (feed) feed.style.display = 'block';
+            
+            // Hide connect prompt if exists
+            const connectPrompt = document.getElementById('connectPrompt');
+            if (connectPrompt) connectPrompt.style.display = 'none';
+        }
+        
+        function hidePrivateSections() {
+            // Hide sensitive sidebar sections
+            const sectionsToHide = [
+                document.querySelector('.card:has(#interestsTags)'), // Interests
+                document.querySelector('.card:has(#skillsTags)'), // Skills
+                document.querySelector('.card:has(#contactInfo)'), // Contact  
+                document.querySelector('.card:has(#quickActionsContainer)') // Quick Actions
+            ];
+            
+            sectionsToHide.forEach(section => {
+                if (section) section.style.display = 'none';
+            });
+            
+            // Hide post creation box
+            const postBox = document.querySelector('.create-post-box');
+            if (postBox) postBox.style.display = 'none';
+            
+            // Hide feed
+            const feed = document.getElementById('feedContainer');
+            if (feed) feed.style.display = 'none';
+        }
+        
+        function showConnectPrompt() {
+            // Check if prompt already exists
+            let connectPrompt = document.getElementById('connectPrompt');
+            
+            if (!connectPrompt) {
+                // Create connect prompt UI
+                connectPrompt = document.createElement('div');
+                connectPrompt.id = 'connectPrompt';
+                connectPrompt.className = 'connect-prompt-container';
+                connectPrompt.innerHTML = `
+                    <div class="connect-prompt-card">
+                        <div class="connect-prompt-icon">🔒</div>
+                        <h2 class="connect-prompt-title">Connect to View Full Profile</h2>
+                        <p class="connect-prompt-text">
+                            This member's full profile, including their interests, skills, contact information, and activity feed, 
+                            is only visible to their connections.
+                        </p>
+                        <button class="btn btn-primary connect-prompt-btn" onclick="sendConnectionRequest()">
+                            <span style="font-size: 1.1rem;">👥</span> Send Connection Request
+                        </button>
+                        <p class="connect-prompt-note">
+                            Once connected, you'll be able to see their complete profile and interact with their posts.
+                        </p>
+                    </div>
+                `;
+                
+                // Insert after the create-post-box location
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    const postBox = mainContent.querySelector('.create-post-box');
+                    if (postBox) {
+                        mainContent.insertBefore(connectPrompt, postBox.nextSibling);
+                    } else {
+                        mainContent.insertBefore(connectPrompt, mainContent.firstChild);
+                    }
+                }
+            }
+            
+            // Show the prompt
+            connectPrompt.style.display = 'block';
         }
 
         // Initialize post creation box with user data
@@ -5381,5 +5497,70 @@
             </div>
         </div>
     </div>
+    
+    <style>
+        /* Connect Prompt Styles */
+        .connect-prompt-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            padding: 3rem;
+            text-align: center;
+        }
+        
+        .connect-prompt-card {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .connect-prompt-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            filter: grayscale(0.3);
+        }
+        
+        .connect-prompt-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+        }
+        
+        .connect-prompt-text {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        
+        .connect-prompt-btn {
+            padding: 12px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .connect-prompt-btn:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .connect-prompt-note {
+            color: #999;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            font-style: italic;
+        }
+    </style>
 </body>
 </html>
