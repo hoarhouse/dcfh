@@ -2549,150 +2549,438 @@
             }
         }
 
-        // Cover Photo Functions
-        let coverFile = null;
-        let coverPosition = 50;
-
-        function openCoverModal() {
-            document.getElementById('coverModal').classList.add('active');
-            // Reset to current position if exists
-            const currentBackground = document.getElementById('heroBackground');
-            if (currentBackground && currentBackground.style.backgroundPosition) {
-                const match = currentBackground.style.backgroundPosition.match(/center (\d+)%/);
-                if (match) {
-                    coverPosition = parseInt(match[1]);
-                    document.getElementById('coverPositionSlider').value = coverPosition;
-                    document.getElementById('coverPositionValue').textContent = coverPosition + '%';
-                }
+        // Cover Edit Modal Functions
+        let selectedCoverFile = null;
+        let currentCoverPosition = 50;
+        let originalPosition = 50;
+        
+        function openCoverEditModal() {
+            console.log('🎨 Opening cover edit modal');
+            const modal = document.getElementById('coverEditModal');
+            
+            if (modal) {
+                console.log('✅ Modal element found');
+                modal.classList.add('active');
+                modal.style.display = 'flex'; // Also force display flex
+                console.log('Modal classes:', modal.classList.toString());
+            } else {
+                console.error('❌ Cover edit modal element not found');
             }
         }
-
-        function closeCoverModal() {
-            document.getElementById('coverModal').classList.remove('active');
-            // Reset preview
-            document.getElementById('coverPreviewContainer').style.display = 'none';
-            document.getElementById('coverUploadArea').style.display = 'block';
-            coverFile = null;
+        
+        function closeCoverEditModal() {
+            console.log('🔒 Closing cover edit modal');
+            const modal = document.getElementById('coverEditModal');
+            const preview = document.getElementById('coverImagePreview');
+            const placeholder = document.querySelector('.upload-placeholder');
+            const saveBtn = document.getElementById('saveCoverBtn');
+            const fileInput = document.getElementById('coverImageInput');
+            
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none'; // Force hide
+            }
+            
+            // Reset modal state
+            if (preview) {
+                preview.style.display = 'none';
+                preview.src = '';
+            }
+            if (placeholder) {
+                placeholder.style.display = 'block';
+            }
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Save Cover Photo';
+            }
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            selectedCoverFile = null;
         }
-
-        function handleCoverFileSelect(event) {
+        
+        function previewCoverImage(event) {
+            console.log('📸 Preview cover image called');
             const file = event.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                coverFile = file;
-                displayCoverPreview(file);
+            
+            if (!file) {
+                console.log('No file selected');
+                return;
             }
-        }
-
-        function displayCoverPreview(file) {
+            
+            console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                event.target.value = ''; // Clear the input
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file (JPG, PNG, GIF, etc.)');
+                event.target.value = ''; // Clear the input
+                return;
+            }
+            
+            selectedCoverFile = file;
+            
+            // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
-                const previewImage = document.getElementById('coverPreviewImage');
-                previewImage.src = e.target.result;
-                document.getElementById('coverUploadArea').style.display = 'none';
-                document.getElementById('coverPreviewContainer').style.display = 'block';
-                updateCoverPosition(coverPosition);
+                const preview = document.getElementById('coverImagePreview');
+                const placeholder = document.querySelector('.upload-placeholder');
+                const saveBtn = document.getElementById('saveCoverBtn');
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    console.log('Preview image displayed');
+                }
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    console.log('Save button enabled');
+                }
             };
             reader.readAsDataURL(file);
         }
-
-        function updateCoverPosition(value) {
-            coverPosition = value;
-            document.getElementById('coverPositionValue').textContent = value + '%';
-            const previewImage = document.getElementById('coverPreviewImage');
-            if (previewImage) {
-                previewImage.style.objectPosition = `center ${value}%`;
+        
+        async function saveCoverImage() {
+            console.log('💾 Saving cover image');
+            
+            if (!selectedCoverFile) {
+                alert('Please select an image first');
+                return;
             }
-        }
-
-        async function saveCoverPhoto() {
+            
+            if (!currentUser) {
+                alert('User data not loaded. Please refresh the page.');
+                return;
+            }
+            
+            if (!window.dcfSupabase) {
+                alert('Authentication system not ready. Please try again.');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('saveCoverBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+            }
+            
             try {
-                if (!currentUser) {
-                    showNotification('You must be logged in to update cover photo', 'error');
+                // Upload to Supabase storage
+                const fileName = `covers/${currentUser.id}_${Date.now()}_${selectedCoverFile.name}`;
+                const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
+                    .from('user-media')
+                    .upload(fileName, selectedCoverFile);
+                
+                if (uploadError) {
+                    console.error('Upload error:', uploadError);
+                    alert('Failed to upload image: ' + uploadError.message);
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save Cover Photo';
+                    }
                     return;
                 }
-
-                let coverUrl = null;
-
-                // Upload new cover if selected
-                if (coverFile) {
-                    const fileName = `covers/${currentUser.id}_${Date.now()}_${coverFile.name}`;
-                    const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
-                        .from('user-media')
-                        .upload(fileName, coverFile);
-
-                    if (uploadError) {
-                        console.error('Upload error:', uploadError);
-                        showNotification('Failed to upload cover photo', 'error');
-                        return;
-                    }
-
-                    // Get public URL
-                    const { data: urlData } = window.dcfSupabase.storage
-                        .from('user-media')
-                        .getPublicUrl(fileName);
-                    
-                    coverUrl = urlData.publicUrl;
-                }
-
-                // Update profile with new cover URL and position
-                const updates = {
-                    cover_position: `center ${coverPosition}%`,
-                    updated_at: new Date().toISOString()
-                };
-
-                if (coverUrl) {
-                    updates.cover_image_url = coverUrl;
-                }
-
+                
+                console.log('Upload successful:', uploadData);
+                
+                // Get public URL
+                const { data: urlData } = window.dcfSupabase.storage
+                    .from('user-media')
+                    .getPublicUrl(fileName);
+                
+                const coverUrl = urlData.publicUrl;
+                console.log('Public URL:', coverUrl);
+                
+                // Update profile with new cover URL
                 const { error: updateError } = await window.dcfSupabase
                     .from('user_profiles')
-                    .update(updates)
+                    .update({ 
+                        cover_image_url: coverUrl,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', currentUser.id);
-
+                
                 if (updateError) {
                     console.error('Update error:', updateError);
-                    showNotification('Failed to update cover photo', 'error');
+                    alert('Failed to update profile: ' + updateError.message);
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save Cover Photo';
+                    }
                     return;
                 }
-
+                
+                console.log('✅ Profile updated successfully');
+                
                 // Update the display immediately
                 const heroBackground = document.getElementById('heroBackground');
-                if (coverUrl) {
+                if (heroBackground) {
                     heroBackground.style.backgroundImage = `url('${coverUrl}')`;
+                    console.log('Updated hero background');
                 }
-                heroBackground.style.backgroundPosition = `center ${coverPosition}%`;
-
-                closeCoverModal();
+                
+                // Update current profile data
+                if (currentProfile) {
+                    currentProfile.cover_image_url = coverUrl;
+                }
+                
                 showNotification('Cover photo updated successfully!', 'success');
-
+                closeCoverEditModal();
+                
             } catch (error) {
-                console.error('Save cover error:', error);
-                showNotification('Failed to save cover photo', 'error');
+                console.error('Save error:', error);
+                alert('An error occurred while saving: ' + error.message);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Cover Photo';
+                }
             }
         }
 
-        // Add drag and drop support
-        document.addEventListener('DOMContentLoaded', function() {
-            const uploadArea = document.getElementById('coverUploadArea');
-            if (uploadArea) {
-                uploadArea.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    this.classList.add('dragover');
-                });
-
-                uploadArea.addEventListener('dragleave', function(e) {
-                    e.preventDefault();
-                    this.classList.remove('dragover');
-                });
-
-                uploadArea.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    this.classList.remove('dragover');
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0 && files[0].type.startsWith('image/')) {
-                        coverFile = files[0];
-                        displayCoverPreview(files[0]);
+        // Cover positioning functions
+        function startRepositionMode() {
+            // Close the modal first
+            closeCoverEditModal();
+            // Then enter reposition mode
+            enterRepositionMode();
+        }
+        
+        function enterRepositionMode() {
+            console.log('Entering reposition mode');
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (controls && heroBackground) {
+                // Show controls
+                controls.style.display = 'block';
+                
+                // Add repositioning class for cursor
+                heroBackground.classList.add('repositioning');
+                
+                // Get current position if saved
+                const currentBgPosition = heroBackground.style.backgroundPosition;
+                if (currentBgPosition && currentBgPosition.includes('%')) {
+                    const match = currentBgPosition.match(/(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
                     }
+                } else if (currentProfile && currentProfile.cover_position) {
+                    // Try to extract from database value
+                    const match = currentProfile.cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                    if (match) {
+                        currentCoverPosition = parseFloat(match[1]);
+                        originalPosition = currentCoverPosition;
+                    }
+                }
+                
+                // Update slider to current position
+                const slider = document.getElementById('positionSlider');
+                if (slider) {
+                    slider.value = currentCoverPosition;
+                }
+                
+                // Enable drag to reposition
+                enableCoverDragging();
+            }
+        }
+        
+        function cancelRepositioning() {
+            console.log('Canceling reposition, reverting to:', originalPosition);
+            
+            // Revert to original position
+            setCoverPosition(originalPosition);
+            
+            // Exit reposition mode
+            exitRepositionMode();
+        }
+        
+        function exitRepositionMode() {
+            const controls = document.getElementById('coverPositionControls');
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (controls) {
+                controls.style.display = 'none';
+            }
+            
+            if (heroBackground) {
+                heroBackground.classList.remove('repositioning');
+                // Re-enable transitions
+                heroBackground.style.transition = '';
+            }
+            
+            // Disable drag
+            disableCoverDragging();
+            
+            // Reset save button state
+            const saveBtn = document.querySelector('.save-position-btn');
+            if (saveBtn) {
+                saveBtn.textContent = 'Save Position';
+                saveBtn.disabled = false;
+            }
+        }
+        
+        function adjustCoverPosition(delta) {
+            let newPosition = currentCoverPosition + delta;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+            
+            // Update slider
+            const slider = document.getElementById('positionSlider');
+            if (slider) {
+                slider.value = newPosition;
+            }
+        }
+        
+        function setCoverPosition(position) {
+            currentCoverPosition = parseFloat(position);
+            const heroBackground = document.getElementById('heroBackground');
+            
+            if (heroBackground) {
+                // Remove transition during drag for stability
+                heroBackground.style.transition = 'none';
+                heroBackground.style.backgroundPosition = `center ${currentCoverPosition}%`;
+            }
+            
+            // Update slider if called from drag
+            const slider = document.getElementById('positionSlider');
+            if (slider && Math.abs(slider.value - currentCoverPosition) > 0.1) {
+                slider.value = currentCoverPosition;
+            }
+        }
+        
+        async function saveCoverPosition() {
+            try {
+                console.log('Saving cover position:', currentCoverPosition);
+                
+                // Show saving indicator
+                const saveBtn = document.querySelector('.save-position-btn');
+                if (saveBtn) {
+                    saveBtn.textContent = 'Saving...';
+                    saveBtn.disabled = true;
+                }
+                
+                // Check if user is available
+                if (!currentUser || !currentUser.id) {
+                    console.error('User ID not available');
+                    showNotification('Unable to save: User information not loaded.', 'error');
+                    if (saveBtn) {
+                        saveBtn.textContent = 'Save Position';
+                        saveBtn.disabled = false;
+                    }
+                    return;
+                }
+                
+                // Update profile with new position
+                const { error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .update({ 
+                        cover_position: `center ${currentCoverPosition}%`,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentUser.id);
+                
+                if (error) {
+                    console.error('Failed to save cover position:', error);
+                    showNotification('Failed to save position. Please try again.', 'error');
+                    if (saveBtn) {
+                        saveBtn.textContent = 'Save Position';
+                        saveBtn.disabled = false;
+                    }
+                    return;
+                }
+                
+                // Update local profile data
+                if (currentProfile) {
+                    currentProfile.cover_position = `center ${currentCoverPosition}%`;
+                }
+                
+                originalPosition = currentCoverPosition;
+                console.log('✅ Cover position saved successfully');
+                showNotification('Cover position saved!', 'success');
+                
+                // Exit reposition mode
+                exitRepositionMode();
+                
+            } catch (error) {
+                console.error('Error saving cover position:', error);
+                showNotification('An error occurred while saving.', 'error');
+                const saveBtn = document.querySelector('.save-position-btn');
+                if (saveBtn) {
+                    saveBtn.textContent = 'Save Position';
+                    saveBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Enable dragging functionality
+        let isDragging = false;
+        let dragStartY = 0;
+        let dragStartPosition = 50;
+        
+        function enableCoverDragging() {
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground) return;
+            
+            heroBackground.addEventListener('mousedown', handleDragStart);
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+        }
+        
+        function disableCoverDragging() {
+            const heroBackground = document.getElementById('heroBackground');
+            if (heroBackground) {
+                heroBackground.removeEventListener('mousedown', handleDragStart);
+            }
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+        }
+        
+        function handleDragStart(e) {
+            const heroBackground = document.getElementById('heroBackground');
+            if (!heroBackground || !heroBackground.classList.contains('repositioning')) return;
+            
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartPosition = currentCoverPosition;
+            e.preventDefault();
+        }
+        
+        function handleDragMove(e) {
+            if (!isDragging) return;
+            
+            const deltaY = e.clientY - dragStartY;
+            const percentChange = (deltaY / window.innerHeight) * 100;
+            
+            let newPosition = dragStartPosition + percentChange;
+            newPosition = Math.max(0, Math.min(100, newPosition));
+            
+            setCoverPosition(newPosition);
+        }
+        
+        function handleDragEnd(e) {
+            isDragging = false;
+        }
+
+        // Setup Edit Cover button click handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const editCoverBtn = document.getElementById('editCoverBtn');
+            if (editCoverBtn) {
+                editCoverBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔥 Edit Cover button clicked!');
+                    openCoverEditModal();
                 });
             }
         });
