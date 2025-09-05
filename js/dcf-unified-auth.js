@@ -2761,17 +2761,14 @@ function getQuickActionsConfig(pageType) {
     const quickActionsConfig = {
         'member_home': standardActions,
         'member_profile': [
-            { icon: '✏️', text: 'Edit Profile', action: 'editProfile()' },
-            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
-            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+            { icon: '✏️', text: 'Edit Profile', href: getPath('members', 'dcf_edit_profile.html'), primary: true },
+            { icon: '👥', text: 'My Connections', href: getPath('members', 'dcf_my_connections.html') },
+            { icon: '💬', text: 'My Messages', href: getPath('members', 'dcf_private_messaging.html') },
+            { icon: '📊', text: 'My Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
+            { icon: '📋', text: 'My Projects', href: getPath('projects', 'dcf_my_projects.html') },
+            { icon: '🏠', text: 'Member Home', href: getPath('members', 'dcf_member_home.html') }
         ],
-        'members_directory': [
-            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
-            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
-            { icon: '🔍', text: 'Find Members', action: 'document.getElementById("search").focus()' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
-        ],
+        'members_directory': standardActions,
         'my_connections': [
             { icon: '👥', text: 'Find Members', href: 'dcf_members_directory.html' },
             { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
@@ -2794,16 +2791,15 @@ function getQuickActionsConfig(pageType) {
             { icon: '💳', text: 'Donate', href: 'dcf_donate.html' },
             { icon: '🏠', text: 'Member Home', href: 'dcf_member_home.html' }
         ],
-        'analytics': [
-            { icon: '📊', text: 'Export Data', action: 'exportAnalytics()' },
-            { icon: '👤', text: 'My Profile', href: 'dcf_member_profile.html' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
-        ],
+        'analytics': standardActions,
+        'personal_analytics': standardActions,
         'projects_home': [
-            { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
-            { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
-            { icon: '🔍', text: 'Browse Projects', action: 'document.getElementById("searchInput").focus()' },
-            { icon: '🏠', text: 'Member Home', href: basePath + 'members/dcf_member_home.html' }
+            { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_project_create.html'), primary: true },
+            { icon: '📋', text: 'My Projects', href: getPath('projects', 'dcf_my_projects.html') },
+            { icon: '🔍', text: 'Browse Projects', href: getPath('projects', 'dcf_projects_home.html') },
+            { icon: '📊', text: 'Project Analytics', href: getPath('projects', 'dcf_project_analytics.html') },
+            { icon: '👥', text: 'Find Collaborators', href: getPath('members', 'dcf_members_directory.html') },
+            { icon: '📚', text: 'Resources', href: getPath('resources', 'dcf_resources_library.html') }
         ],
         'projects': [
             { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
