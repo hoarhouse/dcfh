@@ -1029,42 +1029,86 @@
             }
         }
 
+        // Wait for auth to be ready before initializing
+        async function waitForAuth() {
+            // Try multiple times to get auth
+            for (let i = 0; i < 10; i++) {
+                // First check Supabase session
+                const { data: { session }, error } = await window.dcfSupabase.auth.getSession();
+                
+                if (session && !error) {
+                    return session.user;
+                }
+                
+                // Check if dcfUser is available from unified auth
+                if (window.dcfUser && window.dcfUser.isLoggedIn) {
+                    return window.dcfUser.profile;
+                }
+                
+                // Wait a bit before trying again
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            return null;
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Initializing edit profile page...');
             
-            // Get profile ID from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            profileId = urlParams.get('id');
+            // Show loading while checking auth
+            showLoading(true);
             
-            // Get current user
-            currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
-            
-            if (!currentUser) {
-                showNotification('Please log in to edit profile', 'error');
+            // Wait for auth to be ready
+            try {
+                currentUser = await waitForAuth();
+                
+                if (!currentUser) {
+                    console.log('No authenticated user found');
+                    showNotification('Please log in to edit profile', 'error');
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 3000);
+                    return;
+                }
+                
+                console.log('Current user:', currentUser.id);
+                
+                // Get profile ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                profileId = urlParams.get('id');
+                
+                // If no profile ID in URL, use current user's ID
+                if (!profileId) {
+                    profileId = currentUser.id;
+                }
+                
+                // Verify ownership - users can only edit their own profile
+                if (profileId !== currentUser.id) {
+                    console.log('Profile ID mismatch:', profileId, 'vs', currentUser.id);
+                    showNotification('You can only edit your own profile', 'error');
+                    setTimeout(() => {
+                        window.location.href = `dcf_member_profile.html?id=${profileId}`;
+                    }, 2000);
+                    return;
+                }
+                
+                // Load profile data
+                await loadProfileData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Setup sidebar navigation
+                setupSidebarNavigation();
+                
+            } catch (error) {
+                console.error('Auth check error:', error);
+                showNotification('Authentication error. Please try again.', 'error');
                 setTimeout(() => {
-                    window.location.href = 'dcf_member_profile.html';
+                    window.location.href = '../index.html';
                 }, 2000);
-                return;
             }
-            
-            // Verify ownership
-            if (profileId && profileId !== currentUser.id) {
-                showNotification('You can only edit your own profile', 'error');
-                setTimeout(() => {
-                    window.location.href = 'dcf_member_profile.html';
-                }, 2000);
-                return;
-            }
-            
-            // Load profile data
-            await loadProfileData();
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            // Setup sidebar navigation
-            setupSidebarNavigation();
         });
 
         // Load profile data
