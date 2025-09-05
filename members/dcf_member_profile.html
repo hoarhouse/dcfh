@@ -1546,12 +1546,20 @@
         async function initProfile() {
             console.log('🎯 Initializing profile...');
             
-            currentUser = window.dcfUser.profile;
+            // Get current user from dcf-unified-auth.js
+            currentUser = window.dcfUser?.profile || window.getCurrentUser();
             console.log('✅ Current user:', currentUser);
+            
+            if (!currentUser) {
+                console.error('No current user found');
+                showNotification('Please log in to view profiles', 'error');
+                return;
+            }
             
             // Check URL params for viewing another user's profile
             const urlParams = new URLSearchParams(window.location.search);
             const viewUserId = urlParams.get('id');
+            
             if (viewUserId && viewUserId !== currentUser.id) {
                 profileUserId = viewUserId;
                 // Load the other user's profile
@@ -1563,13 +1571,14 @@
             
             // Track profile view using Universal Analytics System
             const profileName = profileUserId === currentUser.id ? currentUser.name : 'Profile';
-            await window.trackInteraction('profile', profileUserId, 'view', {
-                username: profileName,
-                isOwnProfile: profileUserId === currentUser.id
-            });
+            if (window.trackInteraction) {
+                await window.trackInteraction('profile', profileUserId, 'view', {
+                    username: profileName,
+                    isOwnProfile: profileUserId === currentUser.id
+                });
+            }
             
             await loadUserStats();
-            updateUI();
             
             // Load connection buttons
             await updateConnectionButtons();
@@ -1654,6 +1663,8 @@
                     profileUserId = userId;
                     console.log('✅ Other user profile loaded:', currentProfile);
                     
+                    // Update UI with the loaded profile
+                    updateUI();
                     
                     // Check connection status and apply privacy controls
                     const connectionStatus = await checkConnectionStatus(userId);
@@ -1684,6 +1695,9 @@
                 if (data) {
                     currentProfile = data;
                     console.log('✅ Profile loaded:', currentProfile);
+                    
+                    // Update UI with the loaded profile
+                    updateUI();
                 } else {
                     // Create default profile
                     console.log('📝 Creating default profile...');
