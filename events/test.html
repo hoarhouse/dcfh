@@ -2923,30 +2923,40 @@
             }
         }
 
-        // Load real project statistics from database
-        async function loadEventStatistics(projectId) {
+        // Load real event statistics from database
+        async function loadEventStatistics(eventId) {
             try {
                 // Show loading state
                 document.querySelectorAll('.stat-number').forEach(el => {
                     el.textContent = '...';
                 });
                 
-                // Get member count from project_members
-                let membersCount = 0;
+                // Get registered attendees count
+                let registeredCount = 0;
+                let waitlistCount = 0;
                 try {
-                    const { count: memberCount, error: memberError } = await window.dcfSupabase
-                        .from('project_members')
+                    const { count: registered, error: regError } = await window.dcfSupabase
+                        .from('event_attendees')
                         .select('*', { count: 'exact', head: true })
-                        .eq('project_id', projectId)
-                        .eq('status', 'active');
+                        .eq('event_id', eventId)
+                        .eq('status', 'registered');
                     
-                    if (!memberError && memberCount !== null) {
-                        membersCount = memberCount;
+                    const { count: waitlist, error: waitError } = await window.dcfSupabase
+                        .from('event_attendees')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', eventId)
+                        .eq('status', 'waitlist');
+                    
+                    if (!regError && registered !== null) {
+                        registeredCount = registered;
+                    }
+                    if (!waitError && waitlist !== null) {
+                        waitlistCount = waitlist;
                     }
                 } catch (error) {
-                    console.log('project_members table not available:', error);
-                    // Fallback: count at least the author as 1 member
-                    membersCount = 1;
+                    console.log('event_attendees table not available:', error);
+                    registeredCount = 0;
+                    waitlistCount = 0;
                 }
                 
                 // Get views count from universal_analytics
