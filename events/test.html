@@ -2125,14 +2125,14 @@
                 }
                 console.log('');
 
-                displayProject(project);
+                displayEvent(event);
                 loadRelatedEvents(event.author_id, eventId);
                 
                 // Track project view using Universal Analytics System (only once)
                 if (window.trackInteraction && !window.projectViewTracked) {
                     window.projectViewTracked = true; // Set flag to prevent duplicate tracking
                     window.trackInteraction('project', projectId, 'view', {
-                        title: project.title || 'Project',
+                        title: event.title || 'Event',
                         author_id: project.author_id
                     });
                 } else if (!window.trackInteraction) {
@@ -2199,7 +2199,7 @@
         // Display project data
         async function displayProject(project) {
             // Store project globally
-            window.currentProject = project;
+            window.currentEvent = project;
             
             // Enhanced debugging for ownership detection
             console.log('=== OWNERSHIP DETECTION DEBUG ===');
@@ -2263,7 +2263,7 @@
                 }
                 
                 // Also update the stats section buttons
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 const manageBtn = document.getElementById('manageProjectBtn');
                 if (joinBtn) joinBtn.style.display = 'none';
                 if (manageBtn) manageBtn.style.display = 'inline-flex';
@@ -2339,7 +2339,7 @@
             }
             
             // Load real statistics from database
-            await loadProjectStatistics(project.id);
+            await loadEventStatistics(project.id);
             
             // Check user permissions and update UI accordingly
             await updateUIBasedOnPermissions(project.id);
@@ -2354,7 +2354,7 @@
             document.title = `${project.title} - DCF Hungary`;
             
             // Update feed title to show project name
-            const feedTitle = document.getElementById('projectFeedTitle');
+            const feedTitle = document.getElementById('eventFeedTitle');
             if (feedTitle) {
                 feedTitle.textContent = `${project.title} Feed`;
             }
@@ -2362,7 +2362,7 @@
 
         // Function to update project buttons based on user ownership
         function updateProjectButtons(project) {
-            const joinBtn = document.getElementById('joinProjectBtn');
+            const joinBtn = document.getElementById('joinEventBtn');
             const manageBtn = document.getElementById('manageProjectBtn');
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
@@ -2394,10 +2394,10 @@
         }
 
         // Function to handle manage project
-        function manageProject() {
+        function manageEvent() {
             const projectId = getProjectIdFromUrl();
             if (projectId) {
-                window.location.href = `dcf_project_manage.html?id=${projectId}`;
+                window.location.href = `dcf_event_manage.html?id=${projectId}`;
             }
             }
 
@@ -2472,7 +2472,7 @@
 
         // Initialize page
         async function initializePage() {
-            await loadProject();
+            await loadEvent();
             
             // Initialize posts functionality
             initializePostCreation();
@@ -2505,7 +2505,7 @@
         function recheckOwnershipAfterAuth() {
             console.log('🔄 RE-CHECKING OWNERSHIP AFTER AUTH COMPLETION');
             
-            if (!window.currentProject) {
+            if (!window.currentEvent) {
                 console.log('No project loaded yet, waiting...');
                 return;
             }
@@ -2519,12 +2519,12 @@
             
             console.log('Re-check - Current User:', currentUser);
             console.log('Re-check - User ID:', currentUser.id);
-            console.log('Re-check - Project Author ID:', window.currentProject.author_id);
+            console.log('Re-check - Project Author ID:', window.currentEvent.author_id);
             
             // Check ownership
-            const isOwnerById = currentUser.id === window.currentProject.author_id;
-            const isOwnerByEmail = window.currentProject.author && 
-                                  currentUser.email === window.currentProject.author.email;
+            const isOwnerById = currentUser.id === window.currentEvent.author_id;
+            const isOwnerByEmail = window.currentEvent.author && 
+                                  currentUser.email === window.currentEvent.author.email;
             
             const isOwner = isOwnerById || isOwnerByEmail;
             
@@ -2550,7 +2550,7 @@
                 }
                 
                 // Update stats section buttons
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 const manageBtn = document.getElementById('manageProjectBtn');
                 if (joinBtn) {
                     joinBtn.style.display = 'none';
@@ -2563,7 +2563,7 @@
                 
                 // Also re-run updateProjectButtons for completeness
                 if (typeof updateProjectButtons === 'function') {
-                    updateProjectButtons(window.currentProject);
+                    updateProjectButtons(window.currentEvent);
                 }
             }
         }
@@ -2707,7 +2707,7 @@
         }
         
         function shareEmail() {
-            const project = window.currentProject;
+            const project = window.currentEvent;
             const subject = encodeURIComponent(`Check out this project: ${project?.title || 'DCF Project'}`);
             const body = encodeURIComponent(`I thought you might be interested in this project:\n\n${project?.title || 'Project'}\n${project?.brief_description || project?.description || ''}\n\nView it here: ${window.location.href}`);
             window.open(`mailto:?subject=${subject}&body=${body}`);
@@ -2718,7 +2718,7 @@
         }
         
         function shareTwitter() {
-            const project = window.currentProject;
+            const project = window.currentEvent;
             const text = encodeURIComponent(`Check out this amazing project: ${project?.title || 'DCF Project'}`);
             const url = encodeURIComponent(window.location.href);
             window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`);
@@ -2755,19 +2755,19 @@
                 heroBackground.style.backgroundImage = `url(${imageUrl})`;
             }
             // Apply saved position from database if available
-            if (window.currentProject && heroBackground) {
-                if (window.currentProject.cover_position) {
+            if (window.currentEvent && heroBackground) {
+                if (window.currentEvent.cover_position) {
                     // Apply the position directly from database
-                    heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                    heroBackground.style.backgroundPosition = window.currentEvent.cover_position;
                     
                     // Extract percentage for slider
-                    const match = window.currentProject.cover_position.match(/center\s+(\d+)%/);
+                    const match = window.currentEvent.cover_position.match(/center\s+(\d+)%/);
                     if (match) {
                         currentCoverPosition = parseFloat(match[1]);
                     } else {
                         currentCoverPosition = 50;
                     }
-                    console.log('Applied saved cover position from database:', window.currentProject.cover_position);
+                    console.log('Applied saved cover position from database:', window.currentEvent.cover_position);
                 } else {
                     // Default to center
                     heroBackground.style.backgroundPosition = `center 50%`;
@@ -2900,7 +2900,7 @@
         }
 
         // Load real project statistics from database
-        async function loadProjectStatistics(projectId) {
+        async function loadEventStatistics(projectId) {
             try {
                 // Show loading state
                 document.querySelectorAll('.stat-number').forEach(el => {
@@ -3241,7 +3241,7 @@
                 }
                 
                 // Update join button to show member status
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 const joinCardTitle = document.getElementById('joinCardTitle');
                 const joinCardDescription = document.getElementById('joinCardDescription');
                 
@@ -3276,7 +3276,7 @@
             } else {
                 // User is not a member - check join policy and update button accordingly
                 const joinPolicy = await checkProjectJoinPolicy(projectId);
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 const joinCardTitle = document.getElementById('joinCardTitle');
                 const joinCardDescription = document.getElementById('joinCardDescription');
                 
@@ -3286,7 +3286,7 @@
                         joinBtn.onclick = () => applyToJoinProject(projectId);
                     } else {
                         joinBtn.innerHTML = '🤝 Join Project';
-                        joinBtn.onclick = () => joinProject(projectId);
+                        joinBtn.onclick = () => joinEvent(projectId);
                     }
                     joinBtn.style.display = 'inline-flex';
                 }
@@ -3312,7 +3312,7 @@
         }
         
         // Join project directly (for open projects)
-        async function joinProject(projectId) {
+        async function joinEvent(projectId) {
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser) {
                 showNotification('Please log in to join projects', 'warning');
@@ -3336,7 +3336,7 @@
                 
                 // Refresh the page to update permissions
                 await updateUIBasedOnPermissions(projectId);
-                await loadProjectStatistics(projectId);
+                await loadEventStatistics(projectId);
                 
             } catch (error) {
                 console.error('Error joining project:', error);
@@ -3360,25 +3360,25 @@
         function setJoinCardContent(title, description, buttonText = '🤝 Join Now') {
             const joinCardTitle = document.getElementById('joinCardTitle');
             const joinCardDescription = document.getElementById('joinCardDescription');
-            const joinProjectBtn = document.getElementById('joinProjectBtn');
+            const joinEventBtn = document.getElementById('joinEventBtn');
             
             if (title && joinCardTitle) joinCardTitle.textContent = title;
             if (description && joinCardDescription) joinCardDescription.textContent = description;
-            if (buttonText && joinProjectBtn) joinProjectBtn.innerHTML = buttonText;
+            if (buttonText && joinEventBtn) joinEventBtn.innerHTML = buttonText;
         }
 
         // Handle join project action (Follow/Unfollow) - Legacy function for backward compatibility
-        async function handleJoinProject() {
+        async function handleJoinEvent() {
             // Check if this should redirect to new join functions
             const projectId = getProjectIdFromURL();
-            const joinBtn = document.getElementById('joinProjectBtn');
+            const joinBtn = document.getElementById('joinEventBtn');
             
             if (joinBtn && (joinBtn.textContent.includes('Join') || joinBtn.textContent.includes('Apply'))) {
                 // Use new permission-based join system
                 if (joinBtn.textContent.includes('Apply')) {
                     return applyToJoinProject(projectId);
                 } else {
-                    return joinProject(projectId);
+                    return joinEvent(projectId);
                 }
             }
             
@@ -3389,7 +3389,7 @@
                 return;
             }
             
-            if (!projectId || !window.currentProject) {
+            if (!projectId || !window.currentEvent) {
                 showNotification('Project information not loaded', 'error');
                 return;
             }
@@ -3416,7 +3416,7 @@
                     showNotification('Unfollowed project successfully', 'success');
                     
                     // Refresh statistics after unfollow
-                    await loadProjectStatistics(projectId);
+                    await loadEventStatistics(projectId);
                     
                 } else {
                     // Follow the project
@@ -3426,7 +3426,7 @@
                             user_email: currentUser.email,
                             user_name: currentUser.name || currentUser.email.split('@')[0],
                             project_id: projectId,
-                            project_name: window.currentProject.title
+                            project_name: window.currentEvent.title
                         });
                     
                     if (error) throw error;
@@ -3437,7 +3437,7 @@
                     showNotification('Following project successfully', 'success');
                     
                     // Refresh statistics after follow
-                    await loadProjectStatistics(projectId);
+                    await loadEventStatistics(projectId);
                 }
                 
             } catch (error) {
@@ -3462,7 +3462,7 @@
                     .eq('project_id', projectId)
                     .maybeSingle();
                 
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 if (joinBtn) {
                     if (data) {
                         joinBtn.innerHTML = '✓ Following';
@@ -3474,7 +3474,7 @@
                 }
             } catch (error) {
                 // No follow record found is expected, not an error
-                const joinBtn = document.getElementById('joinProjectBtn');
+                const joinBtn = document.getElementById('joinEventBtn');
                 if (joinBtn) {
                     joinBtn.innerHTML = '➕ Follow Project';
                     joinBtn.classList.remove('following');
@@ -3486,11 +3486,11 @@
         function setJoinCardContent(title, description, buttonText = '🤝 Join Now') {
             const joinCardTitle = document.getElementById('joinCardTitle');
             const joinCardDescription = document.getElementById('joinCardDescription');
-            const joinProjectBtn = document.getElementById('joinProjectBtn');
+            const joinEventBtn = document.getElementById('joinEventBtn');
             
             if (title && joinCardTitle) joinCardTitle.textContent = title;
             if (description && joinCardDescription) joinCardDescription.textContent = description;
-            if (buttonText && joinProjectBtn) joinProjectBtn.innerHTML = buttonText;
+            if (buttonText && joinEventBtn) joinEventBtn.innerHTML = buttonText;
         }
 
         // Example usage:
@@ -3610,7 +3610,7 @@
                 return;
             }
             
-            if (!window.currentProject) {
+            if (!window.currentEvent) {
                 showAlert('Project data not loaded. Please refresh the page.', 'error');
                 return;
             }
@@ -3628,12 +3628,12 @@
             
             try {
                 console.log('Uploading file:', selectedCoverFile.name);
-                console.log('Project ID:', window.currentProject.id);
+                console.log('Project ID:', window.currentEvent.id);
                 
                 // Generate unique filename following the avatar pattern
                 const timestamp = Date.now();
                 const fileExt = selectedCoverFile.name.split('.').pop().toLowerCase();
-                const fileName = `project_cover_${window.currentProject.id}_${timestamp}.${fileExt}`;
+                const fileName = `project_cover_${window.currentEvent.id}_${timestamp}.${fileExt}`;
                 
                 console.log('Generated filename:', fileName);
                 
@@ -3706,7 +3706,7 @@
                         main_photo_url: publicUrl,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', window.currentProject.id)
+                    .eq('id', window.currentEvent.id)
                     .select();
                 
                 if (updateError) {
@@ -3731,7 +3731,7 @@
                     heroBackground.style.backgroundImage = `url(${publicUrl})`;
                     console.log('✅ Cover image updated on page');
                 }
-                window.currentProject.main_photo_url = publicUrl;
+                window.currentEvent.main_photo_url = publicUrl;
                 closeCoverEditModal();
                 
                 // Show success message and activate repositioning mode
@@ -3825,15 +3825,15 @@
             const projectId = getProjectIdFromUrl();
             console.log('Project ID from URL:', projectId);
             
-            if (window.currentProject) {
-                console.log('Current Project:', window.currentProject);
-                console.log('  Project author_id:', window.currentProject.author_id);
-                console.log('  Project author_id type:', typeof window.currentProject.author_id);
-                console.log('  Project author object:', window.currentProject.author);
-                if (window.currentProject.author) {
-                    console.log('    Author ID:', window.currentProject.author.id);
-                    console.log('    Author email:', window.currentProject.author.email);
-                    console.log('    Author username:', window.currentProject.author.username);
+            if (window.currentEvent) {
+                console.log('Current Project:', window.currentEvent);
+                console.log('  Project author_id:', window.currentEvent.author_id);
+                console.log('  Project author_id type:', typeof window.currentEvent.author_id);
+                console.log('  Project author object:', window.currentEvent.author);
+                if (window.currentEvent.author) {
+                    console.log('    Author ID:', window.currentEvent.author.id);
+                    console.log('    Author email:', window.currentEvent.author.email);
+                    console.log('    Author username:', window.currentEvent.author.username);
                 }
             } else {
                 console.log('No current project loaded yet');
@@ -3843,21 +3843,21 @@
             console.log('');
             console.log('🔄 5. COMPARISON ANALYSIS:');
             
-            if (userMethod1 && window.currentProject) {
+            if (userMethod1 && window.currentEvent) {
                 console.log('User ID:', userMethod1.id);
-                console.log('Project author_id:', window.currentProject.author_id);
-                console.log('Are they equal (===)?', userMethod1.id === window.currentProject.author_id);
-                console.log('Are they equal (==)?', userMethod1.id == window.currentProject.author_id);
-                console.log('String comparison:', String(userMethod1.id) === String(window.currentProject.author_id));
+                console.log('Project author_id:', window.currentEvent.author_id);
+                console.log('Are they equal (===)?', userMethod1.id === window.currentEvent.author_id);
+                console.log('Are they equal (==)?', userMethod1.id == window.currentEvent.author_id);
+                console.log('String comparison:', String(userMethod1.id) === String(window.currentEvent.author_id));
                 
-                if (window.currentProject.author) {
+                if (window.currentEvent.author) {
                     console.log('');
                     console.log('Email comparison:');
                     console.log('  User email:', userMethod1.email);
-                    console.log('  Author email:', window.currentProject.author.email);
-                    console.log('  Emails match?', userMethod1.email === window.currentProject.author.email);
+                    console.log('  Author email:', window.currentEvent.author.email);
+                    console.log('  Emails match?', userMethod1.email === window.currentEvent.author.email);
                     console.log('  Case-insensitive match?', 
-                        userMethod1.email?.toLowerCase() === window.currentProject.author.email?.toLowerCase());
+                        userMethod1.email?.toLowerCase() === window.currentEvent.author.email?.toLowerCase());
                 }
             }
             
@@ -3890,7 +3890,7 @@
             const editCoverBtn = document.getElementById('editCoverBtn');
             const ownerControls = document.getElementById('ownerControls');
             const manageBtn = document.getElementById('manageProjectBtn');
-            const joinBtn = document.getElementById('joinProjectBtn');
+            const joinBtn = document.getElementById('joinEventBtn');
             
             if (editCoverBtn) {
                 editCoverBtn.style.display = 'flex';
@@ -3938,9 +3938,9 @@
             console.log('Current user ID from session:', currentUserId);
             console.log('Current user email from session:', currentUserEmail);
             
-            if (window.currentProject) {
-                const projectAuthorId = window.currentProject.author_id;
-                const projectAuthorEmail = window.currentProject.author?.email;
+            if (window.currentEvent) {
+                const projectAuthorId = window.currentEvent.author_id;
+                const projectAuthorEmail = window.currentEvent.author?.email;
                 
                 console.log('Project author ID:', projectAuthorId);
                 console.log('Project author email:', projectAuthorEmail);
@@ -4145,9 +4145,9 @@
                         currentCoverPosition = parseFloat(match[1]);
                         originalPosition = currentCoverPosition;
                     }
-                } else if (window.currentProject.cover_position) {
+                } else if (window.currentEvent.cover_position) {
                     // Try to extract from database value
-                    const match = window.currentProject.cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
+                    const match = window.currentEvent.cover_position.match(/center\s+(\d+(?:\.\d+)?)%/);
                     if (match) {
                         currentCoverPosition = parseFloat(match[1]);
                         originalPosition = currentCoverPosition;
@@ -4261,7 +4261,7 @@
                 }
                 
                 // Check if project ID is available
-                if (!window.currentProject || !window.currentProject.id) {
+                if (!window.currentEvent || !window.currentEvent.id) {
                     console.error('Project ID not available');
                     showNotification('Unable to save: Project information not loaded.', 'error');
                     if (saveBtn) {
@@ -4289,7 +4289,7 @@
                 const { data: projectCheck, error: checkError } = await window.dcfSupabase
                     .from('projects')
                     .select('id')
-                    .eq('id', window.currentProject.id)
+                    .eq('id', window.currentEvent.id)
                     .single();
                 
                 if (checkError || !projectCheck) {
@@ -4308,7 +4308,7 @@
                     .update({ 
                         cover_position: positionValue
                     })
-                    .eq('id', window.currentProject.id)
+                    .eq('id', window.currentEvent.id)
                     .select();
                 
                 if (updateError) {
@@ -4324,7 +4324,7 @@
                 console.log('✅ Cover position saved to database:', positionValue);
                 
                 // Update local data for current session
-                window.currentProject.cover_position = positionValue;
+                window.currentEvent.cover_position = positionValue;
                 originalPosition = currentCoverPosition; // Update original position so cancel won't revert
                 
                 // Show success notification
@@ -4383,23 +4383,23 @@
         
         // Apply saved position on page load
         function applySavedCoverPosition() {
-            if (window.currentProject && window.currentProject.id) {
+            if (window.currentEvent && window.currentEvent.id) {
                 const heroBackground = document.getElementById('heroBackground');
                 if (heroBackground) {
                     // Load position from database (already fetched with project data)
-                    if (window.currentProject.cover_position) {
+                    if (window.currentEvent.cover_position) {
                         // Parse the CSS value (e.g., "center 75%")
-                        const match = window.currentProject.cover_position.match(/center\s+(\d+)%/);
+                        const match = window.currentEvent.cover_position.match(/center\s+(\d+)%/);
                         if (match) {
                             const position = parseFloat(match[1]);
-                            heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                            heroBackground.style.backgroundPosition = window.currentEvent.cover_position;
                             currentCoverPosition = position;
-                            console.log('Applied saved cover position from database:', window.currentProject.cover_position);
+                            console.log('Applied saved cover position from database:', window.currentEvent.cover_position);
                         } else {
                             // If format is unexpected, just apply it directly
-                            heroBackground.style.backgroundPosition = window.currentProject.cover_position;
+                            heroBackground.style.backgroundPosition = window.currentEvent.cover_position;
                             currentCoverPosition = 50; // Default for slider
-                            console.log('Applied cover position (direct):', window.currentProject.cover_position);
+                            console.log('Applied cover position (direct):', window.currentEvent.cover_position);
                         }
                     } else {
                         // Default to center if no saved position
@@ -4685,12 +4685,12 @@
             }
             
             // Authorization check: Verify user can post to this project
-            if (window.currentProject) {
-                const isProjectAuthor = currentUser.id === window.currentProject.author_id;
+            if (window.currentEvent) {
+                const isProjectAuthor = currentUser.id === window.currentEvent.author_id;
                 
                 // For now, allow project author and all logged-in users to post
                 // Later can restrict to only project members if needed
-                if (!isProjectAuthor && window.currentProject.posts_restricted) {
+                if (!isProjectAuthor && window.currentEvent.posts_restricted) {
                     // If project has restricted posting (future feature)
                     showNotification('You are not authorized to post to this project', 'error');
                     return;
@@ -4698,7 +4698,7 @@
                 
                 console.log('User authorized to post:', {
                     userId: currentUser.id,
-                    projectAuthorId: window.currentProject.author_id,
+                    projectAuthorId: window.currentEvent.author_id,
                     isProjectAuthor: isProjectAuthor
                 });
             }
