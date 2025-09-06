@@ -5220,14 +5220,21 @@
             const textarea = document.getElementById('replyText-' + commentId);
             if (!textarea) return;
             
-            const content = textarea.value.trim();
+            // SECURITY: Sanitize reply content
+            const rawContent = textarea.value.trim();
+            const content = sanitizeText(rawContent, 500);
+            
+            if (content !== rawContent) {
+                console.warn('⚠️ Reply was sanitized before submission');
+            }
+            
             if (!content) {
                 await showAlert('Please enter a reply', 'warning');
                 return;
             }
             
-            if (content.length > 2000) {
-                await showAlert('Reply is too long. Maximum 2000 characters allowed.', 'warning');
+            if (content.length > 500) {
+                await showAlert('Reply is too long. Maximum 500 characters allowed.', 'warning');
                 return;
             }
             
