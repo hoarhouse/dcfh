@@ -2128,15 +2128,28 @@
 
             try {
                 console.log('📥 Loading event with ID:', eventId);
+                console.log('Using Supabase client:', window.dcfSupabase);
                 
-                const { data: event, error } = await window.dcfSupabase
+                const response = await window.dcfSupabase
                     .from('events')
                     .select('*')
                     .eq('id', eventId)
                     .single();
+                
+                console.log('Query response:', response);
+                console.log('Response data:', response.data);
+                console.log('Response error:', response.error);
+                
+                const { data: event, error } = response;
 
-                if (error || !event) {
+                if (error) {
                     console.error('Error loading event:', error);
+                    console.error('Error details:', error.message, error.details, error.hint);
+                    return;
+                }
+                
+                if (!event) {
+                    console.error('No event data returned for ID:', eventId);
                     return;
                 }
 
@@ -2170,8 +2183,11 @@
                     console.log('  Organizer.username:', event.organizer.username);
                 }
                 console.log('');
-
+                
+                console.log('🎯 Calling displayEvent with event data:', event);
                 displayEvent(event);
+                
+                console.log('📊 Loading related events for organizer:', event.organizer_id);
                 loadRelatedEvents(event.organizer_id, eventId);
                 
                 // Track project view using Universal Analytics System (only once)
@@ -2542,10 +2558,16 @@
 
         // Initialize page
         async function initializePage() {
+            console.log('🚀 Starting page initialization...');
+            
+            console.log('📥 Calling loadEvent...');
             await loadEvent();
+            console.log('✅ loadEvent completed');
             
             // Initialize posts functionality
+            console.log('📝 Initializing post creation...');
             initializePostCreation();
+            console.log('📰 Loading posts feed...');
             loadPostsFeed();
             
             // Immediately update post creation display with whatever data is available
