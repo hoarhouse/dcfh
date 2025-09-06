@@ -1229,7 +1229,7 @@
             goToStep(2);
         });
 
-        document.getElementById('dateLocationForm').addEventListener('submit', function(e) {
+        document.getElementById('dateLocationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             eventData.date = document.getElementById('eventDate').value;
@@ -1238,21 +1238,71 @@
             eventData.timezone = document.getElementById('timezone').value;
             eventData.additionalInstructions = document.getElementById('additionalInstructions').value;
             
+            // Validate location fields based on event type
             if (selectedEventType === 'online') {
-                eventData.meetingLink = document.getElementById('meetingLink').value;
-            } else {
-                eventData.physicalAddress = document.getElementById('physicalAddress').value;
+                const meetingLink = document.getElementById('meetingLink').value;
+                if (!meetingLink) {
+                    await showAlert('Please provide a meeting link for online events', 'error');
+                    return;
+                }
+                eventData.meetingLink = meetingLink;
+            } else if (selectedEventType === 'in-person') {
+                const physicalAddress = document.getElementById('physicalAddress').value;
+                if (!physicalAddress) {
+                    await showAlert('Please provide a location for in-person events', 'error');
+                    return;
+                }
+                eventData.physicalAddress = physicalAddress;
+            } else if (selectedEventType === 'hybrid') {
+                const hybridMeetingLink = document.getElementById('hybridMeetingLink').value;
+                const hybridPhysicalAddress = document.getElementById('hybridPhysicalAddress').value;
+                if (!hybridMeetingLink || !hybridPhysicalAddress) {
+                    await showAlert('Please provide both online link and physical location for hybrid events', 'error');
+                    return;
+                }
+                eventData.meetingLink = hybridMeetingLink;
+                eventData.physicalAddress = hybridPhysicalAddress;
+            }
+            
+            // Validate event date is in the future
+            const eventDate = new Date(eventData.date + 'T' + eventData.startTime);
+            if (eventDate <= new Date()) {
+                await showAlert('Event date and time must be in the future', 'error');
+                return;
             }
             
             goToStep(3);
         });
 
-        document.getElementById('detailsForm').addEventListener('submit', function(e) {
+        document.getElementById('detailsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             eventData.targetAudience = document.getElementById('targetAudience').value;
             eventData.maxAttendees = document.getElementById('maxAttendees').value;
             eventData.requiresRegistration = requiresRegistration;
+            eventData.allowWaitlist = requiresRegistration ? document.getElementById('allowWaitlist').checked : false;
+            eventData.approvalRequired = requiresRegistration ? document.getElementById('approvalRequired').checked : false;
+            eventData.registrationDeadline = requiresRegistration ? document.getElementById('registrationDeadline').value : null;
+            
+            // Validate max attendees if provided
+            if (eventData.maxAttendees && parseInt(eventData.maxAttendees) < 1) {
+                await showAlert('Maximum attendees must be at least 1', 'error');
+                return;
+            }
+            
+            // Validate registration deadline if provided
+            if (eventData.registrationDeadline) {
+                const regDeadline = new Date(eventData.registrationDeadline);
+                const eventDate = new Date(eventData.date + 'T' + eventData.startTime);
+                if (regDeadline >= eventDate) {
+                    await showAlert('Registration deadline must be before the event starts', 'error');
+                    return;
+                }
+                if (regDeadline <= new Date()) {
+                    await showAlert('Registration deadline must be in the future', 'error');
+                    return;
+                }
+            }
             
             // Collect selected topics
             const selectedTopics = [];
@@ -1410,6 +1460,12 @@
             updateProgress();
             initializeCheckboxes();
             updateLocationFields();
+            
+            // Initialize registration settings visibility
+            const registrationSettings = document.getElementById('registrationSettingsGroup');
+            if (registrationSettings) {
+                registrationSettings.style.display = requiresRegistration ? 'block' : 'none';
+            }
 
             // Set default date to tomorrow
             const tomorrow = new Date();
