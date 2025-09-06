@@ -723,12 +723,12 @@ function getQuickActionsHTML(pageType) {
                 <button class="btn btn-primary" onclick="focusSearchMembers()">👥 Find Members</button>
                 <button class="btn btn-secondary" onclick="connectWithMembers()">🤝 Connect with Members</button>
                 <button class="btn btn-secondary" onclick="showComingSoon('My Network')">🌐 View My Network</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 Member Analytics</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">📊 Member Analytics</button>
             `;
         case 'resources':
             return `
                 <button class="btn btn-primary" onclick="focusSearchResources()">📚 Browse Library</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_resource_upload.html'">⬆️ Upload Resource</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}resources/dcf_resource_upload.html'">⬆️ Upload Resource</button>
                 <button class="btn btn-secondary" onclick="viewMyContributions()">📝 My Contributions</button>
                 <button class="btn btn-secondary" onclick="viewBookmarks()">🔖 My Bookmarks</button>
             `;
@@ -736,8 +736,8 @@ function getQuickActionsHTML(pageType) {
             return `
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">📅 Create Event</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_members_directory.html'">👥 Find Collaborators</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View My Stats</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_members_directory.html'">👥 Find Collaborators</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">📊 View My Stats</button>
             `;
         default:
             return `
