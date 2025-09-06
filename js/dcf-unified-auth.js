@@ -742,9 +742,9 @@ function getQuickActionsHTML(pageType) {
         default:
             return `
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View Analytics</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">📊 View Analytics</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}events/dcf_events_calendar.html'">📅 Events Calendar</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_member_home.html'">💬 Discussion Forum</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_member_home.html'">💬 Discussion Forum</button>
             `;
     }
 }
