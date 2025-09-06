@@ -2073,12 +2073,43 @@
         // Get event ID from URL
         function getEventIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('id');
+            const eventId = urlParams.get('id');
+            
+            // Validate event ID
+            if (!eventId) {
+                console.error('No event ID found in URL');
+                showEventNotFoundError();
+                return null;
+            }
+            
+            // Check if it's a valid UUID format
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(eventId)) {
+                console.error('Invalid event ID format:', eventId);
+                showEventNotFoundError();
+                return null;
+            }
+            
+            return eventId;
         }
         
         // Alias for consistency (some parts of code use this name)
         function getEventIdFromURL() {
             return getEventIdFromUrl();
+        }
+        
+        // Show error when event ID is missing or invalid
+        function showEventNotFoundError() {
+            const container = document.querySelector('.hero-section');
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 4rem 2rem;">
+                        <h2 style="color: #dc3545; margin-bottom: 1rem;">Event Not Found</h2>
+                        <p style="color: #666; margin-bottom: 2rem;">The event you're looking for doesn't exist or the URL is invalid.</p>
+                        <a href="dcf_events_calendar.html" class="btn btn-primary">Browse Events</a>
+                    </div>
+                `;
+            }
         }
 
         // Load event data
@@ -3090,9 +3121,9 @@
             console.log('=== END setStatsData DEBUG ===');
         }
 
-        // Check user permissions for the project
-        async function checkUserPermissions(projectId, userId) {
-            if (!projectId || !userId || !window.dcfSupabase) {
+        // Check user permissions for the event
+        async function checkUserPermissions(eventId, userId) {
+            if (!eventId || !userId || !window.dcfSupabase) {
                 return null;
             }
             
@@ -3101,7 +3132,7 @@
                 const { data: memberData, error: memberError } = await window.dcfSupabase
                     .from('project_members')
                     .select('role, permission_template_id, custom_permissions')
-                    .eq('project_id', projectId)
+                    .eq('project_id', eventId)
                     .eq('user_id', userId)
                     .eq('status', 'active')
                     .maybeSingle();
@@ -3212,7 +3243,7 @@
                 const { data: settingsData, error } = await window.dcfSupabase
                     .from('project_settings')
                     .select('join_policy')
-                    .eq('project_id', projectId)
+                    .eq('project_id', eventId)
                     .maybeSingle();
                 
                 if (!error && settingsData && settingsData.join_policy) {
@@ -3476,7 +3507,7 @@
                         .from('project_follows')
                         .delete()
                         .eq('user_email', currentUser.email)
-                        .eq('project_id', projectId);
+                        .eq('project_id', eventId);
                     
                     if (error) throw error;
                     
