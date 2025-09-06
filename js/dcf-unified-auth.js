@@ -2805,7 +2805,7 @@ function getQuickActionsConfig(pageType) {
         ],
         'projects': [
             { icon: '📋', text: 'Create Project', href: 'dcf_create_project.html' },
-            { icon: '📋', text: 'My Projects', href: 'dcf_project_manage.html' },
+            { icon: '📋', text: 'My Projects', action: 'window.location.href="dcf_projects_home.html"; setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
             { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
         ],
         'project_detail': [
