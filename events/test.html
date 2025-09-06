@@ -2410,9 +2410,12 @@
             console.log('  start_time:', event.start_time);
             console.log('  location:', event.location);
             console.log('  meeting_link:', event.meeting_link);
-            console.log('  event_format:', event.event_format);
-            console.log('  event_type:', event.event_type);
+            console.log('  event_format (database):', event.event_format);
+            console.log('  event_type (database):', event.event_type);
             console.log('  timezone:', event.timezone);
+            console.log('📊 Format Analysis:');
+            console.log('  Has location?', event.location && event.location.trim() !== '');
+            console.log('  Has meeting link?', event.meeting_link && event.meeting_link.trim() !== '');
             
             // Format event date and time
             const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString('en-US', {
@@ -2477,11 +2480,42 @@
                 }
             }
             
-            // Determine location display based on format and available data
+            // CONTRADICTION RESOLUTION: Determine actual format based on available data
             let locationDisplay = '';
-            const format = event.event_format || event.event_type || 'in-person';
+            let rawFormat = event.event_format || event.event_type || 'in-person';
             
-            // Handle data inconsistencies and display appropriate location info
+            // Analyze what data we actually have
+            const hasLocation = event.location && event.location.trim() !== '';
+            const hasMeetingLink = event.meeting_link && event.meeting_link.trim() !== '';
+            
+            // RESOLVE CONTRADICTIONS: Determine the ACTUAL format based on available data
+            let actualFormat = rawFormat; // Start with database value
+            
+            if (hasLocation && hasMeetingLink) {
+                // Has both - definitely hybrid regardless of what database says
+                actualFormat = 'hybrid';
+                console.log('📊 Format Resolution: Has both location and meeting link → Hybrid');
+            } else if (hasMeetingLink && !hasLocation) {
+                // Only has meeting link - definitely online regardless of what database says
+                if (rawFormat === 'in-person' || rawFormat === 'in_person' || rawFormat === 'irl') {
+                    console.log('⚠️ Format Contradiction Resolved: Database says in-person but only has meeting link → Online');
+                }
+                actualFormat = 'online';
+            } else if (hasLocation && !hasMeetingLink) {
+                // Only has location - definitely in-person regardless of what database says
+                if (rawFormat === 'online' || rawFormat === 'virtual') {
+                    console.log('⚠️ Format Contradiction Resolved: Database says online but only has location → In-person');
+                }
+                actualFormat = 'in-person';
+            } else {
+                // Has neither - keep original format but note the issue
+                console.log('⚠️ Warning: Event has neither location nor meeting link');
+            }
+            
+            // Use the resolved format for display
+            const format = actualFormat;
+            
+            // Now display based on the RESOLVED format
             if (format === 'online' || format === 'virtual') {
                 // Online event - show meeting link
                 if (event.meeting_link) {
@@ -2496,13 +2530,19 @@
                     `<br>Online: <a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Join Meeting</a>` : 
                     '<br>Online link will be provided';
                 locationDisplay = `${physicalLocation}${onlineLink}`;
-            } else {
-                // In-person event - but check for data inconsistency
+            } else if (format === 'in-person' || format === 'in_person' || format === 'irl') {
+                // In-person event - show location
                 if (event.location) {
                     locationDisplay = event.location;
-                } else if (event.meeting_link) {
-                    // Has meeting link but marked as in-person (data inconsistency)
-                    locationDisplay = `<a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Meeting Link</a> <em style="color: #999;">(Online)</em>`;
+                } else {
+                    locationDisplay = 'Location not specified';
+                }
+            } else {
+                // Fallback for any unrecognized format
+                if (event.meeting_link) {
+                    locationDisplay = `<a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Join Online Meeting</a>`;
+                } else if (event.location) {
+                    locationDisplay = event.location;
                 } else {
                     locationDisplay = 'Location not specified';
                 }
