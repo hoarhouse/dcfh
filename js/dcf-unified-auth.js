@@ -798,7 +798,7 @@ function focusSearchMembers() {
         searchInput.focus();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        window.location.href = getCorrectBasePath() + 'dcf_members_directory.html';
+        window.location.href = getCorrectBasePath() + 'members/dcf_members_directory.html';
     }
 }
 
