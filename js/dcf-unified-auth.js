@@ -2997,6 +2997,12 @@ function initializeQuickActions() {
 }
 
 // Quick Action Helper Functions
+function shareResource() {
+    // Navigate to resource creation/sharing page
+    const basePath = getCorrectBasePath();
+    window.location.href = basePath + 'resources/dcf_resource_upload.html';
+}
+
 function focusMemberSearch() {
     const searchInput = document.querySelector('#search, #searchInput, input[type="search"], input[placeholder*="Search"]');
     if (searchInput) {
