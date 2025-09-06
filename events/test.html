@@ -2136,6 +2136,7 @@
                 return;
             }
 
+            console.log('🔍 Checking Supabase client...');
             console.log('window.dcfSupabase exists?', !!window.dcfSupabase);
             console.log('window.dcfSupabase type:', typeof window.dcfSupabase);
             
@@ -2192,18 +2193,27 @@
                 console.log('Event organizer_id:', event.organizer_id);
 
                 // Load organizer info separately if needed
+                console.log('🔍 Loading organizer info...');
                 let organizer = null;
                 if (event.organizer_id) {
+                    console.log('Querying user_profiles for organizer_id:', event.organizer_id);
                     const { data: organizerData, error: organizerError } = await window.dcfSupabase
                         .from('user_profiles')
                         .select('id,email,username,first_name,last_name,avatar_url')
                         .eq('id', event.organizer_id)
                         .single();
                     
+                    console.log('Organizer query result:', { data: organizerData, error: organizerError });
+                    
                     if (!organizerError && organizerData) {
                         organizer = organizerData;
                         event.organizer = organizer; // Attach to event object for compatibility
+                        console.log('✅ Organizer loaded:', organizer);
+                    } else if (organizerError) {
+                        console.warn('⚠️ Could not load organizer:', organizerError);
                     }
+                } else {
+                    console.log('No organizer_id on event');
                 }
 
                 // Comprehensive project data logging
@@ -2242,8 +2252,15 @@
                 }
                 
             } catch (error) {
-                console.error('Error loading event:', error);
+                console.error('❌ EXCEPTION IN LOADEVENT:');
+                console.error('Error object:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                console.error('Error type:', error.constructor.name);
+                console.log('🔍 ========== LOADEVENT DEBUG END (WITH ERROR) ==========');
             }
+            
+            console.log('🔍 ========== LOADEVENT DEBUG END (SUCCESS) ==========');
         }
         
         // Load related events by same organizer
@@ -4176,9 +4193,22 @@
         
         // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📄 DOM Content Loaded - Starting initialization');
+            console.log('🔍 ========== PAGE INITIALIZATION DEBUG ==========');
+            console.log('📄 DOM Content Loaded at:', new Date().toISOString());
+            console.log('Current URL:', window.location.href);
+            console.log('Window.dcfSupabase available?', !!window.dcfSupabase);
+            console.log('Window.initializeSupabase available?', !!window.initializeSupabase);
+            console.log('Window.dcfUser available?', !!window.dcfUser);
+            
+            // Check if unified auth is loaded
+            if (!window.dcfSupabase && window.initializeSupabase) {
+                console.log('🔧 Initializing Supabase client...');
+                window.initializeSupabase();
+                console.log('Supabase initialized, dcfSupabase now available?', !!window.dcfSupabase);
+            }
             
             // Load the project first
+            console.log('🚀 Calling initializePage()...');
             initializePage();
             
             // Set up auth listener to re-check ownership when auth completes
