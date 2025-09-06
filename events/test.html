@@ -2455,6 +2455,37 @@
                 }
             }
             
+            // Determine location display based on format and available data
+            let locationDisplay = '';
+            const format = event.event_format || event.event_type || 'in-person';
+            
+            // Handle data inconsistencies and display appropriate location info
+            if (format === 'online' || format === 'virtual') {
+                // Online event - show meeting link
+                if (event.meeting_link) {
+                    locationDisplay = `<a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Join Online Meeting</a>`;
+                } else {
+                    locationDisplay = 'Meeting link will be provided after registration';
+                }
+            } else if (format === 'hybrid') {
+                // Hybrid event - show both
+                const physicalLocation = event.location || 'Physical location TBD';
+                const onlineLink = event.meeting_link ? 
+                    `<br>Online: <a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Join Meeting</a>` : 
+                    '<br>Online link will be provided';
+                locationDisplay = `${physicalLocation}${onlineLink}`;
+            } else {
+                // In-person event - but check for data inconsistency
+                if (event.location) {
+                    locationDisplay = event.location;
+                } else if (event.meeting_link) {
+                    // Has meeting link but marked as in-person (data inconsistency)
+                    locationDisplay = `<a href="${event.meeting_link}" target="_blank" style="color: #667eea;">Meeting Link</a> <em style="color: #999;">(Online)</em>`;
+                } else {
+                    locationDisplay = 'Location not specified';
+                }
+            }
+            
             // Set about section with event details
             let eventDetailsHtml = `
                 <div style="margin-bottom: 1.5rem;">
@@ -2462,10 +2493,11 @@
                     <div style="display: grid; gap: 0.75rem; color: #666;">
                         <div><strong>📅 Date:</strong> ${eventDate}</div>
                         <div><strong>🕐 Time:</strong> ${eventTime}</div>
-                        <div><strong>📍 Location:</strong> ${event.location || 'Location TBD'}</div>
-                        <div><strong>🎯 Format:</strong> ${event.event_format || 'In-Person'}</div>
+                        <div><strong>📍 Location:</strong> ${locationDisplay}</div>
+                        <div><strong>🎯 Format:</strong> ${format.charAt(0).toUpperCase() + format.slice(1).replace('-', ' ')}</div>
                         <div><strong>👥 Capacity:</strong> ${event.max_attendees || 'Unlimited'} attendees</div>
                         ${event.registration_deadline ? `<div><strong>⏰ Registration Deadline:</strong> ${new Date(event.registration_deadline).toLocaleDateString()}</div>` : ''}
+                        ${event.timezone ? `<div><strong>🌍 Timezone:</strong> ${event.timezone}</div>` : ''}
                     </div>
                 </div>
             `;
