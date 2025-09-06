@@ -859,7 +859,9 @@
         // Forgot password functions
         function showForgotPassword() {
             document.getElementById('forgotPasswordModal').classList.add('active');
-            document.getElementById('resetEmail').value = document.getElementById('email').value;
+            // SECURITY: Sanitize email before populating reset field
+            const currentEmail = document.getElementById('email').value;
+            document.getElementById('resetEmail').value = sanitizeEmail(currentEmail);
             document.getElementById('resetErrorMessage').style.display = 'none';
             document.getElementById('resetSuccessMessage').style.display = 'none';
         }
@@ -872,7 +874,14 @@
         document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const resetEmail = document.getElementById('resetEmail').value;
+            // SECURITY: Sanitize email input
+            const rawResetEmail = document.getElementById('resetEmail').value;
+            const resetEmail = sanitizeEmail(rawResetEmail);
+            
+            if (resetEmail !== rawResetEmail) {
+                console.warn('⚠️ Security: Reset email was sanitized');
+            }
+            
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.textContent;
             
