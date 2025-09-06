@@ -209,8 +209,8 @@
             // Description
             document.getElementById('resourceDescription').textContent = resource.description || 'No description available.';
 
-            // Stats
-            updateStats(resource);
+            // Stats - Get real-time counts from universal analytics
+            await updateStatsFromAnalytics(resource);
 
             // File preview
             displayFilePreview(resource);
@@ -259,6 +259,31 @@
             document.getElementById('viewCount').textContent = `${views} views`;
             document.getElementById('likeCount').textContent = `${likes} likes`;
             document.getElementById('shareCount').textContent = `${resource.share_count || 0} shares`;
+        }
+
+        async function updateStatsFromAnalytics(resource) {
+            // Get real-time counts from universal analytics
+            try {
+                const [likeCount, downloadCount, viewCount, shareCount] = await Promise.all([
+                    window.getInteractionCount('resource', resourceId, 'like'),
+                    window.getInteractionCount('resource', resourceId, 'download'),
+                    window.getInteractionCount('resource', resourceId, 'view'),
+                    window.getInteractionCount('resource', resourceId, 'share')
+                ]);
+
+                // Update resource object with real counts
+                resource.like_count = likeCount || 0;
+                resource.download_count = downloadCount || 0;
+                resource.view_count = viewCount || 0;
+                resource.share_count = shareCount || 0;
+
+                // Update display
+                updateStats(resource);
+            } catch (error) {
+                console.error('Error getting analytics counts:', error);
+                // Fall back to existing counts
+                updateStats(resource);
+            }
         }
 
         function displayFilePreview(resource) {
