@@ -2456,7 +2456,7 @@
             setAboutContent(`About This Event`, eventDetailsHtml + primaryDescription, expandedDescription, null);
             
             // Set author details using unified auth system instead of raw database data
-            if (event.author) {
+            if (event.organizer || event.organizer_id) {
                 const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
                 
                 // Check if the current user is the event organizer
@@ -2470,16 +2470,20 @@
                         currentUser.avatar_url
                     );
                 } else {
-                    // For other users, use only safe public data
+                    // For other users, use only safe public data from organizer object
                     const username = event.organizer?.username || 'Unknown User';
+                    const avatarUrl = event.organizer?.avatar_url || null;
+                    console.log('Setting organizer display - username:', username, 'avatarUrl:', avatarUrl);
                     setAuthorDetails(
                         `@${username}`,
                         'Event Organizer', 
                         null, // Never show email
                         generateInitials(username),
-                        event.organizer?.avatar_url
+                        avatarUrl
                     );
                 }
+            } else {
+                console.log('No organizer data available to display');
             }
             
             // Load real statistics from database
@@ -3041,15 +3045,25 @@
             
             // Handle avatar - use profile pic if available, otherwise initials
             if (authorAvatar) {
-                if (avatarUrl) {
+                if (avatarUrl && avatarUrl.trim() !== '') {
                     console.log('DEBUG - Setting avatar background image:', avatarUrl);
+                    // Clear any previous content
+                    authorAvatar.textContent = '';
+                    // Set the background image
+                    authorAvatar.style.background = `url(${avatarUrl}) center/cover no-repeat`;
                     authorAvatar.style.backgroundImage = `url(${avatarUrl})`;
                     authorAvatar.style.backgroundSize = 'cover';
                     authorAvatar.style.backgroundPosition = 'center';
-                    authorAvatar.textContent = '';
+                    authorAvatar.style.color = 'transparent';
                 } else {
+                    console.log('DEBUG - No avatar URL, using initials:', avatarInitials);
                     authorAvatar.style.backgroundImage = '';
-                    authorAvatar.style.background = 'linear-gradient(135deg, #000, #333)';
+                    authorAvatar.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                    authorAvatar.style.color = 'white';
+                    authorAvatar.style.display = 'flex';
+                    authorAvatar.style.alignItems = 'center';
+                    authorAvatar.style.justifyContent = 'center';
+                    authorAvatar.style.fontWeight = '600';
                     authorAvatar.textContent = avatarInitials || 'U';
                 }
             }
