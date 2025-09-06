@@ -920,6 +920,11 @@
                             <div class="toggle-title">In-Person</div>
                             <div class="toggle-description">Physical location gathering</div>
                         </div>
+                        <div class="toggle-option" onclick="selectEventType('hybrid')">
+                            <div class="toggle-icon">🔄</div>
+                            <div class="toggle-title">Hybrid</div>
+                            <div class="toggle-description">Both in-person and online options</div>
+                        </div>
                     </div>
                 </div>
                 <div class="button-group">
@@ -1919,6 +1924,99 @@
                 const submitBtn = document.querySelector('button[type="submit"]');
                 submitBtn.textContent = 'Create Event';
                 submitBtn.disabled = false;
+            }
+        }
+
+        // Add real-time validation feedback
+        function addRealTimeValidation() {
+            // Photo upload validation indicator
+            const photoUploadSection = document.querySelector('.photo-upload-container');
+            if (photoUploadSection && uploadedPhotos.length === 0) {
+                const indicator = document.createElement('div');
+                indicator.className = 'validation-indicator';
+                indicator.style.cssText = 'color: #dc3545; font-size: 0.9rem; margin-top: 0.5rem;';
+                indicator.textContent = '⚠️ Cover photo is required';
+                indicator.id = 'photoValidationIndicator';
+                if (!document.getElementById('photoValidationIndicator')) {
+                    photoUploadSection.appendChild(indicator);
+                }
+            }
+            
+            // Date validation
+            const dateField = document.getElementById('eventDate');
+            if (dateField) {
+                dateField.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0); // Reset time for date comparison
+                    
+                    if (selectedDate <= now) {
+                        this.style.borderColor = '#dc3545';
+                        showFieldError(this, 'Event date must be in the future');
+                    } else {
+                        this.style.borderColor = '#28a745';
+                        clearFieldError(this);
+                    }
+                });
+            }
+            
+            // Time validation
+            const timeField = document.getElementById('startTime');
+            if (timeField) {
+                timeField.addEventListener('change', function() {
+                    if (!this.value) {
+                        this.style.borderColor = '#dc3545';
+                        showFieldError(this, 'Start time is required');
+                    } else {
+                        this.style.borderColor = '#28a745';
+                        clearFieldError(this);
+                    }
+                });
+            }
+            
+            // Meeting link validation for online events
+            const meetingLinkField = document.getElementById('meetingLink');
+            if (meetingLinkField) {
+                meetingLinkField.addEventListener('blur', function() {
+                    if ((selectedEventType === 'online' || selectedEventType === 'hybrid') && !this.value.trim()) {
+                        this.style.borderColor = '#dc3545';
+                        showFieldError(this, 'Meeting link is required for ' + selectedEventType + ' events');
+                    } else {
+                        this.style.borderColor = '';
+                        clearFieldError(this);
+                    }
+                });
+            }
+            
+            // Physical address validation for in-person events
+            const addressField = document.getElementById('physicalAddress');
+            if (addressField) {
+                addressField.addEventListener('blur', function() {
+                    if ((selectedEventType === 'irl' || selectedEventType === 'in-person' || selectedEventType === 'hybrid') && !this.value.trim()) {
+                        this.style.borderColor = '#dc3545';
+                        showFieldError(this, 'Physical location is required for ' + selectedEventType + ' events');
+                    } else {
+                        this.style.borderColor = '';
+                        clearFieldError(this);
+                    }
+                });
+            }
+        }
+        
+        function showFieldError(field, message) {
+            clearFieldError(field); // Clear existing error first
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.style.cssText = 'color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;';
+            errorDiv.textContent = message;
+            errorDiv.id = field.id + '-error';
+            field.parentElement.appendChild(errorDiv);
+        }
+        
+        function clearFieldError(field) {
+            const existingError = document.getElementById(field.id + '-error');
+            if (existingError) {
+                existingError.remove();
             }
         }
 
