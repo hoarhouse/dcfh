@@ -873,8 +873,20 @@
                     <input type="text" id="eventTitle" name="eventTitle" class="form-input" placeholder="Enter a clear, descriptive title for your event" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="eventDescription">Event Description *</label>
-                    <textarea id="eventDescription" name="eventDescription" class="textarea" placeholder="Describe your event, its purpose, and what attendees can expect to learn or accomplish..." required></textarea>
+                    <label class="form-label" for="briefDescription">Brief Description *</label>
+                    <textarea id="briefDescription" name="briefDescription" class="textarea" rows="3" 
+                        placeholder="Brief summary of your event (50-180 characters)" 
+                        minlength="50" maxlength="180" required
+                        oninput="updateCharCount('briefDescription', 180)"></textarea>
+                    <div id="briefDescriptionCount" style="text-align: right; color: #666; font-size: 0.85rem; margin-top: 0.25rem;">0/180 characters</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="fullDescription">Full Description *</label>
+                    <textarea id="fullDescription" name="fullDescription" class="textarea" rows="8" 
+                        placeholder="Detailed description of your event, goals, agenda, and expected outcomes..." 
+                        minlength="100" maxlength="2500" required
+                        oninput="updateCharCount('fullDescription', 2500)"></textarea>
+                    <div id="fullDescriptionCount" style="text-align: right; color: #666; font-size: 0.85rem; margin-top: 0.25rem;">0/2500 characters</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="eventCategory">Event Category *</label>
@@ -1211,7 +1223,36 @@
         let requiresRegistration = true;
         let selectedDuration = 1;
         let uploadedPhotos = [];
-        let uploadedSubPhotos = {}; // Object to store sub-photo URLs</        
+        let uploadedSubPhotos = {}; // Object to store sub-photo URLs
+        
+        // Character counter function
+        function updateCharCount(fieldId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + 'Count');
+            if (field && counter) {
+                const currentLength = field.value.length;
+                counter.textContent = `${currentLength}/${maxLength} characters`;
+                
+                // Change color based on proximity to limits
+                if (fieldId === 'briefDescription') {
+                    if (currentLength < 50) {
+                        counter.style.color = '#dc3545'; // Red for under minimum
+                    } else if (currentLength >= 170) {
+                        counter.style.color = '#ffc107'; // Yellow when approaching max
+                    } else {
+                        counter.style.color = '#28a745'; // Green when valid
+                    }
+                } else if (fieldId === 'fullDescription') {
+                    if (currentLength < 100) {
+                        counter.style.color = '#dc3545'; // Red for under minimum
+                    } else if (currentLength >= 2400) {
+                        counter.style.color = '#ffc107'; // Yellow when approaching max
+                    } else {
+                        counter.style.color = '#28a745'; // Green when valid
+                    }
+                }
+            }
+        }</        
 
         function selectVisibility(type) {
             selectedVisibility = type;
@@ -1583,7 +1624,8 @@
             e.preventDefault();
             
             eventData.title = document.getElementById('eventTitle').value;
-            eventData.description = document.getElementById('eventDescription').value;
+            eventData.briefDescription = document.getElementById('briefDescription').value;
+            eventData.fullDescription = document.getElementById('fullDescription').value;
             eventData.category = document.getElementById('eventCategory').value;
             eventData.visibility = selectedVisibility;
             eventData.type = selectedEventType;
@@ -1785,8 +1827,28 @@
                 return '📝 Event title is required. Please provide a title for your event.';
             }
             
-            if (!eventData.description || eventData.description.trim() === '') {
-                return '📄 Event description is required. Please describe your event.';
+            if (!eventData.briefDescription || eventData.briefDescription.trim() === '') {
+                return '📄 Brief description is required. Please provide a brief summary of your event.';
+            }
+            
+            if (eventData.briefDescription && eventData.briefDescription.length < 50) {
+                return '📄 Brief description must be at least 50 characters long.';
+            }
+            
+            if (eventData.briefDescription && eventData.briefDescription.length > 180) {
+                return '📄 Brief description must not exceed 180 characters.';
+            }
+            
+            if (!eventData.fullDescription || eventData.fullDescription.trim() === '') {
+                return '📄 Full description is required. Please provide a detailed description of your event.';
+            }
+            
+            if (eventData.fullDescription && eventData.fullDescription.length < 100) {
+                return '📄 Full description must be at least 100 characters long.';
+            }
+            
+            if (eventData.fullDescription && eventData.fullDescription.length > 2500) {
+                return '📄 Full description must not exceed 2500 characters.';
             }
             
             // 6. Validate meeting link format if provided
@@ -1824,14 +1886,35 @@
             if (step === 1) {
                 // Validate basic info
                 const title = document.getElementById('eventTitle')?.value;
-                const description = document.getElementById('eventDescription')?.value;
+                const briefDescription = document.getElementById('briefDescription')?.value;
+                const fullDescription = document.getElementById('fullDescription')?.value;
                 
                 if (!title || title.trim() === '') {
                     showAlert('Please provide an event title', 'error');
                     return false;
                 }
-                if (!description || description.trim() === '') {
-                    showAlert('Please provide an event description', 'error');
+                if (!briefDescription || briefDescription.trim() === '') {
+                    showAlert('Please provide a brief description', 'error');
+                    return false;
+                }
+                if (briefDescription.length < 50) {
+                    showAlert('Brief description must be at least 50 characters', 'error');
+                    return false;
+                }
+                if (briefDescription.length > 180) {
+                    showAlert('Brief description must not exceed 180 characters', 'error');
+                    return false;
+                }
+                if (!fullDescription || fullDescription.trim() === '') {
+                    showAlert('Please provide a full description', 'error');
+                    return false;
+                }
+                if (fullDescription.length < 100) {
+                    showAlert('Full description must be at least 100 characters', 'error');
+                    return false;
+                }
+                if (fullDescription.length > 2500) {
+                    showAlert('Full description must not exceed 2500 characters', 'error');
                     return false;
                 }
             } else if (step === 2) {
