@@ -734,14 +734,14 @@ function getQuickActionsHTML(pageType) {
             `;
         case 'home_feed':
             return `
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_create_project.html'">🚀 Create Project</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_create_event.html'">📅 Create Event</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_members_directory.html'">👥 Find Collaborators</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View My Stats</button>
             `;
         default:
             return `
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_create_project.html'">🚀 Create Project</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View Analytics</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_events_calendar.html'">📅 Events Calendar</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_member_home.html'">💬 Discussion Forum</button>
@@ -2753,7 +2753,7 @@ function getQuickActionsConfig(pageType) {
     
     // Standardized quick actions for most pages
     const standardActions = [
-        { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_project_create.html'), primary: true },
+        { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_create_project.html'), primary: true },
         { icon: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
         { icon: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
         { icon: '💬', text: 'Discussion Forum', href: getPath('forum', 'dcf_forum_home.html') },
@@ -2797,10 +2797,9 @@ function getQuickActionsConfig(pageType) {
         'analytics': standardActions,
         'personal_analytics': standardActions,
         'projects_home': [
-            { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_project_create.html'), primary: true },
-            { icon: '📋', text: 'My Projects', href: getPath('projects', 'dcf_my_projects.html') },
+            { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_create_project.html'), primary: true },
+            { icon: '📋', text: 'My Projects', action: 'window.location.href="' + getPath('projects', 'dcf_projects_home.html') + '"; setTimeout(function() { var myTab = document.querySelector("[data-tab=\'my-projects\'], .tab-btn:contains(\'My Projects\'), button:contains(\'My Projects\')"); if (myTab) myTab.click(); }, 100);' },
             { icon: '🔍', text: 'Browse Projects', href: getPath('projects', 'dcf_projects_home.html') },
-            { icon: '📊', text: 'Project Analytics', href: getPath('projects', 'dcf_project_analytics.html') },
             { icon: '👥', text: 'Find Collaborators', href: getPath('members', 'dcf_members_directory.html') },
             { icon: '📚', text: 'Resources', href: getPath('resources', 'dcf_resources_library.html') }
         ],
