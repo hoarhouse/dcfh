@@ -2822,7 +2822,6 @@ function getQuickActionsConfig(pageType) {
             { icon: '➕', text: 'Create Event', href: getPath('events', 'dcf_create_event.html'), primary: true },
             { icon: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
             { icon: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
-            { icon: '💬', text: 'Discussion Forum', href: getPath('forum', 'dcf_forum_home.html') },
             { icon: '👥', text: 'Members Directory', href: getPath('members', 'dcf_members_directory.html') },
             { icon: '📚', text: 'Resources Library', href: getPath('resources', 'dcf_resources_library.html') }
         ],
