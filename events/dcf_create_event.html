@@ -1420,6 +1420,108 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
+        
+        // Sub-photo handling functions
+        async function handlePhotoUpload(input, photoType) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                await showAlert('Photo size must be less than 5MB', 'warning');
+                input.value = '';
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                await showAlert('Please select a valid image file', 'warning');
+                input.value = '';
+                return;
+            }
+
+            try {
+                // Show preview immediately
+                showPhotoPreview(file, photoType);
+                
+                // Mark as uploading
+                const uploadDiv = document.getElementById(`${photoType}Upload`);
+                if (uploadDiv) {
+                    uploadDiv.setAttribute('data-uploading', 'true');
+                    uploadDiv.removeAttribute('data-uploaded');
+                    uploadDiv.removeAttribute('data-photo-url');
+                }
+                
+                // Store file for later upload
+                uploadedSubPhotos[photoType] = file;
+                
+                console.log('Photo selected for:', photoType);
+                console.log('Current uploadedSubPhotos:', uploadedSubPhotos);
+                
+            } catch (error) {
+                console.error('Error handling photo upload:', error);
+                await showAlert('Failed to process photo. Please try again.', 'error');
+                
+                // Reset on error
+                const uploadDiv = document.getElementById(`${photoType}Upload`);
+                if (uploadDiv) {
+                    uploadDiv.removeAttribute('data-uploading');
+                }
+            }
+        }
+        
+        function showPhotoPreview(file, photoType) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById(`${photoType}Preview`);
+                const content = document.getElementById(`${photoType}Content`);
+                const uploadDiv = document.getElementById(`${photoType}Upload`);
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                if (content) {
+                    content.style.display = 'none';
+                }
+                if (uploadDiv) {
+                    uploadDiv.classList.add('has-image');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function removePhoto(photoType, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const preview = document.getElementById(`${photoType}Preview`);
+            const content = document.getElementById(`${photoType}Content`);
+            const uploadDiv = document.getElementById(`${photoType}Upload`);
+            const input = document.getElementById(photoType);
+            
+            // Reset UI with null checks
+            if (preview) {
+                preview.style.display = 'none';
+                preview.src = '';
+            }
+            if (content) {
+                content.style.display = 'flex';
+            }
+            if (uploadDiv) {
+                uploadDiv.classList.remove('has-image');
+                uploadDiv.removeAttribute('data-uploading');
+                uploadDiv.removeAttribute('data-uploaded');
+                uploadDiv.removeAttribute('data-photo-url');
+            }
+            if (input) {
+                input.value = '';
+            }
+            
+            // Remove from storage
+            delete uploadedSubPhotos[photoType];
+            console.log('Photo removed:', photoType);
+        }
 
         // Form submissions
         document.getElementById('basicForm').addEventListener('submit', function(e) {
@@ -1539,6 +1641,7 @@
             eventData.organizerNotes = document.getElementById('organizerNotes').value;
             eventData.contactEmail = document.getElementById('contactEmail').value;
             eventData.photos = uploadedPhotos;
+            eventData.subPhotos = uploadedSubPhotos; // Add sub-photos to event data
             
             submitEvent();
         });
