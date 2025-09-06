@@ -2959,14 +2959,30 @@
                     waitlistCount = 0;
                 }
                 
+                // Get resources count
+                let resourcesCount = 0;
+                try {
+                    const { count: resources, error: resError } = await window.dcfSupabase
+                        .from('event_resources')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', eventId);
+                    
+                    if (!resError && resources !== null) {
+                        resourcesCount = resources;
+                    }
+                } catch (error) {
+                    console.log('event_resources table not available:', error);
+                    resourcesCount = 0;
+                }
+                
                 // Get views count from universal_analytics
                 let viewsCount = 0;
                 try {
                     const { count: viewCount, error: viewError } = await window.dcfSupabase
                         .from('universal_analytics')
                         .select('*', { count: 'exact', head: true })
-                        .eq('content_type', 'project')
-                        .eq('content_id', projectId)
+                        .eq('content_type', 'event')
+                        .eq('content_id', eventId)
                         .eq('interaction_type', 'view');
                     
                     if (!viewError && viewCount !== null) {
@@ -2982,8 +2998,8 @@
                     const { count: shareCount, error: shareError } = await window.dcfSupabase
                         .from('universal_analytics')
                         .select('*', { count: 'exact', head: true })
-                        .eq('content_type', 'project')
-                        .eq('content_id', projectId)
+                        .eq('content_type', 'event')
+                        .eq('content_id', eventId)
                         .eq('interaction_type', 'share');
                     
                     if (!shareError && shareCount !== null) {
@@ -2993,65 +3009,21 @@
                     console.log('Error loading share count:', error);
                 }
                 
-                // Get follower count from project_follows (if table exists)
-                let followersCount = 0;
-                try {
-                    const { count: followerCount, error: followerError } = await window.dcfSupabase
-                        .from('project_follows')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('project_id', projectId);
-                    
-                    if (!followerError && followerCount !== null) {
-                        followersCount = followerCount;
-                    }
-                } catch (error) {
-                    console.log('project_follows table not available:', error);
-                    // Fallback: try counting from universal_analytics with follow interaction
-                    try {
-                        const { count: followCount } = await window.dcfSupabase
-                            .from('universal_analytics')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('content_type', 'project')
-                            .eq('content_id', projectId)
-                            .eq('interaction_type', 'follow');
-                        
-                        if (followCount !== null) {
-                            followersCount = followCount;
-                        }
-                    } catch (err) {
-                        console.log('Could not get follow count from universal_analytics');
-                    }
-                }
-                
-                // Get file count from project_files (if table exists)
-                let filesCount = 0;
-                try {
-                    const { count: fileCount, error: fileError } = await window.dcfSupabase
-                        .from('project_files')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('project_id', projectId);
-                    
-                    if (!fileError && fileCount !== null) {
-                        filesCount = fileCount;
-                    }
-                } catch (error) {
-                    console.log('project_files table not available:', error);
-                }
-                
-                // Get task count (leave as 0 for now as requested)
-                let tasksCount = 0;
+                // Calculate spots left
+                const maxAttendees = window.currentEvent?.max_attendees || 100;
+                const spotsLeft = Math.max(0, maxAttendees - registeredCount);
                 
                 // Set the stats with real data
-                console.log('Setting project statistics:', {
-                    members: membersCount,
-                    tasks: tasksCount,
-                    followers: followersCount,
-                    files: filesCount,
+                console.log('Setting event statistics:', {
+                    registered: registeredCount,
+                    spotsLeft: spotsLeft,
+                    waitlist: waitlistCount,
+                    resources: resourcesCount,
                     views: viewsCount,
                     shares: sharesCount
                 });
                 
-                setStatsData(membersCount, tasksCount, followersCount, filesCount, viewsCount, sharesCount);
+                setEventStatsData(registeredCount, spotsLeft, waitlistCount, resourcesCount, viewsCount, sharesCount);
                 
             } catch (error) {
                 console.error('Error loading event statistics:', error);
