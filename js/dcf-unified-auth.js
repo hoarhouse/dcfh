@@ -707,16 +707,16 @@ function getQuickActionsHTML(pageType) {
         case 'projects':
             return `
                 <button class="btn btn-primary" onclick="focusSearchProjects()">🔍 Search Projects</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">➕ Create Event</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">➕ Create Project</button>
                 <button class="btn btn-secondary" onclick="exploreJoinableProjects()">🤝 Join Project</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_projects.html'">📊 Manage My Projects</button>
             `;
         case 'events':
             return `
                 <button class="btn btn-primary" onclick="focusSearchEvents()">📅 Find Events</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_create_event.html'">➕ Create Event</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">➕ Create Event</button>
                 <button class="btn btn-secondary" onclick="exploreUpcomingEvents()">🎟️ Register for Events</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_events.html'">📋 My Event Calendar</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_events_calendar.html'">📋 My Event Calendar</button>
             `;
         case 'members':
             return `
