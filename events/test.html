@@ -3489,63 +3489,6 @@
                 console.error('Registration error:', error);
                 showNotification('Failed to register for event', 'error');
             }
-            
-            const eventId = getEventIdFromUrl();
-            if (!eventId || !window.currentEvent) {
-                showNotification('Event information not loaded', 'error');
-                return;
-            }
-            
-            if (!joinBtn) return;
-            
-            // Check current follow status
-            const isFollowing = joinBtn.textContent.includes('Following');
-            
-            try {
-                if (isFollowing) {
-                    // Unfollow the project
-                    const { error } = await window.dcfSupabase
-                        .from('project_follows')
-                        .delete()
-                        .eq('user_email', currentUser.email)
-                        .eq('project_id', eventId);
-                    
-                    if (error) throw error;
-                    
-                    // Update button state
-                    joinBtn.innerHTML = '➕ Follow Project';
-                    joinBtn.classList.remove('following');
-                    showNotification('Unfollowed project successfully', 'success');
-                    
-                    // Refresh statistics after unfollow
-                    await loadEventStatistics(eventId);
-                    
-                } else {
-                    // Follow the project
-                    const { error } = await window.dcfSupabase
-                        .from('project_follows')
-                        .insert({
-                            user_email: currentUser.email,
-                            user_name: currentUser.name || currentUser.email.split('@')[0],
-                            project_id: eventId,
-                            project_name: window.currentEvent.title
-                        });
-                    
-                    if (error) throw error;
-                    
-                    // Update button state
-                    joinBtn.innerHTML = '✓ Following';
-                    joinBtn.classList.add('following');
-                    showNotification('Following project successfully', 'success');
-                    
-                    // Refresh statistics after follow
-                    await loadEventStatistics(eventId);
-                }
-                
-            } catch (error) {
-                console.error('Error updating follow status:', error);
-                showNotification('Failed to update follow status: ' + error.message, 'error');
-            }
         }
         
         // Check registration status on page load
