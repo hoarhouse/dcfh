@@ -3516,37 +3516,49 @@
             }
         }
         
-        // Check follow status on page load
+        // Check registration status on page load
         async function checkFollowStatus() {
             const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser || !currentUser.email) return;
             
-            const projectId = getProjectIdFromURL();
-            if (!projectId) return;
+            const eventId = getEventIdFromURL();
+            if (!eventId) return;
             
             try {
                 const { data, error } = await window.dcfSupabase
-                    .from('project_follows')
-                    .select('id')
-                    .eq('user_email', currentUser.email)
-                    .eq('project_id', projectId)
+                    .from('event_attendees')
+                    .select('id, status')
+                    .eq('event_id', eventId)
+                    .eq('user_id', currentUser.id)
                     .maybeSingle();
                 
                 const joinBtn = document.getElementById('joinEventBtn');
                 if (joinBtn) {
                     if (data) {
-                        joinBtn.innerHTML = '✓ Following';
-                        joinBtn.classList.add('following');
+                        if (data.status === 'registered') {
+                            joinBtn.innerHTML = '✓ Registered';
+                            joinBtn.disabled = true;
+                            joinBtn.classList.add('following');
+                        } else if (data.status === 'waitlist') {
+                            joinBtn.innerHTML = '⏳ On Waitlist';
+                            joinBtn.disabled = true;
+                            joinBtn.classList.add('following');
+                        } else if (data.status === 'pending') {
+                            joinBtn.innerHTML = '⏱️ Pending Approval';
+                            joinBtn.disabled = true;
+                        }
                     } else {
-                        joinBtn.innerHTML = '➕ Follow Project';
+                        joinBtn.innerHTML = '📝 Register Now';
+                        joinBtn.disabled = false;
                         joinBtn.classList.remove('following');
                     }
                 }
             } catch (error) {
-                // No follow record found is expected, not an error
+                // No registration found is expected, not an error
                 const joinBtn = document.getElementById('joinEventBtn');
                 if (joinBtn) {
-                    joinBtn.innerHTML = '➕ Follow Project';
+                    joinBtn.innerHTML = '📝 Register Now';
+                    joinBtn.disabled = false;
                     joinBtn.classList.remove('following');
                 }
             }
