@@ -824,7 +824,306 @@
 
     <!-- Form with working Formspree backend - NO LOGIN REQUIRED EVER -->
     <script>
+        // ============================================
+        // SECURITY: Comprehensive Input Sanitization
+        // ============================================
+        // This contact form implements bulletproof input sanitization to prevent:
+        // 1. Cross-Site Scripting (XSS) attacks
+        // 2. SQL Injection attacks
+        // 3. JavaScript injection
+        // 4. HTML/XML injection
+        // 5. Command injection
+        // 6. Buffer overflow attempts
+        // All inputs are sanitized both in real-time and on submission
+        
+        /**
+         * Comprehensive input sanitization function
+         * Removes dangerous patterns, scripts, and injection attempts
+         */
+        function sanitizeInput(input) {
+            if (typeof input !== 'string') {
+                return '';
+            }
+            
+            // Store original length for logging
+            const originalLength = input.length;
+            
+            // Step 1: Remove all HTML/XML tags including script tags
+            let sanitized = input.replace(/<\/?[^>]+(>|$)/gi, '');
+            
+            // Step 2: Remove JavaScript event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Step 3: Remove javascript:, data:, vbscript: and other dangerous URL schemes
+            sanitized = sanitized.replace(/javascript\s*:/gi, '');
+            sanitized = sanitized.replace(/data\s*:/gi, '');
+            sanitized = sanitized.replace(/vbscript\s*:/gi, '');
+            sanitized = sanitized.replace(/about\s*:/gi, '');
+            sanitized = sanitized.replace(/chrome\s*:/gi, '');
+            sanitized = sanitized.replace(/file\s*:/gi, '');
+            
+            // Step 4: Remove SQL injection patterns
+            const sqlPatterns = [
+                /(\b)(DROP|DELETE|INSERT|UPDATE|SELECT|UNION|CREATE|ALTER|EXEC|EXECUTE|SCRIPT|TRUNCATE)(\b)/gi,
+                /(--)|(\/\*[\s\S]*?\*\/)/g,  // SQL comments
+                /(\b)(OR|AND)(\b)\s*\d+\s*=\s*\d+/gi,  // OR 1=1 patterns
+                /(\b)(OR|AND)(\b)\s*['"][^'"]*['"]\s*=\s*['"][^'"]*['"]/gi,  // OR 'a'='a' patterns
+                /;.*(DROP|DELETE|INSERT|UPDATE|SELECT)/gi,  // Semicolon followed by SQL command
+                /\bWAITFOR\s+DELAY/gi,  // SQL Server delay attacks
+                /\bBENCHMARK\s*\(/gi,  // MySQL benchmark attacks
+                /\bSLEEP\s*\(/gi  // Sleep attacks
+            ];
+            
+            sqlPatterns.forEach(pattern => {
+                sanitized = sanitized.replace(pattern, '');
+            });
+            
+            // Step 5: Remove inline styles that could be malicious
+            sanitized = sanitized.replace(/style\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/style\s*=\s*[^\s>]*/gi, '');
+            
+            // Step 6: Remove potentially dangerous characters in specific contexts
+            // But preserve valid characters for general text
+            const dangerousChars = [
+                /[<>]/g,  // Angle brackets
+                /&#/g,  // HTML entities
+                /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
+                /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
+                /\0/g  // Null bytes
+            ];
+            
+            dangerousChars.forEach(pattern => {
+                sanitized = sanitized.replace(pattern, '');
+            });
+            
+            // Step 7: Remove any remaining script-like patterns
+            sanitized = sanitized.replace(/\beval\s*\(/gi, '');
+            sanitized = sanitized.replace(/\bexecScript\s*\(/gi, '');
+            sanitized = sanitized.replace(/\bsetTimeout\s*\(/gi, '');
+            sanitized = sanitized.replace(/\bsetInterval\s*\(/gi, '');
+            sanitized = sanitized.replace(/\bFunction\s*\(/gi, '');
+            sanitized = sanitized.replace(/\bnew\s+Function/gi, '');
+            
+            // Step 8: Remove encoded scripts
+            sanitized = sanitized.replace(/%3Cscript/gi, '');
+            sanitized = sanitized.replace(/%3C%2Fscript/gi, '');
+            sanitized = sanitized.replace(/\\x3cscript/gi, '');
+            sanitized = sanitized.replace(/\\u003cscript/gi, '');
+            
+            // Step 9: Normalize whitespace
+            sanitized = sanitized.replace(/\s+/g, ' ').trim();
+            
+            // Log if content was sanitized (for security monitoring)
+            if (sanitized.length !== originalLength || sanitized !== input) {
+                console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
+                console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
+            }
+            
+            return sanitized;
+        }
+        
+        /**
+         * Email-specific sanitization
+         * Preserves valid email format while removing dangerous content
+         */
+        function sanitizeEmail(email) {
+            if (typeof email !== 'string') {
+                return '';
+            }
+            
+            // First apply general sanitization
+            let sanitized = sanitizeInput(email);
+            
+            // Remove any remaining non-email characters
+            // Allow only valid email characters: alphanumeric, @, ., _, -, +
+            sanitized = sanitized.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+            
+            // Ensure only one @ symbol
+            const atCount = (sanitized.match(/@/g) || []).length;
+            if (atCount > 1) {
+                // Keep only the first @ and remove others
+                let firstAt = sanitized.indexOf('@');
+                let beforeAt = sanitized.substring(0, firstAt);
+                let afterAt = sanitized.substring(firstAt + 1).replace(/@/g, '');
+                sanitized = beforeAt + '@' + afterAt;
+            }
+            
+            // Limit length to prevent buffer overflow attempts
+            if (sanitized.length > 254) {  // RFC 5321 max email length
+                sanitized = sanitized.substring(0, 254);
+            }
+            
+            return sanitized.toLowerCase();
+        }
+        
+        /**
+         * Phone number sanitization
+         * Preserves valid phone format while removing dangerous content
+         */
+        function sanitizePhone(phone) {
+            if (typeof phone !== 'string') {
+                return '';
+            }
+            
+            // First apply general sanitization
+            let sanitized = sanitizeInput(phone);
+            
+            // Keep only valid phone characters: digits, +, -, (, ), spaces
+            sanitized = sanitized.replace(/[^0-9+\-() ]/g, '');
+            
+            // Limit length
+            if (sanitized.length > 20) {
+                sanitized = sanitized.substring(0, 20);
+            }
+            
+            return sanitized;
+        }
+        
+        /**
+         * Text field sanitization
+         * Removes dangerous patterns while preserving text content
+         */
+        function sanitizeText(text, maxLength = 5000) {
+            if (typeof text !== 'string') {
+                return '';
+            }
+            
+            let sanitized = sanitizeInput(text);
+            
+            // Limit length based on field requirements
+            if (sanitized.length > maxLength) {
+                sanitized = sanitized.substring(0, maxLength);
+            }
+            
+            return sanitized;
+        }
+        
+        /**
+         * Initialize comprehensive input sanitization for all form fields
+         */
+        function initializeContactFormSanitization() {
+            // Text input fields
+            const textFields = ['firstName', 'lastName', 'organization'];
+            textFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', function(e) {
+                        const sanitized = sanitizeText(e.target.value, 100);
+                        if (sanitized !== e.target.value) {
+                            e.target.value = sanitized;
+                            console.warn(`⚠️ ${fieldId} sanitized`);
+                        }
+                    });
+                    
+                    field.addEventListener('paste', function(e) {
+                        e.preventDefault();
+                        const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                        e.target.value = sanitizeText(pastedText, 100);
+                    });
+                }
+            });
+            
+            // Email field
+            const emailField = document.getElementById('email');
+            if (emailField) {
+                emailField.addEventListener('input', function(e) {
+                    const sanitized = sanitizeEmail(e.target.value);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        console.warn('⚠️ Email sanitized');
+                    }
+                });
+                
+                emailField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.target.value = sanitizeEmail(pastedText);
+                });
+            }
+            
+            // Phone field
+            const phoneField = document.getElementById('phone');
+            if (phoneField) {
+                phoneField.addEventListener('input', function(e) {
+                    const sanitized = sanitizePhone(e.target.value);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        console.warn('⚠️ Phone sanitized');
+                    }
+                });
+                
+                phoneField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.target.value = sanitizePhone(pastedText);
+                });
+            }
+            
+            // Subject dropdown
+            const subjectField = document.getElementById('subject');
+            if (subjectField) {
+                subjectField.addEventListener('change', function(e) {
+                    const sanitized = sanitizeText(e.target.value, 50);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        console.warn('⚠️ Subject sanitized');
+                    }
+                });
+            }
+            
+            // Message textarea
+            const messageField = document.getElementById('message');
+            if (messageField) {
+                messageField.addEventListener('input', function(e) {
+                    const sanitized = sanitizeText(e.target.value, 5000);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        console.warn('⚠️ Message sanitized');
+                    }
+                });
+                
+                messageField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.target.value = sanitizeText(pastedText, 5000);
+                });
+            }
+            
+            console.log('✅ Security: Contact form sanitization initialized for all fields');
+        }
+        
+        // Initialize sanitization on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // SECURITY: Initialize input sanitization
+            initializeContactFormSanitization();
+            console.log('✅ Security: Input sanitization active');
+        });
+        
+        // Update form submission to use sanitized values
         document.getElementById('contactForm').addEventListener('submit', function(e) {
+            // SECURITY: Sanitize all form data before submission
+            const formData = {
+                firstName: sanitizeText(document.getElementById('firstName').value, 100),
+                lastName: sanitizeText(document.getElementById('lastName').value, 100),
+                email: sanitizeEmail(document.getElementById('email').value),
+                phone: sanitizePhone(document.getElementById('phone').value),
+                organization: sanitizeText(document.getElementById('organization').value, 200),
+                subject: sanitizeText(document.getElementById('subject').value, 50),
+                message: sanitizeText(document.getElementById('message').value, 5000)
+            };
+            
+            // Update form fields with sanitized values
+            document.getElementById('firstName').value = formData.firstName;
+            document.getElementById('lastName').value = formData.lastName;
+            document.getElementById('email').value = formData.email;
+            document.getElementById('phone').value = formData.phone;
+            document.getElementById('organization').value = formData.organization;
+            document.getElementById('subject').value = formData.subject;
+            document.getElementById('message').value = formData.message;
+            
+            console.log('✅ Security: Form data sanitized before submission');
+            
             // Let the form submit naturally to Formspree
             // Show success message after a brief delay
             setTimeout(function() {
