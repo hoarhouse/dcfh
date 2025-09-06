@@ -913,6 +913,13 @@
             margin: 0.25rem 0;
         }
 
+        .char-counter {
+            text-align: right;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            font-weight: 600;
+        }
+        
         .char-counter.valid {
             color: #22c55e !important;
         }
@@ -928,6 +935,11 @@
         textarea.form-input,
         input.form-input {
             padding-right: 40px;
+        }
+        
+        /* Adjust validation icon for textareas */
+        .form-group textarea ~ .validation-icon {
+            top: 55px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2156,10 +2168,40 @@
             eventData.photos = uploadedPhotos;
             eventData.subPhotos = uploadedSubPhotos; // Add sub-photos to event data
             
-            // Perform validation before submission
+            // Comprehensive final validation
+            const errors = [];
+            
+            // Re-validate all critical fields
+            if (!eventData.title || eventData.title.length < 15 || eventData.title.length > 25) {
+                errors.push('Event Title must be 15-25 characters');
+            }
+            if (!eventData.briefDescription || eventData.briefDescription.length < 25 || eventData.briefDescription.length > 180) {
+                errors.push('Brief Description must be 25-180 characters');
+            }
+            if (!eventData.fullDescription || eventData.fullDescription.length < 100 || eventData.fullDescription.length > 2500) {
+                errors.push('Full Description must be 100-2500 characters');
+            }
+            if (!eventData.category) {
+                errors.push('Event Category is required');
+            }
+            if (!eventData.visibility) {
+                errors.push('Event Visibility is required');
+            }
+            if (!eventData.type) {
+                errors.push('Event Type is required');
+            }
+            
+            // Perform additional validation
             const validationError = validateEventData();
             if (validationError) {
-                showAlert(validationError, 'error');
+                errors.push(validationError);
+            }
+            
+            // Show comprehensive error summary if validation fails
+            if (errors.length > 0) {
+                let errorMessage = '⚠️ Cannot create event. Please fix these issues:\n\n';
+                errorMessage += errors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
+                showAlert(errorMessage, 'error');
                 return;
             }
             
@@ -2285,8 +2327,15 @@
             return null;
         }
         
-        // Function to validate form on each step
+        // Legacy validation function - replaced by validateStep()
         function validateCurrentStep() {
+            // This function is kept for backward compatibility
+            // but now delegates to the new validation system
+            return validateStep(currentStep);
+        }
+        
+        // Old validation logic (kept for reference but not used)
+        function validateCurrentStepOld() {
             const step = currentStep;
             
             if (step === 1) {
