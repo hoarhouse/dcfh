@@ -1578,7 +1578,7 @@
             console.log('Photo removed:', photoType);
         }
 
-        // Form submissions
+        // Form submissions with validation
         document.getElementById('basicForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -1587,6 +1587,11 @@
             eventData.category = document.getElementById('eventCategory').value;
             eventData.visibility = selectedVisibility;
             eventData.type = selectedEventType;
+            
+            // Validate before proceeding
+            if (!validateCurrentStep()) {
+                return;
+            }
             
             goToStep(2);
         });
@@ -1600,30 +1605,43 @@
             eventData.timezone = document.getElementById('timezone').value;
             eventData.additionalInstructions = document.getElementById('additionalInstructions').value;
             
-            // Validate location fields based on event type
+            // STRICT validation of location fields based on event type
+            const meetingLink = document.getElementById('meetingLink')?.value || '';
+            const physicalAddress = document.getElementById('physicalAddress')?.value || '';
+            
             if (selectedEventType === 'online') {
-                const meetingLink = document.getElementById('meetingLink').value;
-                if (!meetingLink) {
-                    await showAlert('Please provide a meeting link for online events', 'error');
+                if (!meetingLink.trim()) {
+                    await showAlert('💻 Meeting link is REQUIRED for online events', 'error');
+                    return;
+                }
+                if (physicalAddress.trim()) {
+                    await showAlert('❌ Online events cannot have physical locations. Please remove the location or change to Hybrid event type.', 'error');
                     return;
                 }
                 eventData.meetingLink = meetingLink;
-            } else if (selectedEventType === 'in-person') {
-                const physicalAddress = document.getElementById('physicalAddress').value;
-                if (!physicalAddress) {
-                    await showAlert('Please provide a location for in-person events', 'error');
+                eventData.physicalAddress = ''; // Ensure it's empty
+            } else if (selectedEventType === 'irl' || selectedEventType === 'in-person') {
+                if (!physicalAddress.trim()) {
+                    await showAlert('📍 Physical location is REQUIRED for in-person events', 'error');
+                    return;
+                }
+                if (meetingLink.trim()) {
+                    await showAlert('❌ In-person events cannot have meeting links. Please remove the meeting link or change to Hybrid event type.', 'error');
                     return;
                 }
                 eventData.physicalAddress = physicalAddress;
+                eventData.meetingLink = ''; // Ensure it's empty
             } else if (selectedEventType === 'hybrid') {
-                const hybridMeetingLink = document.getElementById('hybridMeetingLink').value;
-                const hybridPhysicalAddress = document.getElementById('hybridPhysicalAddress').value;
-                if (!hybridMeetingLink || !hybridPhysicalAddress) {
-                    await showAlert('Please provide both online link and physical location for hybrid events', 'error');
+                if (!meetingLink.trim()) {
+                    await showAlert('💻 Meeting link is REQUIRED for hybrid events', 'error');
                     return;
                 }
-                eventData.meetingLink = hybridMeetingLink;
-                eventData.physicalAddress = hybridPhysicalAddress;
+                if (!physicalAddress.trim()) {
+                    await showAlert('📍 Physical location is REQUIRED for hybrid events', 'error');
+                    return;
+                }
+                eventData.meetingLink = meetingLink;
+                eventData.physicalAddress = physicalAddress;
             }
             
             // Validate event date is in the future
@@ -1708,7 +1726,7 @@
             submitEvent();
         });
 
-        // Comprehensive validation function
+        // Comprehensive validation function with strict enforcement
         function validateEventData() {
             // 1. MANDATORY: Cover photo validation
             if (!uploadedPhotos || uploadedPhotos.length === 0) {
@@ -1727,34 +1745,38 @@
                 return '🕐 Event time is required. Please specify the start time.';
             }
             
-            // 4. Location validation based on event format
+            // 4. STRICT Location validation based on event format
             const eventType = eventData.type || selectedEventType;
+            
+            // Normalize the physical address and meeting link
+            const hasPhysicalAddress = eventData.physicalAddress && eventData.physicalAddress.trim() !== '';
+            const hasMeetingLink = eventData.meetingLink && eventData.meetingLink.trim() !== '';
             
             if (eventType === 'irl' || eventType === 'in-person' || eventType === 'in_person') {
                 // In-person events MUST have physical location
-                if (!eventData.physicalAddress || eventData.physicalAddress.trim() === '') {
-                    return '📍 Physical location is required for in-person events. Please provide the venue address.';
+                if (!hasPhysicalAddress) {
+                    return '📍 Physical location is REQUIRED for in-person events. Please provide the venue address.';
                 }
-                // Prevent inconsistency - no meeting link for pure in-person
-                if (eventData.meetingLink && eventData.meetingLink.trim() !== '') {
-                    return '⚠️ In-person events should not have meeting links. Please change to hybrid if you need both, or remove the meeting link.';
+                // STRICTLY FORBID meeting link for in-person events
+                if (hasMeetingLink) {
+                    return '❌ INVALID: In-person events cannot have online meeting links. Either remove the meeting link OR change event type to Hybrid.';
                 }
             } else if (eventType === 'online' || eventType === 'virtual') {
                 // Online events MUST have meeting link
-                if (!eventData.meetingLink || eventData.meetingLink.trim() === '') {
-                    return '💻 Meeting link is required for online events. Please provide the meeting URL.';
+                if (!hasMeetingLink) {
+                    return '💻 Meeting link is REQUIRED for online events. Please provide the meeting URL.';
                 }
-                // Prevent inconsistency - no physical location for pure online
-                if (eventData.physicalAddress && eventData.physicalAddress.trim() !== '') {
-                    return '⚠️ Online events should not have physical locations. Please change to hybrid if you need both, or remove the location.';
+                // STRICTLY FORBID physical location for online events
+                if (hasPhysicalAddress) {
+                    return '❌ INVALID: Online events cannot have physical locations. Either remove the location OR change event type to Hybrid.';
                 }
             } else if (eventType === 'hybrid') {
                 // Hybrid events MUST have BOTH location and meeting link
-                if (!eventData.physicalAddress || eventData.physicalAddress.trim() === '') {
-                    return '📍 Physical location is required for hybrid events. Please provide the venue address.';
+                if (!hasPhysicalAddress) {
+                    return '📍 Physical location is REQUIRED for hybrid events. Please provide the venue address.';
                 }
-                if (!eventData.meetingLink || eventData.meetingLink.trim() === '') {
-                    return '💻 Meeting link is required for hybrid events. Please provide the meeting URL.';
+                if (!hasMeetingLink) {
+                    return '💻 Meeting link is REQUIRED for hybrid events. Please provide the meeting URL.';
                 }
             }
             
@@ -1768,7 +1790,7 @@
             }
             
             // 6. Validate meeting link format if provided
-            if (eventData.meetingLink && eventData.meetingLink.trim() !== '') {
+            if (hasMeetingLink) {
                 const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
                 if (!urlPattern.test(eventData.meetingLink)) {
                     // Add https:// if missing
@@ -1786,8 +1808,65 @@
                 }
             }
             
+            // 8. Final consistency check
+            console.log('Validation Check - Event Type:', eventType);
+            console.log('Validation Check - Has Physical Address:', hasPhysicalAddress);
+            console.log('Validation Check - Has Meeting Link:', hasMeetingLink);
+            
             // All validations passed
             return null;
+        }
+        
+        // Function to validate form on each step
+        function validateCurrentStep() {
+            const step = currentStep;
+            
+            if (step === 1) {
+                // Validate basic info
+                const title = document.getElementById('eventTitle')?.value;
+                const description = document.getElementById('eventDescription')?.value;
+                
+                if (!title || title.trim() === '') {
+                    showAlert('Please provide an event title', 'error');
+                    return false;
+                }
+                if (!description || description.trim() === '') {
+                    showAlert('Please provide an event description', 'error');
+                    return false;
+                }
+            } else if (step === 2) {
+                // Validate date/time/location
+                const date = document.getElementById('eventDate')?.value;
+                const time = document.getElementById('startTime')?.value;
+                
+                if (!date) {
+                    showAlert('Please select an event date', 'error');
+                    return false;
+                }
+                if (!time) {
+                    showAlert('Please specify the start time', 'error');
+                    return false;
+                }
+                
+                // Check location requirements based on type
+                const meetingLink = document.getElementById('meetingLink')?.value;
+                const physicalAddress = document.getElementById('physicalAddress')?.value;
+                
+                if (selectedEventType === 'online' && !meetingLink) {
+                    showAlert('Meeting link is required for online events', 'error');
+                    return false;
+                } else if (selectedEventType === 'irl' && !physicalAddress) {
+                    showAlert('Physical location is required for in-person events', 'error');
+                    return false;
+                } else if (selectedEventType === 'hybrid') {
+                    if (!meetingLink || !physicalAddress) {
+                        showAlert('Both meeting link and physical location are required for hybrid events', 'error');
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
         }
 
         async function submitEvent() {
