@@ -1360,7 +1360,209 @@
         let uploadedSubPhotos = {}; // Object to store sub-photo URLs
         
         // Character counter function with minimum requirements and max blocking
+        // Real-time field validation
+        function validateField(fieldId) {
+            const field = document.getElementById(fieldId);
+            const group = document.getElementById(fieldId + '-group');
+            const icon = document.getElementById(fieldId + '-icon');
+            const counter = document.getElementById(fieldId + 'Count');
+            
+            if (!field) return false;
+            
+            const value = field.value.trim();
+            let isValid = false;
+            let errorMessage = '';
+            
+            // Field-specific validation
+            if (fieldId === 'eventTitle') {
+                const length = value.length;
+                if (length < 15) {
+                    isValid = false;
+                    errorMessage = 'Title must be at least 15 characters';
+                    if (counter) {
+                        counter.textContent = `${length}/25 characters (minimum 15)`;
+                        counter.className = 'char-counter invalid';
+                    }
+                } else if (length > 25) {
+                    field.value = value.substring(0, 25);
+                    return validateField(fieldId);
+                } else {
+                    isValid = true;
+                    if (counter) {
+                        counter.textContent = `${length}/25 characters`;
+                        counter.className = 'char-counter valid';
+                    }
+                }
+            } else if (fieldId === 'briefDescription') {
+                const length = value.length;
+                if (length < 25) {
+                    isValid = false;
+                    errorMessage = 'Brief description must be at least 25 characters';
+                    if (counter) {
+                        counter.textContent = `${length}/180 characters (minimum 25)`;
+                        counter.className = 'char-counter invalid';
+                    }
+                } else if (length > 180) {
+                    field.value = value.substring(0, 180);
+                    return validateField(fieldId);
+                } else {
+                    isValid = true;
+                    if (counter) {
+                        counter.textContent = `${length}/180 characters`;
+                        counter.className = length >= 170 ? 'char-counter warning' : 'char-counter valid';
+                    }
+                }
+            } else if (fieldId === 'fullDescription') {
+                const length = value.length;
+                if (length < 100) {
+                    isValid = false;
+                    errorMessage = 'Full description must be at least 100 characters';
+                    if (counter) {
+                        counter.textContent = `${length}/2500 characters (minimum 100)`;
+                        counter.className = 'char-counter invalid';
+                    }
+                } else if (length > 2500) {
+                    field.value = value.substring(0, 2500);
+                    return validateField(fieldId);
+                } else {
+                    isValid = true;
+                    if (counter) {
+                        counter.textContent = `${length}/2500 characters`;
+                        counter.className = length >= 2400 ? 'char-counter warning' : 'char-counter valid';
+                    }
+                }
+            } else if (fieldId === 'eventCategory') {
+                isValid = value !== '';
+                errorMessage = isValid ? '' : 'Please select a category';
+            } else if (field.type === 'text' || field.type === 'email' || field.type === 'url') {
+                isValid = field.required ? value !== '' : true;
+                errorMessage = isValid ? '' : 'This field is required';
+            } else if (field.tagName === 'SELECT') {
+                isValid = field.required ? value !== '' : true;
+                errorMessage = isValid ? '' : 'Please make a selection';
+            }
+            
+            // Update visual feedback
+            if (group) {
+                if (isValid) {
+                    group.classList.add('field-valid');
+                    group.classList.remove('field-invalid');
+                } else if (value !== '') {
+                    group.classList.add('field-invalid');
+                    group.classList.remove('field-valid');
+                } else {
+                    group.classList.remove('field-valid', 'field-invalid');
+                }
+            }
+            
+            if (icon) {
+                if (isValid) {
+                    icon.innerHTML = '✓';
+                    icon.className = 'validation-icon valid';
+                } else if (value !== '') {
+                    icon.innerHTML = '✗';
+                    icon.className = 'validation-icon invalid';
+                } else {
+                    icon.innerHTML = '';
+                }
+            }
+            
+            return isValid;
+        }
+        
+        // Validate all fields in current step
+        function validateStep(stepNum) {
+            let isValid = true;
+            const errors = [];
+            
+            if (stepNum === 1) {
+                // Validate Step 1 fields
+                if (!validateField('eventTitle')) {
+                    errors.push('Event Title must be 15-25 characters');
+                    isValid = false;
+                }
+                if (!validateField('briefDescription')) {
+                    errors.push('Brief Description must be 25-180 characters');
+                    isValid = false;
+                }
+                if (!validateField('fullDescription')) {
+                    errors.push('Full Description must be 100-2500 characters');
+                    isValid = false;
+                }
+                if (!validateField('eventCategory')) {
+                    errors.push('Event Category is required');
+                    isValid = false;
+                }
+                if (!selectedVisibility) {
+                    errors.push('Event Visibility is required');
+                    isValid = false;
+                }
+                if (!selectedEventType) {
+                    errors.push('Event Type is required');
+                    isValid = false;
+                }
+                
+                // Update button state
+                const continueBtn = document.getElementById('step1-continue');
+                if (continueBtn) {
+                    continueBtn.disabled = !isValid;
+                }
+                
+                // Show/hide validation summary
+                const summary = document.getElementById('step1-validation-summary');
+                const errorList = document.getElementById('step1-errors');
+                if (summary && errorList) {
+                    if (!isValid && errors.length > 0) {
+                        errorList.innerHTML = errors.map(err => `<li>${err}</li>`).join('');
+                        summary.classList.add('show');
+                    } else {
+                        summary.classList.remove('show');
+                    }
+                }
+            }
+            
+            return isValid;
+        }
+        
+        // Legacy function for compatibility
         function updateCharCount(fieldId, maxLength) {
+            validateField(fieldId);
+            validateStep(currentStep);
+        }
+        
+        // Initialize validation event listeners
+        function initializeValidation() {
+            // Step 1 fields
+            const step1Fields = ['eventTitle', 'briefDescription', 'fullDescription', 'eventCategory'];
+            step1Fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', () => {
+                        validateField(fieldId);
+                        validateStep(1);
+                    });
+                    field.addEventListener('blur', () => {
+                        validateField(fieldId);
+                        validateStep(1);
+                    });
+                    if (field.tagName === 'SELECT') {
+                        field.addEventListener('change', () => {
+                            validateField(fieldId);
+                            validateStep(1);
+                        });
+                    }
+                }
+            });
+            
+            // Initialize character counters
+            validateField('eventTitle');
+            validateField('briefDescription');
+            validateField('fullDescription');
+            validateField('eventCategory');
+        }
+
+        // Original updateCharCount function continues below...
+        function updateCharCountLegacy(fieldId, maxLength) {
             const field = document.getElementById(fieldId);
             const counter = document.getElementById(fieldId + 'Count');
             if (field && counter) {
@@ -1444,6 +1646,9 @@
                 option.classList.remove('active');
             });
             event.target.closest('.toggle-option').classList.add('active');
+            
+            // Trigger validation check
+            validateStep(1);
         }
 
         function selectEventType(type) {
@@ -1455,6 +1660,9 @@
             
             // Show/hide location fields
             updateLocationFields();
+            
+            // Trigger validation check
+            validateStep(1);
         }
 
         function selectRegistration(required) {
@@ -1807,17 +2015,22 @@
         document.getElementById('basicForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            eventData.title = document.getElementById('eventTitle').value;
-            eventData.briefDescription = document.getElementById('briefDescription').value;
-            eventData.fullDescription = document.getElementById('fullDescription').value;
+            // Comprehensive validation check
+            if (!validateStep(1)) {
+                // Show validation summary
+                const summary = document.getElementById('step1-validation-summary');
+                if (summary) {
+                    summary.classList.add('show');
+                }
+                return;
+            }
+            
+            eventData.title = document.getElementById('eventTitle').value.trim();
+            eventData.briefDescription = document.getElementById('briefDescription').value.trim();
+            eventData.fullDescription = document.getElementById('fullDescription').value.trim();
             eventData.category = document.getElementById('eventCategory').value;
             eventData.visibility = selectedVisibility;
             eventData.type = selectedEventType;
-            
-            // Validate before proceeding
-            if (!validateCurrentStep()) {
-                return;
-            }
             
             goToStep(2);
         });
@@ -2417,12 +2630,11 @@
             initializeCheckboxes();
             updateLocationFields();
             
-            // Initialize character counters
-            updateCharCount('briefDescription', 180);
-            updateCharCount('fullDescription', 2500);
+            // Initialize real-time validation for all fields
+            initializeValidation();
             
-            // Add real-time validation indicators
-            addRealTimeValidation();
+            // Initial validation check
+            validateStep(1);
             
             // Initialize registration settings visibility
             const registrationSettings = document.getElementById('registrationSettingsGroup');
