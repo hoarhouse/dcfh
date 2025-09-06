@@ -1695,6 +1695,31 @@
                         }
                     }
                 }
+                
+                // Handle sub-photo uploads
+                let subPhotoUrls = {};
+                for (const [photoType, file] of Object.entries(eventData.subPhotos || {})) {
+                    if (file && file instanceof File) {
+                        const fileName = `event_${photoType}_${Date.now()}_${file.name}`;
+                        try {
+                            const { data, error } = await supabase.storage
+                                .from('media')
+                                .upload(`events/gallery/${fileName}`, file);
+                            
+                            if (error) throw error;
+                            
+                            // Get public URL
+                            const { data: urlData } = supabase.storage
+                                .from('media')
+                                .getPublicUrl(`events/gallery/${fileName}`);
+                            
+                            subPhotoUrls[photoType] = urlData.publicUrl;
+                        } catch (error) {
+                            console.error(`Error uploading ${photoType}:`, error);
+                            // Continue with other photos even if one fails
+                        }
+                    }
+                }
 
                 // Insert event record
                 const eventRecord = {
@@ -1718,6 +1743,9 @@
                     organizer_notes: eventData.organizerNotes || null,
                     contact_email: eventData.contactEmail || currentUser.email,
                     image_urls: imageUrls,
+                    sub_photo_1_url: subPhotoUrls.subPhoto1 || null,
+                    sub_photo_2_url: subPhotoUrls.subPhoto2 || null,
+                    sub_photo_3_url: subPhotoUrls.subPhoto3 || null,
                     organizer_id: session?.user?.id || currentUser.id,
                     status: 'active',
                     featured: false,
