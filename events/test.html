@@ -2140,6 +2140,21 @@
                     return;
                 }
 
+                // Load organizer info separately if needed
+                let organizer = null;
+                if (event.organizer_id) {
+                    const { data: organizerData, error: organizerError } = await window.dcfSupabase
+                        .from('user_profiles')
+                        .select('id,email,username,first_name,last_name,avatar_url')
+                        .eq('id', event.organizer_id)
+                        .single();
+                    
+                    if (!organizerError && organizerData) {
+                        organizer = organizerData;
+                        event.organizer = organizer; // Attach to event object for compatibility
+                    }
+                }
+
                 // Comprehensive project data logging
                 console.log('');
                 console.log('📋 EVENT DATA LOADED:');
