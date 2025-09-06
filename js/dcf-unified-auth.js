@@ -443,7 +443,7 @@ function addNavigationItems() {
         { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
         { href: basePath + 'members/dcf_private_messaging.html', icon: '💬', text: 'My Messages' },
         { href: basePath + 'members/dcf_my_connections.html', icon: '👥', text: 'My Connections' },
-        { href: basePath + 'projects/dcf_projects_home.html', icon: '📋', text: 'My Projects' },
+        { href: basePath + 'projects/dcf_projects_home.html#my-projects', icon: '📋', text: 'My Projects', onclick: 'setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
         { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
         { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
         { href: basePath + 'members/dcf_edit_profile.html', icon: '✏️', text: 'Edit Profile' }
@@ -709,7 +709,7 @@ function getQuickActionsHTML(pageType) {
                 <button class="btn btn-primary" onclick="focusSearchProjects()">🔍 Search Projects</button>
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">➕ Create Project</button>
                 <button class="btn btn-secondary" onclick="exploreJoinableProjects()">🤝 Join Project</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_projects.html'">📊 Manage My Projects</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}projects/dcf_projects_home.html'; setTimeout(function() { if (typeof switchTab === 'function') { switchTab('my'); } else { var myTab = document.querySelector('.tab-btn:nth-child(2)'); if (myTab) myTab.click(); } }, 100);">📊 Manage My Projects</button>
             `;
         case 'events':
             return `
@@ -2768,7 +2768,7 @@ function getQuickActionsConfig(pageType) {
             { icon: '👥', text: 'My Connections', href: getPath('members', 'dcf_my_connections.html') },
             { icon: '💬', text: 'My Messages', href: getPath('members', 'dcf_private_messaging.html') },
             { icon: '📊', text: 'My Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
-            { icon: '📋', text: 'My Projects', href: getPath('projects', 'dcf_my_projects.html') },
+            { icon: '📋', text: 'My Projects', action: 'window.location.href="' + getPath('projects', 'dcf_projects_home.html') + '"; setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
             { icon: '🏠', text: 'Member Home', href: getPath('members', 'dcf_member_home.html') }
         ],
         'members_directory': standardActions,
@@ -2819,7 +2819,14 @@ function getQuickActionsConfig(pageType) {
             { icon: '📊', text: 'Export Data', action: 'exportProjectData()' },
             { icon: '🏠', text: 'Projects Home', href: 'dcf_projects_home.html' }
         ],
-        'events_calendar': standardActions,
+        'events_calendar': [
+            { icon: '➕', text: 'Create Event', href: getPath('events', 'dcf_create_event.html'), primary: true },
+            { icon: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
+            { icon: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
+            { icon: '💬', text: 'Discussion Forum', href: getPath('forum', 'dcf_forum_home.html') },
+            { icon: '👥', text: 'Members Directory', href: getPath('members', 'dcf_members_directory.html') },
+            { icon: '📚', text: 'Resources Library', href: getPath('resources', 'dcf_resources_library.html') }
+        ],
         'event_details': [
             { icon: '🎟️', text: 'Register Now', action: 'registerForEvent()' },
             { icon: '📅', text: 'View Calendar', href: 'dcf_events_calendar.html' },
