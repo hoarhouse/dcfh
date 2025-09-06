@@ -2272,32 +2272,43 @@
                 console.log('💡 TIP: You can run forceShowOwnerControls() in console to test owner features');
             }
             
-            // Set hero section - only title and goal, no description
-            if (project.main_photo_url) {
-                setHeroBackground(project.main_photo_url);
+            // Set hero section with event-specific information
+            if (event.main_photo_url) {
+                setHeroBackground(event.main_photo_url);
             }
-            setHeroTitle(project.title, project.goal);
+            
+            // Format event date and time
+            const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'Date TBD';
+            const eventTime = event.event_time || 'Time TBD';
+            const eventDateTime = `${eventDate} at ${eventTime}`;
+            
+            setHeroTitle(event.title, eventDateTime);
             
             // Handle website link in hero section and About section
-            const websiteLink = document.getElementById('projectWebsiteLink');
-            const aboutUrlLink = document.getElementById('projectUrlLink');
+            const websiteLink = document.getElementById('eventWebsiteLink');
+            const aboutUrlLink = document.getElementById('eventUrlLink');
             
-            if (project.website_url) {
+            if (event.website_url) {
                 if (websiteLink) {
-                    websiteLink.href = project.website_url;
+                    websiteLink.href = event.website_url;
                     websiteLink.style.display = 'inline-block';
                 }
                 
                 if (aboutUrlLink) {
-                    aboutUrlLink.href = project.website_url;
-                    aboutUrlLink.textContent = 'Visit Project Website';
+                    aboutUrlLink.href = event.website_url;
+                    aboutUrlLink.textContent = 'Visit Event Website';
                     aboutUrlLink.style.display = 'inline-block';
                 }
             } else {
                 // Show fallback text when no URL is available
                 if (aboutUrlLink) {
                     aboutUrlLink.removeAttribute('href');
-                    aboutUrlLink.textContent = 'Project URL goes here';
+                    aboutUrlLink.textContent = 'Event URL goes here';
                     aboutUrlLink.style.display = 'inline-block';
                     aboutUrlLink.style.color = '#999';
                     aboutUrlLink.style.cursor = 'default';
@@ -2305,11 +2316,24 @@
                 }
             }
             
-            // Set about section - use project name in title (no website link here anymore)
-            // Use brief_description primarily, with full_description for expanded content
-            const primaryDescription = project.brief_description || project.description || '';
-            const expandedDescription = project.full_description || '';
-            setAboutContent(`About ${project.title}`, primaryDescription, expandedDescription, null);
+            // Set about section with event details
+            let eventDetailsHtml = `
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: #333;">Event Details</h3>
+                    <div style="display: grid; gap: 0.75rem; color: #666;">
+                        <div><strong>📅 Date:</strong> ${eventDate}</div>
+                        <div><strong>🕐 Time:</strong> ${eventTime}</div>
+                        <div><strong>📍 Location:</strong> ${event.location || 'Location TBD'}</div>
+                        <div><strong>🎯 Format:</strong> ${event.event_format || 'In-Person'}</div>
+                        <div><strong>👥 Capacity:</strong> ${event.max_attendees || 'Unlimited'} attendees</div>
+                        ${event.registration_deadline ? `<div><strong>⏰ Registration Deadline:</strong> ${new Date(event.registration_deadline).toLocaleDateString()}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            const primaryDescription = event.description || '';
+            const expandedDescription = event.full_description || '';
+            setAboutContent(`About This Event`, eventDetailsHtml + primaryDescription, expandedDescription, null);
             
             // Set author details using unified auth system instead of raw database data
             if (event.author) {
