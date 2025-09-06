@@ -3390,26 +3390,73 @@
             if (buttonText && joinEventBtn) joinEventBtn.innerHTML = buttonText;
         }
 
-        // Handle join project action (Follow/Unfollow) - Legacy function for backward compatibility
+        // Handle event registration
         async function handleJoinEvent() {
-            // Check if this should redirect to new join functions
-            const projectId = getProjectIdFromURL();
+            const eventId = getEventIdFromURL();
             const joinBtn = document.getElementById('joinEventBtn');
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
-            if (joinBtn && (joinBtn.textContent.includes('Join') || joinBtn.textContent.includes('Apply'))) {
-                // Use new permission-based join system
-                if (joinBtn.textContent.includes('Apply')) {
-                    return applyToJoinProject(projectId);
-                } else {
-                    return joinEvent(projectId);
-                }
+            if (!currentUser || !currentUser.email) {
+                showNotification('Please log in to register for events', 'warning');
+                return;
             }
             
-            // Otherwise, handle follow/unfollow (legacy behavior)
-            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
-            if (!currentUser || !currentUser.email) {
-                showNotification('Please log in to follow projects', 'warning');
-                return;
+            // Check if already registered
+            try {
+                const { data: existing, error: checkError } = await window.dcfSupabase
+                    .from('event_attendees')
+                    .select('id, status')
+                    .eq('event_id', eventId)
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+                
+                if (existing) {
+                    if (existing.status === 'registered') {
+                        showNotification('You are already registered for this event', 'info');
+                    } else if (existing.status === 'waitlist') {
+                        showNotification('You are on the waitlist for this event', 'info');
+                    }
+                    return;
+                }
+                
+                // Check event capacity
+                const { count: registeredCount } = await window.dcfSupabase
+                    .from('event_attendees')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_id', eventId)
+                    .eq('status', 'registered');
+                
+                const maxAttendees = window.currentEvent?.max_attendees || 100;
+                const status = registeredCount >= maxAttendees ? 'waitlist' : 'registered';
+                
+                // Register for event
+                const { data, error } = await window.dcfSupabase
+                    .from('event_attendees')
+                    .insert({
+                        event_id: eventId,
+                        user_id: currentUser.id,
+                        status: status,
+                        registered_at: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                
+                if (status === 'registered') {
+                    showNotification('Successfully registered for the event!', 'success');
+                    joinBtn.innerHTML = '✓ Registered';
+                    joinBtn.disabled = true;
+                } else {
+                    showNotification('Added to waitlist - we\'ll notify you if a spot opens up', 'info');
+                    joinBtn.innerHTML = '⏳ On Waitlist';
+                    joinBtn.disabled = true;
+                }
+                
+                // Reload statistics
+                await loadEventStatistics(eventId);
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                showNotification('Failed to register for event', 'error');
             }
             
             if (!projectId || !window.currentEvent) {
