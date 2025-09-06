@@ -1223,32 +1223,61 @@
         let uploadedPhotos = [];
         let uploadedSubPhotos = {}; // Object to store sub-photo URLs
         
-        // Character counter function
+        // Character counter function with minimum requirements and max blocking
         function updateCharCount(fieldId, maxLength) {
             const field = document.getElementById(fieldId);
             const counter = document.getElementById(fieldId + 'Count');
             if (field && counter) {
                 const currentLength = field.value.length;
-                counter.textContent = `${currentLength}/${maxLength} characters`;
+                let minLength = 0;
+                let displayText = '';
                 
-                // Change color based on proximity to limits
+                // Set minimum lengths and display text
                 if (fieldId === 'briefDescription') {
+                    minLength = 50;
+                    displayText = `${currentLength}/180 characters (minimum 50)`;
+                    
+                    // Enforce max length by trimming if needed
+                    if (currentLength > 180) {
+                        field.value = field.value.substring(0, 180);
+                        return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
+                    }
+                    
+                    // Color coding
                     if (currentLength < 50) {
                         counter.style.color = '#dc3545'; // Red for under minimum
+                        counter.style.fontWeight = '600';
                     } else if (currentLength >= 170) {
                         counter.style.color = '#ffc107'; // Yellow when approaching max
+                        counter.style.fontWeight = 'normal';
                     } else {
                         counter.style.color = '#28a745'; // Green when valid
+                        counter.style.fontWeight = 'normal';
                     }
                 } else if (fieldId === 'fullDescription') {
+                    minLength = 100;
+                    displayText = `${currentLength}/2500 characters (minimum 100)`;
+                    
+                    // Enforce max length by trimming if needed
+                    if (currentLength > 2500) {
+                        field.value = field.value.substring(0, 2500);
+                        return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
+                    }
+                    
+                    // Color coding
                     if (currentLength < 100) {
                         counter.style.color = '#dc3545'; // Red for under minimum
+                        counter.style.fontWeight = '600';
                     } else if (currentLength >= 2400) {
                         counter.style.color = '#ffc107'; // Yellow when approaching max
+                        counter.style.fontWeight = 'normal';
                     } else {
                         counter.style.color = '#28a745'; // Green when valid
+                        counter.style.fontWeight = 'normal';
                     }
                 }
+                
+                counter.textContent = displayText;
             }
         }
         
