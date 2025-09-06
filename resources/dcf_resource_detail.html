@@ -2177,16 +2177,20 @@
 
         async function incrementViewCount() {
             try {
-                const { error } = await supabase
-                    .from('resources')
-                    .update({ 
-                        view_count: (currentResource.view_count || 0) + 1 
-                    })
-                    .eq('id', resourceId);
-
-                if (error) throw error;
+                // Track view in universal analytics - don't update resources table
+                await window.trackInteraction('resource', resourceId, 'view', {
+                    title: currentResource?.title
+                });
                 
-                currentResource.view_count = (currentResource.view_count || 0) + 1;
+                // Get updated count from universal analytics
+                const { count } = await supabase
+                    .from('universal_analytics')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('interaction_type', 'view');
+                
+                currentResource.view_count = count || 0;
                 updateStats(currentResource);
 
             } catch (error) {
@@ -2238,18 +2242,15 @@
 
         async function updateLikeCount() {
             try {
-                // Get current like count from database
+                // Get current like count from universal analytics
                 const { count } = await supabase
-                    .from('resource_likes')
+                    .from('universal_analytics')
                     .select('*', { count: 'exact', head: true })
-                    .eq('resource_id', resourceId);
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('interaction_type', 'like');
 
-                // Update resource like count
-                await supabase
-                    .from('resources')
-                    .update({ like_count: count || 0 })
-                    .eq('id', resourceId);
-
+                // Update local display only - don't update resources table
                 currentResource.like_count = count || 0;
                 updateStats(currentResource);
 
@@ -2444,7 +2445,7 @@
                 // Delete all related data first (in order to avoid foreign key constraints)
                 await Promise.all([
                     supabase.from('comments').delete().eq('content_id', resourceId).eq('content_type', 'resource'),
-                    supabase.from('resource_likes').delete().eq('resource_id', resourceId),
+                    supabase.from('universal_analytics').delete().eq('content_type', 'resource').eq('content_id', resourceId).eq('interaction_type', 'like'),
                     supabase.from('resource_bookmarks').delete().eq('resource_id', resourceId),
                     supabase.from('resource_analytics').delete().eq('resource_id', resourceId)
                 ]);
