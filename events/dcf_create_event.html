@@ -1252,13 +1252,63 @@
         function updateLocationFields() {
             const onlineLocation = document.getElementById('onlineLocation');
             const physicalLocation = document.getElementById('physicalLocation');
+            const meetingLinkField = document.getElementById('meetingLink');
+            const physicalAddressField = document.getElementById('physicalAddress');
+            
+            // Clear validation styling
+            if (meetingLinkField) {
+                meetingLinkField.style.borderColor = '';
+            }
+            if (physicalAddressField) {
+                physicalAddressField.style.borderColor = '';
+            }
             
             if (selectedEventType === 'online') {
+                // Online: Show only meeting link
                 onlineLocation.classList.add('show');
                 physicalLocation.classList.remove('show');
-            } else {
+                
+                // Mark meeting link as required
+                if (meetingLinkField) {
+                    meetingLinkField.setAttribute('required', 'required');
+                    meetingLinkField.placeholder = 'Meeting link (Required for online events)';
+                }
+                // Clear physical address requirement
+                if (physicalAddressField) {
+                    physicalAddressField.removeAttribute('required');
+                    physicalAddressField.value = ''; // Clear the field
+                }
+                
+            } else if (selectedEventType === 'irl' || selectedEventType === 'in-person') {
+                // In-person: Show only physical location
                 onlineLocation.classList.remove('show');
                 physicalLocation.classList.add('show');
+                
+                // Mark physical address as required
+                if (physicalAddressField) {
+                    physicalAddressField.setAttribute('required', 'required');
+                    physicalAddressField.placeholder = 'Event location (Required for in-person events)';
+                }
+                // Clear meeting link requirement
+                if (meetingLinkField) {
+                    meetingLinkField.removeAttribute('required');
+                    meetingLinkField.value = ''; // Clear the field
+                }
+                
+            } else if (selectedEventType === 'hybrid') {
+                // Hybrid: Show both fields
+                onlineLocation.classList.add('show');
+                physicalLocation.classList.add('show');
+                
+                // Mark both as required
+                if (meetingLinkField) {
+                    meetingLinkField.setAttribute('required', 'required');
+                    meetingLinkField.placeholder = 'Meeting link (Required for hybrid events)';
+                }
+                if (physicalAddressField) {
+                    physicalAddressField.setAttribute('required', 'required');
+                    physicalAddressField.placeholder = 'Event location (Required for hybrid events)';
+                }
             }
         }
 
@@ -1653,6 +1703,88 @@
             submitEvent();
         });
 
+        // Comprehensive validation function
+        function validateEventData() {
+            // 1. MANDATORY: Cover photo validation
+            if (!uploadedPhotos || uploadedPhotos.length === 0) {
+                return '📸 Cover photo is required. Please upload at least one photo for your event.';
+            }
+            
+            // 2. Date validation - must be future date
+            const eventDate = new Date(eventData.date + 'T' + (eventData.startTime || '00:00'));
+            const now = new Date();
+            if (eventDate <= now) {
+                return '📅 Event date must be in the future. Please select a future date.';
+            }
+            
+            // 3. Time validation - must have actual time
+            if (!eventData.startTime || eventData.startTime === '') {
+                return '🕐 Event time is required. Please specify the start time.';
+            }
+            
+            // 4. Location validation based on event format
+            const eventType = eventData.type || selectedEventType;
+            
+            if (eventType === 'irl' || eventType === 'in-person' || eventType === 'in_person') {
+                // In-person events MUST have physical location
+                if (!eventData.physicalAddress || eventData.physicalAddress.trim() === '') {
+                    return '📍 Physical location is required for in-person events. Please provide the venue address.';
+                }
+                // Prevent inconsistency - no meeting link for pure in-person
+                if (eventData.meetingLink && eventData.meetingLink.trim() !== '') {
+                    return '⚠️ In-person events should not have meeting links. Please change to hybrid if you need both, or remove the meeting link.';
+                }
+            } else if (eventType === 'online' || eventType === 'virtual') {
+                // Online events MUST have meeting link
+                if (!eventData.meetingLink || eventData.meetingLink.trim() === '') {
+                    return '💻 Meeting link is required for online events. Please provide the meeting URL.';
+                }
+                // Prevent inconsistency - no physical location for pure online
+                if (eventData.physicalAddress && eventData.physicalAddress.trim() !== '') {
+                    return '⚠️ Online events should not have physical locations. Please change to hybrid if you need both, or remove the location.';
+                }
+            } else if (eventType === 'hybrid') {
+                // Hybrid events MUST have BOTH location and meeting link
+                if (!eventData.physicalAddress || eventData.physicalAddress.trim() === '') {
+                    return '📍 Physical location is required for hybrid events. Please provide the venue address.';
+                }
+                if (!eventData.meetingLink || eventData.meetingLink.trim() === '') {
+                    return '💻 Meeting link is required for hybrid events. Please provide the meeting URL.';
+                }
+            }
+            
+            // 5. Basic required fields validation
+            if (!eventData.title || eventData.title.trim() === '') {
+                return '📝 Event title is required. Please provide a title for your event.';
+            }
+            
+            if (!eventData.description || eventData.description.trim() === '') {
+                return '📄 Event description is required. Please describe your event.';
+            }
+            
+            // 6. Validate meeting link format if provided
+            if (eventData.meetingLink && eventData.meetingLink.trim() !== '') {
+                const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+                if (!urlPattern.test(eventData.meetingLink)) {
+                    // Add https:// if missing
+                    if (!eventData.meetingLink.startsWith('http://') && !eventData.meetingLink.startsWith('https://')) {
+                        eventData.meetingLink = 'https://' + eventData.meetingLink;
+                    }
+                }
+            }
+            
+            // 7. Contact email validation
+            if (eventData.contactEmail && eventData.contactEmail.trim() !== '') {
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(eventData.contactEmail)) {
+                    return '📧 Please provide a valid contact email address.';
+                }
+            }
+            
+            // All validations passed
+            return null;
+        }
+
         async function submitEvent() {
             try {
                 const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -1821,6 +1953,9 @@
             updateProgress();
             initializeCheckboxes();
             updateLocationFields();
+            
+            // Add real-time validation indicators
+            addRealTimeValidation();
             
             // Initialize registration settings visibility
             const registrationSettings = document.getElementById('registrationSettingsGroup');
