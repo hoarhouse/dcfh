@@ -2123,21 +2123,37 @@
 
         // Load event data
         async function loadEvent() {
+            console.log('🔍 ========== LOADEEVENT DEBUG START ==========');
+            console.log('LoadEvent function called at:', new Date().toISOString());
+            
             const eventId = getEventIdFromUrl();
+            console.log('🔍 EventId from URL:', eventId);
+            console.log('🔍 EventId type:', typeof eventId);
+            console.log('🔍 EventId length:', eventId ? eventId.length : 'null');
             
             if (!eventId) {
-                console.error('No event ID found in URL');
+                console.error('❌ No event ID found in URL - stopping load');
                 return;
             }
 
+            console.log('window.dcfSupabase exists?', !!window.dcfSupabase);
+            console.log('window.dcfSupabase type:', typeof window.dcfSupabase);
+            
             if (!window.dcfSupabase) {
-                console.error('Supabase client not available');
+                console.error('❌ Supabase client not available - stopping load');
+                console.log('Attempting to initialize Supabase...');
+                if (window.initializeSupabase) {
+                    window.initializeSupabase();
+                    console.log('Supabase initialized, retrying...');
+                }
                 return;
             }
 
             try {
+                console.log('🔍 ===== EXECUTING QUERY =====');
                 console.log('📥 Loading event with ID:', eventId);
                 console.log('Using Supabase client:', window.dcfSupabase);
+                console.log('Query being executed: from("events").select("*").eq("id", "' + eventId + '").single()');
                 
                 const response = await window.dcfSupabase
                     .from('events')
@@ -2145,22 +2161,35 @@
                     .eq('id', eventId)
                     .single();
                 
-                console.log('Query response:', response);
+                console.log('🔍 ===== QUERY RESPONSE =====');
+                console.log('Full response object:', response);
                 console.log('Response data:', response.data);
                 console.log('Response error:', response.error);
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
                 
                 const { data: event, error } = response;
 
                 if (error) {
-                    console.error('Error loading event:', error);
-                    console.error('Error details:', error.message, error.details, error.hint);
+                    console.error('❌ ERROR LOADING EVENT:');
+                    console.error('Error object:', error);
+                    console.error('Error message:', error.message);
+                    console.error('Error details:', error.details);
+                    console.error('Error hint:', error.hint);
+                    console.error('Error code:', error.code);
                     return;
                 }
                 
                 if (!event) {
-                    console.error('No event data returned for ID:', eventId);
+                    console.error('❌ No event data returned for ID:', eventId);
+                    console.log('Response was:', response);
                     return;
                 }
+                
+                console.log('✅ EVENT LOADED SUCCESSFULLY');
+                console.log('Event data:', event);
+                console.log('Event title:', event.title);
+                console.log('Event organizer_id:', event.organizer_id);
 
                 // Load organizer info separately if needed
                 let organizer = null;
