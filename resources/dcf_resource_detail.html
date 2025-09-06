@@ -2128,16 +2128,20 @@
 
         async function incrementShareCount() {
             try {
-                const { error } = await supabase
-                    .from('resources')
-                    .update({ 
-                        share_count: (currentResource.share_count || 0) + 1 
-                    })
-                    .eq('id', resourceId);
-
-                if (error) throw error;
+                // Track share in universal analytics - don't update resources table
+                await window.trackInteraction('resource', resourceId, 'share', {
+                    title: currentResource?.title
+                });
                 
-                currentResource.share_count = (currentResource.share_count || 0) + 1;
+                // Get updated count from universal analytics
+                const { count } = await supabase
+                    .from('universal_analytics')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('interaction_type', 'share');
+                
+                currentResource.share_count = count || 0;
                 updateStats(currentResource);
 
             } catch (error) {
@@ -2158,16 +2162,16 @@
 
         async function incrementDownloadCount() {
             try {
-                const { error } = await supabase
-                    .from('resources')
-                    .update({ 
-                        download_count: (currentResource.download_count || 0) + 1 
-                    })
-                    .eq('id', resourceId);
-
-                if (error) throw error;
+                // Track download in universal analytics - don't update resources table
+                // This is already done in downloadResource(), so just get the count
+                const { count } = await supabase
+                    .from('universal_analytics')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_type', 'resource')
+                    .eq('content_id', resourceId)
+                    .eq('interaction_type', 'download');
                 
-                currentResource.download_count = (currentResource.download_count || 0) + 1;
+                currentResource.download_count = count || 0;
                 updateStats(currentResource);
 
             } catch (error) {
