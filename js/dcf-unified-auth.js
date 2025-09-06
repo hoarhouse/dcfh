@@ -716,7 +716,7 @@ function getQuickActionsHTML(pageType) {
                 <button class="btn btn-primary" onclick="focusSearchEvents()">📅 Find Events</button>
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">➕ Create Event</button>
                 <button class="btn btn-secondary" onclick="exploreUpcomingEvents()">🎟️ Register for Events</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_events_calendar.html'">📋 My Event Calendar</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}events/dcf_events_calendar.html'">📋 My Event Calendar</button>
             `;
         case 'members':
             return `
@@ -735,7 +735,7 @@ function getQuickActionsHTML(pageType) {
         case 'home_feed':
             return `
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}dcf_create_event.html'">📅 Create Event</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">📅 Create Event</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_members_directory.html'">👥 Find Collaborators</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View My Stats</button>
             `;
@@ -743,7 +743,7 @@ function getQuickActionsHTML(pageType) {
             return `
                 <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">🚀 Create Project</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_personal_analytics.html'">📊 View Analytics</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_events_calendar.html'">📅 Events Calendar</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}events/dcf_events_calendar.html'">📅 Events Calendar</button>
                 <button class="btn btn-secondary" onclick="window.location.href='${basePath}dcf_member_home.html'">💬 Discussion Forum</button>
             `;
     }
