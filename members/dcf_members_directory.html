@@ -1040,7 +1040,7 @@
 
                 <div class="sidebar-card">
                     <h3 class="sidebar-title">🔍 Search & Filter</h3>
-                    <input type="text" id="search" class="search-input" placeholder="Search members...">
+                    <input type="text" id="search" class="search-input" placeholder="Search members..." maxlength="100">
                     
                     <div class="filter-section">
                         <label class="filter-label">📍 Location</label>
@@ -1218,7 +1218,9 @@
             sanitized = sanitized.replace(/\s+/g, ' ').trim();
             
             // Log if content was sanitized (for security monitoring)
-            if (sanitized.length !== originalLength || sanitized !== input) {
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
                 console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
                 console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
             }
@@ -1303,16 +1305,8 @@
                 
                 const sanitizedSearchListener = function() {
                     const rawSearchTerm = this.value;
-                    const sanitizedSearchTerm = sanitizeSearch(rawSearchTerm, 100);
-                    
-                    // Apply sanitization if needed
-                    if (sanitizedSearchTerm !== rawSearchTerm) {
-                        this.value = sanitizedSearchTerm;
-                        console.warn('Search input sanitized');
-                    }
-                    
-                    // Now perform the search with sanitized value
-                    const searchTerm = sanitizedSearchTerm.toLowerCase();
+                    // Perform search without real-time sanitization
+                    const searchTerm = rawSearchTerm.toLowerCase();
                     const members = document.querySelectorAll('.member-list-item');
                     let visibleCount = 0;
 
@@ -1334,6 +1328,20 @@
                 
                 searchField.addEventListener('input', sanitizedSearchListener);
                 searchField._sanitizedListener = sanitizedSearchListener;
+                
+                // Add blur event handler for sanitization
+                searchField.addEventListener('blur', function(e) {
+                    const sanitized = sanitizeSearch(e.target.value, 100);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('Search input sanitized');
+                        }
+                        // Trigger search with sanitized value
+                        this.dispatchEvent(new Event('input'));
+                    }
+                });
                 
                 // Add paste event handler
                 searchField.addEventListener('paste', function(e) {
