@@ -2759,11 +2759,28 @@
             e.preventDefault();
             
             const projectId = getProjectIdFromUrl();
-            // Validate word limits before submitting
-            const briefDesc = document.getElementById('projectBriefDescription').value;
-            const fullDesc = document.getElementById('projectFullDescription').value;
-            const projectGoal = document.getElementById('projectGoal').value;
-            const projectTitle = document.getElementById('projectTitle').value.trim();
+            
+            // SECURITY: Sanitize all inputs before processing
+            const rawTitle = document.getElementById('projectTitle').value.trim();
+            const rawGoal = document.getElementById('projectGoal').value;
+            const rawBriefDesc = document.getElementById('projectBriefDescription').value;
+            const rawFullDesc = document.getElementById('projectFullDescription').value;
+            const rawTags = document.getElementById('projectTags').value;
+            const rawAppQuestions = document.getElementById('applicationQuestions').value;
+            
+            // Apply sanitization
+            const projectTitle = sanitizeText(rawTitle, 30);
+            const projectGoal = sanitizeText(rawGoal, 100);
+            const briefDesc = sanitizeText(rawBriefDesc, 200);
+            const fullDesc = sanitizeText(rawFullDesc, 5000);
+            const projectTags = sanitizeText(rawTags, 200);
+            const applicationQuestions = sanitizeText(rawAppQuestions, 500);
+            
+            // Log if sanitization was needed
+            if (projectTitle !== rawTitle || projectGoal !== rawGoal || briefDesc !== rawBriefDesc || 
+                fullDesc !== rawFullDesc || projectTags !== rawTags || applicationQuestions !== rawAppQuestions) {
+                console.warn('⚠️ Security: Project settings form input sanitization was applied');
+            }
             
             const briefWordCount = countWords(briefDesc);
             const fullWordCount = countWords(fullDesc);
