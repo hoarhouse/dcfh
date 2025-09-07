@@ -2070,6 +2070,149 @@
     </div>
 
     <script>
+        // Comprehensive sanitization function
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
+            
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+            
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
+            
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
+            
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
+            
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
+            
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
+            
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
+            
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
+            
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
+            
+            // Clean up any remaining suspicious patterns
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            
+            return sanitized;
+        }
+
+        // Email-specific sanitization
+        function sanitizeEmail(email) {
+            if (!email) return '';
+            
+            // Basic email sanitization
+            email = String(email).trim().toLowerCase();
+            
+            // Remove any HTML tags
+            email = email.replace(/<[^>]*>/g, '');
+            
+            // Remove dangerous characters but keep valid email chars
+            email = email.replace(/[^a-z0-9@.\-_+]/g, '');
+            
+            // Validate basic email format
+            const emailRegex = /^[a-z0-9.\-_+]+@[a-z0-9.\-]+\.[a-z]{2,}$/;
+            if (!emailRegex.test(email)) {
+                return '';
+            }
+            
+            // Limit length
+            return email.substring(0, 254);
+        }
+
+        // Real-time input sanitization
+        function applyRealTimeProtection(element, maxLength = 1000) {
+            if (!element) return;
+            
+            element.addEventListener('input', function(e) {
+                const originalValue = e.target.value;
+                const sanitized = sanitizeInput(originalValue, maxLength);
+                if (originalValue !== sanitized) {
+                    e.target.value = sanitized;
+                    console.warn('Input sanitized to prevent potential security issues');
+                }
+            });
+            
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const sanitized = sanitizeInput(pastedText, maxLength);
+                
+                // Insert sanitized text at cursor position
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const currentValue = e.target.value;
+                const newValue = currentValue.substring(0, start) + sanitized + currentValue.substring(end);
+                e.target.value = sanitizeInput(newValue, maxLength);
+                
+                // Restore cursor position
+                const newCursorPos = start + sanitized.length;
+                e.target.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
+        // Initialize input sanitization
+        function initializeInputSanitization() {
+            // Apply to main post textarea
+            const postTextarea = document.getElementById('postTextarea');
+            if (postTextarea) {
+                applyRealTimeProtection(postTextarea, 5000);
+            }
+
+            // Apply to dynamically created comment textareas using event delegation
+            document.addEventListener('focusin', function(e) {
+                if (e.target.matches('.comment-textarea') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 1000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+                
+                // Apply to reply textareas
+                if (e.target.matches('[id^="replyText-"]') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 1000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+                
+                // Apply to edit textareas
+                if (e.target.matches('[id^="editText-"]') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 1000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+                
+                // Apply to edit post textareas
+                if (e.target.matches('[id^="edit-textarea-"]') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 5000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+            });
+        }
+
         // Get project ID from URL
         function getProjectIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -2669,6 +2812,9 @@
         
         // Initialize like status when page loads (removed duplicate view tracking)
         document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize input sanitization
+            initializeInputSanitization();
+            
             const projectId = getProjectId();
             
             // Initialize like status
@@ -4665,7 +4811,8 @@
         // Submit post
         async function submitPost() {
             const textarea = document.getElementById('postTextarea');
-            const content = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const content = sanitizeInput(rawContent, 5000);
             const projectId = new URLSearchParams(window.location.search).get('id');
             const currentUser = getCurrentUser();
             
@@ -5543,7 +5690,8 @@
 
         async function saveInlineEdit(postId) {
             const textarea = document.getElementById(`edit-textarea-${postId}`);
-            const newContent = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const newContent = sanitizeInput(rawContent, 5000);
             
             if (!newContent) {
                 showNotification('Post content cannot be empty', 'error');
@@ -5660,7 +5808,8 @@
                 return;
             }
             
-            const content = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const content = sanitizeInput(rawContent, 1000);
             if (!content) {
                 showNotification('Please enter a comment', 'warning');
                 return;
@@ -6248,7 +6397,8 @@
             const textarea = document.getElementById(`editText-${commentId}`);
             if (!textarea) return;
             
-            const newText = textarea.value.trim();
+            const rawText = textarea.value.trim();
+            const newText = sanitizeInput(rawText, 1000);
             if (!newText) {
                 showNotification('Comment cannot be empty', 'error');
                 return;
@@ -6355,7 +6505,8 @@
                 return;
             }
             
-            const content = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const content = sanitizeInput(rawContent, 1000);
             console.log('🔵 Reply text content:', content);
             console.log('🔵 Reply text length:', content.length);
             
