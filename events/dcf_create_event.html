@@ -1843,45 +1843,8 @@
             return isValid;
         }
         
-        // Legacy function for compatibility
+        // Update character count display in real-time
         function updateCharCount(fieldId, maxLength) {
-            validateField(fieldId);
-            validateStep(currentStep);
-        }
-        
-        // Initialize validation event listeners
-        function initializeValidation() {
-            // Step 1 fields
-            const step1Fields = ['eventTitle', 'briefDescription', 'fullDescription', 'eventCategory'];
-            step1Fields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    // REMOVED: aggressive validation on every keystroke
-                    // Only validate on blur (when user leaves field)
-                    field.addEventListener('blur', () => {
-                        validateField(fieldId);
-                        // Don't validate entire step on blur - too aggressive
-                        // validateStep(1);
-                    });
-                    if (field.tagName === 'SELECT') {
-                        field.addEventListener('change', () => {
-                            validateField(fieldId);
-                            validateStep(1);
-                        });
-                    }
-                }
-            });
-            
-            // Initialize character counters WITHOUT validation
-            // Don't validate on page load - wait for user interaction
-            // validateField('eventTitle');
-            // validateField('briefDescription');
-            // validateField('fullDescription');
-            // validateField('eventCategory');
-        }
-
-        // Original updateCharCount function continues below...
-        function updateCharCountLegacy(fieldId, maxLength) {
             const field = document.getElementById(fieldId);
             const counter = document.getElementById(fieldId + 'Count');
             if (field && counter) {
@@ -1899,10 +1862,6 @@
                         field.value = field.value.substring(0, 25);
                         return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
                     }
-                    
-                    // Gentle color guidance - always gray, no aggressive colors
-                    counter.style.color = '#6b7280';
-                    counter.style.fontWeight = 'normal';
                 } else if (fieldId === 'briefDescription') {
                     minLength = 25;
                     displayText = `${currentLength}/180 characters (minimum 25)`;
@@ -1912,10 +1871,6 @@
                         field.value = field.value.substring(0, 180);
                         return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
                     }
-                    
-                    // Gentle color guidance - always gray, no aggressive colors
-                    counter.style.color = '#6b7280';
-                    counter.style.fontWeight = 'normal';
                 } else if (fieldId === 'fullDescription') {
                     minLength = 100;
                     displayText = `${currentLength}/2500 characters (minimum 100)`;
@@ -1925,15 +1880,96 @@
                         field.value = field.value.substring(0, 2500);
                         return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
                     }
-                    
-                    // Gentle color guidance - always gray, no aggressive colors
-                    counter.style.color = '#6b7280';
-                    counter.style.fontWeight = 'normal';
                 }
                 
+                // Update counter display
                 counter.textContent = displayText;
+                
+                // Apply gentle styling based on whether minimum is met
+                if (currentLength < minLength) {
+                    counter.className = 'char-counter invalid';
+                } else {
+                    counter.className = 'char-counter valid';
+                }
+                
+                // Always use gentle gray color
+                counter.style.color = '#6b7280';
+                counter.style.fontWeight = 'normal';
             }
         }
+        
+        // Initialize validation event listeners
+        function initializeValidation() {
+            // Step 1 fields
+            const step1Fields = ['eventTitle', 'briefDescription', 'fullDescription', 'eventCategory'];
+            step1Fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    // REMOVED: aggressive validation on every keystroke
+                    // Only validate on blur (when user leaves field)
+                    field.addEventListener('blur', () => {
+                        validateField(fieldId);
+                        // Don't validate entire step on blur - too aggressive
+                        // validateStep(1);
+                    });
+                    
+                    // Add real-time character count updates for text fields
+                    if (fieldId === 'eventTitle') {
+                        field.addEventListener('input', () => {
+                            updateCharCount('eventTitle', 25);
+                        });
+                    } else if (fieldId === 'briefDescription') {
+                        field.addEventListener('input', () => {
+                            updateCharCount('briefDescription', 180);
+                        });
+                    } else if (fieldId === 'fullDescription') {
+                        field.addEventListener('input', () => {
+                            updateCharCount('fullDescription', 2500);
+                        });
+                    }
+                    
+                    if (field.tagName === 'SELECT') {
+                        field.addEventListener('change', () => {
+                            validateField(fieldId);
+                            validateStep(1);
+                        });
+                    }
+                }
+            });
+            
+            // Initialize character counters WITHOUT validation
+            // Show initial character counts when page loads
+            updateCharCount('eventTitle', 25);
+            updateCharCount('briefDescription', 180);
+            updateCharCount('fullDescription', 2500);
+            
+            // Add real-time updates for other text fields (optional fields)
+            const additionalTextFields = [
+                { id: 'physicalAddress', maxLength: 500 },
+                { id: 'additionalInstructions', maxLength: 500 },
+                { id: 'additionalResources', maxLength: 1000 },
+                { id: 'organizerNotes', maxLength: 1000 },
+                { id: 'meetingLink', maxLength: 200 }
+            ];
+            
+            additionalTextFields.forEach(fieldInfo => {
+                const field = document.getElementById(fieldInfo.id);
+                if (field) {
+                    // Add input listener for real-time updates
+                    field.addEventListener('input', () => {
+                        // Just update length display, no validation
+                        const currentLength = field.value.length;
+                        // Optional: Add visual feedback if approaching limit
+                        if (currentLength > fieldInfo.maxLength * 0.9) {
+                            field.style.borderColor = '#fbbf24'; // Yellow warning
+                        } else {
+                            field.style.borderColor = ''; // Reset to default
+                        }
+                    });
+                }
+            });
+        }
+
         
         function selectVisibility(type) {
             selectedVisibility = type;
