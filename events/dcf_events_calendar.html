@@ -1214,56 +1214,9 @@
                 // Update page header
                 updatePageHeader('my');
             }
-            let attempts = 0;
-            const maxAttempts = 20;
             
-            async function loadEvents() {
-                attempts++;
-                
-                // Use unified auth client
-                const supabase = window.dcfSupabase;
-                
-                if (supabase && typeof supabase.from === 'function') {
-                    console.log('Loading events with Supabase client...');
-                    
-                    supabase
-                        .from('events')
-                        .select('*')
-                        .eq('status', 'active')
-                        .order('event_date', { ascending: true })
-                        .then(({data, error}) => {
-                            if (error) {
-                                console.error('Error loading events:', error);
-                                showEmptyState();
-                                return;
-                            }
-                            
-                            const events = data || [];
-                            console.log('Loaded events:', events.length);
-                            
-                            checkUserRegistrations(events).then(eventsWithRegistrations => {
-                                // Cache all events
-                                allEventsCache = eventsWithRegistrations;
-                                
-                                // Apply current filter and display
-                                filterAndDisplayEvents(currentEventFilter);
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error loading events:', error);
-                            showEmptyState();
-                        });
-                } else if (attempts < maxAttempts) {
-                    console.log(`Waiting for Supabase... attempt ${attempts}/${maxAttempts}`);
-                    setTimeout(loadEvents, 500);
-                } else {
-                    console.error('Failed to load Supabase after maximum attempts');
-                    showEmptyState();
-                }
-            }
-            
-            // Start loading after a short delay
-            setTimeout(loadEvents, 1000);
+            // Start loading after a short delay using the global function
+            setTimeout(loadEventsFromServer, 1000);
         });
 
         async function checkUserRegistrations(events) {
