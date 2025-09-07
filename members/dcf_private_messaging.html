@@ -208,13 +208,13 @@
         }
 
         .logout-btn {
-            color: #dc3545 !important;
+            color: #ef9a9a !important;
             font-weight: 500;
         }
 
         .logout-btn:hover {
-            background: #fee !important;
-            color: #c82333 !important;
+            background: #ffebee !important;
+            color: #ef9a9a !important;
         }
 
         .dropdown-icon {
@@ -398,7 +398,7 @@
         }
 
         .unread-badge {
-            background: #dc3545;
+            background: #ef9a9a;
             color: white;
             border-radius: 50%;
             width: 20px;
@@ -1009,7 +1009,7 @@
                 </div>
 
                 <div class="search-container">
-                    <input type="text" class="search-input" placeholder="Search conversations..." id="conversationSearch">
+                    <input type="text" class="search-input" placeholder="Search conversations..." id="conversationSearch" maxlength="100">
                 </div>
 
                 <div class="conversation-list" id="conversationList">
@@ -1201,7 +1201,7 @@
                             <button class="message-action-btn" onclick="attachFile()" title="Attach File">📎</button>
                             <button class="message-action-btn" onclick="addEmoji()" title="Add Emoji">😊</button>
                         </div>
-                        <textarea class="message-input" placeholder="Type your message..." id="messageInput" rows="1"></textarea>
+                        <textarea class="message-input" placeholder="Type your message..." id="messageInput" rows="1" maxlength="5000"></textarea>
                         <button class="send-btn" onclick="sendMessage()" id="sendButton" disabled>→</button>
                     </div>
                 </div>
@@ -1219,16 +1219,18 @@
             <form id="newMessageForm">
                 <div class="form-group">
                     <label class="form-label" for="recipientSearch">To:</label>
-                    <input type="text" id="recipientSearch" class="form-input" placeholder="Search for a member to message...">
+                    <input type="text" id="recipientSearch" class="form-input" placeholder="Search for a member to message..." maxlength="100">
                     <div class="member-search-results" id="memberSearchResults" style="display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="messageSubject">Subject (Optional):</label>
-                    <input type="text" id="messageSubject" class="form-input" placeholder="Enter message subject...">
+                    <input type="text" id="messageSubject" class="form-input" placeholder="Enter message subject..." maxlength="200">
+                    <div id="messageSubjectCount" class="char-counter" style="text-align: left; color: #6b7280; font-size: 0.85rem; margin-top: 0.25rem;">0/200 characters</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="newMessageText">Message:</label>
-                    <textarea id="newMessageText" class="textarea" placeholder="Type your message..."></textarea>
+                    <textarea id="newMessageText" class="textarea" placeholder="Type your message..." maxlength="5000"></textarea>
+                    <div id="newMessageTextCount" class="char-counter" style="text-align: left; color: #6b7280; font-size: 0.85rem; margin-top: 0.25rem;">0/5000 characters</div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('newMessageModal')">Cancel</button>
@@ -1330,7 +1332,9 @@
             sanitized = sanitized.replace(/\s+/g, ' ').trim();
             
             // Log if content was sanitized (for security monitoring)
-            if (sanitized.length !== originalLength || sanitized !== input) {
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
                 console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
                 console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
             }
@@ -1424,17 +1428,48 @@
         }
         
         /**
+         * Update character count display in real-time with hard limits
+         */
+        function updateCharCount(fieldId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + 'Count');
+            
+            if (field && counter) {
+                let currentLength = field.value.length;
+                
+                // Enforce hard limit
+                if (currentLength > maxLength) {
+                    field.value = field.value.substring(0, maxLength);
+                    currentLength = maxLength;
+                }
+                
+                let displayText = `${currentLength}/${maxLength} characters`;
+                
+                if (currentLength === maxLength) {
+                    counter.style.color = '#ffa726'; // Soft orange
+                } else {
+                    counter.style.color = '#6b7280'; // Neutral gray
+                }
+                
+                counter.textContent = displayText;
+            }
+        }
+
+        /**
          * Apply real-time sanitization to form inputs
          */
         function initializeInputSanitization() {
             // Conversation search field
             const conversationSearch = document.getElementById('conversationSearch');
             if (conversationSearch) {
-                conversationSearch.addEventListener('input', function(e) {
+                conversationSearch.addEventListener('blur', function(e) {
                     const sanitized = sanitizeSearch(e.target.value, 100);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
-                        console.warn('Conversation search input sanitized');
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('Conversation search input sanitized');
+                        }
                     }
                 });
                 conversationSearch.addEventListener('paste', function(e) {
@@ -1447,11 +1482,14 @@
             // Message input field
             const messageInput = document.getElementById('messageInput');
             if (messageInput) {
-                messageInput.addEventListener('input', function(e) {
+                messageInput.addEventListener('blur', function(e) {
                     const sanitized = sanitizeMessage(e.target.value, 5000);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
-                        console.warn('Message input sanitized');
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('Message input sanitized');
+                        }
                     }
                 });
                 messageInput.addEventListener('paste', function(e) {
@@ -1464,11 +1502,14 @@
             // Recipient search field
             const recipientSearch = document.getElementById('recipientSearch');
             if (recipientSearch) {
-                recipientSearch.addEventListener('input', function(e) {
+                recipientSearch.addEventListener('blur', function(e) {
                     const sanitized = sanitizeSearch(e.target.value, 100);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
-                        console.warn('Recipient search input sanitized');
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('Recipient search input sanitized');
+                        }
                     }
                 });
                 recipientSearch.addEventListener('paste', function(e) {
@@ -1481,12 +1522,18 @@
             // Message subject field
             const messageSubject = document.getElementById('messageSubject');
             if (messageSubject) {
-                messageSubject.addEventListener('input', function(e) {
+                messageSubject.addEventListener('blur', function(e) {
                     const sanitized = sanitizeMessage(e.target.value, 200);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
-                        console.warn('Message subject sanitized');
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('Message subject sanitized');
+                        }
                     }
+                });
+                messageSubject.addEventListener('input', function() {
+                    updateCharCount('messageSubject', 200);
                 });
                 messageSubject.addEventListener('paste', function(e) {
                     e.preventDefault();
@@ -1498,12 +1545,18 @@
             // New message text field
             const newMessageText = document.getElementById('newMessageText');
             if (newMessageText) {
-                newMessageText.addEventListener('input', function(e) {
+                newMessageText.addEventListener('blur', function(e) {
                     const sanitized = sanitizeMessage(e.target.value, 5000);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
-                        console.warn('New message text sanitized');
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                        if (sanitized !== normalizedInput) {
+                            console.warn('New message text sanitized');
+                        }
                     }
+                });
+                newMessageText.addEventListener('input', function() {
+                    updateCharCount('newMessageText', 5000);
                 });
                 newMessageText.addEventListener('paste', function(e) {
                     e.preventDefault();
@@ -1529,6 +1582,10 @@
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
             console.log('✅ Security: Input sanitization initialized');
+            
+            // Initialize character counters
+            updateCharCount('messageSubject', 200);
+            updateCharCount('newMessageText', 5000);
             
             await initializeMessagingWithAuth();
         });
