@@ -1019,7 +1019,8 @@
         function filterAndDisplayEvents(filterType) {
             if (allEventsCache.length === 0) {
                 // If no events cached, reload from server
-                loadEvents();
+                // Call loadEventsFromServer instead of the undefined loadEvents
+                loadEventsFromServer();
                 return;
             }
             
@@ -1127,6 +1128,50 @@
         }
 
         // Wait for master JS to initialize
+        // Global function to load events from server
+        let loadEventsAttempts = 0;
+        const maxLoadEventsAttempts = 20;
+        
+        async function loadEventsFromServer() {
+            loadEventsAttempts++;
+            
+            // Use unified auth client
+            const supabase = window.dcfSupabase;
+            
+            if (supabase && typeof supabase.from === 'function') {
+                console.log('Loading events with Supabase client...');
+                
+                supabase
+                    .from('events')
+                    .select('*')
+                    .eq('status', 'active')
+                    .order('event_date', { ascending: true })
+                    .then(async ({data, error}) => {
+                        if (error) {
+                            console.error('Error loading events:', error);
+                            showEmptyState();
+                        } else {
+                            console.log('Events loaded:', data?.length || 0);
+                            // Check user registrations and add status
+                            const eventsWithStatus = await checkUserRegistrations(data || []);
+                            allEventsCache = eventsWithStatus;
+                            displayEvents(eventsWithStatus);
+                            updateTabCounts();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fatal error loading events:', error);
+                        showEmptyState();
+                    });
+            } else if (loadEventsAttempts < maxLoadEventsAttempts) {
+                console.log(`Waiting for Supabase... attempt ${loadEventsAttempts}/${maxLoadEventsAttempts}`);
+                setTimeout(loadEventsFromServer, 500);
+            } else {
+                console.error('Failed to load Supabase after maximum attempts');
+                showEmptyState();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔍 Events Calendar page loaded');
             
