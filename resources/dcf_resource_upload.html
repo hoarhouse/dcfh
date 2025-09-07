@@ -1493,20 +1493,75 @@
             }
         }
         
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.id = field.id + '-error';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+            field.classList.add('error');
+        }
+        
+        function clearFieldError(field) {
+            const existingError = document.getElementById(field.id + '-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            field.classList.remove('error');
+        }
+        
+        function validateField(fieldId, minLength = 0, maxLength = 0) {
+            const field = document.getElementById(fieldId);
+            if (!field) return true;
+            
+            const value = field.value.trim();
+            
+            // Only validate on blur, not while typing
+            if (field.hasAttribute('required') && value === '') {
+                showFieldError(field, 'This field is required');
+                return false;
+            }
+            
+            if (minLength > 0 && value.length < minLength && value.length > 0) {
+                showFieldError(field, `Minimum ${minLength} characters required`);
+                return false;
+            }
+            
+            if (maxLength > 0 && value.length > maxLength) {
+                // Enforce hard limit
+                field.value = value.substring(0, maxLength);
+                showFieldError(field, `Maximum ${maxLength} characters allowed`);
+                return false;
+            }
+            
+            clearFieldError(field);
+            return true;
+        }
+        
         /**
          * Apply real-time sanitization to form inputs
          */
         function initializeInputSanitization() {
-            // Title field sanitization
+            // Title field sanitization and validation - only on blur
             const titleField = document.getElementById('title');
             if (titleField) {
-                titleField.addEventListener('input', function(e) {
+                // Set maxlength for hard stop
+                titleField.setAttribute('maxlength', 100);
+                
+                titleField.addEventListener('blur', function(e) {
                     const sanitized = sanitizeText(e.target.value, 100);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
                         console.warn('Title input sanitized');
                     }
+                    validateField('title', 3, 100); // Min 3 chars, max 100
                 });
+                
+                titleField.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+                
                 titleField.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -1514,16 +1569,25 @@
                 });
             }
             
-            // Description field sanitization
+            // Description field sanitization and validation - only on blur
             const descriptionField = document.getElementById('description');
             if (descriptionField) {
-                descriptionField.addEventListener('input', function(e) {
+                // Set maxlength for hard stop
+                descriptionField.setAttribute('maxlength', 1000);
+                
+                descriptionField.addEventListener('blur', function(e) {
                     const sanitized = sanitizeText(e.target.value, 1000);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
                         console.warn('Description input sanitized');
                     }
+                    validateField('description', 10, 1000); // Min 10 chars, max 1000
                 });
+                
+                descriptionField.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+                
                 descriptionField.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
