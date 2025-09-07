@@ -1843,57 +1843,78 @@
             return isValid;
         }
         
-        // Update character count display in real-time
+        // Update character count display in real-time with hard limits
         function updateCharCount(fieldId, maxLength) {
             const field = document.getElementById(fieldId);
             const counter = document.getElementById(fieldId + 'Count');
             if (field && counter) {
-                const currentLength = field.value.length;
+                let currentLength = field.value.length;
                 let minLength = 0;
+                let actualMaxLength = maxLength;
                 let displayText = '';
                 
-                // Set minimum lengths and display text
+                // Set minimum and maximum lengths based on field
                 if (fieldId === 'eventTitle') {
                     minLength = 15;
-                    displayText = `${currentLength}/25 characters (minimum 15)`;
+                    actualMaxLength = 25;
                     
-                    // Enforce max length by trimming if needed
-                    if (currentLength > 25) {
-                        field.value = field.value.substring(0, 25);
-                        return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
+                    // Hard stop - prevent typing beyond max
+                    if (currentLength > actualMaxLength) {
+                        field.value = field.value.substring(0, actualMaxLength);
+                        currentLength = actualMaxLength;
                     }
+                    
+                    displayText = `${currentLength}/${actualMaxLength} characters`;
+                    if (currentLength < minLength) {
+                        displayText += ` (minimum ${minLength})`;
+                    }
+                    
                 } else if (fieldId === 'briefDescription') {
                     minLength = 25;
-                    displayText = `${currentLength}/180 characters (minimum 25)`;
+                    actualMaxLength = 180;
                     
-                    // Enforce max length by trimming if needed
-                    if (currentLength > 180) {
-                        field.value = field.value.substring(0, 180);
-                        return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
+                    // Hard stop - prevent typing beyond max
+                    if (currentLength > actualMaxLength) {
+                        field.value = field.value.substring(0, actualMaxLength);
+                        currentLength = actualMaxLength;
                     }
+                    
+                    displayText = `${currentLength}/${actualMaxLength} characters`;
+                    if (currentLength < minLength) {
+                        displayText += ` (minimum ${minLength})`;
+                    }
+                    
                 } else if (fieldId === 'fullDescription') {
                     minLength = 100;
-                    displayText = `${currentLength}/2500 characters (minimum 100)`;
+                    actualMaxLength = 2500;
                     
-                    // Enforce max length by trimming if needed
-                    if (currentLength > 2500) {
-                        field.value = field.value.substring(0, 2500);
-                        return updateCharCount(fieldId, maxLength); // Recurse with trimmed value
+                    // Hard stop - prevent typing beyond max
+                    if (currentLength > actualMaxLength) {
+                        field.value = field.value.substring(0, actualMaxLength);
+                        currentLength = actualMaxLength;
+                    }
+                    
+                    displayText = `${currentLength}/${actualMaxLength} characters`;
+                    if (currentLength < minLength) {
+                        displayText += ` (minimum ${minLength})`;
                     }
                 }
                 
                 // Update counter display
                 counter.textContent = displayText;
                 
-                // Apply gentle styling based on whether minimum is met
+                // Apply soft red color for warnings, gray otherwise
                 if (currentLength < minLength) {
                     counter.className = 'char-counter invalid';
+                    counter.style.color = '#ef9a9a'; // Soft red for warnings
+                } else if (currentLength === actualMaxLength) {
+                    counter.className = 'char-counter warning';
+                    counter.style.color = '#ffa726'; // Soft orange when at limit
                 } else {
                     counter.className = 'char-counter valid';
+                    counter.style.color = '#6b7280'; // Neutral gray when valid
                 }
                 
-                // Always use gentle gray color
-                counter.style.color = '#6b7280';
                 counter.style.fontWeight = 'normal';
             }
         }
