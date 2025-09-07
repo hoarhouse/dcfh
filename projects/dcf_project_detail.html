@@ -212,13 +212,13 @@
         }
 
         .logout-btn {
-            color: #dc3545 !important;
+            color: #ef9a9a !important;
             font-weight: 500;
         }
 
         .logout-btn:hover {
             background: #fee !important;
-            color: #c82333 !important;
+            color: #ef9a9a !important;
         }
 
         .dropdown-icon {
@@ -1008,13 +1008,13 @@
         }
         
         .join-project-card .manage-btn-stats {
-            background: #dc3545;
+            background: #ef9a9a;
             color: white;
             margin-left: 1rem;
         }
         
         .join-project-card .manage-btn-stats:hover {
-            background: #c82333;
+            background: #ef9a9a;
         }
 
         /* Project Feed Section */
@@ -1696,14 +1696,14 @@
         }
 
         .comment-action-btn.delete-btn {
-            color: #dc3545 !important;
+            color: #ef9a9a !important;
             border-color: #f8d7da !important;
         }
 
         .comment-action-btn.delete-btn:hover {
             background: #f8d7da !important;
             color: #721c24 !important;
-            border-color: #dc3545 !important;
+            border-color: #ef9a9a !important;
         }
 
         /* Sort buttons styling */
@@ -2119,7 +2119,11 @@
             sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
             
             // Clean up any remaining suspicious patterns
-            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
+            
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
             
             return sanitized;
         }
@@ -2147,16 +2151,21 @@
             return email.substring(0, 254);
         }
 
-        // Real-time input sanitization
+        // Blur-only input sanitization
         function applyRealTimeProtection(element, maxLength = 1000) {
             if (!element) return;
             
-            element.addEventListener('input', function(e) {
+            // Apply sanitization on blur only
+            element.addEventListener('blur', function(e) {
                 const originalValue = e.target.value;
                 const sanitized = sanitizeInput(originalValue, maxLength);
                 if (originalValue !== sanitized) {
-                    e.target.value = sanitized;
-                    console.warn('Input sanitized to prevent potential security issues');
+                    // Only warn if something other than whitespace normalization occurred
+                    const normalizedOriginal = originalValue.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedOriginal) {
+                        e.target.value = sanitized;
+                        console.warn('Input sanitized to prevent potential security issues');
+                    }
                 }
             });
             
@@ -4797,7 +4806,7 @@
             if (characterCount) {
                 characterCount.textContent = `${charCount}/2000`;
                 if (charCount > 1800) {
-                    characterCount.style.color = '#dc3545';
+                    characterCount.style.color = '#ef9a9a';
                 } else if (charCount > 1500) {
                     characterCount.style.color = '#ffc107';
                 } else {
@@ -5031,7 +5040,7 @@
                                 <button class="post-action-btn" onclick="toggleInlineEdit('${post.id}')" style="color: #007bff;">
                                     ✏️ Edit
                                 </button>
-                                <button class="post-action-btn" onclick="deletePost('${post.id}')" style="color: #dc3545;">
+                                <button class="post-action-btn" onclick="deletePost('${post.id}')" style="color: #ef9a9a;">
                                     🗑️ Delete
                                 </button>
                             </div>
@@ -5098,7 +5107,7 @@
             const projectId = new URLSearchParams(window.location.search).get('id');
             if (!projectId) {
                 console.error('No project ID found in URL');
-                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Invalid project URL</div>';
+                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef9a9a;">Invalid project URL</div>';
                 return;
             }
             
@@ -5163,7 +5172,7 @@
                 
             } catch (error) {
                 console.error('Error loading posts:', error);
-                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc3545;">Failed to load posts for this project</div>';
+                feedContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef9a9a;">Failed to load posts for this project</div>';
             }
         }
 
