@@ -5525,7 +5525,15 @@
         async function saveEditComment(commentId) {
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
             const textarea = commentElement.querySelector('.edit-textarea');
-            const newText = textarea.value.trim();
+            const rawText = textarea.value.trim();
+            
+            // SECURITY: Sanitize edited comment content before processing
+            const newText = sanitizePost(rawText, 2000);
+            
+            // Log if sanitization was needed
+            if (newText !== rawText) {
+                console.warn('⚠️ Security: Edited comment content sanitization was applied');
+            }
             
             if (!newText) {
                 await showAlert('Comment cannot be empty', 'warning');
