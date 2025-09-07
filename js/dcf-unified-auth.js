@@ -897,6 +897,7 @@ function initializeFooter() {
                                 id="footerNewsletterEmail" 
                                 placeholder="Enter your email address" 
                                 class="newsletter-input" 
+                                maxlength="254"
                                 onkeydown="if(event.key==='Enter') subscribeNewsletter()"
                             >
                             <button onclick="subscribeNewsletter()" class="newsletter-btn">
@@ -1323,10 +1324,98 @@ function initializeFooter() {
     `;
 
     document.body.insertAdjacentHTML('beforeend', footerHTML);
+    
+    // Initialize newsletter input sanitization
+    setTimeout(() => {
+        const newsletterInput = document.getElementById('footerNewsletterEmail');
+        if (newsletterInput) {
+            // Apply blur-only sanitization
+            newsletterInput.addEventListener('blur', function(e) {
+                const sanitized = sanitizeEmail(e.target.value);
+                if (sanitized !== e.target.value) {
+                    e.target.value = sanitized;
+                    const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedInput.toLowerCase()) {
+                        console.warn('Newsletter email input sanitized on blur');
+                    }
+                }
+            });
+            
+            // Prevent paste of malicious content
+            newsletterInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                e.target.value = sanitizeEmail(pastedText);
+            });
+        }
+    }, 100);
 }
 
 // =============================================================================
-// 9.1. NEWSLETTER SUBSCRIPTION FUNCTIONALITY
+// 9.1. EMAIL SANITIZATION FOR NEWSLETTER
+// =============================================================================
+/**
+ * Email-specific sanitization
+ * Preserves valid email format while removing dangerous content
+ */
+function sanitizeEmail(email) {
+    if (typeof email !== 'string') {
+        return '';
+    }
+    
+    // First remove dangerous patterns
+    let sanitized = email;
+    
+    // Remove HTML/XML tags
+    sanitized = sanitized.replace(/<\/?[^>]+(>|$)/gi, '');
+    
+    // Remove JavaScript event handlers
+    sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+    sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+    
+    // Remove javascript: and other dangerous URL schemes
+    sanitized = sanitized.replace(/javascript\s*:/gi, '');
+    sanitized = sanitized.replace(/data\s*:/gi, '');
+    sanitized = sanitized.replace(/vbscript\s*:/gi, '');
+    
+    // Remove SQL injection patterns
+    sanitized = sanitized.replace(/(\b)(DROP|DELETE|INSERT|UPDATE|SELECT|UNION|CREATE|ALTER|EXEC|EXECUTE|SCRIPT|TRUNCATE)(\b)/gi, '');
+    sanitized = sanitized.replace(/(--)|(\/\*[\s\S]*?\*\/)/g, '');
+    
+    // Normalize whitespace
+    sanitized = sanitized.replace(/\s+/g, ' ').trim();
+    
+    // Log if content was sanitized (for security monitoring)
+    // Only warn if something OTHER than whitespace normalization occurred
+    const normalizedInput = email.replace(/\s+/g, ' ').trim();
+    if (sanitized !== normalizedInput) {
+        console.warn('⚠️ Email input sanitization applied. Potential attack attempt blocked.');
+    }
+    
+    // Remove any remaining non-email characters
+    // Allow only valid email characters: alphanumeric, @, ., _, -, +
+    sanitized = sanitized.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+    
+    // Ensure only one @ symbol
+    const atCount = (sanitized.match(/@/g) || []).length;
+    if (atCount > 1) {
+        // Keep only the first @ and remove others
+        let firstAt = sanitized.indexOf('@');
+        let beforeAt = sanitized.substring(0, firstAt);
+        let afterAt = sanitized.substring(firstAt + 1).replace(/@/g, '');
+        sanitized = beforeAt + '@' + afterAt;
+    }
+    
+    // Limit length to prevent buffer overflow attempts
+    if (sanitized.length > 254) {  // RFC 5321 max email length
+        sanitized = sanitized.substring(0, 254);
+    }
+    
+    return sanitized.toLowerCase();
+}
+
+// =============================================================================
+// 9.2. NEWSLETTER SUBSCRIPTION FUNCTIONALITY
 // =============================================================================
 async function subscribeNewsletter() {
     const emailInput = document.getElementById('footerNewsletterEmail');
@@ -1337,7 +1426,17 @@ async function subscribeNewsletter() {
         return;
     }
     
-    const email = emailInput.value.trim();
+    // SECURITY: Sanitize email input
+    const rawEmail = emailInput.value.trim();
+    const email = sanitizeEmail(rawEmail);
+    
+    // Log if sanitization was needed
+    if (email !== rawEmail) {
+        const normalizedInput = rawEmail.replace(/\s+/g, ' ').trim();
+        if (email !== normalizedInput.toLowerCase()) {
+            console.warn('⚠️ Security: Newsletter email was sanitized');
+        }
+    }
     
     // Validate email
     if (!email) {
