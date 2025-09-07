@@ -1964,29 +1964,58 @@
             updateCharCount('briefDescription', 180);
             updateCharCount('fullDescription', 2500);
             
-            // Add real-time updates for other text fields (optional fields)
+            // Add real-time updates and hard limits for other text fields
             const additionalTextFields = [
                 { id: 'physicalAddress', maxLength: 500 },
                 { id: 'additionalInstructions', maxLength: 500 },
                 { id: 'additionalResources', maxLength: 1000 },
                 { id: 'organizerNotes', maxLength: 1000 },
-                { id: 'meetingLink', maxLength: 200 }
+                { id: 'meetingLink', maxLength: 200 },
+                { id: 'contactEmail', maxLength: 100 }
             ];
             
             additionalTextFields.forEach(fieldInfo => {
                 const field = document.getElementById(fieldInfo.id);
                 if (field) {
-                    // Add input listener for real-time updates
-                    field.addEventListener('input', () => {
-                        // Just update length display, no validation
+                    // Set maxlength attribute for hard stop
+                    field.setAttribute('maxlength', fieldInfo.maxLength);
+                    
+                    // Create character counter if it doesn't exist
+                    let counter = document.getElementById(fieldInfo.id + 'Count');
+                    if (!counter) {
+                        counter = document.createElement('div');
+                        counter.id = fieldInfo.id + 'Count';
+                        counter.className = 'char-counter';
+                        field.parentNode.insertBefore(counter, field.nextSibling);
+                    }
+                    
+                    // Update counter function for this field
+                    const updateFieldCounter = () => {
                         const currentLength = field.value.length;
-                        // Optional: Add visual feedback if approaching limit
-                        if (currentLength > fieldInfo.maxLength * 0.9) {
-                            field.style.borderColor = '#fbbf24'; // Yellow warning
+                        const displayText = `${currentLength}/${fieldInfo.maxLength} characters`;
+                        counter.textContent = displayText;
+                        
+                        // Apply soft colors based on usage
+                        if (currentLength >= fieldInfo.maxLength) {
+                            counter.className = 'char-counter warning';
+                            counter.style.color = '#ffa726'; // Soft orange at limit
+                            field.style.borderColor = '#ffa726';
+                        } else if (currentLength > fieldInfo.maxLength * 0.9) {
+                            counter.className = 'char-counter warning';
+                            counter.style.color = '#ffb74d'; // Light orange approaching limit
+                            field.style.borderColor = '#ffb74d';
                         } else {
-                            field.style.borderColor = ''; // Reset to default
+                            counter.className = 'char-counter valid';
+                            counter.style.color = '#6b7280'; // Neutral gray
+                            field.style.borderColor = '';
                         }
-                    });
+                    };
+                    
+                    // Initialize counter
+                    updateFieldCounter();
+                    
+                    // Add input listener for real-time updates
+                    field.addEventListener('input', updateFieldCounter);
                 }
             });
         }
