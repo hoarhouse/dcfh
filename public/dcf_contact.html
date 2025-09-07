@@ -236,6 +236,55 @@
             background: #333;
         }
 
+        /* Character counter styles */
+        .char-counter {
+            text-align: left;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-weight: normal;
+            color: #6b7280;
+        }
+
+        .char-counter.valid {
+            color: #6b7280; /* Neutral gray when valid */
+        }
+
+        .char-counter.warning {
+            color: #ffa726; /* Soft orange when at limit */
+        }
+
+        .char-counter.invalid {
+            color: #ef9a9a; /* Soft red when below minimum */
+        }
+
+        /* Validation message styles */
+        .validation-message {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            color: #ef9a9a; /* Soft red for errors */
+            font-weight: normal;
+        }
+
+        /* Field error styles */
+        .field-error {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            color: #ef9a9a; /* Soft red */
+        }
+
+        /* Remove aggressive input error styling */
+        .form-input.error,
+        .form-textarea.error,
+        .form-select.error {
+            border-color: #ef9a9a; /* Soft red instead of bright red */
+        }
+
+        .form-input:focus.error,
+        .form-textarea:focus.error,
+        .form-select:focus.error {
+            border-color: #ef9a9a; /* Keep soft red on focus */
+        }
+
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -688,28 +737,33 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="firstName" class="form-label">First Name *</label>
-                            <input type="text" id="firstName" name="firstName" class="form-input" required>
+                            <input type="text" id="firstName" name="firstName" class="form-input" required maxlength="50">
+                            <div id="firstNameCount" class="char-counter">0/50 characters</div>
                         </div>
                         <div class="form-group">
                             <label for="lastName" class="form-label">Last Name *</label>
-                            <input type="text" id="lastName" name="lastName" class="form-input" required>
+                            <input type="text" id="lastName" name="lastName" class="form-input" required maxlength="50">
+                            <div id="lastNameCount" class="char-counter">0/50 characters</div>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="email" class="form-label">Email Address *</label>
-                            <input type="email" id="email" name="email" class="form-input" required>
+                            <input type="email" id="email" name="email" class="form-input" required maxlength="100">
+                            <div id="emailCount" class="char-counter">0/100 characters</div>
                         </div>
                         <div class="form-group">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" class="form-input">
+                            <input type="tel" id="phone" name="phone" class="form-input" maxlength="20">
+                            <div id="phoneCount" class="char-counter">0/20 characters</div>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="organization" class="form-label">Organization / Institution</label>
-                        <input type="text" id="organization" name="organization" class="form-input">
+                        <input type="text" id="organization" name="organization" class="form-input" maxlength="100">
+                        <div id="organizationCount" class="char-counter">0/100 characters</div>
                     </div>
 
                     <div class="form-group">
@@ -730,7 +784,8 @@
 
                     <div class="form-group">
                         <label for="message" class="form-label">Your Message *</label>
-                        <textarea id="message" name="message" class="form-textarea" placeholder="Tell us more about your inquiry, project, or how we can help..." required></textarea>
+                        <textarea id="message" name="message" class="form-textarea" placeholder="Tell us more about your inquiry, project, or how we can help..." required maxlength="2000"></textarea>
+                        <div id="messageCount" class="char-counter invalid">0/2000 characters (minimum 20)</div>
                     </div>
 
                     <div class="form-checkbox">
@@ -1010,7 +1065,8 @@
             textFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
-                    field.addEventListener('input', function(e) {
+                    // Only sanitize on blur, not while typing
+                    field.addEventListener('blur', function(e) {
                         const sanitized = sanitizeText(e.target.value, 100);
                         if (sanitized !== e.target.value) {
                             e.target.value = sanitized;
@@ -1029,7 +1085,8 @@
             // Email field
             const emailField = document.getElementById('email');
             if (emailField) {
-                emailField.addEventListener('input', function(e) {
+                // Only sanitize on blur, not while typing
+                emailField.addEventListener('blur', function(e) {
                     const sanitized = sanitizeEmail(e.target.value);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
@@ -1047,7 +1104,8 @@
             // Phone field
             const phoneField = document.getElementById('phone');
             if (phoneField) {
-                phoneField.addEventListener('input', function(e) {
+                // Only sanitize on blur, not while typing
+                phoneField.addEventListener('blur', function(e) {
                     const sanitized = sanitizePhone(e.target.value);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
@@ -1077,7 +1135,8 @@
             // Message textarea
             const messageField = document.getElementById('message');
             if (messageField) {
-                messageField.addEventListener('input', function(e) {
+                // Only sanitize on blur, not while typing
+                messageField.addEventListener('blur', function(e) {
                     const sanitized = sanitizeText(e.target.value, 5000);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
@@ -1095,11 +1154,129 @@
             console.log('✅ Security: Contact form sanitization initialized for all fields');
         }
         
+        // Character count and validation functions
+        function updateCharCount(fieldId, maxLength, minLength = 0) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + 'Count');
+            
+            if (field && counter) {
+                let currentLength = field.value.length;
+                let displayText = `${currentLength}/${maxLength} characters`;
+                
+                if (minLength > 0 && currentLength < minLength) {
+                    displayText += ` (minimum ${minLength})`;
+                    counter.className = 'char-counter invalid';
+                    counter.style.color = '#ef9a9a'; // Soft red
+                } else if (currentLength === maxLength) {
+                    counter.className = 'char-counter warning';
+                    counter.style.color = '#ffa726'; // Soft orange
+                } else {
+                    counter.className = 'char-counter valid';
+                    counter.style.color = '#6b7280'; // Neutral gray
+                }
+                
+                counter.textContent = displayText;
+            }
+        }
+        
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.id = field.id + '-error';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+            field.classList.add('error');
+        }
+        
+        function clearFieldError(field) {
+            const existingError = document.getElementById(field.id + '-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            field.classList.remove('error');
+        }
+        
+        function validateField(fieldId, minLength = 0) {
+            const field = document.getElementById(fieldId);
+            if (!field) return true;
+            
+            const value = field.value.trim();
+            
+            // Only validate on blur, not while typing
+            if (field.hasAttribute('required') && value === '') {
+                showFieldError(field, 'This field is required');
+                return false;
+            }
+            
+            if (minLength > 0 && value.length < minLength && value.length > 0) {
+                showFieldError(field, `Minimum ${minLength} characters required`);
+                return false;
+            }
+            
+            // Email validation
+            if (field.type === 'email' && value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    showFieldError(field, 'Please enter a valid email address');
+                    return false;
+                }
+            }
+            
+            clearFieldError(field);
+            return true;
+        }
+        
+        // Initialize form validation and character counting
+        function initializeFormValidation() {
+            // Configure fields with their limits
+            const fields = [
+                { id: 'firstName', maxLength: 50, minLength: 2, required: true },
+                { id: 'lastName', maxLength: 50, minLength: 2, required: true },
+                { id: 'email', maxLength: 100, minLength: 5, required: true },
+                { id: 'phone', maxLength: 20, minLength: 0, required: false },
+                { id: 'organization', maxLength: 100, minLength: 0, required: false },
+                { id: 'message', maxLength: 2000, minLength: 20, required: true }
+            ];
+            
+            fields.forEach(config => {
+                const field = document.getElementById(config.id);
+                if (field) {
+                    // Set maxlength attribute for hard stop (if not already set)
+                    if (!field.hasAttribute('maxlength')) {
+                        field.setAttribute('maxlength', config.maxLength);
+                    }
+                    
+                    // Initialize character counter
+                    updateCharCount(config.id, config.maxLength, config.minLength);
+                    
+                    // Add real-time character counting
+                    field.addEventListener('input', () => {
+                        updateCharCount(config.id, config.maxLength, config.minLength);
+                    });
+                    
+                    // Add validation on blur only (not while typing)
+                    field.addEventListener('blur', () => {
+                        validateField(config.id, config.minLength);
+                    });
+                    
+                    // Remove validation on focus (gentle approach)
+                    field.addEventListener('focus', () => {
+                        clearFieldError(field);
+                    });
+                }
+            });
+        }
+        
         // Initialize sanitization on page load
         document.addEventListener('DOMContentLoaded', function() {
             // SECURITY: Initialize input sanitization
             initializeContactFormSanitization();
             console.log('✅ Security: Input sanitization active');
+            
+            // Initialize form validation and character counting
+            initializeFormValidation();
+            console.log('✅ Form validation and character counting initialized');
         });
         
         // Update form submission to use sanitized values
