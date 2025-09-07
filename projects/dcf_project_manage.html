@@ -2649,13 +2649,23 @@
             const currentUserEmail = currentUser ? currentUser.email : null;
             const editingTaskId = this.dataset.editingTaskId;
             
+            // SECURITY: Sanitize all inputs before processing
+            const rawTitle = document.getElementById('taskTitle').value.trim();
+            const rawDescription = document.getElementById('taskDescription').value.trim();
+            const rawAssignee = document.getElementById('taskAssignee').value;
+            
             const taskData = {
-                title: document.getElementById('taskTitle').value.trim(),
-                description: document.getElementById('taskDescription').value.trim() || null,
-                assigned_to: document.getElementById('taskAssignee').value || null,
+                title: sanitizeText(rawTitle, 100),
+                description: sanitizeText(rawDescription, 500) || null,
+                assigned_to: sanitizeText(rawAssignee, 50) || null,
                 priority: document.getElementById('taskPriority').value,
                 due_date: document.getElementById('taskDueDate').value || null
             };
+            
+            // Log if sanitization was needed
+            if (taskData.title !== rawTitle || taskData.description !== rawDescription || taskData.assigned_to !== rawAssignee) {
+                console.warn('⚠️ Security: Task form input sanitization was applied');
+            }
             
             try {
                 if (editingTaskId) {
