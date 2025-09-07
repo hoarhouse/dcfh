@@ -1662,11 +1662,15 @@
     }
 
     function getCurrentFilters() {
+        // SECURITY: Sanitize search input before using in filters
+        const rawSearch = document.querySelector('.search-input')?.value || '';
+        const sanitizedSearch = sanitizeSearch(rawSearch, 100);
+        
         return {
             status: document.querySelector('.filter-select')?.value || '',
             category: document.querySelector('.category-btn.active')?.dataset.category || 'all',
             location: document.querySelectorAll('.filter-select')[1]?.value || '',
-            search: document.querySelector('.search-input')?.value || ''
+            search: sanitizedSearch
         };
     }
 
@@ -2319,6 +2323,12 @@ const myProjects = allProjects.filter(project =>
     // Duplicate switchTab function removed - using the one above
 
 document.addEventListener('DOMContentLoaded', function() {
+   console.log('🔍 Projects Home page loaded');
+   
+   // SECURITY: Initialize input sanitization
+   initializeInputSanitization();
+   console.log('✅ Security: Input sanitization initialized');
+   
    loadProjectsOptimized(1, {});
    updateStats();
    loadMyProjectsReal();
@@ -2328,8 +2338,21 @@ document.addEventListener('DOMContentLoaded', function() {
    const filterSelects = document.querySelectorAll('.filter-select');
    const categoryBtns = document.querySelectorAll('.category-btn');
    
+   // Search input listener is now handled by initializeInputSanitization() for security
+   // Additional search logic if needed
    if (searchInput) {
-       searchInput.addEventListener('input', () => {
+       // The input event is already attached with sanitization in initializeInputSanitization
+       // We just need to add the search functionality
+       const originalListener = searchInput._sanitizedListener;
+       searchInput.removeEventListener('input', originalListener);
+       searchInput.addEventListener('input', function() {
+           // Apply sanitization first
+           const sanitized = sanitizeSearch(this.value, 100);
+           if (sanitized !== this.value) {
+               this.value = sanitized;
+               console.warn('Search input sanitized');
+           }
+           // Then perform the search
            clearProjectsCache();
            loadProjectsOptimized(1, getCurrentFilters());
        });
