@@ -1458,6 +1458,144 @@
             }
         }
 
+        // Character count and validation functions
+        function updateCharCount(fieldId, maxLength, minLength = 0) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + 'Count');
+            
+            if (field && counter) {
+                let currentLength = field.value.length;
+                
+                // Enforce hard limit
+                if (currentLength > maxLength) {
+                    field.value = field.value.substring(0, maxLength);
+                    currentLength = maxLength;
+                }
+                
+                let displayText = `${currentLength}/${maxLength} characters`;
+                
+                if (minLength > 0 && currentLength < minLength) {
+                    displayText += ` (minimum ${minLength})`;
+                    counter.className = 'char-counter invalid';
+                    counter.style.color = '#ef9a9a'; // Soft red
+                } else if (currentLength === maxLength) {
+                    counter.className = 'char-counter warning';
+                    counter.style.color = '#ffa726'; // Soft orange
+                } else {
+                    counter.className = 'char-counter valid';
+                    counter.style.color = '#6b7280'; // Neutral gray
+                }
+                
+                counter.textContent = displayText;
+            }
+        }
+        
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.id = field.id + '-error';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+            field.classList.add('error');
+        }
+        
+        function clearFieldError(field) {
+            const existingError = document.getElementById(field.id + '-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            field.classList.remove('error');
+        }
+        
+        function validateField(fieldId, minLength = 0) {
+            const field = document.getElementById(fieldId);
+            if (!field) return true;
+            
+            const value = field.value.trim();
+            
+            // Only validate on blur, not while typing
+            if (field.hasAttribute('required') && value === '') {
+                showFieldError(field, 'This field is required');
+                return false;
+            }
+            
+            if (minLength > 0 && value.length < minLength && value.length > 0) {
+                showFieldError(field, `Minimum ${minLength} characters required`);
+                return false;
+            }
+            
+            // URL validation
+            if (field.type === 'url' && value) {
+                try {
+                    new URL(value);
+                } catch {
+                    showFieldError(field, 'Please enter a valid URL');
+                    return false;
+                }
+            }
+            
+            clearFieldError(field);
+            return true;
+        }
+        
+        // Initialize form validation and character counting
+        function initializeFormValidation() {
+            // Configure fields with their limits
+            const fields = [
+                { id: 'projectTitle', maxLength: 100, minLength: 5, required: true },
+                { id: 'projectGoal', maxLength: 200, minLength: 10, required: true },
+                { id: 'websiteUrl', maxLength: 500, minLength: 0, required: false },
+                { id: 'applicationQuestions', maxLength: 1000, minLength: 0, required: false },
+                { id: 'additionalNotes', maxLength: 2000, minLength: 0, required: false }
+            ];
+            
+            fields.forEach(config => {
+                const field = document.getElementById(config.id);
+                if (field) {
+                    // Set maxlength attribute for hard stop
+                    if (!field.hasAttribute('maxlength')) {
+                        field.setAttribute('maxlength', config.maxLength);
+                    }
+                    
+                    // Create character counter if needed
+                    let counter = document.getElementById(config.id + 'Count');
+                    if (!counter && field.type !== 'select') {
+                        counter = document.createElement('div');
+                        counter.id = config.id + 'Count';
+                        counter.className = 'char-counter';
+                        // Insert after the field or after existing counter
+                        const existingCounter = field.parentNode.querySelector('.word-counter');
+                        if (existingCounter) {
+                            existingCounter.parentNode.insertBefore(counter, existingCounter.nextSibling);
+                        } else {
+                            field.parentNode.insertBefore(counter, field.nextSibling);
+                        }
+                    }
+                    
+                    // Initialize character counter
+                    if (counter) {
+                        updateCharCount(config.id, config.maxLength, config.minLength);
+                    }
+                    
+                    // Add real-time character counting
+                    field.addEventListener('input', () => {
+                        updateCharCount(config.id, config.maxLength, config.minLength);
+                    });
+                    
+                    // Add validation on blur only (not while typing)
+                    field.addEventListener('blur', () => {
+                        validateField(config.id, config.minLength);
+                    });
+                    
+                    // Remove validation on focus (gentle approach)
+                    field.addEventListener('focus', () => {
+                        clearFieldError(field);
+                    });
+                }
+            });
+        }
+        
         // Initialize word limit handlers when DOM is ready
         document.addEventListener('DOMContentLoaded', setupWordLimitHandlers);
 
@@ -2360,6 +2498,10 @@
             // SECURITY: Initialize input sanitization
             initializeProjectFormSanitization();
             console.log('✅ Security: Input sanitization active');
+            
+            // Initialize form validation and character counting
+            initializeFormValidation();
+            console.log('✅ Form validation and character counting initialized');
             
             updateProgress();
             initializeCheckboxes();
