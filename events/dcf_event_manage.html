@@ -1269,14 +1269,153 @@
     </main>
 
     <script>
+        // Comprehensive sanitization function
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
+            
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+            
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
+            
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
+            
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
+            
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
+            
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
+            
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
+            
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
+            
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
+            
+            // Clean up any remaining suspicious patterns
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            
+            return sanitized;
+        }
+
+        // Email-specific sanitization
+        function sanitizeEmail(email) {
+            if (!email) return '';
+            
+            // Basic email sanitization
+            email = String(email).trim().toLowerCase();
+            
+            // Remove any HTML tags
+            email = email.replace(/<[^>]*>/g, '');
+            
+            // Remove dangerous characters but keep valid email chars
+            email = email.replace(/[^a-z0-9@.\-_+]/g, '');
+            
+            // Validate basic email format
+            const emailRegex = /^[a-z0-9.\-_+]+@[a-z0-9.\-]+\.[a-z]{2,}$/;
+            if (!emailRegex.test(email)) {
+                return '';
+            }
+            
+            // Limit length
+            return email.substring(0, 254);
+        }
+
+        // URL-specific sanitization
+        function sanitizeURL(url) {
+            if (!url) return '';
+            
+            url = String(url).trim();
+            
+            // Only allow http/https URLs
+            if (!url.match(/^https?:\/\//i)) {
+                return '';
+            }
+            
+            // Remove dangerous characters
+            url = url.replace(/[<>"'`{}|\\\^]/g, '');
+            
+            // Validate URL format
+            try {
+                new URL(url);
+                return url;
+            } catch {
+                return '';
+            }
+        }
+
+        // Real-time input sanitization
+        function applyRealTimeProtection(element, maxLength = 1000) {
+            if (!element) return;
+            
+            element.addEventListener('input', function(e) {
+                const originalValue = e.target.value;
+                const sanitized = sanitizeInput(originalValue, maxLength);
+                if (originalValue !== sanitized) {
+                    e.target.value = sanitized;
+                    console.warn('Input sanitized to prevent potential security issues');
+                }
+            });
+            
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const sanitized = sanitizeInput(pastedText, maxLength);
+                
+                // Insert sanitized text at cursor position
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const currentValue = e.target.value;
+                const newValue = currentValue.substring(0, start) + sanitized + currentValue.substring(end);
+                e.target.value = sanitizeInput(newValue, maxLength);
+                
+                // Restore cursor position
+                const newCursorPos = start + sanitized.length;
+                e.target.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
         // Global variables
         let currentUser = null;
         let allEvents = [];
         let supabase = null;
         let editingEventId = null;
 
+        // Initialize input sanitization
+        function initializeInputSanitization() {
+            // Apply protection to dynamically created edit form fields
+            // These will be applied when edit modals are opened
+            console.log('Input sanitization initialized for event management');
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            initializeInputSanitization();
             initializeManagePage();
         });
 
@@ -1885,6 +2024,59 @@
             editModal.classList.add('active');
             editingEventId = eventId;
 
+            // Apply sanitization to all form fields in this modal
+            const titleInput = document.getElementById(`edit-title-${eventId}`);
+            const descriptionInput = document.getElementById(`edit-description-${eventId}`);
+            const meetingLinkInput = document.getElementById(`edit-meeting-link-${eventId}`);
+            const physicalAddressInput = document.getElementById(`edit-physical-address-${eventId}`);
+            const instructionsInput = document.getElementById(`edit-instructions-${eventId}`);
+            const resourcesInput = document.getElementById(`edit-resources-${eventId}`);
+            const organizerNotesInput = document.getElementById(`edit-organizer-notes-${eventId}`);
+            const contactEmailInput = document.getElementById(`edit-contact-email-${eventId}`);
+            const maxAttendeesInput = document.getElementById(`edit-max-attendees-${eventId}`);
+
+            // Apply real-time protection to text inputs
+            if (titleInput) applyRealTimeProtection(titleInput, 200);
+            if (descriptionInput) applyRealTimeProtection(descriptionInput, 5000);
+            if (physicalAddressInput) applyRealTimeProtection(physicalAddressInput, 500);
+            if (instructionsInput) applyRealTimeProtection(instructionsInput, 2000);
+            if (resourcesInput) applyRealTimeProtection(resourcesInput, 2000);
+            if (organizerNotesInput) applyRealTimeProtection(organizerNotesInput, 2000);
+            
+            // Apply URL protection to meeting link
+            if (meetingLinkInput) {
+                meetingLinkInput.addEventListener('input', function(e) {
+                    const originalValue = e.target.value;
+                    const sanitized = sanitizeURL(originalValue);
+                    if (originalValue !== sanitized) {
+                        e.target.value = sanitized;
+                        console.warn('URL sanitized to prevent potential security issues');
+                    }
+                });
+            }
+            
+            // Apply email protection to contact email
+            if (contactEmailInput) {
+                contactEmailInput.addEventListener('input', function(e) {
+                    const originalValue = e.target.value;
+                    const sanitized = sanitizeEmail(originalValue);
+                    if (originalValue !== sanitized) {
+                        e.target.value = sanitized;
+                        console.warn('Email sanitized to prevent potential security issues');
+                    }
+                });
+            }
+
+            // Apply number validation to max attendees
+            if (maxAttendeesInput) {
+                maxAttendeesInput.addEventListener('input', function(e) {
+                    const value = e.target.value;
+                    if (value && !/^\d+$/.test(value)) {
+                        e.target.value = value.replace(/\D/g, '');
+                    }
+                });
+            }
+
             // If this event was specified in URL, auto-open the edit modal
             if (targetEventId === eventId) {
                 // Remove the URL parameter to clean up the URL
@@ -2117,24 +2309,48 @@
                 const event = allEvents.find(e => e.id === eventId);
                 if (!event) throw new Error('Event not found');
 
-                // Get form values
+                const state = editModalStates[eventId];
+                if (!state) throw new Error('Edit state not found');
+
+                // Get and sanitize form values
                 const updateData = {
-                    title: document.getElementById(`edit-title-${eventId}`).value.trim(),
+                    title: sanitizeInput(document.getElementById(`edit-title-${eventId}`).value, 200),
                     category: document.getElementById(`edit-category-${eventId}`).value,
-                    description: document.getElementById(`edit-description-${eventId}`).value.trim(),
+                    description: sanitizeInput(document.getElementById(`edit-description-${eventId}`).value, 5000),
                     event_date: document.getElementById(`edit-date-${eventId}`).value,
                     start_time: document.getElementById(`edit-time-${eventId}`).value,
-                    additional_instructions: document.getElementById(`edit-instructions-${eventId}`).value.trim(),
+                    timezone: document.getElementById(`edit-timezone-${eventId}`).value,
+                    visibility: state.visibility,
+                    event_type: state.eventType,
+                    duration_hours: state.duration,
+                    requires_registration: state.requiresRegistration,
+                    target_audience: document.getElementById(`edit-target-audience-${eventId}`).value,
+                    additional_instructions: sanitizeInput(document.getElementById(`edit-instructions-${eventId}`).value, 2000),
+                    additional_resources: sanitizeInput(document.getElementById(`edit-resources-${eventId}`).value, 2000),
+                    organizer_notes: sanitizeInput(document.getElementById(`edit-organizer-notes-${eventId}`).value, 2000),
+                    contact_email: sanitizeEmail(document.getElementById(`edit-contact-email-${eventId}`).value),
                     max_attendees: document.getElementById(`edit-max-attendees-${eventId}`).value ? 
                                   parseInt(document.getElementById(`edit-max-attendees-${eventId}`).value) : null
                 };
 
                 // Handle location based on event type
-                const locationValue = document.getElementById(`edit-location-${eventId}`).value.trim();
-                if (event.event_type === 'online') {
-                    updateData.meeting_link = locationValue;
+                if (state.eventType === 'online') {
+                    const meetingLinkInput = document.getElementById(`edit-meeting-link-${eventId}`);
+                    if (meetingLinkInput) {
+                        updateData.meeting_link = sanitizeURL(meetingLinkInput.value);
+                    }
                 } else {
-                    updateData.location = locationValue;
+                    const physicalAddressInput = document.getElementById(`edit-physical-address-${eventId}`);
+                    if (physicalAddressInput) {
+                        updateData.location = sanitizeInput(physicalAddressInput.value, 500);
+                    }
+                }
+
+                // Collect selected topics
+                const topicCheckboxes = document.querySelectorAll(`#edit-topics-${eventId} input[type="checkbox"]:checked`);
+                const topics = Array.from(topicCheckboxes).map(cb => cb.value);
+                if (topics.length > 0) {
+                    updateData.topics = topics;
                 }
 
                 // Validate required fields
@@ -2200,6 +2416,12 @@
             const btn = modal.querySelector('#confirmDeleteBtn');
             
             input.addEventListener('input', function() {
+                // Sanitize the input to prevent injection
+                const sanitizedValue = sanitizeInput(this.value, 10);
+                if (sanitizedValue !== this.value) {
+                    this.value = sanitizedValue;
+                }
+                
                 if (this.value === 'DELETE') {
                     btn.disabled = false;
                     btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #dc3545; color: white; cursor: pointer;';
