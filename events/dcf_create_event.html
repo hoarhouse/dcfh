@@ -888,8 +888,8 @@
         }
 
         .step-validation-summary {
-            background: #fee2e2;
-            border: 1px solid #ef4444;
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
@@ -901,7 +901,7 @@
         }
 
         .step-validation-summary h4 {
-            color: #ef4444;
+            color: #6b7280;
             margin-bottom: 0.5rem;
             font-size: 1rem;
         }
@@ -999,7 +999,7 @@
                 <p class="step-subtitle">Tell us about your event and who can attend</p>
             </div>
             <div class="step-validation-summary" id="step1-validation-summary">
-                <h4>⚠️ Please complete all required fields:</h4>
+                <h4>Please complete the following fields to continue:</h4>
                 <ul id="step1-errors"></ul>
             </div>
             <form id="basicForm">
@@ -1747,29 +1747,42 @@
                 errorMessage = isValid ? '' : 'Please make a selection';
             }
             
-            // Update visual feedback
+            // Gentle visual feedback - no aggressive red styling
             if (group) {
-                if (isValid) {
-                    group.classList.add('field-valid');
-                    group.classList.remove('field-invalid');
-                } else if (value !== '') {
-                    group.classList.add('field-invalid');
-                    group.classList.remove('field-valid');
-                } else {
-                    group.classList.remove('field-valid', 'field-invalid');
-                }
+                // Remove any validation classes - keep fields neutral
+                group.classList.remove('field-valid', 'field-invalid');
             }
             
-            if (icon) {
-                if (isValid) {
-                    icon.innerHTML = '✓';
-                    icon.className = 'validation-icon valid';
-                } else if (value !== '') {
-                    icon.innerHTML = '✗';
-                    icon.className = 'validation-icon invalid';
-                } else {
-                    icon.innerHTML = '';
+            // Add or remove gentle validation message
+            let messageEl = document.getElementById(fieldId + '-gentle-message');
+            
+            if (!isValid && value !== '') {
+                // Show gentle guidance message
+                if (!messageEl) {
+                    messageEl = document.createElement('div');
+                    messageEl.id = fieldId + '-gentle-message';
+                    messageEl.className = 'gentle-validation-message';
+                    group.appendChild(messageEl);
                 }
+                
+                // Craft gentle, helpful messages
+                if (fieldId === 'eventTitle' && value.length < 15) {
+                    messageEl.textContent = `Please add ${15 - value.length} more character${15 - value.length !== 1 ? 's' : ''} (minimum 15)`;
+                } else if (fieldId === 'briefDescription' && value.length < 25) {
+                    messageEl.textContent = `Please add ${25 - value.length} more character${25 - value.length !== 1 ? 's' : ''} (minimum 25)`;
+                } else if (fieldId === 'fullDescription' && value.length < 100) {
+                    messageEl.textContent = `Please add ${100 - value.length} more character${100 - value.length !== 1 ? 's' : ''} (minimum 100)`;
+                } else {
+                    messageEl.textContent = errorMessage;
+                }
+            } else if (messageEl) {
+                // Remove message when field is valid or empty
+                messageEl.remove();
+            }
+            
+            // No validation icons - too aggressive
+            if (icon) {
+                icon.innerHTML = '';
             }
             
             return isValid;
