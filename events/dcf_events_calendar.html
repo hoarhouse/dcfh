@@ -1146,21 +1146,26 @@
                     .select('*')
                     .eq('status', 'active')
                     .order('event_date', { ascending: true })
-                    .then(async ({data, error}) => {
+                    .then(({data, error}) => {
                         if (error) {
                             console.error('Error loading events:', error);
                             showEmptyState();
-                        } else {
-                            console.log('Events loaded:', data?.length || 0);
-                            // Check user registrations and add status
-                            const eventsWithStatus = await checkUserRegistrations(data || []);
-                            allEventsCache = eventsWithStatus;
-                            displayEvents(eventsWithStatus);
-                            updateTabCounts();
+                            return;
                         }
+                        
+                        const events = data || [];
+                        console.log('Loaded events:', events.length);
+                        
+                        checkUserRegistrations(events).then(eventsWithRegistrations => {
+                            // Cache all events
+                            allEventsCache = eventsWithRegistrations;
+                            
+                            // Apply current filter and display
+                            filterAndDisplayEvents(currentEventFilter);
+                        });
                     })
                     .catch(error => {
-                        console.error('Fatal error loading events:', error);
+                        console.error('Error loading events:', error);
                         showEmptyState();
                     });
             } else if (loadEventsAttempts < maxLoadEventsAttempts) {
