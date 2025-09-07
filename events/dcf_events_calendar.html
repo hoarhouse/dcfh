@@ -1017,7 +1017,11 @@
         }
         
         function filterAndDisplayEvents(filterType) {
+            console.log('🔍 DIAGNOSTIC: filterAndDisplayEvents called with:', filterType);
+            console.log('🔍 DIAGNOSTIC: allEventsCache length:', allEventsCache.length);
+            
             if (allEventsCache.length === 0) {
+                console.log('🔍 DIAGNOSTIC: No cached events, calling loadEventsFromServer');
                 // If no events cached, reload from server
                 // Call loadEventsFromServer instead of the undefined loadEvents
                 loadEventsFromServer();
@@ -1028,18 +1032,25 @@
             
             if (filterType === 'my') {
                 const currentUser = window.getCurrentUser();
+                console.log('🔍 DIAGNOSTIC: Current user:', currentUser);
                 if (currentUser) {
                     filteredEvents = allEventsCache.filter(event => isEventOwner(event));
+                    console.log('🔍 DIAGNOSTIC: Filtered to my events:', filteredEvents.length);
                 } else {
                     // User not logged in, show empty state
                     filteredEvents = [];
+                    console.log('🔍 DIAGNOSTIC: No user, showing empty my events');
                 }
             }
             
             // Display the filtered events
+            console.log('🔍 DIAGNOSTIC: Calling displayEvents with:', filteredEvents.length, 'events');
             displayEvents(filteredEvents);
+            console.log('🔍 DIAGNOSTIC: Calling displayUpcomingEvents');
             displayUpcomingEvents(filteredEvents);
+            console.log('🔍 DIAGNOSTIC: Calling updateStatsDisplay');
             updateStatsDisplay(filteredEvents);
+            console.log('🔍 DIAGNOSTIC: Calling updateTabCounts');
             updateTabCounts();
             
             // Show custom empty state for My Events if needed
@@ -1134,9 +1145,12 @@
         
         async function loadEventsFromServer() {
             loadEventsAttempts++;
+            console.log('🔍 DIAGNOSTIC: loadEventsFromServer called, attempt:', loadEventsAttempts);
             
             // Use unified auth client
             const supabase = window.dcfSupabase;
+            console.log('🔍 DIAGNOSTIC: Supabase client status:', supabase ? 'exists' : 'undefined');
+            console.log('🔍 DIAGNOSTIC: Supabase.from function:', typeof supabase?.from);
             
             if (supabase && typeof supabase.from === 'function') {
                 console.log('Loading events with Supabase client...');
@@ -1147,6 +1161,10 @@
                     .eq('status', 'active')
                     .order('event_date', { ascending: true })
                     .then(({data, error}) => {
+                        console.log('🔍 DIAGNOSTIC: Supabase response received');
+                        console.log('🔍 DIAGNOSTIC: Error status:', error ? error : 'no error');
+                        console.log('🔍 DIAGNOSTIC: Data received:', data ? `${data.length} events` : 'no data');
+                        
                         if (error) {
                             console.error('Error loading events:', error);
                             showEmptyState();
@@ -1155,12 +1173,16 @@
                         
                         const events = data || [];
                         console.log('Loaded events:', events.length);
+                        console.log('🔍 DIAGNOSTIC: Sample event data:', events[0]);
                         
                         checkUserRegistrations(events).then(eventsWithRegistrations => {
+                            console.log('🔍 DIAGNOSTIC: After checkUserRegistrations, events:', eventsWithRegistrations.length);
                             // Cache all events
                             allEventsCache = eventsWithRegistrations;
+                            console.log('🔍 DIAGNOSTIC: allEventsCache updated with:', allEventsCache.length, 'events');
                             
                             // Apply current filter and display
+                            console.log('🔍 DIAGNOSTIC: Calling filterAndDisplayEvents with filter:', currentEventFilter);
                             filterAndDisplayEvents(currentEventFilter);
                         });
                     })
@@ -1178,6 +1200,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DIAGNOSTIC: DOMContentLoaded event fired');
             console.log('🔍 Events Calendar page loaded');
             
             // SECURITY: Initialize input sanitization
@@ -1221,7 +1244,11 @@
             }
             
             // Start loading after a short delay using the global function
-            setTimeout(loadEventsFromServer, 1000);
+            console.log('🔍 DIAGNOSTIC: Scheduling loadEventsFromServer to run in 1000ms');
+            setTimeout(() => {
+                console.log('🔍 DIAGNOSTIC: Timeout triggered, calling loadEventsFromServer now');
+                loadEventsFromServer();
+            }, 1000);
         });
 
         async function checkUserRegistrations(events) {
@@ -1256,9 +1283,12 @@
         }
 
         async function displayEvents(events) {
+            console.log('🔍 DIAGNOSTIC: displayEvents called with', events.length, 'events');
             const container = document.getElementById('eventsContainer');
+            console.log('🔍 DIAGNOSTIC: eventsContainer element:', container ? 'found' : 'NOT FOUND!');
             
             if (events.length === 0) {
+                console.log('🔍 DIAGNOSTIC: No events to display, showing empty state');
                 container.innerHTML = `
                     <div class="empty-state">
                         <h3>No Events Yet</h3>
@@ -1268,6 +1298,7 @@
                 `;
                 return;
             }
+            console.log('🔍 DIAGNOSTIC: Proceeding to render', events.length, 'events');
 
             container.innerHTML = events.map(event => {
                 // Debug: Log event processing
