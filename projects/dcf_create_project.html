@@ -441,16 +441,53 @@
             border-color: #333;
         }
 
-        .word-counter {
-            font-size: 0.8rem;
-            color: #666;
+        /* Character and word counter styles */
+        .word-counter, .char-counter {
+            font-size: 0.9rem;
             margin-top: 0.5rem;
-            text-align: right;
+            text-align: left;
+            font-weight: normal;
+            color: #6b7280;
         }
 
-        .word-counter.limit-reached {
-            color: #dc3545;
-            font-weight: 600;
+        .word-counter.valid, .char-counter.valid {
+            color: #6b7280; /* Neutral gray when valid */
+        }
+
+        .word-counter.warning, .char-counter.warning {
+            color: #ffa726; /* Soft orange when at limit */
+        }
+
+        .word-counter.invalid, .char-counter.invalid {
+            color: #ef9a9a; /* Soft red when below minimum or over limit */
+        }
+
+        /* Validation message styles */
+        .validation-message {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            color: #ef9a9a; /* Soft red for errors */
+            font-weight: normal;
+        }
+
+        /* Field error styles */
+        .field-error {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            color: #ef9a9a; /* Soft red */
+        }
+
+        /* Remove aggressive input error styling */
+        .form-input.error,
+        .textarea.error,
+        .form-select.error {
+            border-color: #ef9a9a; /* Soft red instead of bright red */
+        }
+
+        .form-input:focus.error,
+        .textarea:focus.error,
+        .form-select:focus.error {
+            border-color: #ef9a9a; /* Keep soft red on focus */
         }
 
         .file-upload {
@@ -777,7 +814,8 @@
             <form id="basicForm">
                 <div class="form-group">
                     <label class="form-label" for="projectTitle">Project Title *</label>
-                    <input type="text" id="projectTitle" name="projectTitle" class="form-input" placeholder="Enter a clear, descriptive title for your project" required>
+                    <input type="text" id="projectTitle" name="projectTitle" class="form-input" placeholder="Enter a clear, descriptive title for your project" required maxlength="100">
+                    <div id="projectTitleCount" class="char-counter">0/100 characters</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="projectBriefDescription">Brief Description *</label>
@@ -1188,7 +1226,9 @@
             sanitized = sanitized.replace(/\s+/g, ' ').trim();
             
             // Log if content was sanitized (for security monitoring)
-            if (sanitized.length !== originalLength || sanitized !== input) {
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
                 console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
                 console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
             }
