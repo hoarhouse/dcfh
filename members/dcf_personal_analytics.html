@@ -1409,6 +1409,121 @@
     </main>
 
     <script>
+        // Comprehensive sanitization function
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
+            
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+            
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
+            
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
+            
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
+            
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
+            
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
+            
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
+            
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
+            
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
+            
+            // Clean up any remaining suspicious patterns
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            
+            return sanitized;
+        }
+
+        // Email-specific sanitization
+        function sanitizeEmail(email) {
+            if (!email) return '';
+            
+            // Basic email sanitization
+            email = String(email).trim().toLowerCase();
+            
+            // Remove any HTML tags
+            email = email.replace(/<[^>]*>/g, '');
+            
+            // Remove dangerous characters but keep valid email chars
+            email = email.replace(/[^a-z0-9@.\-_+]/g, '');
+            
+            // Validate basic email format
+            const emailRegex = /^[a-z0-9.\-_+]+@[a-z0-9.\-]+\.[a-z]{2,}$/;
+            if (!emailRegex.test(email)) {
+                return '';
+            }
+            
+            // Limit length
+            return email.substring(0, 254);
+        }
+
+        // Real-time input sanitization
+        function applyRealTimeProtection(element, maxLength = 1000) {
+            if (!element) return;
+            
+            element.addEventListener('input', function(e) {
+                const originalValue = e.target.value;
+                const sanitized = sanitizeInput(originalValue, maxLength);
+                if (originalValue !== sanitized) {
+                    e.target.value = sanitized;
+                    console.warn('Input sanitized to prevent potential security issues');
+                }
+            });
+            
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const sanitized = sanitizeInput(pastedText, maxLength);
+                
+                // Insert sanitized text at cursor position
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const currentValue = e.target.value;
+                const newValue = currentValue.substring(0, start) + sanitized + currentValue.substring(end);
+                e.target.value = sanitizeInput(newValue, maxLength);
+                
+                // Restore cursor position
+                const newCursorPos = start + sanitized.length;
+                e.target.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
+        // Initialize input sanitization
+        function initializeInputSanitization() {
+            // Personal analytics page has no traditional input fields
+            // This function is included for consistency and future extensibility
+            console.log('Input sanitization initialized for personal analytics page');
+        }
+
         let currentTimeRange = '30d';
         let currentChart = 'activity';
       
@@ -2183,7 +2298,8 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function() {
-           
+            // Initialize input sanitization
+            initializeInputSanitization();
             
             // Let master script handle auth - remove this check
 
