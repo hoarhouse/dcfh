@@ -2262,8 +2262,17 @@
             e.preventDefault();
             
             const recipientId = document.getElementById('recipientSearch').dataset.memberId;
-            const subject = document.getElementById('messageSubject').value;
-            const messageText = document.getElementById('newMessageText').value;
+            const rawSubject = document.getElementById('messageSubject').value;
+            const rawMessageText = document.getElementById('newMessageText').value;
+            
+            // SECURITY: Sanitize all inputs before processing
+            const subject = sanitizeMessage(rawSubject, 200);
+            const messageText = sanitizeMessage(rawMessageText, 5000);
+            
+            // Log if sanitization was needed
+            if (subject !== rawSubject || messageText !== rawMessageText) {
+                console.warn('⚠️ Security: New message form input sanitization was applied');
+            }
             
             if (!recipientId || !messageText.trim()) {
                 showAlert('Please select a recipient and enter a message', 'warning', 'Message Required');
