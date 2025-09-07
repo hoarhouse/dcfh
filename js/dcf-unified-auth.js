@@ -2770,7 +2770,7 @@ function addAlertCSS() {
             }
             
             .dcf-alert[data-type="error"] .dcf-alert-header {
-                background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+                background: linear-gradient(135deg, #ffebee, #ffcdd2);
             }
             
             .dcf-alert[data-type="info"] .dcf-alert-header {
