@@ -1718,6 +1718,86 @@
             setupTagsInput('focusInput', 'focusContainer');
         }
 
+        // Character count and validation functions
+        function updateCharCount(fieldId, maxLength, minLength = 0) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(fieldId + 'Count');
+            
+            if (field && counter) {
+                let currentLength = field.value.length;
+                
+                // Enforce hard limit
+                if (currentLength > maxLength) {
+                    field.value = field.value.substring(0, maxLength);
+                    currentLength = maxLength;
+                }
+                
+                let displayText = `${currentLength}/${maxLength} characters`;
+                
+                if (minLength > 0 && currentLength < minLength) {
+                    displayText += ` (minimum ${minLength})`;
+                    counter.className = 'char-counter invalid';
+                    counter.style.color = '#ef9a9a'; // Soft red
+                } else if (currentLength === maxLength) {
+                    counter.className = 'char-counter warning';
+                    counter.style.color = '#ffa726'; // Soft orange
+                } else {
+                    counter.className = 'char-counter valid';
+                    counter.style.color = '#6b7280'; // Neutral gray
+                }
+                
+                counter.textContent = displayText;
+            }
+        }
+        
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.id = field.id + '-error';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+            field.classList.add('error');
+        }
+        
+        function clearFieldError(field) {
+            const existingError = document.getElementById(field.id + '-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            field.classList.remove('error');
+        }
+        
+        // Initialize form character counting
+        function initializeFormValidation() {
+            // Bio field with character counter
+            const bioField = document.getElementById('bio');
+            if (bioField) {
+                // Initialize character counter
+                updateCharCount('bio', 500);
+                
+                // Add real-time character counting
+                bioField.addEventListener('input', () => {
+                    updateCharCount('bio', 500);
+                });
+                
+                // Add validation on blur only
+                bioField.addEventListener('blur', () => {
+                    const value = bioField.value.trim();
+                    if (value.length > 500) {
+                        showFieldError(bioField, 'Maximum 500 characters allowed');
+                    } else {
+                        clearFieldError(bioField);
+                    }
+                });
+                
+                // Remove validation on focus
+                bioField.addEventListener('focus', () => {
+                    clearFieldError(bioField);
+                });
+            }
+        }
+        
         // Setup tags input functionality
         function setupTagsInput(inputId, containerId) {
             const input = document.getElementById(inputId);
