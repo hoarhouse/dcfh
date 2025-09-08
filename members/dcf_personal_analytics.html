@@ -1834,15 +1834,20 @@
                     return;
                 }
                 
-                // Get user's interactions (likes, bookmarks, shares by the user)
+                // Get all user's interactions for Community Interactions metric
                 const { data: userInteractions, error: intError } = await supabase
                     .from('universal_analytics')
                     .select('interaction_type')
                     .eq('user_id', currentUser.id)
-                    .gte('created_at', startDate.toISOString())
-                    .in('interaction_type', ['like', 'bookmark', 'share']);
+                    .gte('created_at', startDate.toISOString());
                 
-                const engagementCount = userInteractions ? userInteractions.length : 0;
+                // Count all interactions for Community Interactions card
+                const totalInteractions = userInteractions ? userInteractions.length : 0;
+                
+                // Count specific types for engagement calculation
+                const engagementInteractions = userInteractions ? 
+                    userInteractions.filter(i => ['like', 'bookmark', 'share', 'comment'].includes(i.interaction_type)) : [];
+                const engagementCount = engagementInteractions.length;
                 
                 // Get total reach (views of user's content)
                 // First get user's content IDs for resources
