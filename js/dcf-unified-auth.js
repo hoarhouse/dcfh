@@ -558,7 +558,17 @@ function populateTopNavigation() {
             { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
             { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
             { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
-            { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter' }
+            { 
+                href: basePath + 'initiatives/initiatives_home.html', 
+                text: 'Initiatives',
+                dropdown: true,
+                submenu: [
+                    { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace', id: 'peace' },
+                    { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education', id: 'education' },
+                    { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health', id: 'health' },
+                    { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research', id: 'research' }
+                ]
+            }
         ];
     }
     
@@ -567,14 +577,130 @@ function populateTopNavigation() {
     console.log('DEBUG TOP NAV - navItems:', navItems);
     console.log('DEBUG TOP NAV - isLoggedIn:', window.dcfUser?.isLoggedIn);
     
+    // Detect current initiative page
+    const currentPath = window.location.pathname;
+    const isInitiativePage = currentPath.includes('/initiatives/');
+    let currentInitiative = null;
+    
+    if (isInitiativePage) {
+        if (currentPath.includes('/peace/')) currentInitiative = 'peace';
+        else if (currentPath.includes('/education/')) currentInitiative = 'education';
+        else if (currentPath.includes('/health/')) currentInitiative = 'health';
+        else if (currentPath.includes('/research/')) currentInitiative = 'research';
+    }
+    
     const filteredNavItems = navItems.filter(item => item.href !== currentPage);
     
     filteredNavItems.forEach(item => {
         const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = item.href;
-        a.textContent = item.text;
-        li.appendChild(a);
+        
+        if (item.dropdown && item.submenu) {
+            // Create dropdown structure for Initiatives
+            li.className = 'nav-dropdown';
+            li.style.position = 'relative';
+            
+            const a = document.createElement('a');
+            a.href = item.href;
+            a.textContent = item.text;
+            a.className = 'dropdown-toggle';
+            
+            // Add dropdown arrow
+            const arrow = document.createElement('span');
+            arrow.textContent = ' ▼';
+            arrow.style.fontSize = '0.7em';
+            arrow.style.marginLeft = '3px';
+            a.appendChild(arrow);
+            
+            li.appendChild(a);
+            
+            // Create submenu
+            const submenu = document.createElement('ul');
+            submenu.className = 'nav-submenu';
+            submenu.style.cssText = `
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: white;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                min-width: 180px;
+                z-index: 1000;
+                padding: 0.5rem 0;
+                margin-top: 0.5rem;
+                list-style: none;
+            `;
+            
+            // Filter submenu items if on an initiative page
+            const submenuItems = currentInitiative 
+                ? item.submenu.filter(subItem => subItem.id !== currentInitiative)
+                : item.submenu;
+            
+            submenuItems.forEach(subItem => {
+                const subLi = document.createElement('li');
+                subLi.style.margin = '0';
+                
+                const subA = document.createElement('a');
+                subA.href = subItem.href;
+                subA.textContent = subItem.text;
+                subA.style.cssText = `
+                    display: block;
+                    padding: 0.5rem 1rem;
+                    color: #666;
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    font-size: 0.9rem;
+                `;
+                
+                // Add hover effect
+                subA.addEventListener('mouseenter', () => {
+                    subA.style.backgroundColor = '#f8f9fa';
+                    subA.style.color = '#333';
+                });
+                subA.addEventListener('mouseleave', () => {
+                    subA.style.backgroundColor = 'transparent';
+                    subA.style.color = '#666';
+                });
+                
+                subLi.appendChild(subA);
+                submenu.appendChild(subLi);
+            });
+            
+            li.appendChild(submenu);
+            
+            // Handle dropdown hover
+            let hoverTimeout;
+            
+            li.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                submenu.style.display = 'block';
+            });
+            
+            li.addEventListener('mouseleave', () => {
+                hoverTimeout = setTimeout(() => {
+                    submenu.style.display = 'none';
+                }, 100);
+            });
+            
+            // Handle click on mobile
+            a.addEventListener('click', (e) => {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    e.preventDefault();
+                    const isOpen = submenu.style.display === 'block';
+                    submenu.style.display = isOpen ? 'none' : 'block';
+                }
+            });
+            
+        } else {
+            // Regular menu item
+            const a = document.createElement('a');
+            a.href = item.href;
+            a.textContent = item.text;
+            li.appendChild(a);
+        }
+        
         navMenu.appendChild(li);
     });
 }
