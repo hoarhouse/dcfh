@@ -212,13 +212,13 @@
         }
 
         .logout-btn {
-            color: #dc3545 !important;
+            color: #ef9a9a !important;
             font-weight: 500;
         }
 
         .logout-btn:hover {
             background: #fee !important;
-            color: #c82333 !important;
+            color: #ef9a9a !important;
         }
 
         .dropdown-icon {
@@ -302,12 +302,12 @@
         }
 
         .btn-danger {
-            background: #dc3545;
+            background: #ef9a9a;
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c82333;
+            background: #ef9a9a;
         }
 
         .btn-small {
@@ -795,7 +795,7 @@
         }
 
         .remove-current-image:hover {
-            background: #dc3545;
+            background: #ef9a9a;
         }
 
         .no-images {
@@ -898,7 +898,7 @@
         }
 
         .remove-file:hover {
-            background: #dc3545;
+            background: #ef9a9a;
         }
 
         .edit-modal-actions {
@@ -977,7 +977,7 @@
 
         .form-label.required::after {
             content: " *";
-            color: #dc3545;
+            color: #ef9a9a;
         }
 
         .form-input {
@@ -1318,7 +1318,17 @@
             sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
             
             // Clean up any remaining suspicious patterns
-            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
+            
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
+            
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
+                console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
+            }
             
             return sanitized;
         }
@@ -1369,16 +1379,21 @@
             }
         }
 
-        // Real-time input sanitization
+        // Blur-only input sanitization
         function applyRealTimeProtection(element, maxLength = 1000) {
             if (!element) return;
             
-            element.addEventListener('input', function(e) {
+            // Apply sanitization on blur only
+            element.addEventListener('blur', function(e) {
                 const originalValue = e.target.value;
                 const sanitized = sanitizeInput(originalValue, maxLength);
                 if (originalValue !== sanitized) {
-                    e.target.value = sanitized;
-                    console.warn('Input sanitized to prevent potential security issues');
+                    // Only warn if something other than whitespace normalization occurred
+                    const normalizedOriginal = originalValue.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedOriginal) {
+                        e.target.value = sanitized;
+                        console.warn('Input sanitized to prevent potential security issues');
+                    }
                 }
             });
             
@@ -2399,7 +2414,7 @@
             
             modal.innerHTML = `
                 <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
-                    <h3 style="color: #dc3545; margin-bottom: 1rem;">⚠️ Delete Event</h3>
+                    <h3 style="color: #ef9a9a; margin-bottom: 1rem;">⚠️ Delete Event</h3>
                     <p style="margin-bottom: 1rem;">This will permanently delete "<strong>${event.title}</strong>" and all registration data.</p>
                     <p style="margin-bottom: 1.5rem; color: #666;">Type <strong>DELETE</strong> to confirm:</p>
                     <input type="text" id="deleteConfirmInput" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px; margin-bottom: 1.5rem;" placeholder="Type DELETE here">
@@ -2424,7 +2439,7 @@
                 
                 if (this.value === 'DELETE') {
                     btn.disabled = false;
-                    btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #dc3545; color: white; cursor: pointer;';
+                    btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #ef9a9a; color: white; cursor: pointer;';
                 } else {
                     btn.disabled = true;
                     btn.style.cssText = 'padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #e5e5e5; color: #999; cursor: not-allowed;';
@@ -2550,7 +2565,7 @@
             } catch (error) {
                 console.error('Error loading registrations:', error);
                 document.getElementById(`registration-list-${eventId}`).innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: #dc3545;">
+                    <div style="text-align: center; padding: 2rem; color: #ef9a9a;">
                         Failed to load registrations
                     </div>
                 `;
