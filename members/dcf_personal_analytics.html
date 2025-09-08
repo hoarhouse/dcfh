@@ -1123,6 +1123,79 @@
 
 
 <body>
+    <!-- Export Modal -->
+    <div id="exportModal" class="export-modal">
+        <div class="export-modal-content">
+            <div class="export-modal-header">
+                <h2 class="export-modal-title">Export Analytics Report</h2>
+                <p class="export-modal-subtitle">Choose your export format and customize the report</p>
+            </div>
+            
+            <div id="exportOptions" class="export-options">
+                <div class="export-option selected" onclick="selectExportFormat('pdf')" data-format="pdf">
+                    <div class="export-option-header">
+                        <span class="export-option-icon">📄</span>
+                        <span class="export-option-title">PDF Report</span>
+                    </div>
+                    <div class="export-option-description">
+                        Comprehensive report with charts, metrics, and insights
+                    </div>
+                </div>
+                
+                <div class="export-option" onclick="selectExportFormat('csv')" data-format="csv">
+                    <div class="export-option-header">
+                        <span class="export-option-icon">📊</span>
+                        <span class="export-option-title">CSV Data</span>
+                    </div>
+                    <div class="export-option-description">
+                        Raw data export for spreadsheet analysis
+                    </div>
+                </div>
+            </div>
+            
+            <div class="export-settings">
+                <div class="export-setting-group">
+                    <label class="export-setting-label">Date Range</label>
+                    <select id="exportDateRange" class="export-setting-select">
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d" selected>Last 30 Days</option>
+                        <option value="90d">Last 90 Days</option>
+                        <option value="1y">Last Year</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                
+                <div class="export-setting-group" id="pdfOptionsGroup">
+                    <label class="export-setting-label">Include in Report</label>
+                    <div style="margin-top: 0.5rem;">
+                        <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            <input type="checkbox" id="includeCharts" checked style="margin-right: 0.5rem;">
+                            <span style="color: #666; font-size: 0.9rem;">Charts & Visualizations</span>
+                        </label>
+                        <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            <input type="checkbox" id="includeActivity" checked style="margin-right: 0.5rem;">
+                            <span style="color: #666; font-size: 0.9rem;">Recent Activity Timeline</span>
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="checkbox" id="includeBreakdowns" checked style="margin-right: 0.5rem;">
+                            <span style="color: #666; font-size: 0.9rem;">Detailed Breakdowns</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="exportProgress" class="export-progress">
+                <div class="export-progress-spinner"></div>
+                <p class="export-progress-text">Generating your report...</p>
+            </div>
+            
+            <div class="export-modal-actions">
+                <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="executeExport()">Export</button>
+            </div>
+        </div>
+    </div>
+    
     <header class="header">
         <nav class="nav-container">
             <a href="../index.html" class="logo">
@@ -2475,8 +2548,322 @@
             window.location.href = 'dcf_members_directory.html';
         }
 
+        // Export functionality variables
+        let selectedExportFormat = 'pdf';
+        let currentMetricsData = {};
+        
         function exportData() {
-            showAlert('Comprehensive analytics report export would be generated here.', 'info', 'Export Report');
+            // Open the export modal
+            document.getElementById('exportModal').classList.add('active');
+            // Reset to PDF as default
+            selectExportFormat('pdf');
+        }
+        
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+        
+        function selectExportFormat(format) {
+            selectedExportFormat = format;
+            
+            // Update UI selection
+            document.querySelectorAll('.export-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`[data-format="${format}"]`).classList.add('selected');
+            
+            // Show/hide PDF-specific options
+            const pdfOptions = document.getElementById('pdfOptionsGroup');
+            if (format === 'pdf') {
+                pdfOptions.style.display = 'block';
+            } else {
+                pdfOptions.style.display = 'none';
+            }
+        }
+        
+        async function executeExport() {
+            const dateRange = document.getElementById('exportDateRange').value;
+            
+            // Show progress
+            document.getElementById('exportProgress').classList.add('active');
+            document.getElementById('exportOptions').style.display = 'none';
+            document.querySelector('.export-settings').style.display = 'none';
+            document.querySelector('.export-modal-actions').style.display = 'none';
+            
+            try {
+                // Fetch metrics for the selected date range
+                await fetchMetricsForExport(dateRange);
+                
+                if (selectedExportFormat === 'pdf') {
+                    await generatePDFReport();
+                } else {
+                    generateCSVReport();
+                }
+                
+                // Close modal after successful export
+                setTimeout(() => {
+                    closeExportModal();
+                    // Reset modal state
+                    document.getElementById('exportProgress').classList.remove('active');
+                    document.getElementById('exportOptions').style.display = 'block';
+                    document.querySelector('.export-settings').style.display = 'block';
+                    document.querySelector('.export-modal-actions').style.display = 'flex';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Export failed:', error);
+                showAlert('Failed to generate export. Please try again.', 'error', 'Export Error');
+                closeExportModal();
+            }
+        }
+        
+        async function fetchMetricsForExport(dateRange) {
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                currentMetricsData = {
+                    user: { name: 'Guest User', email: 'guest@example.com' },
+                    dateRange: dateRange,
+                    exportDate: new Date().toLocaleDateString(),
+                    metrics: {
+                        projects: 0,
+                        interactions: 0,
+                        resources: 0,
+                        connections: 0,
+                        impact: 0,
+                        events: 0
+                    }
+                };
+                return;
+            }
+            
+            // Calculate date range
+            const endDate = new Date();
+            const startDate = new Date();
+            switch(dateRange) {
+                case '7d': startDate.setDate(endDate.getDate() - 7); break;
+                case '30d': startDate.setDate(endDate.getDate() - 30); break;
+                case '90d': startDate.setDate(endDate.getDate() - 90); break;
+                case '1y': startDate.setFullYear(endDate.getFullYear() - 1); break;
+                case 'all': startDate.setFullYear(2020); break; // Set to DCF founding year
+            }
+            
+            // Get current metric values from the page
+            currentMetricsData = {
+                user: {
+                    name: currentUser.full_name || currentUser.email,
+                    email: currentUser.email
+                },
+                dateRange: dateRange,
+                startDate: startDate.toLocaleDateString(),
+                endDate: endDate.toLocaleDateString(),
+                exportDate: new Date().toLocaleDateString(),
+                exportTime: new Date().toLocaleTimeString(),
+                metrics: {
+                    projects: parseInt(document.getElementById('metric-projects')?.textContent || 0),
+                    interactions: parseInt(document.getElementById('metric-interactions')?.textContent || 0),
+                    resources: parseInt(document.getElementById('metric-resources')?.textContent || 0),
+                    connections: parseInt(document.getElementById('metric-connections')?.textContent || 0),
+                    impact: parseInt(document.getElementById('metric-impact')?.textContent || 0),
+                    events: parseInt(document.getElementById('metric-events')?.textContent || 0)
+                },
+                details: {
+                    resourceViews: parseInt(document.getElementById('detail-resource-views')?.textContent || 0),
+                    profileViews: parseInt(document.getElementById('detail-profile-views')?.textContent || 0),
+                    citations: parseInt(document.getElementById('detail-citations')?.textContent || 0)
+                }
+            };
+        }
+        
+        async function generatePDFReport() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // Set up colors
+            const primaryColor = [0, 0, 0];
+            const secondaryColor = [102, 102, 102];
+            const accentColor = [239, 154, 154]; // Soft red
+            
+            // Add DCF branding header
+            pdf.setFillColor(...primaryColor);
+            pdf.rect(0, 0, 210, 40, 'F');
+            
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(24);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('DCF Hungary', 15, 20);
+            
+            pdf.setFontSize(14);
+            pdf.setFont(undefined, 'normal');
+            pdf.text('Personal Analytics Report', 15, 30);
+            
+            // User info and date
+            pdf.setTextColor(...primaryColor);
+            pdf.setFontSize(12);
+            pdf.text(`User: ${currentMetricsData.user.name}`, 15, 55);
+            pdf.text(`Email: ${currentMetricsData.user.email}`, 15, 62);
+            pdf.text(`Report Period: ${currentMetricsData.startDate} - ${currentMetricsData.endDate}`, 15, 69);
+            pdf.text(`Generated: ${currentMetricsData.exportDate} at ${currentMetricsData.exportTime}`, 15, 76);
+            
+            // Divider
+            pdf.setDrawColor(...secondaryColor);
+            pdf.line(15, 82, 195, 82);
+            
+            // Key Metrics Section
+            pdf.setFontSize(16);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Key Performance Metrics', 15, 95);
+            
+            // Create metrics table
+            const metricsData = [
+                ['Active Projects', currentMetricsData.metrics.projects.toString()],
+                ['Community Interactions', currentMetricsData.metrics.interactions.toString()],
+                ['Resources Shared', currentMetricsData.metrics.resources.toString()],
+                ['Professional Connections', currentMetricsData.metrics.connections.toString()],
+                ['Total Reach', currentMetricsData.metrics.impact.toString()],
+                ['Events Attended', currentMetricsData.metrics.events.toString()]
+            ];
+            
+            pdf.autoTable({
+                startY: 100,
+                head: [['Metric', 'Value']],
+                body: metricsData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: [255, 255, 255]
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 249, 250]
+                },
+                margin: { left: 15, right: 15 }
+            });
+            
+            // Add chart if selected
+            if (document.getElementById('includeCharts').checked) {
+                const chartCanvas = document.getElementById('activityChart');
+                if (chartCanvas) {
+                    try {
+                        // Add new page for chart
+                        pdf.addPage();
+                        
+                        pdf.setFontSize(16);
+                        pdf.setFont(undefined, 'bold');
+                        pdf.text('Activity Trends', 15, 20);
+                        
+                        // Convert chart to image
+                        const chartImage = await html2canvas(chartCanvas, {
+                            backgroundColor: '#ffffff',
+                            scale: 2
+                        });
+                        
+                        const imgData = chartImage.toDataURL('image/png');
+                        // Add chart image to PDF
+                        pdf.addImage(imgData, 'PNG', 15, 30, 180, 90);
+                        
+                    } catch (error) {
+                        console.error('Could not add chart to PDF:', error);
+                    }
+                }
+            }
+            
+            // Add detailed breakdown if selected
+            if (document.getElementById('includeBreakdowns').checked) {
+                const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 140;
+                
+                if (finalY > 200) {
+                    pdf.addPage();
+                    var yPosition = 20;
+                } else {
+                    var yPosition = finalY + 20;
+                }
+                
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Detailed Breakdown', 15, yPosition);
+                
+                const breakdownData = [
+                    ['Resource Views', currentMetricsData.details.resourceViews.toString()],
+                    ['Profile Views', currentMetricsData.details.profileViews.toString()],
+                    ['Citations', currentMetricsData.details.citations.toString()]
+                ];
+                
+                pdf.autoTable({
+                    startY: yPosition + 5,
+                    head: [['Detail', 'Count']],
+                    body: breakdownData,
+                    theme: 'striped',
+                    headStyles: {
+                        fillColor: secondaryColor,
+                        textColor: [255, 255, 255]
+                    },
+                    margin: { left: 15, right: 15 }
+                });
+            }
+            
+            // Add footer
+            const pageCount = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(10);
+                pdf.setTextColor(...secondaryColor);
+                pdf.text(`Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+                pdf.text('© DCF Hungary - Confidential', 15, 285);
+            }
+            
+            // Save the PDF
+            pdf.save(`DCF_Analytics_Report_${currentMetricsData.exportDate.replace(/\//g, '-')}.pdf`);
+        }
+        
+        function generateCSVReport() {
+            // Prepare CSV data
+            const csvRows = [
+                ['DCF Hungary Personal Analytics Report'],
+                [],
+                ['User Information'],
+                ['Name', currentMetricsData.user.name],
+                ['Email', currentMetricsData.user.email],
+                ['Report Period', `${currentMetricsData.startDate} - ${currentMetricsData.endDate}`],
+                ['Generated', `${currentMetricsData.exportDate} ${currentMetricsData.exportTime}`],
+                [],
+                ['Key Metrics'],
+                ['Metric', 'Value'],
+                ['Active Projects', currentMetricsData.metrics.projects],
+                ['Community Interactions', currentMetricsData.metrics.interactions],
+                ['Resources Shared', currentMetricsData.metrics.resources],
+                ['Professional Connections', currentMetricsData.metrics.connections],
+                ['Total Reach', currentMetricsData.metrics.impact],
+                ['Events Attended', currentMetricsData.metrics.events],
+                [],
+                ['Detailed Breakdown'],
+                ['Resource Views', currentMetricsData.details.resourceViews],
+                ['Profile Views', currentMetricsData.details.profileViews],
+                ['Citations', currentMetricsData.details.citations]
+            ];
+            
+            // Convert to CSV string
+            const csvContent = csvRows.map(row => 
+                row.map(cell => {
+                    // Escape quotes and wrap in quotes if contains comma
+                    const cellStr = String(cell);
+                    if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                        return `"${cellStr.replace(/"/g, '""')}"`;
+                    }
+                    return cellStr;
+                }).join(',')
+            ).join('\n');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `DCF_Analytics_Data_${currentMetricsData.exportDate.replace(/\//g, '-')}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function exportReport(reportType) {
