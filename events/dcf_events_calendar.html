@@ -743,84 +743,64 @@
          * Comprehensive input sanitization function
          * Removes dangerous patterns, scripts, and injection attempts
          */
-        function sanitizeInput(input) {
-            if (typeof input !== 'string') {
-                return '';
-            }
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
             
-            // Store original length for logging
-            const originalLength = input.length;
+            // Convert to string and trim
+            let sanitized = String(input).trim();
             
-            // Step 1: Remove all HTML/XML tags including script tags
-            let sanitized = input.replace(/<\/?[^>]+(>|$)/gi, '');
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
             
-            // Step 2: Remove JavaScript event handlers
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
             sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
             sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
             
-            // Step 3: Remove javascript:, data:, vbscript: and other dangerous URL schemes
-            sanitized = sanitized.replace(/javascript\s*:/gi, '');
-            sanitized = sanitized.replace(/data\s*:/gi, '');
-            sanitized = sanitized.replace(/vbscript\s*:/gi, '');
-            sanitized = sanitized.replace(/about\s*:/gi, '');
-            sanitized = sanitized.replace(/chrome\s*:/gi, '');
-            sanitized = sanitized.replace(/file\s*:/gi, '');
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
             
-            // Step 4: Remove SQL injection patterns
-            const sqlPatterns = [
-                /(\b)(DROP|DELETE|INSERT|UPDATE|SELECT|UNION|CREATE|ALTER|EXEC|EXECUTE|SCRIPT|TRUNCATE)(\b)/gi,
-                /(--)|(\/\*[\s\S]*?\*\/)/g,  // SQL comments
-                /(\b)(OR|AND)(\b)\s*\d+\s*=\s*\d+/gi,  // OR 1=1 patterns
-                /(\b)(OR|AND)(\b)\s*['"][^'"]*['"]\s*=\s*['"][^'"]*['"]/gi,  // OR 'a'='a' patterns
-                /;.*(DROP|DELETE|INSERT|UPDATE|SELECT)/gi,  // Semicolon followed by SQL command
-                /\bWAITFOR\s+DELAY/gi,  // SQL Server delay attacks
-                /\bBENCHMARK\s*\(/gi,  // MySQL benchmark attacks
-                /\bSLEEP\s*\(/gi  // Sleep attacks
-            ];
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
             
-            sqlPatterns.forEach(pattern => {
-                sanitized = sanitized.replace(pattern, '');
-            });
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
             
-            // Step 5: Remove inline styles that could be malicious
-            sanitized = sanitized.replace(/style\s*=\s*["'][^"']*["']/gi, '');
-            sanitized = sanitized.replace(/style\s*=\s*[^\s>]*/gi, '');
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
             
-            // Step 6: Remove potentially dangerous characters in specific contexts
-            // But preserve valid email and password characters
-            const dangerousChars = [
-                /[<>]/g,  // Angle brackets
-                /&#/g,  // HTML entities
-                /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
-                /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
-                /\0/g  // Null bytes
-            ];
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
             
-            dangerousChars.forEach(pattern => {
-                sanitized = sanitized.replace(pattern, '');
-            });
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
             
-            // Step 7: Remove any remaining script-like patterns
-            sanitized = sanitized.replace(/\beval\s*\(/gi, '');
-            sanitized = sanitized.replace(/\bexecScript\s*\(/gi, '');
-            sanitized = sanitized.replace(/\bsetTimeout\s*\(/gi, '');
-            sanitized = sanitized.replace(/\bsetInterval\s*\(/gi, '');
-            sanitized = sanitized.replace(/\bFunction\s*\(/gi, '');
-            sanitized = sanitized.replace(/\bnew\s+Function/gi, '');
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
             
-            // Step 8: Remove encoded scripts
-            sanitized = sanitized.replace(/%3Cscript/gi, '');
-            sanitized = sanitized.replace(/%3C%2Fscript/gi, '');
-            sanitized = sanitized.replace(/\\x3cscript/gi, '');
-            sanitized = sanitized.replace(/\\u003cscript/gi, '');
+            // Clean up any remaining suspicious patterns
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
             
-            // Step 9: Normalize whitespace
-            sanitized = sanitized.replace(/\s+/g, ' ').trim();
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
             
-            // Log if content was sanitized (for security monitoring)
-            if (sanitized.length !== originalLength || sanitized !== input) {
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
                 console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
-                console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
             }
             
             return sanitized;
