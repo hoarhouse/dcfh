@@ -48,6 +48,9 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing resource detail page');
             
+            // Initialize input sanitization
+            initializeInputSanitization();
+            
             // Get resource ID from URL
             const urlParams = new URLSearchParams(window.location.search);
             resourceId = urlParams.get('id');
@@ -700,7 +703,7 @@
                 const container = document.getElementById('commentsList');
                 if (container) {
                     container.innerHTML = `
-                        <div style="text-align: center; color: #dc3545; padding: 2rem;">
+                        <div style="text-align: center; color: #ef9a9a; padding: 2rem;">
                             ❌ Failed to load comments. Please refresh the page.
                         </div>
                     `;
@@ -1132,6 +1135,146 @@
             }
         }
 
+        // Comprehensive sanitization function
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
+            
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+            
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
+            
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
+            
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
+            
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
+            
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
+            
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
+            
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
+            
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
+            
+            // Clean up any remaining suspicious patterns
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
+            
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
+            
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
+                console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
+            }
+            
+            return sanitized;
+        }
+
+        // Blur-only input sanitization
+        function applyRealTimeProtection(element, maxLength = 1000) {
+            if (!element) return;
+            
+            // Apply sanitization on blur only
+            element.addEventListener('blur', function(e) {
+                const originalValue = e.target.value;
+                const sanitized = sanitizeInput(originalValue, maxLength);
+                if (originalValue !== sanitized) {
+                    // Only warn if something other than whitespace normalization occurred
+                    const normalizedOriginal = originalValue.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedOriginal) {
+                        e.target.value = sanitized;
+                        console.warn('Input sanitized to prevent potential security issues');
+                    }
+                }
+            });
+            
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const sanitized = sanitizeInput(pastedText, maxLength);
+                
+                // Insert sanitized text at cursor position
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const currentValue = e.target.value;
+                const newValue = currentValue.substring(0, start) + sanitized + currentValue.substring(end);
+                e.target.value = sanitizeInput(newValue, maxLength);
+                
+                // Restore cursor position
+                const newCursorPos = start + sanitized.length;
+                e.target.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
+        // Initialize input sanitization
+        function initializeInputSanitization() {
+            // Apply to main comment textarea
+            const commentTextarea = document.getElementById('commentText');
+            if (commentTextarea) {
+                applyRealTimeProtection(commentTextarea, 2000);
+                
+                // Add character counter functionality
+                const charCounter = document.getElementById('commentCharCount');
+                if (charCounter) {
+                    commentTextarea.addEventListener('input', function() {
+                        const charCount = this.value.length;
+                        charCounter.textContent = `${charCount}/2000 characters`;
+                        
+                        if (charCount >= 2000) {
+                            charCounter.style.color = '#ffa726'; // Soft orange at max
+                        } else if (charCount > 1800) {
+                            charCounter.style.color = '#ffa726'; // Soft orange warning
+                        } else {
+                            charCounter.style.color = '#666'; // Normal gray
+                        }
+                    });
+                }
+            }
+
+            // Apply to dynamically created reply textareas using event delegation
+            document.addEventListener('focusin', function(e) {
+                if (e.target.matches('.reply-textarea') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 2000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+                
+                // Apply to edit textareas
+                if (e.target.matches('.edit-textarea') && !e.target.hasAttribute('data-sanitized')) {
+                    applyRealTimeProtection(e.target, 2000);
+                    e.target.setAttribute('data-sanitized', 'true');
+                }
+            });
+        }
+
         // ALL COMMENT INTERACTION FUNCTIONS - EXACT COPY
         // Track if comment is being submitted to prevent duplicates
         let isSubmittingComment = false;
@@ -1144,7 +1287,8 @@
             }
             
             const textarea = document.getElementById('commentText');
-            const content = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const content = sanitizeInput(rawContent, 2000);
             
             if (!content) {
                 await showAlert('Please enter a comment', 'warning');
@@ -1311,7 +1455,8 @@
             }
             
             const textarea = document.getElementById(`replyText-${commentId}`);
-            const content = textarea.value.trim();
+            const rawContent = textarea.value.trim();
+            const content = sanitizeInput(rawContent, 2000);
             
             if (!content) {
                 await showAlert('Please enter a reply', 'warning');
@@ -1574,7 +1719,7 @@
             const activeBtn = document.getElementById(`sort-${sortType}`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
-                activeBtn.style.background = '#dc3545';
+                activeBtn.style.background = '#ef9a9a';
                 activeBtn.style.color = 'white';
             }
             
@@ -2343,8 +2488,10 @@
         }
 
         async function saveEdits() {
-            const newTitle = document.getElementById('editTitle').value.trim();
-            const newDescription = document.getElementById('editDescription').value.trim();
+            const rawTitle = document.getElementById('editTitle').value.trim();
+            const rawDescription = document.getElementById('editDescription').value.trim();
+            const newTitle = sanitizeInput(rawTitle, 200);
+            const newDescription = sanitizeInput(rawDescription, 1000);
 
             if (!newTitle || !newDescription) {
                 showAlert('Please fill in all fields', 'warning', 'Validation Error');
@@ -2830,7 +2977,7 @@
         }
 
         .logout-btn {
-            color: #dc3545;
+            color: #ef9a9a;
         }
 
         .logout-btn:hover {
@@ -3006,12 +3153,12 @@
         }
 
         .btn-danger {
-            background: #dc3545;
+            background: #ef9a9a;
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c82333;
+            background: #ef9a9a;
         }
 
         .btn-download {
@@ -3041,7 +3188,7 @@
         .interaction-btn.active {
             background: red;
             color: white;
-            border-color: red;
+            border-color: #ef9a9a;
         }
 
         /* Share dropdown styles - namespaced to avoid conflicts */
@@ -3121,7 +3268,7 @@
 
         .comment-textarea:focus {
             outline: none;
-            border-color: red;
+            border-color: #ef9a9a;
         }
 
         .comment-actions {
@@ -3261,7 +3408,7 @@
         .tag.primary {
             background: red;
             color: white;
-            border-color: red;
+            border-color: #ef9a9a;
         }
 
         .related-resources {
@@ -3281,7 +3428,7 @@
         }
 
         .related-item:hover {
-            border-color: red;
+            border-color: #ef9a9a;
             background: #f8f9fa;
         }
 
@@ -3340,7 +3487,7 @@
         .download-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
-            color: red;
+            color: #ef9a9a;
         }
 
         .download-title {
@@ -3520,7 +3667,7 @@
 
         .thumbnail.active {
             opacity: 1;
-            border-color: #dc3545;
+            border-color: #ef9a9a;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         }
@@ -3661,7 +3808,7 @@
         .error-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
-            color: #dc3545;
+            color: #ef9a9a;
         }
 
         .error-state h3 {
@@ -3827,7 +3974,7 @@
         }
 
         .newsletter-button {
-            background: #dc3545;
+            background: #ef9a9a;
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
@@ -3838,7 +3985,7 @@
         }
 
         .newsletter-button:hover {
-            background: #c82333;
+            background: #ef9a9a;
         }
 
         .footer-bottom {
@@ -4111,10 +4258,15 @@
                         </div>
                         
                         <div class="comment-form">
-                            <textarea class="comment-textarea" id="commentText" placeholder="Share your thoughts about this resource..."></textarea>
+                            <textarea class="comment-textarea" id="commentText" placeholder="Share your thoughts about this resource..." maxlength="2000"></textarea>
                             <div class="comment-actions">
-                                <span class="form-help">Be respectful and constructive in your feedback</span>
-                                <button class="btn btn-primary" onclick="event.preventDefault(); submitComment()">Post Comment</button>
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <div>
+                                        <span class="form-help">Be respectful and constructive in your feedback</span>
+                                        <span id="commentCharCount" style="display: block; margin-top: 0.25rem; font-size: 0.85rem; color: #666;">0/2000 characters</span>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="event.preventDefault(); submitComment()">Post Comment</button>
+                                </div>
                             </div>
                         </div>
 
