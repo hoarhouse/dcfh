@@ -1458,7 +1458,17 @@
             sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
             
             // Clean up any remaining suspicious patterns
-            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ]/g, '');
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
+            
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
+            
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
+                console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
+            }
             
             return sanitized;
         }
@@ -1486,16 +1496,21 @@
             return email.substring(0, 254);
         }
 
-        // Real-time input sanitization
+        // Blur-only input sanitization
         function applyRealTimeProtection(element, maxLength = 1000) {
             if (!element) return;
             
-            element.addEventListener('input', function(e) {
+            // Apply sanitization on blur only
+            element.addEventListener('blur', function(e) {
                 const originalValue = e.target.value;
                 const sanitized = sanitizeInput(originalValue, maxLength);
                 if (originalValue !== sanitized) {
-                    e.target.value = sanitized;
-                    console.warn('Input sanitized to prevent potential security issues');
+                    // Only warn if something other than whitespace normalization occurred
+                    const normalizedOriginal = originalValue.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedOriginal) {
+                        e.target.value = sanitized;
+                        console.warn('Input sanitized to prevent potential security issues');
+                    }
                 }
             });
             
