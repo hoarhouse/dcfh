@@ -491,7 +491,29 @@ function getCorrectBasePath() {
     console.log('DEBUG PATH - pathParts:', pathParts);
     console.log('DEBUG PATH - filename:', filename);
     
-    // Check if we're in a subfolder by looking at known folder names
+    // Check if we're in the initiatives folder or its subfolders
+    if (pathname.includes('/initiatives/')) {
+        // Count the depth from initiatives folder
+        const initiativesIndex = pathParts.indexOf('initiatives');
+        if (initiativesIndex !== -1) {
+            // Calculate depth: initiatives/file = 1 level, initiatives/subfolder/file = 2 levels
+            const depthFromInitiatives = pathParts.length - initiativesIndex - 1;
+            
+            console.log('DEBUG PATH - In initiatives folder, depth:', depthFromInitiatives);
+            
+            if (depthFromInitiatives === 1) {
+                // We're directly in initiatives folder (e.g., initiatives_home.html)
+                console.log('DEBUG PATH - returning: ../');
+                return '../';
+            } else if (depthFromInitiatives === 2) {
+                // We're in a subfolder of initiatives (e.g., peace/initiative_peace.html)
+                console.log('DEBUG PATH - returning: ../../');
+                return '../../';
+            }
+        }
+    }
+    
+    // Check if we're in other known folders
     const knownFolders = ['members', 'projects', 'events', 'resources', 'auth', 'admin', 'public'];
     
     // Find the current folder
