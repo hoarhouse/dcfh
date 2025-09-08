@@ -1437,48 +1437,34 @@
                 <div class="timeline-header">
                     <h3 class="timeline-title">Recent Activity</h3>
                     <p class="timeline-subtitle">Your latest contributions and interactions</p>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <select id="activityFilter" class="filter-select" onchange="filterActivities()" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd;">
+                            <option value="all">All Activities</option>
+                            <option value="project">Projects</option>
+                            <option value="comment">Comments</option>
+                            <option value="resource">Resources</option>
+                            <option value="event">Events</option>
+                            <option value="connection">Connections</option>
+                        </select>
+                        <input type="text" id="activitySearch" placeholder="Search activities..." onkeyup="searchActivities()" style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd;">
+                    </div>
                 </div>
-                <div class="timeline-list">
-                    <div class="timeline-item">
-                        <div class="timeline-icon project">📁</div>
-                        <div class="timeline-content">
-                            <div class="timeline-action">Joined AI Ethics Framework Development</div>
-                            <div class="timeline-description">Started contributing to the ethical guidelines project led by Dr. Sarah Johnson</div>
-                            <div class="timeline-time">2 hours ago</div>
-                        </div>
+                <div class="timeline-list" id="activityTimeline">
+                    <!-- Loading state -->
+                    <div class="loading-state" id="activityLoading" style="text-align: center; padding: 2rem; color: #666;">
+                        <div style="width: 40px; height: 40px; border: 3px solid #f0f0f0; border-top: 3px solid #333; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                        <p>Loading your activities...</p>
                     </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon comment">💬</div>
-                        <div class="timeline-content">
-                            <div class="timeline-action">Commented on "Digital Divide Solutions"</div>
-                            <div class="timeline-description">Shared insights about education technology accessibility</div>
-                            <div class="timeline-time">5 hours ago</div>
-                        </div>
+                    <!-- Empty state (hidden by default) -->
+                    <div class="empty-state" id="activityEmpty" style="display: none; text-align: center; padding: 3rem; color: #999;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                        <h4 style="color: #666; margin-bottom: 0.5rem;">No Recent Activity</h4>
+                        <p>Start contributing to projects, sharing resources, or connecting with members to see your activity here.</p>
                     </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon resource">📚</div>
-                        <div class="timeline-content">
-                            <div class="timeline-action">Uploaded "AI Safety Guidelines"</div>
-                            <div class="timeline-description">Shared comprehensive safety framework for AI development teams</div>
-                            <div class="timeline-time">1 day ago</div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon event">📅</div>
-                        <div class="timeline-content">
-                            <div class="timeline-action">Attended Ethics Workshop</div>
-                            <div class="timeline-description">Participated in "Practical Implementation Strategies" workshop</div>
-                            <div class="timeline-time">2 days ago</div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-icon connection">🤝</div>
-                        <div class="timeline-content">
-                            <div class="timeline-action">Connected with Dr. Elena Rodriguez</div>
-                            <div class="timeline-description">New professional connection from Stanford University</div>
-                            <div class="timeline-time">3 days ago</div>
-                        </div>
-                    </div>
+                    <!-- Activity items will be inserted here dynamically -->
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button id="loadMoreBtn" class="btn btn-secondary" onclick="loadMoreActivities()" style="display: none;">Load More Activities</button>
                 </div>
             </div>
         </div>
@@ -1778,7 +1764,23 @@
             await updateMetrics(range);
             await updateChart(currentChart, range);
             
+            // Refresh activity timeline with time range filter
+            await refreshActivitiesForTimeRange(range);
+            
             console.log(`Time range set to: ${range}`);
+        }
+        
+        async function refreshActivitiesForTimeRange(range) {
+            // Show loading state
+            const loading = document.getElementById('activityLoading');
+            const timeline = document.getElementById('activityTimeline');
+            if (loading && timeline) {
+                timeline.innerHTML = '';
+                loading.style.display = 'block';
+            }
+            
+            // Reload activities with time filter
+            await loadUserActivities();
         }
 
         function switchChart(chartType) {
@@ -2877,6 +2879,371 @@
             showAlert(`Generating ${reportTypes[reportType]}. Download will begin shortly.`, 'info', 'Generating Report');
         }
 
+        // Activity Timeline Functions
+        let allActivities = [];
+        let displayedActivities = [];
+        let currentActivityPage = 0;
+        const activitiesPerPage = 10;
+
+        async function loadUserActivities() {
+            const supabase = window.dcfSupabase;
+            if (!supabase) {
+                console.error('Supabase not initialized');
+                return;
+            }
+
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (!currentUser) {
+                document.getElementById('activityLoading').style.display = 'none';
+                document.getElementById('activityEmpty').style.display = 'block';
+                return;
+            }
+
+            // Calculate date range based on currentTimeRange
+            let dateFilter = new Date();
+            switch(currentTimeRange) {
+                case '7d':
+                    dateFilter.setDate(dateFilter.getDate() - 7);
+                    break;
+                case '30d':
+                    dateFilter.setDate(dateFilter.getDate() - 30);
+                    break;
+                case '90d':
+                    dateFilter.setDate(dateFilter.getDate() - 90);
+                    break;
+                case '1y':
+                    dateFilter.setFullYear(dateFilter.getFullYear() - 1);
+                    break;
+                default:
+                    dateFilter = null; // All time
+            }
+            const dateFilterString = dateFilter ? dateFilter.toISOString() : null;
+
+            try {
+                // Fetch different types of activities
+                const activities = [];
+                
+                // 1. Fetch project activities
+                let projectQuery = supabase
+                    .from('project_members')
+                    .select(`
+                        created_at,
+                        role,
+                        projects (
+                            name,
+                            id
+                        )
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (dateFilterString) {
+                    projectQuery = projectQuery.gte('created_at', dateFilterString);
+                }
+                
+                const { data: projectActivities } = await projectQuery;
+
+                if (projectActivities) {
+                    projectActivities.forEach(activity => {
+                        if (activity.projects) {
+                            activities.push({
+                                type: 'project',
+                                action: `Joined ${activity.projects.name}`,
+                                description: `Started contributing as ${activity.role}`,
+                                timestamp: activity.created_at,
+                                link: `/projects/dcf_project_detail.html?id=${activity.projects.id}`,
+                                icon: '📁'
+                            });
+                        }
+                    });
+                }
+
+                // 2. Fetch comment activities
+                let commentQuery = supabase
+                    .from('comments')
+                    .select(`
+                        created_at,
+                        content,
+                        project_id,
+                        resource_id
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (dateFilterString) {
+                    commentQuery = commentQuery.gte('created_at', dateFilterString);
+                }
+                
+                const { data: commentActivities } = await commentQuery;
+
+                if (commentActivities) {
+                    commentActivities.forEach(activity => {
+                        const contentPreview = activity.content ? activity.content.substring(0, 100) : '';
+                        activities.push({
+                            type: 'comment',
+                            action: activity.project_id ? 'Commented on project' : 'Commented on resource',
+                            description: contentPreview + (activity.content?.length > 100 ? '...' : ''),
+                            timestamp: activity.created_at,
+                            link: activity.project_id ? `/projects/dcf_project_detail.html?id=${activity.project_id}` : '#',
+                            icon: '💬'
+                        });
+                    });
+                }
+
+                // 3. Fetch resource upload activities
+                let resourceQuery = supabase
+                    .from('resources')
+                    .select(`
+                        created_at,
+                        title,
+                        type,
+                        id
+                    `)
+                    .eq('uploaded_by', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (dateFilterString) {
+                    resourceQuery = resourceQuery.gte('created_at', dateFilterString);
+                }
+                
+                const { data: resourceActivities } = await resourceQuery;
+
+                if (resourceActivities) {
+                    resourceActivities.forEach(activity => {
+                        activities.push({
+                            type: 'resource',
+                            action: `Uploaded "${activity.title}"`,
+                            description: `Shared ${activity.type || 'resource'} with the community`,
+                            timestamp: activity.created_at,
+                            link: `/resources/dcf_resource_detail.html?id=${activity.id}`,
+                            icon: '📚'
+                        });
+                    });
+                }
+
+                // 4. Fetch event participation
+                let eventQuery = supabase
+                    .from('event_participants')
+                    .select(`
+                        created_at,
+                        events (
+                            title,
+                            id
+                        )
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (dateFilterString) {
+                    eventQuery = eventQuery.gte('created_at', dateFilterString);
+                }
+                
+                const { data: eventActivities } = await eventQuery;
+
+                if (eventActivities) {
+                    eventActivities.forEach(activity => {
+                        if (activity.events) {
+                            activities.push({
+                                type: 'event',
+                                action: `Registered for "${activity.events.title}"`,
+                                description: 'Participating in community event',
+                                timestamp: activity.created_at,
+                                link: `/events/dcf_event_details.html?id=${activity.events.id}`,
+                                icon: '📅'
+                            });
+                        }
+                    });
+                }
+
+                // 5. Fetch connection activities (followers)
+                let connectionQuery = supabase
+                    .from('user_connections')
+                    .select(`
+                        created_at,
+                        connected_user:connected_user_id (
+                            full_name,
+                            id
+                        )
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (dateFilterString) {
+                    connectionQuery = connectionQuery.gte('created_at', dateFilterString);
+                }
+                
+                const { data: connectionActivities } = await connectionQuery;
+
+                if (connectionActivities) {
+                    connectionActivities.forEach(activity => {
+                        if (activity.connected_user) {
+                            activities.push({
+                                type: 'connection',
+                                action: `Connected with ${activity.connected_user.full_name}`,
+                                description: 'New professional connection',
+                                timestamp: activity.created_at,
+                                link: `/members/dcf_member_profile.html?id=${activity.connected_user.id}`,
+                                icon: '🤝'
+                            });
+                        }
+                    });
+                }
+
+                // Sort all activities by timestamp
+                allActivities = activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Reset pagination
+                currentActivityPage = 0;
+                
+                // Display initial activities
+                displayActivities();
+
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                document.getElementById('activityLoading').style.display = 'none';
+                document.getElementById('activityEmpty').style.display = 'block';
+            }
+        }
+
+        function displayActivities() {
+            const timeline = document.getElementById('activityTimeline');
+            const loading = document.getElementById('activityLoading');
+            const empty = document.getElementById('activityEmpty');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+            // Hide loading
+            if (loading) loading.style.display = 'none';
+
+            // Check if we have activities
+            if (allActivities.length === 0) {
+                if (empty) empty.style.display = 'block';
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+                return;
+            }
+
+            // Hide empty state
+            if (empty) empty.style.display = 'none';
+
+            // Calculate which activities to display
+            const startIndex = currentActivityPage * activitiesPerPage;
+            const endIndex = startIndex + activitiesPerPage;
+            const activitiesToShow = allActivities.slice(0, endIndex);
+
+            // Build HTML for activities
+            let html = '';
+            activitiesToShow.forEach(activity => {
+                const timeAgo = formatTimeAgo(activity.timestamp);
+                html += `
+                    <div class="timeline-item" data-type="${activity.type}">
+                        <div class="timeline-icon ${activity.type}">${activity.icon}</div>
+                        <div class="timeline-content">
+                            <div class="timeline-action">
+                                ${activity.link !== '#' ? 
+                                    `<a href="${activity.link}" style="color: inherit; text-decoration: none;">${activity.action}</a>` : 
+                                    activity.action
+                                }
+                            </div>
+                            <div class="timeline-description">${activity.description}</div>
+                            <div class="timeline-time">${timeAgo}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Update timeline
+            timeline.innerHTML = html;
+
+            // Show/hide load more button
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = endIndex < allActivities.length ? 'inline-block' : 'none';
+            }
+        }
+
+        function loadMoreActivities() {
+            currentActivityPage++;
+            displayActivities();
+        }
+
+        function filterActivities() {
+            const filter = document.getElementById('activityFilter').value;
+            const searchTerm = document.getElementById('activitySearch').value.toLowerCase();
+            
+            if (filter === 'all' && !searchTerm) {
+                displayActivities();
+                return;
+            }
+
+            const filtered = allActivities.filter(activity => {
+                const matchesFilter = filter === 'all' || activity.type === filter;
+                const matchesSearch = !searchTerm || 
+                    activity.action.toLowerCase().includes(searchTerm) ||
+                    activity.description.toLowerCase().includes(searchTerm);
+                return matchesFilter && matchesSearch;
+            });
+
+            // Display filtered results
+            const timeline = document.getElementById('activityTimeline');
+            const empty = document.getElementById('activityEmpty');
+            
+            if (filtered.length === 0) {
+                timeline.innerHTML = '';
+                empty.style.display = 'block';
+                empty.querySelector('h4').textContent = 'No Matching Activities';
+                empty.querySelector('p').textContent = 'Try adjusting your filters or search terms.';
+            } else {
+                empty.style.display = 'none';
+                let html = '';
+                filtered.slice(0, currentActivityPage * activitiesPerPage + activitiesPerPage).forEach(activity => {
+                    const timeAgo = formatTimeAgo(activity.timestamp);
+                    html += `
+                        <div class="timeline-item" data-type="${activity.type}">
+                            <div class="timeline-icon ${activity.type}">${activity.icon}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-action">
+                                    ${activity.link !== '#' ? 
+                                        `<a href="${activity.link}" style="color: inherit; text-decoration: none;">${activity.action}</a>` : 
+                                        activity.action
+                                    }
+                                </div>
+                                <div class="timeline-description">${activity.description}</div>
+                                <div class="timeline-time">${timeAgo}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                timeline.innerHTML = html;
+            }
+        }
+
+        function searchActivities() {
+            filterActivities();
+        }
+
+        function formatTimeAgo(timestamp) {
+            const now = new Date();
+            const then = new Date(timestamp);
+            const seconds = Math.floor((now - then) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+            const weeks = Math.floor(days / 7);
+            if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            const months = Math.floor(days / 30);
+            if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+            const years = Math.floor(days / 365);
+            return `${years} year${years > 1 ? 's' : ''} ago`;
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function() {
             // Initialize input sanitization
@@ -2903,6 +3270,9 @@
             // Now update metrics with real data
             await updateMetrics(currentTimeRange);
             await updateChart(currentChart, currentTimeRange);
+            
+            // Load user activities for timeline
+            await loadUserActivities();
             
             // Animate metric cards on load
             setTimeout(() => {
