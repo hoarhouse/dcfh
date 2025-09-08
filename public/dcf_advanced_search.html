@@ -1256,8 +1256,159 @@
         let selectedLanguages = ['en'];
         let selectedDateRange = 'anytime';
 
+        // Comprehensive sanitization function
+        function sanitizeInput(input, maxLength = 1000) {
+            if (!input) return '';
+            
+            // Convert to string and trim
+            let sanitized = String(input).trim();
+            
+            // Limit length based on input type
+            sanitized = sanitized.substring(0, maxLength);
+            
+            // Remove null bytes and other dangerous characters
+            sanitized = sanitized.replace(/\0/g, '');
+            
+            // Remove or escape potentially dangerous patterns
+            // Remove script tags and their content
+            sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            
+            // Remove event handlers
+            sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+            sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+            
+            // Remove javascript: protocol
+            sanitized = sanitized.replace(/javascript:/gi, '');
+            
+            // Remove data: URL for potentially dangerous content
+            sanitized = sanitized.replace(/data:text\/html[^,]*,/gi, '');
+            
+            // Escape HTML special characters
+            const escapeMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;'
+            };
+            
+            sanitized = sanitized.replace(/[&<>"'\/]/g, char => escapeMap[char]);
+            
+            // Remove SQL injection attempts
+            sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE|SCRIPT|JAVASCRIPT|ALERT|CONFIRM|PROMPT|ONLOAD|ONERROR|ONCLICK|ONMOUSEOVER)\b)/gi, '');
+            
+            // Remove common XSS patterns
+            sanitized = sanitized.replace(/(document\.|window\.|eval\(|innerHTML|outerHTML|\.cookie|localStorage|sessionStorage|setTimeout|setInterval|Function\()/gi, '');
+            
+            // Remove potentially dangerous HTML/XML tags
+            sanitized = sanitized.replace(/<(iframe|embed|object|applet|meta|link|style|base|form|input|button|textarea|select|option|fieldset|label|output|canvas|svg|math|audio|video|source|track|script|noscript|template|slot|portal)\b[^>]*>/gi, '');
+            
+            // Clean up any remaining suspicious patterns
+            // Preserve spaces and common characters
+            sanitized = sanitized.replace(/[^\w\s\-.,!?@#$%^&*()+=\[\]{};:'"|\\\/`~áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛåÅæÆœŒçÇðÐñÑõÕøØßÞþÿŸ\r\n\t]/g, '');
+            
+            // Normalize whitespace but preserve line breaks
+            sanitized = sanitized.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n\n');
+            
+            // Only warn if something OTHER than whitespace normalization occurred
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
+            if (sanitized !== normalizedInput) {
+                console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
+            }
+            
+            return sanitized;
+        }
+
+        // Blur-only input sanitization
+        function applyRealTimeProtection(element, maxLength = 1000) {
+            if (!element) return;
+            
+            // Apply sanitization on blur only
+            element.addEventListener('blur', function(e) {
+                const originalValue = e.target.value;
+                const sanitized = sanitizeInput(originalValue, maxLength);
+                if (originalValue !== sanitized) {
+                    // Only warn if something other than whitespace normalization occurred
+                    const normalizedOriginal = originalValue.replace(/\s+/g, ' ').trim();
+                    if (sanitized !== normalizedOriginal) {
+                        e.target.value = sanitized;
+                        console.warn('Input sanitized to prevent potential security issues');
+                    }
+                }
+            });
+            
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const sanitized = sanitizeInput(pastedText, maxLength);
+                
+                // Insert sanitized text at cursor position
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const currentValue = e.target.value;
+                const newValue = currentValue.substring(0, start) + sanitized + currentValue.substring(end);
+                e.target.value = sanitizeInput(newValue, maxLength);
+                
+                // Restore cursor position
+                const newCursorPos = start + sanitized.length;
+                e.target.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
+        // Initialize input sanitization
+        function initializeInputSanitization() {
+            // Apply to all search input fields with reasonable limits
+            const searchInputs = [
+                { id: 'searchQuery', maxLength: 200 },
+                { id: 'exactPhrase', maxLength: 200 },
+                { id: 'excludeTerms', maxLength: 200 },
+                { id: 'anyOfTerms', maxLength: 200 },
+                { id: 'allOfTerms', maxLength: 200 },
+                { id: 'authorName', maxLength: 100 },
+                { id: 'organization', maxLength: 100 }
+            ];
+            
+            searchInputs.forEach(input => {
+                const element = document.getElementById(input.id);
+                if (element) {
+                    // Set maxlength attribute
+                    element.setAttribute('maxlength', input.maxLength);
+                    // Apply protection
+                    applyRealTimeProtection(element, input.maxLength);
+                    
+                    // Add character counter
+                    const charCountId = `${input.id}-charCount`;
+                    if (!document.getElementById(charCountId)) {
+                        const charCounter = document.createElement('span');
+                        charCounter.id = charCountId;
+                        charCounter.style.cssText = 'display: block; margin-top: 0.25rem; font-size: 0.85rem; color: #666;';
+                        charCounter.textContent = `0/${input.maxLength} characters`;
+                        element.parentNode.appendChild(charCounter);
+                        
+                        // Update counter on input
+                        element.addEventListener('input', function() {
+                            const charCount = this.value.length;
+                            charCounter.textContent = `${charCount}/${input.maxLength} characters`;
+                            
+                            if (charCount >= input.maxLength) {
+                                charCounter.style.color = '#ffa726'; // Soft orange at max
+                            } else if (charCount > input.maxLength * 0.9) {
+                                charCounter.style.color = '#ffa726'; // Soft orange warning
+                            } else {
+                                charCounter.style.color = '#666'; // Normal gray
+                            }
+                        });
+                    }
+                }
+            });
+            
+            console.log('Input sanitization initialized for advanced search form');
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            initializeInputSanitization();
             updateQueryPreview();
             setDefaultDateRange();
         });
@@ -1391,16 +1542,17 @@
         function performAdvancedSearch(event) {
             event.preventDefault();
             
+            // Sanitize all text inputs before processing
             const searchData = {
-                query: document.getElementById('searchQuery').value,
-                exactPhrase: document.getElementById('exactPhrase').value,
-                excludeTerms: document.getElementById('excludeTerms').value,
-                anyOfTerms: document.getElementById('anyOfTerms').value,
-                allOfTerms: document.getElementById('allOfTerms').value,
+                query: sanitizeInput(document.getElementById('searchQuery').value, 200),
+                exactPhrase: sanitizeInput(document.getElementById('exactPhrase').value, 200),
+                excludeTerms: sanitizeInput(document.getElementById('excludeTerms').value, 200),
+                anyOfTerms: sanitizeInput(document.getElementById('anyOfTerms').value, 200),
+                allOfTerms: sanitizeInput(document.getElementById('allOfTerms').value, 200),
                 contentTypes: selectedContentTypes,
                 topics: selectedTopics,
-                author: document.getElementById('authorName').value,
-                organization: document.getElementById('organization').value,
+                author: sanitizeInput(document.getElementById('authorName').value, 100),
+                organization: sanitizeInput(document.getElementById('organization').value, 100),
                 memberRole: document.getElementById('memberRole').value,
                 projectStatus: document.getElementById('projectStatus').value,
                 dateRange: selectedDateRange,
