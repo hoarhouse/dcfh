@@ -1516,7 +1516,7 @@
                             <div class="cover-pic-upload" id="coverPicUpload" onclick="document.getElementById('coverPicInput').click()">
                                 <img class="cover-pic-preview" id="coverPicPreview" alt="Cover picture preview">
                                 <div class="cover-pic-content" id="coverPicContent" style="display: flex; flex-direction: column; align-items: center;">
-                                    <div class="cover-pic-icon">📸</div>
+                                    <div class="cover-pic-icon"><span data-icon="camera" style="display: inline-flex; align-items: center; justify-content: center; font-size: 3rem;"></span></div>
                                     <div class="cover-pic-text">Click to upload cover picture</div>
                                     <div class="cover-pic-subtext">JPG or PNG, max 5MB</div>
                                 </div>
@@ -3020,7 +3020,7 @@
                     <div class="modal" id="deleteTypeModal" style="display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 2001; align-items: center; justify-content: center;">
                         <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
                             <div style="margin-bottom: 1.5rem;">
-                                <h2 style="margin: 0 0 1rem 0; color: #ef9a9a;">🔴 Final Confirmation</h2>
+                                <h2 style="margin: 0 0 1rem 0; color: #ef9a9a;"><span data-icon="error" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;"></span> Final Confirmation</h2>
                                 <p style="color: #666; line-height: 1.6; margin: 0 0 1rem 0;">To confirm deletion, please type <strong>DELETE</strong> in the field below:</p>
                                 <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px; font-size: 1rem; margin-top: 0.5rem;" autocomplete="off">
                                 <div id="deleteInputError" style="color: #ef9a9a; font-size: 0.9rem; margin-top: 0.5rem; display: none;">You must type "DELETE" exactly to confirm.</div>
@@ -4945,7 +4945,7 @@
                             </div>
                             <button class="btn btn-primary btn-small" onclick="viewFile('${file.file_name}', '${file.file_path || file.file_name}')" style="padding: 0.4rem 0.6rem; margin-left: 0.25rem;">👁️</button>
                             <button class="btn btn-secondary btn-small" onclick="downloadFile('${file.file_name}', '${file.file_path || file.file_name}')" style="padding: 0.4rem 0.6rem; margin-left: 0.25rem;">↓</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path || file.file_name}')" style="padding: 0.4rem 0.6rem; margin-left: 0.25rem;">🗑️</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path || file.file_name}')" style="padding: 0.4rem 0.6rem; margin-left: 0.25rem;"><span data-icon="delete" style="display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;"></span></button>
                         </div>                    `;
                 }).join('');
 
@@ -4999,7 +4999,7 @@
             } else {
                 content = `
                     <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; text-align: center;">
-                        <div style="font-size: 4rem; margin-bottom: 1rem;">📎</div>
+                        <div style="font-size: 4rem; margin-bottom: 1rem;"><span data-icon="attach" style="display: inline-flex; align-items: center; justify-content: center; font-size: 4rem;"></span></div>
                         <h3 style="margin-bottom: 1rem;">${fileName}</h3>
                         <p style="color: #666; margin-bottom: 2rem;">This file type cannot be previewed in the browser.</p>
                         <div style="display: flex; gap: 1rem; justify-content: center;">
@@ -5293,6 +5293,42 @@
         // showSection function already exists above - removed duplicate
 
         // closeTaskModal function already exists above - removed duplicate
+        
+        // Wait for icon system to load and initialize icons
+        function waitForIconSystem() {
+            if (typeof window.createIcon === 'function') {
+                // Icon system is ready, initialize all icons
+                document.querySelectorAll('[data-icon]').forEach(element => {
+                    const iconName = element.getAttribute('data-icon');
+                    element.innerHTML = window.createIcon(iconName);
+                });
+            } else {
+                // Icon system not ready, wait and try again
+                setTimeout(waitForIconSystem, 50);
+            }
+        }
+        
+        // Start waiting for icon system
+        waitForIconSystem();
+        
+        // Re-initialize icons when dynamic content is loaded
+        const originalLoadActivityFeed = window.loadActivityFeed;
+        if (originalLoadActivityFeed) {
+            window.loadActivityFeed = function(...args) {
+                const result = originalLoadActivityFeed.apply(this, args);
+                setTimeout(waitForIconSystem, 100);
+                return result;
+            };
+        }
+        
+        const originalDisplayFiles = window.displayFiles;
+        if (originalDisplayFiles) {
+            window.displayFiles = function(...args) {
+                const result = originalDisplayFiles.apply(this, args);
+                setTimeout(waitForIconSystem, 100);
+                return result;
+            };
+        }
     </script>
 </body>
 </html>
