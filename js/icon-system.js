@@ -157,7 +157,7 @@ class DCFIconSystem {
                     const { data: icons, error: iconError } = await this.supabaseClient
                         .from('icons')
                         .select('icon_name, svg_small, svg_standard, svg_large')
-                        .eq('set_id', iconSet.id);
+                        .eq('icon_set_id', iconSet.id);
 
                     if (icons && icons.length > 0) {
                         // Cache the SVG icons
