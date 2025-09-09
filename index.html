@@ -1885,7 +1885,7 @@
         });
 
         // Initialize icon system for dynamic icons
-        document.addEventListener('DOMContentLoaded', function() {
+        function initializePageIcons() {
             // Icon mappings for special cases
             const iconMappings = {
                 'peace': 'peace',
@@ -1906,9 +1906,15 @@
                 const iconName = element.dataset.icon;
                 const mappedIcon = iconMappings[iconName] || iconName;
                 
+                // Determine size based on element class
+                let size = 'large';
+                if (element.classList.contains('content-icon')) {
+                    size = 'standard';
+                }
+                
                 if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
                     // Use icon system if available
-                    element.innerHTML = iconSystem.getIcon(mappedIcon, 'large');
+                    element.innerHTML = iconSystem.getIcon(mappedIcon, size);
                 } else {
                     // Fallback to emoji
                     const emojiMap = {
@@ -1927,6 +1933,27 @@
                     element.innerHTML = emojiMap[iconName] || '❓';
                 }
             });
+        }
+
+        // Initialize icons on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for icon system to initialize
+            setTimeout(() => {
+                initializePageIcons();
+                
+                // Listen for icon set changes (if admin changes the set)
+                if (typeof iconSystem !== 'undefined') {
+                    // Re-initialize icons when icon set changes
+                    const originalUpdateIcons = iconSystem.updateAllIcons;
+                    iconSystem.updateAllIcons = function() {
+                        if (originalUpdateIcons) {
+                            originalUpdateIcons.call(iconSystem);
+                        }
+                        // Update our page icons too
+                        initializePageIcons();
+                    };
+                }
+            }, 200);
         });
     </script>
 </body>
