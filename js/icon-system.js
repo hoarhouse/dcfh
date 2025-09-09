@@ -118,11 +118,16 @@ class DCFIconSystem {
             // Check for admin preferences first
             const { data: adminPref, error: prefError } = await this.supabaseClient
                 .from('site_settings')
-                .select('icon_set')
+                .select('setting_value')
+                .eq('setting_key', 'current_icon_set')
                 .single();
 
-            if (adminPref && adminPref.icon_set) {
-                this.currentIconSet = adminPref.icon_set;
+            if (prefError) {
+                // If the setting doesn't exist or there's an error, use default
+                console.log('📊 No icon preference found, using default emoji icons');
+                this.currentIconSet = 'emoji';
+            } else if (adminPref && adminPref.setting_value) {
+                this.currentIconSet = adminPref.setting_value;
                 console.log(`🎨 Loaded icon set: ${this.currentIconSet}`);
             }
 
@@ -172,13 +177,33 @@ class DCFIconSystem {
 
             // Save preference to database if connected
             if (this.supabaseClient && typeof this.supabaseClient.from === 'function') {
-                const { error } = await this.supabaseClient
+                // First check if the setting exists
+                const { data: existing } = await this.supabaseClient
                     .from('site_settings')
-                    .upsert({ 
-                        id: 1, // Single settings row
-                        icon_set: setName,
-                        updated_at: new Date().toISOString()
-                    });
+                    .select('id')
+                    .eq('setting_key', 'current_icon_set')
+                    .single();
+                
+                if (existing) {
+                    // Update existing setting
+                    const { error } = await this.supabaseClient
+                        .from('site_settings')
+                        .update({ 
+                            setting_value: setName,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', 'current_icon_set');
+                } else {
+                    // Insert new setting
+                    const { error } = await this.supabaseClient
+                        .from('site_settings')
+                        .insert({ 
+                            setting_key: 'current_icon_set',
+                            setting_value: setName,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+                }
 
                 if (error) {
                     console.error('❌ Error saving icon preference:', error);
