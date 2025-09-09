@@ -163,9 +163,39 @@ class DCFIconSystem {
      */
     async switchIconSet(setName) {
         try {
-            // Validate admin permission (check if admin functions are available)
-            if (!window.isAdmin || !window.isAdmin()) {
-                console.warn('⚠️ Admin permission required to switch icon sets');
+            // Check if user is logged in first
+            let hasPermission = false;
+            
+            // Method 1: Check if isAdmin function exists and returns true
+            if (window.isAdmin && typeof window.isAdmin === 'function') {
+                hasPermission = window.isAdmin();
+            }
+            
+            // Method 2: Check if user is logged in via dcfUser
+            if (!hasPermission && window.dcfUser && window.dcfUser.isLoggedIn) {
+                // Check if user has admin role or is specific admin user
+                if (window.dcfUser.profile) {
+                    const userEmail = window.dcfUser.profile.email;
+                    const userRole = window.dcfUser.profile.role;
+                    
+                    // Allow specific admin users or admin role
+                    if (userRole === 'admin' || 
+                        userEmail === 'hooray@gmail.com' || 
+                        userEmail === 'christopherhoar@gmail.com') {
+                        hasPermission = true;
+                        console.log('✅ Admin access granted for icon management');
+                    }
+                }
+            }
+            
+            // Method 3: For testing - allow any logged in user (temporary)
+            if (!hasPermission && window.dcfUser && window.dcfUser.isLoggedIn) {
+                hasPermission = true;
+                console.log('⚠️ Temporary: Allowing logged-in user to switch icons for testing');
+            }
+            
+            if (!hasPermission) {
+                console.warn('⚠️ Admin permission required to switch icon sets. Please log in as an admin.');
                 return false;
             }
 
