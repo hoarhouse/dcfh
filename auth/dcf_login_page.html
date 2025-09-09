@@ -428,6 +428,7 @@
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/dcf-unified-auth.js"></script>
+<script src="../js/icon-system.js"></script>
 <body class="dcf-public-page">
     <header class="header">
         <nav class="nav-container">
@@ -961,11 +962,11 @@
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                toggleButton.textContent = '🙈';
+                toggleButton.innerHTML = iconSystem ? iconSystem.getIcon('hide', 'small') : '🙈';
                 toggleButton.setAttribute('aria-label', 'Hide password');
             } else {
                 passwordInput.type = 'password';
-                toggleButton.textContent = '👁️';
+                toggleButton.innerHTML = iconSystem ? iconSystem.getIcon('view', 'small') : '👁️';
                 toggleButton.setAttribute('aria-label', 'Show password');
             }
         }
@@ -981,6 +982,45 @@
             // Focus email field for user convenience
             document.getElementById('email').focus();
         });
+    </script>
+
+    <script>
+        // Wait for icon system to initialize
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
+                if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
+                    initializePageIcons();
+                } else {
+                    setTimeout(waitForIconSystem, 100);
+                }
+            } else {
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+
+        function initializePageIcons() {
+            // Initialize password toggle button with view icon
+            const toggleButton = document.querySelector('.password-toggle');
+            if (toggleButton && iconSystem && iconSystem.getIcon) {
+                toggleButton.innerHTML = iconSystem.getIcon('view', 'small');
+            }
+            
+            // Initialize any other data-icon elements
+            document.querySelectorAll('[data-icon]').forEach(element => {
+                const iconName = element.getAttribute('data-icon');
+                const size = element.getAttribute('data-size') || 'standard';
+                const label = element.getAttribute('data-label') || iconName;
+                
+                if (iconSystem && iconSystem.getIcon) {
+                    element.innerHTML = iconSystem.getIcon(iconName, size);
+                    element.setAttribute('aria-label', label);
+                }
+            });
+        }
+
+        // Start waiting for icon system
+        waitForIconSystem();
     </script>
 
 </body>
