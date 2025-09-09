@@ -232,7 +232,7 @@ class DCFIconSystem {
                     .from('site_settings')
                     .select('id')
                     .eq('setting_key', 'current_icon_set')
-                    .single();
+                    .maybeSingle(); // Use maybeSingle to handle missing settings
                 
                 let saveError = null;
                 
