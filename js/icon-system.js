@@ -153,15 +153,30 @@ class DCFIconSystem {
                     console.log('Icon set not found in database, using emoji fallback');
                     this.currentIconSet = 'emoji';
                 } else if (iconSet) {
+                    console.log(`📊 Found icon set ID: ${iconSet.id} for ${this.currentIconSet}`);
+                    
                     // Load icons for this set
                     const { data: icons, error: iconError } = await this.supabaseClient
                         .from('icons')
                         .select('icon_name, svg_small, svg_standard, svg_large')
                         .eq('icon_set_id', iconSet.id);
 
+                    // Check for query errors
+                    if (iconError) {
+                        console.error('❌ Failed to load icons from database:', iconError);
+                        console.error('Query details - icon_set_id:', iconSet.id);
+                        this.currentIconSet = 'emoji';
+                        return;
+                    }
+
+                    console.log(`📦 Database returned ${icons ? icons.length : 0} icons`);
+
                     if (icons && icons.length > 0) {
                         // Cache the SVG icons
                         icons.forEach(icon => {
+                            // Log each icon being cached
+                            console.log(`  - Caching icon: ${icon.icon_name}`);
+                            
                             // Cache different sizes
                             const cacheKeySmall = `${this.currentIconSet}-${icon.icon_name}-small`;
                             const cacheKeyStandard = `${this.currentIconSet}-${icon.icon_name}-standard`;
@@ -172,6 +187,10 @@ class DCFIconSystem {
                             this.iconCache[cacheKeyLarge] = icon.svg_large;
                         });
                         console.log(`✅ Cached ${icons.length} SVG icons from ${this.currentIconSet} set`);
+                    } else {
+                        console.warn(`⚠️ No icons found for ${this.currentIconSet} set (ID: ${iconSet.id})`);
+                        console.log('Falling back to emoji icons');
+                        this.currentIconSet = 'emoji';
                     }
                 }
             }
