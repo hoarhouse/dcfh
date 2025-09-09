@@ -225,6 +225,11 @@ class DCFIconSystem {
                             if (icon.svg_small || icon.svg_standard || icon.svg_large) {
                                 console.log(`  - Caching icon: ${icon.icon_name}`);
                                 
+                                // Special logging for heart icon
+                                if (icon.icon_name === 'heart' || icon.icon_name.includes('heart')) {
+                                    console.log('💖 Found heart icon in database!', icon.icon_name);
+                                }
+                                
                                 // Cache different sizes
                                 const cacheKeySmall = `${this.currentIconSet}-${icon.icon_name}-small`;
                                 const cacheKeyStandard = `${this.currentIconSet}-${icon.icon_name}-standard`;
