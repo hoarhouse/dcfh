@@ -96,13 +96,22 @@ class DCFIconSystem {
 
         // Check if we have a cached SVG version
         const cacheKey = `${this.currentIconSet}-${iconName}-${size}`;
+        
+        // Debug logging
+        console.log(`🔍 Looking for cache key: "${cacheKey}"`);
+        console.log(`📦 Current icon set: "${this.currentIconSet}"`);
+        console.log(`🗂️ Cache keys available:`, Object.keys(this.iconCache).slice(0, 5));
+        
         if (this.iconCache[cacheKey]) {
+            console.log(`✅ Found cached SVG for ${iconName}`);
             return this.renderIcon(this.iconCache[cacheKey], iconName, size, ariaLabel);
         }
 
         // Log cache miss for debugging
         if (this.currentIconSet !== 'emoji') {
-            console.log(`🔍 Cache miss for ${cacheKey} - falling back to emoji`);
+            console.log(`❌ Cache miss for ${cacheKey} - falling back to emoji`);
+            console.log(`Available keys matching ${iconName}:`, 
+                Object.keys(this.iconCache).filter(k => k.includes(iconName)));
         }
 
         // Always fall back to emoji if not in cache
