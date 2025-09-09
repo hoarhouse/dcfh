@@ -83,9 +83,14 @@ class DCFIconSystem {
      * @returns {string} HTML string for the icon
      */
     getIcon(iconName, size = 'standard', ariaLabel = '') {
+        // Debug logging
+        console.log('🔍 Looking for icon:', iconName);
+        console.log('🔍 Icon exists in coreIconMap:', iconName in this.coreIconMap);
+        
         // Validate icon name
         if (!this.coreIconMap[iconName]) {
-            console.warn(`⚠️ Icon "${iconName}" not found, using placeholder`);
+            console.warn(`⚠️ Icon "${iconName}" not found in coreIconMap, using placeholder`);
+            console.log('🔍 Available icons in coreIconMap:', Object.keys(this.coreIconMap));
             iconName = 'info';
         }
 
@@ -96,14 +101,19 @@ class DCFIconSystem {
 
         // Check if we have a cached SVG version
         const cacheKey = `${this.currentIconSet}-${iconName}-${size}`;
+        console.log('🔍 Cache key:', cacheKey);
+        console.log('🔍 Available cache keys (first 10):', Object.keys(this.iconCache).slice(0, 10));
+        console.log('🔍 Cache keys with "heart":', Object.keys(this.iconCache).filter(k => k.includes('heart')));
+        console.log('🔍 Cache hit result:', !!this.iconCache[cacheKey]);
         
         if (this.iconCache[cacheKey]) {
+            console.log('✅ Found in cache, returning SVG');
             return this.renderIcon(this.iconCache[cacheKey], iconName, size, ariaLabel);
         }
 
         // Log cache miss for debugging (only if not emoji mode)
         if (this.currentIconSet !== 'emoji') {
-            console.log(`🔍 Cache miss for ${cacheKey} - falling back to emoji`);
+            console.log(`❌ Cache miss for ${cacheKey} - falling back to emoji`);
         }
 
         // Always fall back to emoji if not in cache
