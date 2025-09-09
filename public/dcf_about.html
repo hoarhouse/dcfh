@@ -825,10 +825,40 @@
                 padding-left: 1.5rem;
             }
         }
+
+        /* Sacred Minimalist Icon System Styles */
+        .dcf-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dcf-icon svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .card-icon svg,
+        .principle-icon svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 40px;
+            max-height: 40px;
+        }
+
+        .card-icon,
+        .principle-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/dcf-unified-auth.js"></script></head>
+<script src="../js/dcf-unified-auth.js"></script>
+<script src="../js/icon-system.js"></script></head>
 
 <body>
     <header class="header">
@@ -885,7 +915,7 @@
                     </div>
                     
                     <div class="mission-card vision">
-                        <div class="card-icon vision">🌍</div>
+                        <div class="card-icon vision" data-icon="globe" data-size="large" data-label="Our Vision"></div>
                         <h3 class="card-title">Vision</h3>
                         <p class="card-description">
                             To build a cyber commons through a global constellation of faith leaders, experts, technologists, academics, and organizations working to advance ethical, moral, value-based, secure and safe cyber technologies and AI for humankind.
@@ -893,7 +923,7 @@
                     </div>
                     
                     <div class="mission-card values">
-                        <div class="card-icon values">❤️</div>
+                        <div class="card-icon values" data-icon="heart" data-size="large" data-label="Our Values"></div>
                         <h3 class="card-title">Values</h3>
                         <p class="card-description">
                             Human dignity, equality between every person, and the common good of all humanity guide our work. We partner with and serve all people, regardless of their religion, background, or beliefs.
@@ -925,7 +955,7 @@
                     </div>
                     
                     <div class="principle-item">
-                        <div class="principle-icon">🤝</div>
+                        <div class="principle-icon" data-icon="heart" data-size="large" data-label="Human Dignity"></div>
                         <h4 class="principle-title">Common Good</h4>
                         <p class="principle-description">
                             Technology should benefit all of humanity, creating social conditions that allow every person to thrive.
@@ -933,7 +963,7 @@
                     </div>
                     
                     <div class="principle-item">
-                        <div class="principle-icon">🏛️</div>
+                        <div class="principle-icon" data-icon="home" data-size="large" data-label="Interfaith Dialogue"></div>
                         <h4 class="principle-title">Subsidiarity</h4>
                         <p class="principle-description">
                             Decisions should be made at the most local level possible, empowering communities and individuals.
@@ -949,7 +979,7 @@
                     </div>
                     
                     <div class="principle-item">
-                        <div class="principle-icon">🤝</div>
+                        <div class="principle-icon" data-icon="heart" data-size="large" data-label="Human Dignity"></div>
                         <h4 class="principle-title">Preferential Option for the Poor and Vulnerable, Dignity of Work and the Rights of Workers</h4>
                         <p class="principle-description">
                             Technology should be leveraged to bridge the gap between the rich and the poor, ensuring that the most vulnerable have access to the tools and opportunities needed to thrive. In the age of automation and digital transformation, technology must be used to enhance the dignity of work, ensuring fair wages, safe working conditions, and the protection of workers' rights in all industries. Access to digitality is paramount to the dignity of children and youth's education.
@@ -1172,7 +1202,7 @@
 
                 <div class="mission-grid">
                     <div class="mission-card">
-                        <div class="card-icon">🏛️</div>
+                        <div class="card-icon" data-icon="shield" data-size="large" data-label="Security"></div>
                         <h3 class="card-title">Budapest University of Technology</h3>
                         <p class="card-description">
                             Partnership with BME's Faculty of Electrical Engineering and Informatics, leveraging their expertise in AI education and cyber-physical systems research.
@@ -1180,7 +1210,7 @@
                     </div>
                     
                     <div class="mission-card vision">
-                        <div class="card-icon vision">📚</div>
+                        <div class="card-icon vision" data-icon="education" data-size="large" data-label="Education"></div>
                         <h3 class="card-title">Eötvös Loránd University</h3>
                         <p class="card-description">
                             Collaboration with ELTE's Department of Artificial Intelligence on human-centered AI research and deep learning applications.
@@ -1219,6 +1249,51 @@
     </main>
 
     <script>
+        // Initialize Sacred Minimalist Icon System
+        function initializePageIcons() {
+            document.querySelectorAll('[data-icon]').forEach(element => {
+                const iconName = element.dataset.icon;
+                const size = element.dataset.size || 'standard';
+                const label = element.dataset.label || '';
+                
+                if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+                    element.innerHTML = iconSystem.getIcon(iconName, size, label);
+                }
+            });
+        }
+
+        // Wait for icon system to fully initialize and cache icons
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
+                console.log(`🎯 Icon system ready. Cache size: ${cacheSize}, Current set: ${iconSystem.currentIconSet}`);
+                
+                if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
+                    console.log('✅ Initializing page icons now');
+                    initializePageIcons();
+                    
+                    // Listen for icon set changes
+                    const originalUpdateIcons = iconSystem.updateAllIcons;
+                    iconSystem.updateAllIcons = function() {
+                        if (originalUpdateIcons) {
+                            originalUpdateIcons.call(iconSystem);
+                        }
+                        initializePageIcons();
+                    };
+                } else {
+                    console.log('⏳ Waiting for icon cache to populate...');
+                    setTimeout(waitForIconSystem, 100);
+                }
+            } else {
+                console.log('⏳ Waiting for icon system to initialize...');
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(waitForIconSystem, 500);
+        });
+
         // Animate stats on scroll
         function animateStats() {
             const statNumbers = document.querySelectorAll('.stat-number');

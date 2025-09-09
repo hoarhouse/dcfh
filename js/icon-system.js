@@ -33,7 +33,8 @@ class DCFIconSystem {
             justice: '⚖️',
             megaphone: '📢',
             news: '📰',
-            heart: '❤️'
+            heart: '❤️',
+            shield: '🛡️'
         };
 
         // Size configurations
@@ -471,7 +472,8 @@ class DCFIconSystem {
             justice: 'Justice',
             megaphone: 'Announcement',
             news: 'News',
-            heart: 'Heart'
+            heart: 'Heart',
+            shield: 'Shield'
         };
         
         return labels[iconName] || iconName;
