@@ -767,6 +767,48 @@
 
         let currentSize = 'standard';
         let currentSet = 'emoji';
+        let previewIcons = {}; // Cache for preview icons
+
+        // Function to load icons for a specific set from database
+        async function loadIconsForSet(setName) {
+            if (!window.dcfSupabase || setName === 'emoji') {
+                return null;
+            }
+
+            try {
+                // First get the icon set ID
+                const { data: iconSet } = await window.dcfSupabase
+                    .from('icon_sets')
+                    .select('id')
+                    .eq('set_name', setName)
+                    .maybeSingle();
+
+                if (iconSet) {
+                    // Load icons for this set
+                    const { data: icons } = await window.dcfSupabase
+                        .from('icons')
+                        .select('icon_name, svg_small, svg_standard, svg_large')
+                        .eq('set_id', iconSet.id);
+
+                    if (icons) {
+                        // Cache the icons
+                        const iconMap = {};
+                        icons.forEach(icon => {
+                            iconMap[icon.icon_name] = {
+                                small: icon.svg_small,
+                                standard: icon.svg_standard,
+                                large: icon.svg_large
+                            };
+                        });
+                        previewIcons[setName] = iconMap;
+                        return iconMap;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading icons for preview:', error);
+            }
+            return null;
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -822,6 +864,9 @@
                         updateSetCards();
                         updateCurrentSetDisplay();
                         renderIconGrid();
+                        // Reset preview info to show current set
+                        const previewInfo = document.getElementById('previewInfo');
+                        previewInfo.innerHTML = `Current Set: <strong id="currentSetDisplay">${formatSetName(currentSet)}</strong>`;
                         showNotification('Icon set changed successfully!', 'success');
                     } else {
                         showNotification('Failed to change icon set. Admin permission required.', 'error');
@@ -881,15 +926,50 @@
                 });
             });
 
-            // Icon set select change
-            document.getElementById('iconSetSelect').addEventListener('change', (e) => {
-                // Just preview, don't apply until Apply Changes is clicked
-                showNotification('Click "Apply Changes" to switch icon set', 'info');
+            // Icon set select change - live preview update
+            document.getElementById('iconSetSelect').addEventListener('change', async (e) => {
+                const selectedSet = e.target.value;
+                showNotification('Loading preview...', 'info');
+                
+                // Update preview with selected set
+                await renderIconGridForSet(selectedSet);
+                
+                // Update display to show preview mode
+                const previewInfo = document.getElementById('previewInfo');
+                previewInfo.innerHTML = `Preview: <strong>${formatSetName(selectedSet)}</strong> (not applied yet)`;
+                
+                // Highlight that this is a preview
+                showNotification('Preview updated. Click "Apply Changes" to save', 'info');
             });
         }
 
+        // Format icon set name for display
+        function formatSetName(setName) {
+            const setNames = {
+                'emoji': 'Emoji',
+                'modern_minimalist': 'Modern Minimalist',
+                'solid_geometric': 'Solid Geometric',
+                'hybrid_clean': 'Hybrid Clean',
+                'sacred_minimalist': 'Sacred Minimalist',
+                'humanity_focused': 'Humanity Focused',
+                'faith_tech_fusion': 'Faith & Tech Fusion'
+            };
+            return setNames[setName] || setName;
+        }
+
+        // Render icon grid for the currently active set
         function renderIconGrid() {
+            renderIconGridForSet(currentSet);
+        }
+
+        // Render icon grid for a specific set (for preview)
+        async function renderIconGridForSet(setName) {
             const grid = document.getElementById('iconGrid');
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">Loading icons...</div>';
+
+            // Short delay for loading indicator
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             grid.innerHTML = '';
 
             coreIcons.forEach(iconName => {
@@ -897,10 +977,10 @@
                 card.className = 'icon-card';
                 
                 let iconHtml;
-                if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
-                    iconHtml = iconSystem.getIcon(iconName, currentSize);
-                } else {
-                    // Fallback for preview
+                
+                // Try to get icon from the specified set
+                if (setName === 'emoji' || !window.dcfSupabase) {
+                    // Use emoji for emoji set or if no database
                     const emojiMap = {
                         success: '✅', error: '❌', warning: '⚠️', calendar: '📅',
                         user: '👤', message: '💬', notification: '🔔', settings: '⚙️',
@@ -911,6 +991,41 @@
                     
                     const sizeClass = `icon-${currentSize}`;
                     iconHtml = `<span class="dcf-icon dcf-icon-emoji ${sizeClass}">${emojiMap[iconName] || '❓'}</span>`;
+                } else {
+                    // For non-emoji sets, try to load from icon system or show placeholder
+                    if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+                        // Temporarily switch icon system to preview set
+                        const originalSet = iconSystem.currentIconSet;
+                        
+                        // Check if we have cached icons for this set
+                        const cacheKey = `${setName}-${iconName}-${currentSize}`;
+                        if (iconSystem.iconCache[cacheKey]) {
+                            // Use cached icon
+                            iconHtml = iconSystem.renderIcon(
+                                iconSystem.iconCache[cacheKey], 
+                                iconName, 
+                                currentSize, 
+                                ''
+                            );
+                        } else {
+                            // Use current icon or placeholder
+                            iconHtml = iconSystem.getIcon(iconName, currentSize);
+                        }
+                    } else {
+                        // Placeholder for SVG sets
+                        const sizeClass = `icon-${currentSize}`;
+                        iconHtml = `<div class="dcf-icon ${sizeClass}" style="
+                            width: ${currentSize === 'small' ? '16px' : currentSize === 'large' ? '32px' : '24px'};
+                            height: ${currentSize === 'small' ? '16px' : currentSize === 'large' ? '32px' : '24px'};
+                            background: #e0e0e0;
+                            border-radius: 4px;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 10px;
+                            color: #999;
+                        ">SVG</div>`;
+                    }
                 }
 
                 card.innerHTML = `
