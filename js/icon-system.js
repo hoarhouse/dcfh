@@ -117,7 +117,7 @@ class DCFIconSystem {
         try {
             // Check for admin preferences first
             const { data: adminPref, error: prefError } = await this.supabaseClient
-                .from('admin_settings')
+                .from('site_settings')
                 .select('icon_set')
                 .single();
 
@@ -173,7 +173,7 @@ class DCFIconSystem {
             // Save preference to database if connected
             if (this.supabaseClient && typeof this.supabaseClient.from === 'function') {
                 const { error } = await this.supabaseClient
-                    .from('admin_settings')
+                    .from('site_settings')
                     .upsert({ 
                         id: 1, // Single settings row
                         icon_set: setName,
