@@ -109,7 +109,7 @@ class DCFIconSystem {
      * @returns {Promise<void>}
      */
     async loadIconSet() {
-        if (!this.supabaseClient) {
+        if (!this.supabaseClient || typeof this.supabaseClient.from !== 'function') {
             console.log('📊 No database connection, using emoji icons');
             return;
         }
