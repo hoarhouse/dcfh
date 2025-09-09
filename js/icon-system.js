@@ -88,7 +88,9 @@ class DCFIconSystem {
             image: '🖼️',
             plus: '➕',
             link: '🔗',
-            mail: '📧'
+            mail: '📧',
+            download: '📥',
+            share: '📤'
         };
 
         // Size configurations
