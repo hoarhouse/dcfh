@@ -997,12 +997,18 @@
                     const sizeClass = `icon-${currentSize}`;
                     iconHtml = `<span class="dcf-icon dcf-icon-emoji ${sizeClass}">${emojiMap[iconName] || '❓'}</span>`;
                 } else {
-                    // For non-emoji sets, try to load from icon system or show placeholder
-                    if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
-                        // Temporarily switch icon system to preview set
-                        const originalSet = iconSystem.currentIconSet;
-                        
-                        // Check if we have cached icons for this set
+                    // For non-emoji sets, check if we have loaded preview icons
+                    if (previewIcons[setName] && previewIcons[setName][iconName]) {
+                        // Use loaded SVG icon
+                        const svgContent = previewIcons[setName][iconName][currentSize];
+                        if (svgContent) {
+                            iconHtml = `<span class="dcf-icon icon-${currentSize}">${svgContent}</span>`;
+                        } else {
+                            // Fallback to placeholder
+                            iconHtml = getPlaceholderIcon(currentSize);
+                        }
+                    } else if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+                        // Try to use icon system cache
                         const cacheKey = `${setName}-${iconName}-${currentSize}`;
                         if (iconSystem.iconCache[cacheKey]) {
                             // Use cached icon
