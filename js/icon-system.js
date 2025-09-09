@@ -459,6 +459,17 @@ class DCFIconSystem {
     }
 
     /**
+     * Force reload icons from database
+     * @returns {Promise<boolean>} Success status
+     */
+    async reloadIcons() {
+        console.log('🔄 Manually reloading icon set...');
+        this.iconCache = {}; // Clear cache
+        await this.loadIconSet();
+        return Object.keys(this.iconCache).length > 0;
+    }
+
+    /**
      * Get available icon sets
      * @returns {Promise<Array>} List of available icon sets
      */
