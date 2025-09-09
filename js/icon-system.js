@@ -142,37 +142,50 @@ class DCFIconSystem {
                 // First get the icon set ID - properly handle the query
                 console.log('Loading icon set:', this.currentIconSet);
                 
-                // Try with the exact name first, then with underscores
+                // Try multiple variations to find the icon set
                 let iconSet = null;
                 let setError = null;
                 
-                // Try exact match first
-                const result1 = await this.supabaseClient
-                    .from('icon_sets')
-                    .select('id')
-                    .eq('set_name', this.currentIconSet)
-                    .maybeSingle();
+                // Create variations to try
+                const variations = [
+                    this.currentIconSet, // As-is
+                    this.currentIconSet.replace(/_/g, ' '), // Underscores to spaces
+                    this.currentIconSet.replace(/ /g, '_'), // Spaces to underscores
+                    // Title case variations
+                    this.currentIconSet.split(/[_ ]/).map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' '),
+                    this.currentIconSet.split(/[_ ]/).map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join('_'),
+                    // Exact matches for known sets
+                    'Sacred Minimalist',
+                    'sacred_minimalist'
+                ];
                 
-                iconSet = result1.data;
-                setError = result1.error;
+                // Remove duplicates
+                const uniqueVariations = [...new Set(variations)];
                 
-                // If not found, try with underscores instead of spaces
-                if (!iconSet && this.currentIconSet.includes(' ')) {
-                    const underscoreName = this.currentIconSet.replace(/ /g, '_');
-                    console.log(`Trying alternate name: ${underscoreName}`);
-                    const result2 = await this.supabaseClient
+                // Try each variation
+                for (const variation of uniqueVariations) {
+                    console.log(`Trying icon set name: "${variation}"`);
+                    const result = await this.supabaseClient
                         .from('icon_sets')
-                        .select('id')
-                        .eq('set_name', underscoreName)
+                        .select('id, set_name')
+                        .eq('set_name', variation)
                         .maybeSingle();
                     
-                    iconSet = result2.data;
-                    setError = result2.error;
+                    if (result.data) {
+                        iconSet = result.data;
+                        console.log(`✅ Found match with name: "${variation}" (ID: ${iconSet.id})`);
+                        break;
+                    }
+                    setError = result.error;
                 }
 
-                if (setError || !iconSet) {
+                if (!iconSet) {
                     if (setError) console.error('❌ Error finding icon set:', setError);
-                    console.log(`Icon set "${this.currentIconSet}" not found in database, using emoji fallback`);
+                    console.log(`Icon set "${this.currentIconSet}" not found in database after trying variations, using emoji fallback`);
                     this.currentIconSet = 'emoji';
                 } else if (iconSet) {
                     console.log(`📊 Found icon set ID: ${iconSet.id} for ${this.currentIconSet}`);
