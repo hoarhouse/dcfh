@@ -456,8 +456,29 @@ function addNavigationItems() {
         const navItem = document.createElement('a');
         navItem.href = item.href;
         navItem.className = 'dropdown-item nav-item';
+        
+        // Map emoji icons to icon system names
+        const iconMap = {
+            '🏠': 'home',
+            '👤': 'user',
+            '💬': 'message',
+            '👥': 'user', // Using user for teams
+            '📋': 'edit', // Using edit for projects
+            '📅': 'calendar',
+            '📊': 'search', // Using search for analytics
+            '✏️': 'edit'
+        };
+        
+        const iconName = iconMap[item.icon] || 'info';
+        let iconHtml = item.icon; // Default to emoji
+        
+        // Use icon system if available
+        if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+            iconHtml = iconSystem.getIcon(iconName, 'small');
+        }
+        
         navItem.innerHTML = `
-            <span class="dropdown-icon">${item.icon}</span>
+            <span class="dropdown-icon">${iconHtml}</span>
             ${item.text}
         `;
         navSection.appendChild(navItem);
@@ -3212,13 +3233,39 @@ function populateQuickActions() {
         // Check if action has primary flag or is first action in certain pages
         const isPrimary = action.primary === true || (index === 0 && ['event_details', 'notifications'].includes(pageType));
         
+        // Map emoji icons to icon system names
+        const iconMap = {
+            '🏠': 'home',
+            '👤': 'user',
+            '💬': 'message',
+            '👥': 'user',
+            '📋': 'edit',
+            '📅': 'calendar',
+            '📊': 'search',
+            '✏️': 'edit',
+            '📤': 'share',
+            '🔗': 'share',
+            '🗑️': 'close',
+            '⚙️': 'settings',
+            '💳': 'share',
+            '🔔': 'notification'
+        };
+        
+        const iconName = iconMap[action.icon] || 'info';
+        let iconHtml = action.icon; // Default to emoji
+        
+        // Use icon system if available
+        if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+            iconHtml = iconSystem.getIcon(iconName, 'small');
+        }
+        
         if (action.href) {
             // Create link styled as button
             const link = document.createElement('a');
             link.href = action.href;
             link.className = isPrimary ? 'btn btn-primary quick-action-btn' : 'btn btn-secondary quick-action-btn';
             link.innerHTML = `
-                <span class="quick-action-icon">${action.icon}</span>
+                <span class="quick-action-icon">${iconHtml}</span>
                 <span class="quick-action-text">${action.text}</span>
             `;
             container.appendChild(link);
@@ -3228,7 +3275,7 @@ function populateQuickActions() {
             button.className = isPrimary ? 'btn btn-primary quick-action-btn' : 'btn btn-secondary quick-action-btn';
             button.onclick = () => eval(action.action);
             button.innerHTML = `
-                <span class="quick-action-icon">${action.icon}</span>
+                <span class="quick-action-icon">${iconHtml}</span>
                 <span class="quick-action-text">${action.text}</span>
             `;
             container.appendChild(button);
