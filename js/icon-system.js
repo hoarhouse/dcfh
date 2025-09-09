@@ -35,7 +35,9 @@ class DCFIconSystem {
             news: '📰',
             heart: '❤️',
             shield: '🛡️',
-            team: '👥'
+            team: '👥',
+            gift: '🎁',
+            student: '🎓'
         };
 
         // Size configurations
@@ -475,7 +477,9 @@ class DCFIconSystem {
             news: 'News',
             heart: 'Heart',
             shield: 'Shield',
-            team: 'Team'
+            team: 'Team',
+            gift: 'Gift',
+            student: 'Student'
         };
         
         return labels[iconName] || iconName;
