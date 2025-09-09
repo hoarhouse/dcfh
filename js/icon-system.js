@@ -171,7 +171,7 @@ class DCFIconSystem {
             this.currentIconSet = setName;
 
             // Save preference to database if connected
-            if (this.supabaseClient) {
+            if (this.supabaseClient && typeof this.supabaseClient.from === 'function') {
                 const { error } = await this.supabaseClient
                     .from('admin_settings')
                     .upsert({ 
