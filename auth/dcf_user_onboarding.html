@@ -542,6 +542,29 @@
             position: relative;
         }
 
+        /* Icon system styling */
+        .dcf-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
+
+        .feature-icon .dcf-icon,
+        .action-icon .dcf-icon,
+        .highlight-icon .dcf-icon,
+        .celebration-icon .dcf-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tips-title .dcf-icon {
+            margin-right: 0.5rem;
+        }
+
         .user-avatar {
             width: 48px;
             height: 48px;
@@ -1204,6 +1227,44 @@
    });
 
         // User menu functionality is handled by unified auth system
+        
+        // Wait for icon system to initialize and update icons
+        function waitForIconSystem() {
+            if (window.iconSystem && window.iconSystem.isInitialized) {
+                // Icon system is ready, update all data-icon elements
+                const iconElements = document.querySelectorAll('[data-icon]');
+                iconElements.forEach(element => {
+                    const iconName = element.dataset.icon;
+                    if (iconName && window.iconSystem.coreIconMap[iconName]) {
+                        const size = element.classList.contains('icon-large') ? 'large' : 
+                                   element.classList.contains('icon-small') ? 'small' : 'standard';
+                        const ariaLabel = element.getAttribute('aria-label') || '';
+                        const iconHTML = window.iconSystem.getIcon(iconName, size, ariaLabel);
+                        
+                        // Create temporary container to parse HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = iconHTML;
+                        const newIcon = tempDiv.firstChild;
+                        
+                        // Copy existing styles if any
+                        if (element.style.fontSize) {
+                            newIcon.style.fontSize = element.style.fontSize;
+                        }
+                        
+                        // Replace the element
+                        element.replaceWith(newIcon);
+                    }
+                });
+            } else {
+                // Icon system not ready yet, wait and try again
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+        
+        // Start waiting for icon system after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(waitForIconSystem, 200);
+        });
     </script>
 
     <footer id="dcfFooter" class="dcf-footer">
