@@ -49,9 +49,9 @@ class DCFIconSystem {
      */
     async initializeIcons() {
         try {
-            // Initialize Supabase client if available
-            if (typeof window !== 'undefined' && window.supabase) {
-                this.supabaseClient = window.supabase;
+            // Wait for unified-auth.js to initialize the Supabase client
+            if (typeof window !== 'undefined' && window.dcfSupabase) {
+                this.supabaseClient = window.dcfSupabase;
                 
                 // Load the default icon set from database
                 await this.loadIconSet();
