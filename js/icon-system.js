@@ -142,15 +142,37 @@ class DCFIconSystem {
                 // First get the icon set ID - properly handle the query
                 console.log('Loading icon set:', this.currentIconSet);
                 
-                // Use proper Supabase query syntax
-                const { data: iconSet, error: setError } = await this.supabaseClient
+                // Try with the exact name first, then with underscores
+                let iconSet = null;
+                let setError = null;
+                
+                // Try exact match first
+                const result1 = await this.supabaseClient
                     .from('icon_sets')
                     .select('id')
                     .eq('set_name', this.currentIconSet)
-                    .maybeSingle(); // Use maybeSingle() instead of single() to handle no results
+                    .maybeSingle();
+                
+                iconSet = result1.data;
+                setError = result1.error;
+                
+                // If not found, try with underscores instead of spaces
+                if (!iconSet && this.currentIconSet.includes(' ')) {
+                    const underscoreName = this.currentIconSet.replace(/ /g, '_');
+                    console.log(`Trying alternate name: ${underscoreName}`);
+                    const result2 = await this.supabaseClient
+                        .from('icon_sets')
+                        .select('id')
+                        .eq('set_name', underscoreName)
+                        .maybeSingle();
+                    
+                    iconSet = result2.data;
+                    setError = result2.error;
+                }
 
-                if (setError) {
-                    console.log('Icon set not found in database, using emoji fallback');
+                if (setError || !iconSet) {
+                    if (setError) console.error('❌ Error finding icon set:', setError);
+                    console.log(`Icon set "${this.currentIconSet}" not found in database, using emoji fallback`);
                     this.currentIconSet = 'emoji';
                 } else if (iconSet) {
                     console.log(`📊 Found icon set ID: ${iconSet.id} for ${this.currentIconSet}`);
@@ -173,20 +195,27 @@ class DCFIconSystem {
 
                     if (icons && icons.length > 0) {
                         // Cache the SVG icons
+                        let cachedCount = 0;
                         icons.forEach(icon => {
-                            // Log each icon being cached
-                            console.log(`  - Caching icon: ${icon.icon_name}`);
-                            
-                            // Cache different sizes
-                            const cacheKeySmall = `${this.currentIconSet}-${icon.icon_name}-small`;
-                            const cacheKeyStandard = `${this.currentIconSet}-${icon.icon_name}-standard`;
-                            const cacheKeyLarge = `${this.currentIconSet}-${icon.icon_name}-large`;
-                            
-                            this.iconCache[cacheKeySmall] = icon.svg_small;
-                            this.iconCache[cacheKeyStandard] = icon.svg_standard;
-                            this.iconCache[cacheKeyLarge] = icon.svg_large;
+                            // Check if SVG data exists
+                            if (icon.svg_small || icon.svg_standard || icon.svg_large) {
+                                console.log(`  - Caching icon: ${icon.icon_name}`);
+                                
+                                // Cache different sizes
+                                const cacheKeySmall = `${this.currentIconSet}-${icon.icon_name}-small`;
+                                const cacheKeyStandard = `${this.currentIconSet}-${icon.icon_name}-standard`;
+                                const cacheKeyLarge = `${this.currentIconSet}-${icon.icon_name}-large`;
+                                
+                                if (icon.svg_small) this.iconCache[cacheKeySmall] = icon.svg_small;
+                                if (icon.svg_standard) this.iconCache[cacheKeyStandard] = icon.svg_standard;
+                                if (icon.svg_large) this.iconCache[cacheKeyLarge] = icon.svg_large;
+                                
+                                cachedCount++;
+                            } else {
+                                console.warn(`  ⚠️ Icon ${icon.icon_name} has no SVG data`);
+                            }
                         });
-                        console.log(`✅ Cached ${icons.length} SVG icons from ${this.currentIconSet} set`);
+                        console.log(`✅ Cached ${cachedCount} SVG icons from ${this.currentIconSet} set (out of ${icons.length} total)`);
                     } else {
                         console.warn(`⚠️ No icons found for ${this.currentIconSet} set (ID: ${iconSet.id})`);
                         console.log('Falling back to emoji icons');
