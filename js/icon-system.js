@@ -37,7 +37,14 @@ class DCFIconSystem {
             shield: '🛡️',
             team: '👥',
             gift: '🎁',
-            student: '🎓'
+            student: '🎓',
+            mission: '🎯',
+            nature: '🌱',
+            science: '🧠',
+            bridge: '🌉',
+            faith: '⛪',
+            launch: '🚀',
+            folder: '📁'
         };
 
         // Size configurations
