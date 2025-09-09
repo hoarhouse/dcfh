@@ -56,7 +56,13 @@ class DCFIconSystem {
             idea: '💡',
             document: '📄',
             chart: '📊',
-            video: '🎥'
+            video: '🎥',
+            location: '📍',
+            computer: '💻',
+            award: '🏆',
+            star: '🌟',
+            healthcare: '🏥',
+            medical: '⚕️'
         };
 
         // Size configurations

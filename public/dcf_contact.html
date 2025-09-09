@@ -428,6 +428,29 @@
             }
         }
 
+        /* Sacred Minimalist Icon Centering Fixes */
+        .contact-icon {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .dcf-icon {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .dcf-icon svg {
+            display: block !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: 24px !important;
+            height: 24px !important;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 padding: 0 1rem;
@@ -684,6 +707,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/dcf-unified-auth.js"></script>
+<script src="../js/icon-system.js"></script>
 </head>
 
 <body>
@@ -806,7 +830,7 @@
                 <div class="sidebar-card">
                     <h3 class="sidebar-title">Contact Information</h3>
                     <div class="contact-item">
-                        <div class="contact-icon">📧</div>
+                        <div class="contact-icon" data-icon="message" data-size="large" data-label="Email"></div>
                         <div class="contact-details">
                             <div class="contact-label">Email</div>
                             <div class="contact-value">
@@ -815,7 +839,7 @@
                         </div>
                     </div>
                     <div class="contact-item">
-                        <div class="contact-icon">📍</div>
+                        <div class="contact-icon" data-icon="location" data-size="large" data-label="Location"></div>
                         <div class="contact-details">
                             <div class="contact-label">Location</div>
                             <div class="contact-value">
@@ -1310,6 +1334,36 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 100);
         });
+
+        // Wait for icon system to initialize
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
+                if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
+                    initializePageIcons();
+                } else {
+                    setTimeout(waitForIconSystem, 100);
+                }
+            } else {
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+
+        function initializePageIcons() {
+            document.querySelectorAll('[data-icon]').forEach(element => {
+                const iconName = element.getAttribute('data-icon');
+                const size = element.getAttribute('data-size') || 'standard';
+                const label = element.getAttribute('data-label') || iconName;
+                
+                if (iconSystem && iconSystem.getIcon) {
+                    element.innerHTML = iconSystem.getIcon(iconName, size);
+                    element.setAttribute('aria-label', label);
+                }
+            });
+        }
+
+        // Start waiting for icon system
+        waitForIconSystem();
     </script>
 </body>
 </html>
