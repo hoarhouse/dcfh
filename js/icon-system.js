@@ -70,7 +70,17 @@ class DCFIconSystem {
             celebrate: '🎉',
             tip: '💡',
             support: '🤲',
-            complete: '🏁'
+            complete: '🏁',
+            camera: '📷',
+            edit: '✏️',
+            lock: '🔒',
+            delete: '🗑️',
+            save: '💾',
+            refresh: '🔄',
+            attach: '📎',
+            bell: '🔔',
+            'video-call': '📹',
+            'voice-call': '📞'
         };
 
         // Size configurations
