@@ -470,7 +470,8 @@ class DCFIconSystem {
             globe: 'Global',
             justice: 'Justice',
             megaphone: 'Announcement',
-            news: 'News'
+            news: 'News',
+            heart: 'Heart'
         };
         
         return labels[iconName] || iconName;
