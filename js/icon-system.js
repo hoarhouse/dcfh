@@ -228,6 +228,8 @@ class DCFIconSystem {
                     .eq('setting_key', 'current_icon_set')
                     .single();
                 
+                let saveError = null;
+                
                 if (existing) {
                     // Update existing setting
                     const { error } = await this.supabaseClient
@@ -237,6 +239,7 @@ class DCFIconSystem {
                             updated_at: new Date().toISOString()
                         })
                         .eq('setting_key', 'current_icon_set');
+                    saveError = error;
                 } else {
                     // Insert new setting
                     const { error } = await this.supabaseClient
@@ -247,10 +250,11 @@ class DCFIconSystem {
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         });
+                    saveError = error;
                 }
 
-                if (error) {
-                    console.error('❌ Error saving icon preference:', error);
+                if (saveError) {
+                    console.error('❌ Error saving icon preference:', saveError);
                     return false;
                 }
             }
