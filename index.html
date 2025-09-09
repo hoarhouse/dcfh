@@ -1937,23 +1937,41 @@
 
         // Initialize icons on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for icon system to initialize
-            setTimeout(() => {
-                initializePageIcons();
-                
-                // Listen for icon set changes (if admin changes the set)
-                if (typeof iconSystem !== 'undefined') {
-                    // Re-initialize icons when icon set changes
-                    const originalUpdateIcons = iconSystem.updateAllIcons;
-                    iconSystem.updateAllIcons = function() {
-                        if (originalUpdateIcons) {
-                            originalUpdateIcons.call(iconSystem);
-                        }
-                        // Update our page icons too
+            // Wait for icon system to fully initialize and cache icons
+            function waitForIconSystem() {
+                if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                    // Check if cache has icons (not just emoji mode)
+                    const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
+                    console.log(`🎯 Icon system ready. Cache size: ${cacheSize}, Current set: ${iconSystem.currentIconSet}`);
+                    
+                    // If we have cached icons OR we're in emoji mode, proceed
+                    if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
+                        console.log('✅ Initializing page icons now');
                         initializePageIcons();
-                    };
+                        
+                        // Listen for icon set changes (if admin changes the set)
+                        const originalUpdateIcons = iconSystem.updateAllIcons;
+                        iconSystem.updateAllIcons = function() {
+                            if (originalUpdateIcons) {
+                                originalUpdateIcons.call(iconSystem);
+                            }
+                            // Update our page icons too
+                            initializePageIcons();
+                        };
+                    } else {
+                        // Cache still loading, wait a bit more
+                        console.log('⏳ Waiting for icon cache to populate...');
+                        setTimeout(waitForIconSystem, 100);
+                    }
+                } else {
+                    // Icon system not ready yet, check again
+                    console.log('⏳ Waiting for icon system to initialize...');
+                    setTimeout(waitForIconSystem, 100);
                 }
-            }, 200);
+            }
+            
+            // Start checking after a small delay to let scripts load
+            setTimeout(waitForIconSystem, 500);
         });
     </script>
 </body>
