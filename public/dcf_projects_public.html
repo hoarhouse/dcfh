@@ -877,5 +877,45 @@
         });
     </script>
 
+    <script>
+        // Wait for icon system to initialize, then update all icons
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                console.log('✅ Icon system ready, updating all icons');
+                // Find all data-icon elements and update them
+                const iconElements = document.querySelectorAll('[data-icon]');
+                iconElements.forEach(element => {
+                    const iconName = element.dataset.icon;
+                    const size = element.classList.contains('dcf-icon') ? 'small' : 'small'; // Use small for inline icons
+                    const ariaLabel = element.getAttribute('aria-label') || '';
+                    
+                    // Get the new icon HTML
+                    const newIconHtml = iconSystem.getIcon(iconName, size, ariaLabel);
+                    
+                    // Create a temporary container to parse the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newIconHtml;
+                    const newIconElement = tempDiv.firstChild;
+                    
+                    // Copy over any existing styles and classes that aren't icon-related
+                    if (element.style.cssText) {
+                        newIconElement.style.cssText = element.style.cssText;
+                    }
+                    
+                    // Replace the element
+                    element.replaceWith(newIconElement);
+                });
+                
+                console.log(`✅ Updated ${iconElements.length} icon elements`);
+            } else {
+                // Retry in 100ms if not ready yet
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+
+        // Start checking for icon system after a brief delay
+        setTimeout(waitForIconSystem, 200);
+    </script>
+
 </body>
 </html>
