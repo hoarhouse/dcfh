@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon System Diagnostic</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/unified-auth.js"></script>
+    <script src="js/icon-system.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .icon-test {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .icon-label {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>DCF Icon System Diagnostic</h1>
+    
+    <div class="test-section">
+        <h2>1. System Status</h2>
+        <pre id="system-status">Loading...</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Icon Cache Contents</h2>
+        <pre id="cache-contents">Loading...</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Icon Rendering</h2>
+        <div id="icon-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Raw getIcon() Output</h2>
+        <pre id="raw-output">Loading...</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Database Query Test</h2>
+        <pre id="db-test">Loading...</pre>
+    </div>
+
+    <script>
+        // Wait for everything to load
+        setTimeout(async () => {
+            const statusEl = document.getElementById('system-status');
+            const cacheEl = document.getElementById('cache-contents');
+            const testsEl = document.getElementById('icon-tests');
+            const rawEl = document.getElementById('raw-output');
+            const dbEl = document.getElementById('db-test');
+            
+            // 1. Check system status
+            const status = {
+                initialized: iconSystem?.isInitialized || false,
+                currentSet: iconSystem?.currentIconSet || 'unknown',
+                hasSupabase: !!iconSystem?.supabaseClient,
+                cacheSize: Object.keys(iconSystem?.iconCache || {}).length
+            };
+            statusEl.textContent = JSON.stringify(status, null, 2);
+            
+            // 2. Show cache contents
+            const cacheKeys = Object.keys(iconSystem?.iconCache || {});
+            const cacheInfo = {
+                totalKeys: cacheKeys.length,
+                sampleKeys: cacheKeys.slice(0, 10),
+                hasIcons: {
+                    peace: cacheKeys.some(k => k.includes('peace')),
+                    education: cacheKeys.some(k => k.includes('education')),
+                    health: cacheKeys.some(k => k.includes('health')),
+                    research: cacheKeys.some(k => k.includes('research'))
+                }
+            };
+            cacheEl.textContent = JSON.stringify(cacheInfo, null, 2);
+            
+            // 3. Test icon rendering
+            const testIcons = ['peace', 'education', 'health', 'research', 'calendar', 'notification'];
+            testsEl.innerHTML = '';
+            testIcons.forEach(iconName => {
+                const div = document.createElement('div');
+                div.className = 'icon-test';
+                if (iconSystem && iconSystem.getIcon) {
+                    div.innerHTML = iconSystem.getIcon(iconName, 'standard');
+                    div.innerHTML += `<span class="icon-label">${iconName}</span>`;
+                } else {
+                    div.innerHTML = `<span>No icon system</span><span class="icon-label">${iconName}</span>`;
+                }
+                testsEl.appendChild(div);
+            });
+            
+            // 4. Raw getIcon output
+            const rawOutputs = {};
+            if (iconSystem && iconSystem.getIcon) {
+                rawOutputs.peace_standard = iconSystem.getIcon('peace', 'standard');
+                rawOutputs.peace_large = iconSystem.getIcon('peace', 'large');
+                // Check what's in the cache for peace
+                const peaceCacheKey = `${iconSystem.currentIconSet}-peace-standard`;
+                rawOutputs.peaceInCache = peaceCacheKey in iconSystem.iconCache;
+                rawOutputs.peaceCacheContent = iconSystem.iconCache[peaceCacheKey] ? 
+                    iconSystem.iconCache[peaceCacheKey].substring(0, 100) + '...' : 'Not in cache';
+            }
+            rawEl.textContent = JSON.stringify(rawOutputs, null, 2);
+            
+            // 5. Test database query directly
+            if (window.dcfSupabase) {
+                try {
+                    // Check site settings
+                    const { data: settings } = await window.dcfSupabase
+                        .from('site_settings')
+                        .select('setting_value')
+                        .eq('setting_key', 'current_icon_set')
+                        .maybeSingle();
+                    
+                    // Check icon sets
+                    const { data: iconSet } = await window.dcfSupabase
+                        .from('icon_sets')
+                        .select('*')
+                        .eq('set_name', settings?.setting_value || 'Sacred Minimalist')
+                        .maybeSingle();
+                    
+                    // Check icons count
+                    let iconCount = 0;
+                    if (iconSet) {
+                        const { data: icons } = await window.dcfSupabase
+                            .from('icons')
+                            .select('icon_name')
+                            .eq('icon_set_id', iconSet.id);
+                        iconCount = icons?.length || 0;
+                    }
+                    
+                    dbEl.textContent = JSON.stringify({
+                        currentIconSet: settings?.setting_value,
+                        iconSetFound: !!iconSet,
+                        iconSetId: iconSet?.id,
+                        iconCount: iconCount
+                    }, null, 2);
+                } catch (error) {
+                    dbEl.textContent = 'Database error: ' + error.message;
+                }
+            } else {
+                dbEl.textContent = 'No database connection';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
