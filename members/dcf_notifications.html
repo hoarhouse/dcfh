@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - DCF Hungary</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <script src="../js/icon-system.js"></script>
     <style>
         * {
             margin: 0;
@@ -699,8 +700,8 @@
         <div class="page-header">
             <h1 class="page-title">Notifications</h1>
             <div class="page-actions">
-                <button class="btn btn-secondary" onclick="markAllAsRead()" id="markAllBtn">✓ Mark All Read</button>
-                <button class="btn btn-secondary" onclick="refreshNotifications()">🔄 Refresh</button>
+                <button class="btn btn-secondary" onclick="markAllAsRead()" id="markAllBtn"><span data-icon="success" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> Mark All Read</button>
+                <button class="btn btn-secondary" onclick="refreshNotifications()"><span data-icon="refresh" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> Refresh</button>
             </div>
         </div>
 
@@ -710,15 +711,15 @@
                     <h3 class="sidebar-title">Quick Actions</h3>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                         <button onclick="markAllAsRead()" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-decoration: none; color: #333; transition: all 0.2s ease; border: none; width: 100%; cursor: pointer; font-size: 0.9rem;" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background='#f8f9fa'">
-                            <span style="font-size: 1.2rem;">✓</span>
+                            <span data-icon="success" style="display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;"></span>
                             <span>Mark All Read</span>
                         </button>
                         <button onclick="clearAllNotifications()" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-decoration: none; color: #333; transition: all 0.2s ease; border: none; width: 100%; cursor: pointer; font-size: 0.9rem;" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background='#f8f9fa'">
-                            <span style="font-size: 1.2rem;">🗑️</span>
+                            <span data-icon="delete" style="display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;"></span>
                             <span>Clear All</span>
                         </button>
                         <a href="dcf_member_home.html" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-decoration: none; color: #333; transition: all 0.2s ease;" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background='#f8f9fa'">
-                            <span style="font-size: 1.2rem;">🏠</span>
+                            <span data-icon="home" style="display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem;"></span>
                             <span style="font-size: 0.9rem;">Back to Home</span>
                         </a>
                     </div>
@@ -794,7 +795,7 @@
                 <div class="content-header">
                     <div class="content-title">All Notifications</div>
                     <div class="content-actions">
-                        <button class="btn btn-secondary btn-small" onclick="refreshNotifications()">🔄 Refresh</button>
+                        <button class="btn btn-secondary btn-small" onclick="refreshNotifications()"><span data-icon="refresh" style="display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;"></span> Refresh</button>
                     </div>
                 </div>
 
@@ -960,7 +961,7 @@
             if (filteredNotifications.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🔔</div>
+                        <div class="empty-state-icon"><span data-icon="bell" style="display: inline-flex; align-items: center; justify-content: center; font-size: 4rem;"></span></div>
                         <h3 class="empty-state-title">No notifications found</h3>
                         <p class="empty-state-description">You're all caught up!</p>
                     </div>
@@ -1011,18 +1012,19 @@
         }
 
         function getNotificationIcon(type) {
-            const icons = {
-                'post_like': '❤️',
-                'post_comment': '💬',
-                'post_mention': '@',
-                'project_update': '📁',
-                'event_reminder': '📅',
-                'member_join': '👤',
-                'resource_shared': '📚',
-                'system_update': '⚙️',
-                'connection_request': '🤝'
+            const iconMap = {
+                'post_like': 'heart',
+                'post_comment': 'message',
+                'post_mention': 'user',
+                'project_update': 'folder',
+                'event_reminder': 'calendar',
+                'member_join': 'user',
+                'resource_shared': 'document',
+                'system_update': 'settings',
+                'connection_request': 'users'
             };
-            return icons[type] || '🔔';
+            const iconName = iconMap[type] || 'bell';
+            return `<span data-icon="${iconName}" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;"></span>`;
         }
 
         function formatTime(timestamp) {
@@ -1340,6 +1342,32 @@
         // Log current state for debugging
         console.log('Notifications page loaded. Current user:', currentUser);
         console.log('To create a test notification, run: createTestNotification()');
+    </script>
+    
+    <script>
+        // Wait for icon system to load and initialize icons
+        function waitForIconSystem() {
+            if (typeof window.createIcon === 'function') {
+                // Icon system is ready, initialize all icons
+                document.querySelectorAll('[data-icon]').forEach(element => {
+                    const iconName = element.getAttribute('data-icon');
+                    element.innerHTML = window.createIcon(iconName);
+                });
+            } else {
+                // Icon system not ready, wait and try again
+                setTimeout(waitForIconSystem, 50);
+            }
+        }
+        
+        // Start waiting for icon system
+        waitForIconSystem();
+        
+        // Re-initialize icons when notifications are reloaded
+        const originalDisplayNotifications = displayNotifications;
+        displayNotifications = function() {
+            originalDisplayNotifications();
+            setTimeout(waitForIconSystem, 100);
+        };
     </script>
 </body>
 </html>
