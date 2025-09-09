@@ -120,7 +120,7 @@ class DCFIconSystem {
                 .from('site_settings')
                 .select('setting_value')
                 .eq('setting_key', 'current_icon_set')
-                .single();
+                .maybeSingle(); // Use maybeSingle to handle missing settings gracefully
 
             if (prefError) {
                 // If the setting doesn't exist or there's an error, use default
