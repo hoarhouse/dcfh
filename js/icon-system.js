@@ -26,7 +26,13 @@ class DCFIconSystem {
             menu: '☰',
             search: '🔍',
             share: '📤',
-            info: 'ℹ️'
+            info: 'ℹ️',
+            clock: '🕐',
+            donate: '💝',
+            globe: '🌍',
+            justice: '⚖️',
+            megaphone: '📢',
+            news: '📰'
         };
 
         // Size configurations
@@ -380,7 +386,13 @@ class DCFIconSystem {
             menu: 'Menu',
             search: 'Search',
             share: 'Share',
-            info: 'Information'
+            info: 'Information',
+            clock: 'Time',
+            donate: 'Donate',
+            globe: 'Global',
+            justice: 'Justice',
+            megaphone: 'Announcement',
+            news: 'News'
         };
         
         return labels[iconName] || iconName;
