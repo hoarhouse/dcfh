@@ -133,14 +133,20 @@ class DCFIconSystem {
 
             // Load SVG icons if not using emoji set
             if (this.currentIconSet !== 'emoji') {
-                // First get the icon set ID
+                // First get the icon set ID - properly handle the query
+                console.log('Loading icon set:', this.currentIconSet);
+                
+                // Use proper Supabase query syntax
                 const { data: iconSet, error: setError } = await this.supabaseClient
                     .from('icon_sets')
                     .select('id')
                     .eq('set_name', this.currentIconSet)
-                    .single();
+                    .maybeSingle(); // Use maybeSingle() instead of single() to handle no results
 
-                if (iconSet) {
+                if (setError) {
+                    console.log('Icon set not found in database, using emoji fallback');
+                    this.currentIconSet = 'emoji';
+                } else if (iconSet) {
                     // Load icons for this set
                     const { data: icons, error: iconError } = await this.supabaseClient
                         .from('icons')
