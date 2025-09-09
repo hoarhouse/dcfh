@@ -32,7 +32,8 @@ class DCFIconSystem {
             globe: '🌍',
             justice: '⚖️',
             megaphone: '📢',
-            news: '📰'
+            news: '📰',
+            heart: '❤️'
         };
 
         // Size configurations
