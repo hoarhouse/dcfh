@@ -1556,6 +1556,36 @@
                 }
             });
         });
+
+        // Wait for icon system to initialize
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
+                if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
+                    initializePageIcons();
+                } else {
+                    setTimeout(waitForIconSystem, 100);
+                }
+            } else {
+                setTimeout(waitForIconSystem, 100);
+            }
+        }
+
+        function initializePageIcons() {
+            document.querySelectorAll('[data-icon]').forEach(element => {
+                const iconName = element.getAttribute('data-icon');
+                const size = element.getAttribute('data-size') || 'standard';
+                const label = element.getAttribute('data-label') || iconName;
+                
+                if (iconSystem && iconSystem.getIcon) {
+                    element.innerHTML = iconSystem.getIcon(iconName, size);
+                    element.setAttribute('aria-label', label);
+                }
+            });
+        }
+
+        // Start waiting for icon system
+        waitForIconSystem();
     </script>
 </body>
 </html>
