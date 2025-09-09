@@ -62,7 +62,15 @@ class DCFIconSystem {
             award: '🏆',
             star: '🌟',
             healthcare: '🏥',
-            medical: '⚕️'
+            medical: '⚕️',
+            check: '✓',
+            close: '✗',
+            view: '👁️',
+            hide: '🙈',
+            celebrate: '🎉',
+            tip: '💡',
+            support: '🤲',
+            complete: '🏁'
         };
 
         // Size configurations
