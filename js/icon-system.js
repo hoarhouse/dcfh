@@ -100,13 +100,13 @@ class DCFIconSystem {
             return this.renderIcon(this.iconCache[cacheKey], iconName, size, ariaLabel);
         }
 
-        // For now, render emoji version
-        if (this.currentIconSet === 'emoji' || !this.supabaseClient) {
-            return this.renderEmojiIcon(iconName, size, ariaLabel);
+        // Log cache miss for debugging
+        if (this.currentIconSet !== 'emoji') {
+            console.log(`🔍 Cache miss for ${cacheKey} - falling back to emoji`);
         }
 
-        // If SVG set is selected but not cached, fetch and render
-        // This would be async in production, for now fallback to emoji
+        // Always fall back to emoji if not in cache
+        // (Icons should be pre-loaded during initialization)
         return this.renderEmojiIcon(iconName, size, ariaLabel);
     }
 
