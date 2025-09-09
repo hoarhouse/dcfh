@@ -430,19 +430,18 @@ class DCFIconSystem {
             { name: 'emoji', label: 'Emoji Icons', description: 'Default emoji icons' }
         ];
 
-        if (this.supabaseClient) {
+        if (this.supabaseClient && typeof this.supabaseClient.from === 'function') {
             try {
-                const { data: styles, error } = await this.supabaseClient
-                    .from('icon_library')
-                    .select('style')
-                    .distinct();
+                const { data: iconSets, error } = await this.supabaseClient
+                    .from('icon_sets')
+                    .select('set_name, description');
 
-                if (styles) {
-                    styles.forEach(style => {
+                if (iconSets && iconSets.length > 0) {
+                    iconSets.forEach(iconSet => {
                         sets.push({
-                            name: style.style,
-                            label: this.formatSetName(style.style),
-                            description: `${style.style} icon style`
+                            name: iconSet.set_name,
+                            label: this.formatSetName(iconSet.set_name),
+                            description: iconSet.description || `${iconSet.set_name} icon style`
                         });
                     });
                 }
