@@ -397,15 +397,20 @@ class DCFIconSystem {
 // Create global instance
 const iconSystem = new DCFIconSystem();
 
-// Auto-initialize when DOM is ready
+// Auto-initialize when DOM is ready and unified-auth.js has loaded
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            iconSystem.initializeIcons();
+            // Wait a bit for unified-auth.js to initialize
+            setTimeout(() => {
+                iconSystem.initializeIcons();
+            }, 100);
         });
     } else {
-        // DOM already loaded
-        iconSystem.initializeIcons();
+        // DOM already loaded, wait for unified-auth.js
+        setTimeout(() => {
+            iconSystem.initializeIcons();
+        }, 100);
     }
 }
 
