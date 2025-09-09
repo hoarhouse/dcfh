@@ -66,8 +66,36 @@
         <h2>5. Database Query Test</h2>
         <pre id="db-test">Loading...</pre>
     </div>
+    
+    <div class="test-section">
+        <h2>6. Manual Reload Test</h2>
+        <button onclick="reloadIcons()">Reload Icons from Database</button>
+        <pre id="reload-result">Click button to reload icons</pre>
+    </div>
 
     <script>
+        // Function to reload icons
+        async function reloadIcons() {
+            const resultEl = document.getElementById('reload-result');
+            resultEl.textContent = 'Reloading icons...';
+            
+            if (iconSystem && iconSystem.reloadIcons) {
+                const success = await iconSystem.reloadIcons();
+                const cacheSize = Object.keys(iconSystem.iconCache).length;
+                resultEl.textContent = JSON.stringify({
+                    success: success,
+                    cacheSize: cacheSize,
+                    currentSet: iconSystem.currentIconSet,
+                    timestamp: new Date().toISOString()
+                }, null, 2);
+                
+                // Refresh the page content
+                location.reload();
+            } else {
+                resultEl.textContent = 'Icon system not available';
+            }
+        }
+        
         // Wait for everything to load
         setTimeout(async () => {
             const statusEl = document.getElementById('system-status');
@@ -137,7 +165,12 @@
                         .eq('setting_key', 'current_icon_set')
                         .maybeSingle();
                     
-                    // Check icon sets
+                    // Check icon sets - first list all available sets
+                    const { data: allSets } = await window.dcfSupabase
+                        .from('icon_sets')
+                        .select('id, set_name');
+                    
+                    // Then check the specific set
                     const { data: iconSet } = await window.dcfSupabase
                         .from('icon_sets')
                         .select('*')
@@ -146,19 +179,23 @@
                     
                     // Check icons count
                     let iconCount = 0;
+                    let icons = null;
                     if (iconSet) {
-                        const { data: icons } = await window.dcfSupabase
+                        const { data: iconData } = await window.dcfSupabase
                             .from('icons')
                             .select('icon_name')
                             .eq('icon_set_id', iconSet.id);
+                        icons = iconData;
                         iconCount = icons?.length || 0;
                     }
                     
                     dbEl.textContent = JSON.stringify({
                         currentIconSet: settings?.setting_value,
+                        availableSets: allSets?.map(s => `${s.id}: ${s.set_name}`),
                         iconSetFound: !!iconSet,
                         iconSetId: iconSet?.id,
-                        iconCount: iconCount
+                        iconCount: iconCount,
+                        sampleIcons: icons?.slice(0, 5).map(i => i.icon_name)
                     }, null, 2);
                 } catch (error) {
                     dbEl.textContent = 'Database error: ' + error.message;
