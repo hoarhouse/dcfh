@@ -80,7 +80,15 @@ class DCFIconSystem {
             attach: '📎',
             bell: '🔔',
             'video-call': '📹',
-            'voice-call': '📞'
+            'voice-call': '📞',
+            smile: '😊',
+            send: '➤',
+            target: '🎯',
+            users: '👥',
+            image: '🖼️',
+            plus: '➕',
+            link: '🔗',
+            mail: '📧'
         };
 
         // Size configurations
