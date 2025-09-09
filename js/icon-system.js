@@ -34,7 +34,8 @@ class DCFIconSystem {
             megaphone: '📢',
             news: '📰',
             heart: '❤️',
-            shield: '🛡️'
+            shield: '🛡️',
+            team: '👥'
         };
 
         // Size configurations
@@ -473,7 +474,8 @@ class DCFIconSystem {
             megaphone: 'Announcement',
             news: 'News',
             heart: 'Heart',
-            shield: 'Shield'
+            shield: 'Shield',
+            team: 'Team'
         };
         
         return labels[iconName] || iconName;
