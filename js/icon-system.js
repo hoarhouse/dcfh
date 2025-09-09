@@ -44,7 +44,19 @@ class DCFIconSystem {
             bridge: '🌉',
             faith: '⛪',
             launch: '🚀',
-            folder: '📁'
+            folder: '📁',
+            atom: '⚛️',
+            partnership: '🤝',
+            institution: '🏛️',
+            teacher: '👩‍🏫',
+            school: '🏫',
+            business: '💼',
+            mobile: '📱',
+            justice: '⚖️',
+            idea: '💡',
+            document: '📄',
+            chart: '📊',
+            video: '🎥'
         };
 
         // Size configurations
