@@ -133,20 +133,34 @@ class DCFIconSystem {
 
             // Load SVG icons if not using emoji set
             if (this.currentIconSet !== 'emoji') {
-                const { data: icons, error: iconError } = await this.supabaseClient
-                    .from('icon_library')
-                    .select('name, svg_content, style')
-                    .eq('style', this.currentIconSet);
+                // First get the icon set ID
+                const { data: iconSet, error: setError } = await this.supabaseClient
+                    .from('icon_sets')
+                    .select('id')
+                    .eq('set_name', this.currentIconSet)
+                    .single();
 
-                if (icons && icons.length > 0) {
-                    // Cache the SVG icons
-                    icons.forEach(icon => {
-                        Object.keys(this.sizeConfig).forEach(size => {
-                            const cacheKey = `${this.currentIconSet}-${icon.name}-${size}`;
-                            this.iconCache[cacheKey] = icon.svg_content;
+                if (iconSet) {
+                    // Load icons for this set
+                    const { data: icons, error: iconError } = await this.supabaseClient
+                        .from('icons')
+                        .select('icon_name, svg_small, svg_standard, svg_large')
+                        .eq('set_id', iconSet.id);
+
+                    if (icons && icons.length > 0) {
+                        // Cache the SVG icons
+                        icons.forEach(icon => {
+                            // Cache different sizes
+                            const cacheKeySmall = `${this.currentIconSet}-${icon.icon_name}-small`;
+                            const cacheKeyStandard = `${this.currentIconSet}-${icon.icon_name}-standard`;
+                            const cacheKeyLarge = `${this.currentIconSet}-${icon.icon_name}-large`;
+                            
+                            this.iconCache[cacheKeySmall] = icon.svg_small;
+                            this.iconCache[cacheKeyStandard] = icon.svg_standard;
+                            this.iconCache[cacheKeyLarge] = icon.svg_large;
                         });
-                    });
-                    console.log(`✅ Cached ${icons.length} SVG icons`);
+                        console.log(`✅ Cached ${icons.length} SVG icons from ${this.currentIconSet} set`);
+                    }
                 }
             }
         } catch (error) {
