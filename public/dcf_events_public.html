@@ -449,6 +449,37 @@
             font-size: 0.8rem;
         }
 
+        /* Icon system styling */
+        .dcf-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
+
+        .dcf-icon-emoji {
+            line-height: 1;
+        }
+
+        .btn .dcf-icon {
+            margin-right: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        .event-meta .dcf-icon {
+            margin-right: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        /* Ensure consistent spacing for inline icons */
+        span[data-icon] {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 padding: 0 1rem;
@@ -834,6 +865,48 @@
                 }
             });
         });
+
+        // Wait for icon system to initialize and then convert icons
+        function waitForIconSystem() {
+            if (window.iconSystem && window.iconSystem.isInitialized) {
+                // Icon system is ready, convert all data-icon attributes
+                const iconElements = document.querySelectorAll('[data-icon]');
+                iconElements.forEach(element => {
+                    if (!element.classList.contains('dcf-icon')) {
+                        const iconName = element.dataset.icon;
+                        const ariaLabel = element.getAttribute('aria-label') || iconName;
+                        const size = element.classList.contains('icon-small') ? 'small' : 
+                                   element.classList.contains('icon-large') ? 'large' : 'small';
+                        
+                        const iconHTML = window.iconSystem.getIcon(iconName, size, ariaLabel);
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = iconHTML;
+                        const iconElement = tempDiv.firstChild;
+                        
+                        // Copy any existing classes except data-icon related ones
+                        element.className.split(' ').forEach(cls => {
+                            if (!cls.startsWith('data-') && cls !== '') {
+                                iconElement.classList.add(cls);
+                            }
+                        });
+                        
+                        element.replaceWith(iconElement);
+                    }
+                });
+            } else {
+                // Not ready yet, check again in 50ms
+                setTimeout(waitForIconSystem, 50);
+            }
+        }
+
+        // Start waiting for icon system after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(waitForIconSystem, 100);
+            });
+        } else {
+            setTimeout(waitForIconSystem, 100);
+        }
     </script>
 
     </body>
