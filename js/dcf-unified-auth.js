@@ -2556,16 +2556,17 @@ window.getUserName = getUserName;
 window.getUserId = getUserId;
 window.validateUsername = validateUsername;
 window.initializeDCF = initializeDCF;
-window.focusSearchProjects = focusSearchProjects;
-window.exploreJoinableProjects = exploreJoinableProjects;
-window.focusSearchEvents = focusSearchEvents;
-window.exploreUpcomingEvents = exploreUpcomingEvents;
-window.focusSearchMembers = focusSearchMembers;
-window.connectWithMembers = connectWithMembers;
-window.focusSearchResources = focusSearchResources;
-window.viewMyContributions = viewMyContributions;
-window.viewBookmarks = viewBookmarks;
-window.showComingSoon = showComingSoon;
+// Quick Actions functions removed - these exports commented out to prevent errors
+// window.focusSearchProjects = focusSearchProjects;
+// window.exploreJoinableProjects = exploreJoinableProjects;
+// window.focusSearchEvents = focusSearchEvents;
+// window.exploreUpcomingEvents = exploreUpcomingEvents;
+// window.focusSearchMembers = focusSearchMembers;
+// window.connectWithMembers = connectWithMembers;
+// window.focusSearchResources = focusSearchResources;
+// window.viewMyContributions = viewMyContributions;
+// window.viewBookmarks = viewBookmarks;
+// window.showComingSoon = showComingSoon;
 window.generateInitials = generateInitials;
 window.subscribeNewsletter = subscribeNewsletter;
 
