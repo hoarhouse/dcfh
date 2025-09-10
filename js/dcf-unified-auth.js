@@ -841,14 +841,53 @@ async function confirmLogout() {
 }
 
 // =============================================================================
-// 8. QUICK ACTIONS SYSTEM
+// 8. ICON SYSTEM INTEGRATION
 // =============================================================================
-function initializeQuickActions() {
+async function loadCurrentIconSet() {
+    try {
+        const { data: setting } = await window.dcfSupabase
+            .from('site_settings')
+            .select('setting_value')
+            .eq('setting_key', 'current_icon_set')
+            .single();
+        
+        if (setting) {
+            const iconSetName = setting.setting_value;
+            const { data: iconSet } = await window.dcfSupabase
+                .from('icon_sets')
+                .select('id')
+                .eq('set_name', iconSetName)
+                .single();
+            
+            if (iconSet) {
+                const { data: icons } = await window.dcfSupabase
+                    .from('icons')
+                    .select('*')
+                    .eq('icon_set_id', iconSet.id);
+                return icons || [];
+            }
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading icon set:', error);
+        return [];
+    }
+}
+
+function getIconSvg(icons, iconName) {
+    const icon = icons.find(i => i.icon_name === iconName);
+    return icon ? icon.svg_standard : '📋';
+}
+
+// =============================================================================
+// 9. QUICK ACTIONS SYSTEM
+// =============================================================================
+async function initializeQuickActions() {
     const currentPage = getCurrentPageType();
     const container = document.querySelector('.quick-actions-container, .sidebar-card div[style*="flex-direction: column"]');
     if (!container) return;
     
-    const actionsHTML = getQuickActionsHTML(currentPage);
+    const actionsHTML = await getQuickActionsHTML(currentPage);
     container.innerHTML = actionsHTML;
 }
 
@@ -874,11 +913,11 @@ function getQuickActionsHTML(pageType) {
     
     switch (pageType) {
         case 'projects':
-            return `
-                <button class="btn btn-primary" onclick="focusSearchProjects()">🔍 Search Projects</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">➕ Create Project</button>
-                <button class="btn btn-secondary" onclick="exploreJoinableProjects()">🤝 Join Project</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}projects/dcf_projects_home.html'; setTimeout(function() { if (typeof switchTab === 'function') { switchTab('my'); } else { var myTab = document.querySelector('.tab-btn:nth-child(2)'); if (myTab) myTab.click(); } }, 100);">📊 Manage My Projects</button>
+             return `
+                <button class="btn btn-primary" onclick="focusSearchProjects()">${getIconSvg(icons, 'search')} Search Projects</button>
+                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">${getIconSvg(icons, 'plus')} Create Project</button>
+                <button class="btn btn-secondary" onclick="exploreJoinableProjects()">${getIconSvg(icons, 'user')} Join Project</button>
+                <button class="btn btn-secondary" onclick="window.location.href='${basePath}projects/dcf_projects_home.html'; setTimeout(function() { if (typeof switchTab === 'function') { switchTab('my'); } else { var myTab = document.querySelector('.tab-btn:nth-child(2)'); if (myTab) myTab.click(); } }, 100);">${getIconSvg(icons, 'chart')} Manage My Projects</button>
             `;
         case 'events':
             return `
@@ -2526,9 +2565,9 @@ async function initializeDCF() {
         // ✅ RESTORED: Update UI based on auth state
         updateUserInterface();
         
-        // ✅ RESTORED: Initialize components
+         // ✅ RESTORED: Initialize components
         populateTopNavigation();
-        initializeQuickActions();
+        await initializeQuickActions();
         initializeFooter();
         
         // ✅ RESTORED: Initialize notification system if logged in
