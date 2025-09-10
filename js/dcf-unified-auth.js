@@ -3124,67 +3124,7 @@ function shareResource() {
     window.location.href = basePath + 'resources/dcf_resource_upload.html';
 }
 
-function focusMemberSearch() {
-    const searchInput = document.querySelector('#search, #searchInput, input[type="search"], input[placeholder*="Search"]');
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-}
-
-function focusProjectSearch() {
-    const searchInput = document.querySelector('#searchInput, #projectSearch, input[placeholder*="Search projects"]');
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-}
-
-function focusResourceSearch() {
-    const searchInput = document.querySelector('#searchInput, #resourceSearch, input[placeholder*="Search resources"]');
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-}
-
-function exportAnalytics() {
-    // Trigger export if function exists on page
-    if (typeof window.exportData === 'function') {
-        window.exportData();
-    } else {
-        alert('Export functionality will be available soon!');
-    }
-}
-
-function openCreateEventModal() {
-    // Open create event modal if exists
-    const createBtn = document.querySelector('.create-event-btn, [onclick*="createEvent"]');
-    if (createBtn) {
-        createBtn.click();
-    } else {
-        // Get path helper
-        const currentPath = window.location.pathname;
-        const pathParts = currentPath.split('/');
-        const currentFolder = pathParts[pathParts.length - 2];
-        
-        let createEventPath;
-        if (currentFolder === 'events') {
-            createEventPath = 'dcf_create_event.html';
-        } else if (currentFolder === 'dcfh' || !currentFolder) {
-            createEventPath = 'events/dcf_create_event.html';
-        } else {
-            createEventPath = '../events/dcf_create_event.html';
-        }
-        window.location.href = createEventPath;
-    }
-}
-
-window.focusMemberSearch = focusMemberSearch;
-window.focusProjectSearch = focusProjectSearch;
-window.focusResourceSearch = focusResourceSearch;
-window.exportAnalytics = exportAnalytics;
-window.openCreateEventModal = openCreateEventModal;
+// [Quick Actions helper functions removed]
 
 // =============================================================================
 // 19. UNIVERSAL COMMENT SYSTEM - WORKS FOR ANY CONTENT TYPE
