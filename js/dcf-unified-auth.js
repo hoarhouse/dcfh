@@ -2797,9 +2797,8 @@ window.showPrompt = showPrompt;
 window.closeAlert = closeAlert;
 
 // =============================================================================
-// 18. UNIFIED QUICK ACTIONS SYSTEM
+// 18. [SECTION REMOVED - QUICK ACTIONS]
 // =============================================================================
-function detectPageTypeOld() {
     const path = window.location.pathname;
     const filename = path.substring(path.lastIndexOf('/') + 1);
     
