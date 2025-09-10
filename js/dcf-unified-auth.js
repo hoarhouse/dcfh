@@ -845,21 +845,154 @@ async function confirmLogout() {
 // =============================================================================
 
 // =============================================================================
-// 8.1. QUICK ACTIONS SYSTEM
+// 8.1. QUICK ACTIONS SYSTEM - FINAL UNIFIED VERSION
 // =============================================================================
 async function initializeQuickActions() {
     const container = document.getElementById('quickActionsContainer');
-    if (!container) {
-        console.log('No Quick Actions container found on this page');
-        return;
+    if (!container) return;
+    
+    const pageType = detectPageType();
+    const basePath = getCorrectBasePath();
+    
+    let actions = [];
+    
+    // Check for page-specific custom actions first
+    if (window.pageQuickActions && Array.isArray(window.pageQuickActions)) {
+        actions = window.pageQuickActions;
+    } else {
+        // Use default actions based on page type
+        switch (pageType) {
+            case 'events':
+            case 'events_calendar':
+            case 'event_details':
+            case 'create_event':
+                actions = [
+                    { icon: 'calendar', text: 'Find Events', href: `${basePath}events/dcf_events_calendar.html` },
+                    { icon: 'plus', text: 'Create Event', href: `${basePath}events/dcf_create_event.html` },
+                    { icon: 'calendar', text: 'Register for Events', action: 'exploreUpcomingEvents()' },
+                    { icon: 'edit', text: 'My Event Calendar', href: `${basePath}events/dcf_events_calendar.html` }
+                ];
+                break;
+            case 'members':
+            case 'members_directory':
+            case 'member_home':
+            case 'member_profile':
+                actions = [
+                    { icon: 'user', text: 'Find Members', action: 'focusSearchMembers()' },
+                    { icon: 'user', text: 'Connect with Members', action: 'connectWithMembers()' },
+                    { icon: 'globe', text: 'View My Network', action: 'showComingSoon("My Network")' },
+                    { icon: 'search', text: 'Member Analytics', href: `${basePath}members/dcf_personal_analytics.html` }
+                ];
+                break;
+            case 'projects':
+            case 'projects_home':
+            case 'project_detail':
+            case 'create_project':
+                actions = [
+                    { icon: 'search', text: 'Search Projects', action: 'focusSearchProjects()' },
+                    { icon: 'plus', text: 'Create Project', href: `${basePath}projects/dcf_create_project.html` },
+                    { icon: 'user', text: 'Join Project', action: 'exploreJoinableProjects()' },
+                    { icon: 'edit', text: 'Manage My Projects', href: `${basePath}projects/dcf_projects_home.html` }
+                ];
+                break;
+            case 'resources':
+            case 'resources_library':
+            case 'resource_detail':
+                actions = [
+                    { icon: 'education', text: 'Browse Library', action: 'focusSearchResources()' },
+                    { icon: 'plus', text: 'Upload Resource', href: `${basePath}resources/dcf_resource_upload.html` },
+                    { icon: 'edit', text: 'My Contributions', action: 'viewMyContributions()' },
+                    { icon: 'heart', text: 'My Bookmarks', action: 'viewBookmarks()' }
+                ];
+                break;
+            default:
+                actions = [
+                    { icon: 'plus', text: 'Create Project', href: `${basePath}projects/dcf_create_project.html` },
+                    { icon: 'search', text: 'View Analytics', href: `${basePath}members/dcf_personal_analytics.html` },
+                    { icon: 'calendar', text: 'Events Calendar', href: `${basePath}events/dcf_events_calendar.html` },
+                    { icon: 'message', text: 'Discussion Forum', href: `${basePath}members/dcf_member_home.html` }
+                ];
+        }
     }
     
-    // Get page-specific quick actions or use defaults
-    const quickActions = window.pageQuickActions || getDefaultQuickActions();
+    // Generate HTML for buttons
+    const buttonsHTML = actions.map((action, index) => {
+        // Use getIcon if available, otherwise use emoji fallback
+        let iconHTML = '';
+        if (typeof getIcon === 'function' && action.icon) {
+            iconHTML = getIcon(action.icon, 'small');
+        } else {
+            // Emoji fallbacks
+            const emojiMap = {
+                'calendar': '📅',
+                'plus': '➕',
+                'edit': '✏️',
+                'user': '👥',
+                'globe': '🌐',
+                'search': '🔍',
+                'education': '📚',
+                'heart': '❤️',
+                'message': '💬',
+                'home': '🏠',
+                'folder': '📁',
+                'grid': '⚡',
+                'star': '⭐',
+                'settings': '⚙️'
+            };
+            iconHTML = emojiMap[action.icon] || '📋';
+        }
+        
+        // Determine if primary button (first action or explicitly marked)
+        const isPrimary = action.primary === true || index === 0;
+        const btnClass = isPrimary ? 'btn-primary' : 'btn-secondary';
+        
+        // Build click handler
+        const clickHandler = action.href 
+            ? `onclick="window.location.href='${action.href}'"` 
+            : action.action 
+            ? `onclick="${action.action}"` 
+            : '';
+        
+        return `<button class="btn ${btnClass} quick-action-btn" ${clickHandler}>
+            <span class="quick-action-icon">${iconHTML}</span>
+            <span class="quick-action-text">${action.text}</span>
+        </button>`;
+    }).join('');
     
-    // Generate and insert HTML
-    container.innerHTML = getQuickActionsHTML(quickActions, null);
-    console.log('✅ Quick Actions initialized');
+    container.innerHTML = buttonsHTML;
+    console.log(`✅ Quick Actions initialized with ${actions.length} actions for ${pageType}`);
+}
+
+function detectPageType() {
+    const path = window.location.pathname.toLowerCase();
+    const filename = path.split('/').pop();
+    
+    // Check URL path segments
+    if (path.includes('/events/')) {
+        if (filename.includes('calendar')) return 'events_calendar';
+        if (filename.includes('details')) return 'event_details';
+        if (filename.includes('create')) return 'create_event';
+        return 'events';
+    }
+    if (path.includes('/members/')) {
+        if (filename.includes('directory')) return 'members_directory';
+        if (filename.includes('home')) return 'member_home';
+        if (filename.includes('profile')) return 'member_profile';
+        return 'members';
+    }
+    if (path.includes('/projects/')) {
+        if (filename.includes('home')) return 'projects_home';
+        if (filename.includes('detail')) return 'project_detail';
+        if (filename.includes('create')) return 'create_project';
+        return 'projects';
+    }
+    if (path.includes('/resources/')) {
+        if (filename.includes('library')) return 'resources_library';
+        if (filename.includes('detail')) return 'resource_detail';
+        return 'resources';
+    }
+    
+    return 'default';
 }
 
 function getDefaultQuickActions() {
@@ -924,17 +1057,6 @@ function getQuickActionsHTML(actions, icons) {
 }
 
 
-// =============================================================================
-// 9. QUICK ACTIONS SYSTEM
-// =============================================================================
-async function initializeQuickActions() {
-    const currentPage = getCurrentPageType();
-    const container = document.querySelector('.quick-actions-container, .sidebar-card div[style*="flex-direction: column"]');
-    if (!container) return;
-    
-    const actionsHTML = await getQuickActionsHTML(currentPage);
-    container.innerHTML = actionsHTML;
-}
 
 function getCurrentPageType() {
     const path = window.location.pathname.toLowerCase();
@@ -3043,7 +3165,7 @@ window.closeAlert = closeAlert;
 // =============================================================================
 // 18. UNIFIED QUICK ACTIONS SYSTEM
 // =============================================================================
-function detectPageType() {
+function detectPageTypeOld() {
     const path = window.location.pathname;
     const filename = path.substring(path.lastIndexOf('/') + 1);
     
@@ -3213,20 +3335,10 @@ function getQuickActionsConfig(pageType) {
     return quickActionsConfig[pageType] || quickActionsConfig['default'];
 }
 
-function populateQuickActions() {
-    const container = document.getElementById('quickActionsContainer');
-    if (!container) {
-        console.log('Quick Actions container not found on this page');
-        return;
-    }
-    
-    const pageType = detectPageType();
-    const actions = getQuickActionsConfig(pageType);
-    
-    console.log(`Populating Quick Actions for page type: ${pageType}`);
-    
-    // Clear existing content
-    container.innerHTML = '';
+// REMOVED: populateQuickActions - replaced with unified initializeQuickActions
+function populateQuickActionsOld() {
+    // This function has been deprecated and replaced
+    return;
     
     // Add CSS if not already present
     if (!document.getElementById('quickActionsStyles')) {
@@ -3369,14 +3481,7 @@ function populateQuickActions() {
     console.log(`✅ Quick Actions populated with ${actions.length} items`);
 }
 
-// Initialize Quick Actions when DOM is ready
-function initializeQuickActions() {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', populateQuickActions);
-    } else {
-        populateQuickActions();
-    }
-}
+// REMOVED: Duplicate initializeQuickActions - using unified version at line 850
 
 // Quick Action Helper Functions
 function shareResource() {
@@ -3442,7 +3547,7 @@ function openCreateEventModal() {
 }
 
 // Export Quick Actions functions
-window.populateQuickActions = populateQuickActions;
+// window.populateQuickActions = deprecated - use initializeQuickActions
 window.initializeQuickActions = initializeQuickActions;
 window.focusMemberSearch = focusMemberSearch;
 window.focusProjectSearch = focusProjectSearch;
