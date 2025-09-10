@@ -1056,7 +1056,7 @@
             
             allEventsTab.innerHTML = `<span data-icon="calendar" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> All Events (${allEventsCount})`;
             myEventsTab.innerHTML = `<span data-icon="user" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> My Events (${myEventsCount})`;
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
         }
         
         function filterAndDisplayEvents(filterType) {
@@ -1064,10 +1064,12 @@
             console.log('🔍 DIAGNOSTIC: allEventsCache length:', allEventsCache.length);
             
             if (allEventsCache.length === 0) {
-                console.log('🔍 DIAGNOSTIC: No cached events, calling loadEventsFromServer');
-                // If no events cached, reload from server
-                // Call loadEventsFromServer instead of the undefined loadEvents
-                loadEventsFromServer();
+                console.log('🔍 DIAGNOSTIC: No cached events, showing empty state');
+                // Don't call loadEventsFromServer here - it creates infinite loop!
+                // Just show empty state instead
+                displayEvents([]);
+                displayUpcomingEvents([]);
+                updateStatsDisplay([]);
                 return;
             }
             
@@ -1590,7 +1592,7 @@ ${registerButtonHtml}
 
                 // Update button to show registered
                 buttonElement.innerHTML = '<span data-icon="success" style="display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;"></span> Registered';
-                setTimeout(waitForIconSystem, 100);
+                // Removed duplicate waitForIconSystem call
                 buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
                 buttonElement.disabled = true;
                 buttonElement.onclick = null;
@@ -1606,7 +1608,7 @@ ${registerButtonHtml}
                 if (error.code === '23505') {
                     showInfoAlert('You are already registered for this event');
                     buttonElement.innerHTML = '<span data-icon="success" style="display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;"></span> Registered';
-                setTimeout(waitForIconSystem, 100);
+                // Removed duplicate waitForIconSystem call
                     buttonElement.className = 'btn btn-secondary btn-small register-btn registered';
                     buttonElement.disabled = true;
                 } else {
@@ -1630,7 +1632,7 @@ ${registerButtonHtml}
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             `;
             alert.innerHTML = `<span data-icon="success" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> ${message}`;
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
             document.body.appendChild(alert);
             setTimeout(() => alert.remove(), 4000);
         }
@@ -1650,7 +1652,7 @@ ${registerButtonHtml}
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             `;
             alert.innerHTML = `<span data-icon="error" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> ${message}`;
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
             document.body.appendChild(alert);
             setTimeout(() => alert.remove(), 4000);
         }
@@ -1670,7 +1672,7 @@ ${registerButtonHtml}
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             `;
             alert.innerHTML = `<span data-icon="info" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> ${message}`;
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
             document.body.appendChild(alert);
             setTimeout(() => alert.remove(), 4000);
         }
@@ -1786,7 +1788,7 @@ ${registerButtonHtml}
 
             const config = statusConfig[status];
             registerBtn.innerHTML = config.text;
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
             registerBtn.style.background = config.bg;
             registerBtn.style.borderColor = config.border;
             registerBtn.style.color = config.color;
@@ -1827,24 +1829,34 @@ ${registerButtonHtml}
             `).join('');
 
             buttonElement.parentElement.appendChild(optionsDiv);
-            setTimeout(waitForIconSystem, 100);
+            // Removed duplicate waitForIconSystem call
         }
         
         // Wait for icon system to load and initialize icons
+        let iconSystemAttempts = 0;
+        const maxIconSystemAttempts = 100; // Max 5 seconds of waiting
+        
         function waitForIconSystem() {
+            iconSystemAttempts++;
+            
             if (typeof window.createIcon === 'function') {
                 // Icon system is ready, initialize all icons
                 document.querySelectorAll('[data-icon]').forEach(element => {
                     const iconName = element.getAttribute('data-icon');
-                    element.innerHTML = window.createIcon(iconName);
+                    if (!element.hasAttribute('data-icon-loaded')) {
+                        element.innerHTML = window.createIcon(iconName);
+                        element.setAttribute('data-icon-loaded', 'true');
+                    }
                 });
-            } else {
+            } else if (iconSystemAttempts < maxIconSystemAttempts) {
                 // Icon system not ready, wait and try again
                 setTimeout(waitForIconSystem, 50);
+            } else {
+                console.warn('Icon system not available after 5 seconds, using fallbacks');
             }
         }
         
-        // Start waiting for icon system
+        // Start waiting for icon system - only once!
         waitForIconSystem();
     </script>
 </body>
