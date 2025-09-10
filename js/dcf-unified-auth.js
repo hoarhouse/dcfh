@@ -996,6 +996,7 @@ function getCurrentPageType() {
 
 async function getQuickActionsHTML(pageType) {
     const icons = await loadCurrentIconSet();
+    console.log('Icons loaded for Quick Actions:', icons.length, 'icons');
     const basePath = getCorrectBasePath();
     
     switch (pageType) {
