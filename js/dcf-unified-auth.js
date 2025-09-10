@@ -845,45 +845,8 @@ async function confirmLogout() {
 // =============================================================================
 
 // =============================================================================
-// 8.1. [REMOVED - QUICK ACTIONS SYSTEM]
-// =============================================================================
-// Quick Actions functionality has been completely removed from this file
-// This section is intentionally left empty
-
-// Placeholder function to prevent errors during transition
-async function initializeQuickActions() {
-    // Quick Actions system completely removed
-    // This empty function prevents errors during the transition period
-    return;
-}
-
-
-
-function getCurrentPageType() {
-    const path = window.location.pathname.toLowerCase();
-    const filename = path.split('/').pop();
-    
-    if (filename.includes('projects_home')) return 'projects';
-    if (filename.includes('project_detail')) return 'project_detail';
-    if (filename.includes('create_project')) return 'create_project';
-    if (filename === 'dcf_projects.html') return 'my_projects';
-    if (filename.includes('events_calendar') || filename.includes('event_details')) return 'events';
-    if (filename.includes('create_event')) return 'create_event';
-    if (filename.includes('members_directory') || filename.includes('member_view')) return 'members';
-    if (filename.includes('resources_library') || filename.includes('resource_detail')) return 'resources';
-    if (filename.includes('member_home')) return 'home_feed';
-    
-    return 'default';
-}
-
-// Quick Actions HTML function removed - was calling undefined functions
-async function getQuickActionsHTML(pageType) {
-    // Function body removed to prevent calling undefined functions
-    return '';
-}
-
-// Quick Actions Helper Functions
-// Quick Actions helper functions removed - all functionality deleted
+// 8.1. [SECTION REMOVED]
+// ============================================================================= 
 
 // =============================================================================
 // 9. FOOTER FUNCTIONALITY
@@ -2416,7 +2379,6 @@ async function initializeDCF() {
         
          // ✅ RESTORED: Initialize components
         populateTopNavigation();
-        // Quick Actions removed - no longer initializing
         initializeFooter();
         
         // ✅ RESTORED: Initialize notification system if logged in
@@ -2513,17 +2475,6 @@ window.getUserName = getUserName;
 window.getUserId = getUserId;
 window.validateUsername = validateUsername;
 window.initializeDCF = initializeDCF;
-// Quick Actions functions removed - these exports commented out to prevent errors
-// window.focusSearchProjects = focusSearchProjects;
-// window.exploreJoinableProjects = exploreJoinableProjects;
-// window.focusSearchEvents = focusSearchEvents;
-// window.exploreUpcomingEvents = exploreUpcomingEvents;
-// window.focusSearchMembers = focusSearchMembers;
-// window.connectWithMembers = connectWithMembers;
-// window.focusSearchResources = focusSearchResources;
-// window.viewMyContributions = viewMyContributions;
-// window.viewBookmarks = viewBookmarks;
-// window.showComingSoon = showComingSoon;
 window.generateInitials = generateInitials;
 window.subscribeNewsletter = subscribeNewsletter;
 
@@ -3229,9 +3180,6 @@ function openCreateEventModal() {
     }
 }
 
-// Export Quick Actions functions
-// window.populateQuickActions = deprecated - use initializeQuickActions
-// Quick Actions exports removed
 window.focusMemberSearch = focusMemberSearch;
 window.focusProjectSearch = focusProjectSearch;
 window.focusResourceSearch = focusResourceSearch;
