@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Icon Database</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+        }
+        .success {
+            background: #efe;
+            color: #060;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Icon Database Test</h1>
+    <button onclick="testDatabase()">Test Database Connection</button>
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://oybxnyaelcneawjpjvdy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95YnhueWFlbGNuZWF3anBqdmR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjMyMjM5MDAsImV4cCI6MjAzODc5OTkwMH0.gZz-XGiO6G5u2BzvTgDDrOZRv-6MzogJ5YJ3kj2LDng';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function addResult(message, isError = false) {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testDatabase() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Test 1: Check icon_sets table
+                addResult('Testing icon_sets table...');
+                const { data: iconSets, error: setsError } = await supabase
+                    .from('icon_sets')
+                    .select('*');
+                
+                if (setsError) {
+                    addResult(`Error fetching icon_sets: ${JSON.stringify(setsError)}`, true);
+                } else {
+                    addResult(`Found ${iconSets?.length || 0} icon sets:`);
+                    iconSets?.forEach(set => {
+                        addResult(`  - ${set.set_name} (ID: ${set.id})`);
+                    });
+                }
+                
+                // Test 2: Check icons for each set
+                if (iconSets && iconSets.length > 0) {
+                    addResult('\nChecking icons for each set...');
+                    
+                    for (const set of iconSets) {
+                        const { data: icons, error: iconsError } = await supabase
+                            .from('icons')
+                            .select('icon_name')
+                            .eq('set_id', set.id);
+                        
+                        if (iconsError) {
+                            addResult(`  Error for ${set.set_name}: ${JSON.stringify(iconsError)}`, true);
+                        } else {
+                            addResult(`  ${set.set_name}: ${icons?.length || 0} icons`);
+                            if (icons && icons.length > 0) {
+                                const iconNames = icons.slice(0, 5).map(i => i.icon_name).join(', ');
+                                addResult(`    Sample icons: ${iconNames}${icons.length > 5 ? '...' : ''}`);
+                            }
+                        }
+                    }
+                }
+                
+                // Test 3: Check for specific icon sets
+                addResult('\nChecking for specific icon sets...');
+                const expectedSets = ['modern_minimalist', 'solid_geometric', 'hybrid_clean', 
+                                      'sacred_minimalist', 'humanity_focused', 'faith_tech_fusion'];
+                
+                for (const setName of expectedSets) {
+                    const { data: iconSet, error } = await supabase
+                        .from('icon_sets')
+                        .select('id')
+                        .eq('set_name', setName)
+                        .maybeSingle();
+                    
+                    if (error) {
+                        addResult(`  ${setName}: ERROR - ${error.message}`, true);
+                    } else if (iconSet) {
+                        addResult(`  ${setName}: ✓ Found (ID: ${iconSet.id})`);
+                    } else {
+                        addResult(`  ${setName}: ✗ Not found`, true);
+                    }
+                }
+                
+                // Test 4: Check for SVG content
+                addResult('\nChecking for SVG content...');
+                const { data: sampleIcon, error: sampleError } = await supabase
+                    .from('icons')
+                    .select('icon_name, svg_standard, set_id')
+                    .limit(1)
+                    .single();
+                
+                if (sampleError) {
+                    addResult(`Error fetching sample icon: ${JSON.stringify(sampleError)}`, true);
+                } else if (sampleIcon) {
+                    addResult(`Sample icon: ${sampleIcon.icon_name} from set_id ${sampleIcon.set_id}`);
+                    if (sampleIcon.svg_standard) {
+                        addResult(`SVG content present: ${sampleIcon.svg_standard.substring(0, 100)}...`);
+                    } else {
+                        addResult('No SVG content found!', true);
+                    }
+                }
+                
+            } catch (error) {
+                addResult(`Unexpected error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>
