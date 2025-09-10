@@ -771,26 +771,44 @@
 
         // Function to load icons for a specific set from database
         async function loadIconsForSet(setName) {
+            console.log('Loading icons for set:', setName);
+            
             if (!window.dcfSupabase || setName === 'emoji') {
+                console.log('Skipping load - no Supabase or emoji set');
                 return null;
             }
 
             try {
                 // First get the icon set ID
-                const { data: iconSet } = await window.dcfSupabase
+                console.log('Fetching icon set ID for:', setName);
+                const { data: iconSet, error: setError } = await window.dcfSupabase
                     .from('icon_sets')
                     .select('id')
                     .eq('set_name', setName)
                     .maybeSingle();
 
+                if (setError) {
+                    console.error('Error fetching icon set:', setError);
+                    return null;
+                }
+
                 if (iconSet) {
+                    console.log('Found icon set with ID:', iconSet.id);
+                    
                     // Load icons for this set
-                    const { data: icons } = await window.dcfSupabase
+                    const { data: icons, error: iconsError } = await window.dcfSupabase
                         .from('icons')
                         .select('icon_name, svg_small, svg_standard, svg_large')
                         .eq('set_id', iconSet.id);
 
-                    if (icons) {
+                    if (iconsError) {
+                        console.error('Error fetching icons:', iconsError);
+                        return null;
+                    }
+
+                    if (icons && icons.length > 0) {
+                        console.log(`Loaded ${icons.length} icons for ${setName}`);
+                        
                         // Cache the icons
                         const iconMap = {};
                         icons.forEach(icon => {
@@ -802,7 +820,11 @@
                         });
                         previewIcons[setName] = iconMap;
                         return iconMap;
+                    } else {
+                        console.log('No icons found for set:', setName);
                     }
+                } else {
+                    console.log('Icon set not found in database:', setName);
                 }
             } catch (error) {
                 console.error('Error loading icons for preview:', error);
@@ -814,8 +836,14 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Icon Management System initializing...');
             
-            // Wait for unified-auth to initialize
+            // Wait for unified-auth to initialize and Supabase to be ready
             setTimeout(async () => {
+                console.log('Checking Supabase availability...');
+                if (window.dcfSupabase) {
+                    console.log('Supabase client is available');
+                } else {
+                    console.log('Warning: Supabase client not available');
+                }
                 // Set admin function for testing
                 window.isAdmin = () => {
                     // Check if user is logged in and has admin access
@@ -929,17 +957,23 @@
             // Icon set select change - live preview update
             document.getElementById('iconSetSelect').addEventListener('change', async (e) => {
                 const selectedSet = e.target.value;
+                console.log('Dropdown changed to:', selectedSet);
                 showNotification('Loading preview...', 'info');
                 
-                // Update preview with selected set
-                await renderIconGridForSet(selectedSet);
-                
-                // Update display to show preview mode
-                const previewInfo = document.getElementById('previewInfo');
-                previewInfo.innerHTML = `Preview: <strong>${formatSetName(selectedSet)}</strong> (not applied yet)`;
-                
-                // Highlight that this is a preview
-                showNotification('Preview updated. Click "Apply Changes" to save', 'info');
+                try {
+                    // Update preview with selected set
+                    await renderIconGridForSet(selectedSet);
+                    
+                    // Update display to show preview mode
+                    const previewInfo = document.getElementById('previewInfo');
+                    previewInfo.innerHTML = `Preview: <strong>${formatSetName(selectedSet)}</strong> (not applied yet)`;
+                    
+                    // Highlight that this is a preview
+                    showNotification('Preview updated. Click "Apply Changes" to save', 'info');
+                } catch (error) {
+                    console.error('Error updating preview:', error);
+                    showNotification('Error loading preview', 'error');
+                }
             });
         }
 
@@ -980,12 +1014,19 @@
 
         // Render icon grid for a specific set (for preview)
         async function renderIconGridForSet(setName) {
+            console.log('Rendering icon grid for set:', setName);
             const grid = document.getElementById('iconGrid');
             grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">Loading icons...</div>';
 
             // Load icons for this set if not already cached
             if (!previewIcons[setName] && setName !== 'emoji') {
-                await loadIconsForSet(setName);
+                console.log('Icons not cached, loading from database...');
+                const loadedIcons = await loadIconsForSet(setName);
+                if (!loadedIcons) {
+                    console.log('Failed to load icons from database');
+                }
+            } else {
+                console.log('Using cached icons or emoji set');
             }
 
             // Short delay for loading indicator
@@ -1016,9 +1057,20 @@
                     // For non-emoji sets, check if we have loaded preview icons
                     if (previewIcons[setName] && previewIcons[setName][iconName]) {
                         // Use loaded SVG icon
-                        const svgContent = previewIcons[setName][iconName][currentSize];
+                        const iconData = previewIcons[setName][iconName];
+                        const svgContent = iconData[currentSize] || iconData.standard || iconData.small || iconData.large;
+                        
                         if (svgContent) {
-                            iconHtml = `<span class="dcf-icon icon-${currentSize}">${svgContent}</span>`;
+                            // Ensure SVG has proper dimensions
+                            const size = currentSize === 'small' ? '16' : currentSize === 'large' ? '32' : '24';
+                            let svgWithSize = svgContent;
+                            
+                            // Add width and height if not present
+                            if (!svgContent.includes('width=') && !svgContent.includes('height=')) {
+                                svgWithSize = svgContent.replace('<svg', `<svg width="${size}" height="${size}"`);
+                            }
+                            
+                            iconHtml = `<span class="dcf-icon icon-${currentSize}">${svgWithSize}</span>`;
                         } else {
                             // Fallback to placeholder
                             iconHtml = getPlaceholderIcon(currentSize);
