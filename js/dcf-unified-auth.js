@@ -880,6 +880,45 @@ function getIconSvg(icons, iconName) {
 }
 
 // =============================================================================
+// 8.1. ICON SYSTEM INTEGRATION FOR QUICK ACTIONS
+// =============================================================================
+async function loadCurrentIconSet() {
+    try {
+        const { data: setting } = await window.dcfSupabase
+            .from('site_settings')
+            .select('setting_value')
+            .eq('setting_key', 'current_icon_set')
+            .single();
+        
+        if (setting) {
+            const iconSetName = setting.setting_value;
+            const { data: iconSet } = await window.dcfSupabase
+                .from('icon_sets')
+                .select('id')
+                .eq('set_name', iconSetName)
+                .single();
+            
+            if (iconSet) {
+                const { data: icons } = await window.dcfSupabase
+                    .from('icons')
+                    .select('*')
+                    .eq('icon_set_id', iconSet.id);
+                return icons || [];
+            }
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading icon set:', error);
+        return [];
+    }
+}
+
+function getIconSvg(icons, iconName) {
+    const icon = icons.find(i => i.icon_name === iconName);
+    return icon ? icon.svg_standard : '📋';
+}
+
+// =============================================================================
 // 9. QUICK ACTIONS SYSTEM
 // =============================================================================
 async function initializeQuickActions() {
@@ -908,7 +947,8 @@ function getCurrentPageType() {
     return 'default';
 }
 
-function getQuickActionsHTML(pageType) {
+async function getQuickActionsHTML(pageType) {
+    const icons = await loadCurrentIconSet();
     const basePath = getCorrectBasePath();
     
     switch (pageType) {
