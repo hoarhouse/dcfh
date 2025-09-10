@@ -3117,14 +3117,7 @@ function populateQuickActionsOld() {
 
 // REMOVED: Duplicate initializeQuickActions - using unified version at line 850
 
-// Quick Action Helper Functions
-function shareResource() {
-    // Navigate to resource creation/sharing page
-    const basePath = getCorrectBasePath();
-    window.location.href = basePath + 'resources/dcf_resource_upload.html';
-}
-
-// [Quick Actions helper functions removed]
+// [All Quick Actions helper functions removed]
 
 // =============================================================================
 // 19. UNIVERSAL COMMENT SYSTEM - WORKS FOR ANY CONTENT TYPE
