@@ -893,37 +893,71 @@ function getIconSvg(icons, iconName) {
 }
 
 // =============================================================================
-// 8.1. ICON SYSTEM INTEGRATION FOR QUICK ACTIONS
+// 8.1. QUICK ACTIONS SYSTEM
 // =============================================================================
-async function loadCurrentIconSet() {
-    try {
-        const { data: setting } = await window.dcfSupabase
-            .from('site_settings')
-            .select('setting_value')
-            .eq('setting_key', 'current_icon_set')
-            .single();
-        
-        if (setting) {
-            const iconSetName = setting.setting_value;
-            const { data: iconSet } = await window.dcfSupabase
-                .from('icon_sets')
-                .select('id')
-                .eq('set_name', iconSetName)
-                .single();
-            
-            if (iconSet) {
-                const { data: icons } = await window.dcfSupabase
-                    .from('icons')
-                    .select('*')
-                    .eq('icon_set_id', iconSet.id);
-                return icons || [];
-            }
-        }
-        return [];
-    } catch (error) {
-        console.error('Error loading icon set:', error);
-        return [];
+async function initializeQuickActions() {
+    const container = document.getElementById('quickActionsContainer');
+    if (!container) {
+        console.log('No Quick Actions container found on this page');
+        return;
     }
+    
+    // Load icons first
+    const icons = await loadCurrentIconSet();
+    
+    // Get page-specific quick actions or use defaults
+    const quickActions = window.pageQuickActions || getDefaultQuickActions();
+    
+    // Generate and insert HTML
+    container.innerHTML = getQuickActionsHTML(quickActions, icons);
+    console.log('✅ Quick Actions initialized');
+}
+
+function getDefaultQuickActions() {
+    const path = window.location.pathname;
+    
+    if (path.includes('/events/')) {
+        return [
+            { text: 'Create Event', icon: 'calendar', action: 'window.location.href="../events/dcf_create_event.html"' },
+            { text: 'Browse Events', icon: 'search', action: 'window.location.href="../events/dcf_events_calendar.html"' },
+            { text: 'My Events', icon: 'user', action: 'switchEventFilter && switchEventFilter("my")' }
+        ];
+    } else if (path.includes('/members/')) {
+        return [
+            { text: 'View Profile', icon: 'user', action: 'window.location.href="../members/dcf_member_profile.html"' },
+            { text: 'Messages', icon: 'message', action: 'window.location.href="../members/dcf_private_messaging.html"' },
+            { text: 'Settings', icon: 'settings', action: 'window.location.href="../members/dcf_profile_dashboard.html"' }
+        ];
+    } else if (path.includes('/projects/')) {
+        return [
+            { text: 'Create Project', icon: 'plus', action: 'window.location.href="../projects/dcf_create_project.html"' },
+            { text: 'Browse Projects', icon: 'grid', action: 'window.location.href="../projects/dcf_projects.html"' },
+            { text: 'My Projects', icon: 'folder', action: 'window.location.href="../projects/dcf_projects_home.html"' }
+        ];
+    }
+    
+    // Default actions
+    return [
+        { text: 'Dashboard', icon: 'home', action: 'window.location.href="../members/dcf_member_home.html"' },
+        { text: 'Events', icon: 'calendar', action: 'window.location.href="../events/dcf_events_calendar.html"' },
+        { text: 'Projects', icon: 'folder', action: 'window.location.href="../projects/dcf_projects_home.html"' }
+    ];
+}
+
+function getQuickActionsHTML(actions, icons) {
+    return actions.map(action => {
+        const iconSvg = action.icon ? getIconSvg(icons, action.icon) : '';
+        const displayIcon = iconSvg || (action.text.includes('Create') ? '➕' : 
+                                        action.text.includes('Browse') ? '🔍' : 
+                                        action.text.includes('My') ? '📊' : '📋');
+        
+        return `
+            <button class="quick-action-btn" onclick="${action.action}">
+                <span class="quick-action-icon">${displayIcon}</span>
+                <span class="quick-action-text">${action.text}</span>
+            </button>
+        `;
+    }).join('');
 }
 
 function getIconSvg(icons, iconName) {
