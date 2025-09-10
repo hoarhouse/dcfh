@@ -876,7 +876,20 @@ async function loadCurrentIconSet() {
 
 function getIconSvg(icons, iconName) {
     const icon = icons.find(i => i.icon_name === iconName);
-    return icon ? icon.svg_standard : '📋';
+    if (!icon) return '📋';
+    
+    // Fix malformed SVG paths that are missing the 'M' command
+    let svgContent = icon.svg_standard;
+    if (svgContent && svgContent.includes('<path d="') && !svgContent.includes('d="M') && !svgContent.includes('d="m')) {
+        svgContent = svgContent.replace(/d="([^"]+)"/g, (match, pathData) => {
+            if (!pathData.startsWith('M') && !pathData.startsWith('m')) {
+                return `d="M${pathData}"`;
+            }
+            return match;
+        });
+    }
+    
+    return svgContent || '📋';
 }
 
 // =============================================================================
