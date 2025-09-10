@@ -876,53 +876,10 @@ function getCurrentPageType() {
     return 'default';
 }
 
+// Quick Actions HTML function removed - was calling undefined functions
 async function getQuickActionsHTML(pageType) {
-    const basePath = getCorrectBasePath();
-    
-    switch (pageType) {
-        case 'projects':
-             return `
-                <button class="btn btn-primary" onclick="focusSearchProjects()">${typeof getIcon === 'function' ? getIcon('search', 'small') : '🔍'} Search Projects</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">${typeof getIcon === 'function' ? getIcon('plus', 'small') : '➕'} Create Project</button>
-                <button class="btn btn-secondary" onclick="exploreJoinableProjects()">${typeof getIcon === 'function' ? getIcon('user', 'small') : '👥'} Join Project</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}projects/dcf_projects_home.html'; setTimeout(function() { if (typeof switchTab === 'function') { switchTab('my'); } else { var myTab = document.querySelector('.tab-btn:nth-child(2)'); if (myTab) myTab.click(); } }, 100);">${typeof getIcon === 'function' ? getIcon('edit', 'small') : '✏️'} Manage My Projects</button>
-            `;
-        case 'events':
-            return `
-                <button class="btn btn-primary" onclick="focusSearchEvents()">${typeof getIcon === 'function' ? getIcon('calendar', 'small') : '📅'} Find Events</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">${typeof getIcon === 'function' ? getIcon('plus', 'small') : '➕'} Create Event</button>
-                <button class="btn btn-secondary" onclick="exploreUpcomingEvents()">${typeof getIcon === 'function' ? getIcon('calendar', 'small') : '📅'} Register for Events</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}events/dcf_events_calendar.html'">${typeof getIcon === 'function' ? getIcon('edit', 'small') : '✏️'} My Event Calendar</button>
-            `;
-        case 'members':
-            return `
-                <button class="btn btn-primary" onclick="focusSearchMembers()">${typeof getIcon === 'function' ? getIcon('user', 'small') : '👥'} Find Members</button>
-                <button class="btn btn-secondary" onclick="connectWithMembers()">${typeof getIcon === 'function' ? getIcon('user', 'small') : '👥'} Connect with Members</button>
-                <button class="btn btn-secondary" onclick="showComingSoon('My Network')">${typeof getIcon === 'function' ? getIcon('globe', 'small') : '🌐'} View My Network</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">${typeof getIcon === 'function' ? getIcon('search', 'small') : '🔍'} Member Analytics</button>
-            `;
-        case 'resources':
-            return `
-                <button class="btn btn-primary" onclick="focusSearchResources()">${typeof getIcon === 'function' ? getIcon('education', 'small') : '📚'} Browse Library</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}resources/dcf_resource_upload.html'">${typeof getIcon === 'function' ? getIcon('plus', 'small') : '➕'} Upload Resource</button>
-                <button class="btn btn-secondary" onclick="viewMyContributions()">${typeof getIcon === 'function' ? getIcon('edit', 'small') : '✏️'} My Contributions</button>
-                <button class="btn btn-secondary" onclick="viewBookmarks()">${typeof getIcon === 'function' ? getIcon('heart', 'small') : '❤️'} My Bookmarks</button>
-            `;
-        case 'home_feed':
-            return `
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">${typeof getIcon === 'function' ? getIcon('plus', 'small') : '➕'} Create Project</button>
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}events/dcf_create_event.html'">${typeof getIcon === 'function' ? getIcon('calendar', 'small') : '📅'} Create Event</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_members_directory.html'">${typeof getIcon === 'function' ? getIcon('user', 'small') : '👥'} Find Collaborators</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">${typeof getIcon === 'function' ? getIcon('search', 'small') : '🔍'} View My Stats</button>
-            `;
-        default:
-            return `
-                <button class="btn btn-primary" onclick="window.location.href='${basePath}projects/dcf_create_project.html'">${typeof getIcon === 'function' ? getIcon('plus', 'small') : '➕'} Create Project</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_personal_analytics.html'">${typeof getIcon === 'function' ? getIcon('search', 'small') : '🔍'} View Analytics</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}events/dcf_events_calendar.html'">${typeof getIcon === 'function' ? getIcon('calendar', 'small') : '📅'} Events Calendar</button>
-                <button class="btn btn-secondary" onclick="window.location.href='${basePath}members/dcf_member_home.html'">${typeof getIcon === 'function' ? getIcon('message', 'small') : '💬'} Discussion Forum</button>
-            `;
-    }
+    // Function body removed to prevent calling undefined functions
+    return '';
 }
 
 // Quick Actions Helper Functions
