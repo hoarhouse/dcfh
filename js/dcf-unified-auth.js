@@ -3115,9 +3115,6 @@ function populateQuickActionsOld() {
     console.log(`✅ Quick Actions populated with ${actions.length} items`);
 }
 
-// REMOVED: Duplicate initializeQuickActions - using unified version at line 850
-
-// [All Quick Actions helper functions removed]
 
 // =============================================================================
 // 19. UNIVERSAL COMMENT SYSTEM - WORKS FOR ANY CONTENT TYPE
