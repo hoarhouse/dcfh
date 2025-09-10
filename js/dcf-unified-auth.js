@@ -3019,47 +3019,47 @@ function getQuickActionsConfig(pageType) {
         }
     };
     
-    // Standardized quick actions for most pages
+    // Standardized quick actions for most pages - now with icon system names
     const standardActions = [
-        { icon: '➕', text: 'Create Project', href: getPath('projects', 'dcf_create_project.html'), primary: true },
-        { icon: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
-        { icon: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
-        { icon: '👥', text: 'Members Directory', href: getPath('members', 'dcf_members_directory.html') },
-        { icon: '📚', text: 'Resources Library', href: getPath('resources', 'dcf_resources_library.html') }
+        { icon: 'plus', iconEmoji: '➕', text: 'Create Project', href: getPath('projects', 'dcf_create_project.html'), primary: true },
+        { icon: 'chart', iconEmoji: '📊', text: 'View Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
+        { icon: 'calendar', iconEmoji: '📅', text: 'Events Calendar', href: getPath('events', 'dcf_events_calendar.html') },
+        { icon: 'users', iconEmoji: '👥', text: 'Members Directory', href: getPath('members', 'dcf_members_directory.html') },
+        { icon: 'education', iconEmoji: '📚', text: 'Resources Library', href: getPath('resources', 'dcf_resources_library.html') }
     ];
     
     const quickActionsConfig = {
         'member_home': standardActions,
         'member_profile': [
-            { icon: '✏️', text: 'Edit Profile', href: getPath('members', 'dcf_edit_profile.html'), primary: true },
-            { icon: '👥', text: 'My Connections', href: getPath('members', 'dcf_my_connections.html') },
-            { icon: '💬', text: 'My Messages', href: getPath('members', 'dcf_private_messaging.html') },
-            { icon: '📊', text: 'My Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
-            { icon: '📋', text: 'My Projects', action: 'window.location.href="' + getPath('projects', 'dcf_projects_home.html') + '"; setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
-            { icon: '🏠', text: 'Member Home', href: getPath('members', 'dcf_member_home.html') }
+            { icon: 'edit', iconEmoji: '✏️', text: 'Edit Profile', href: getPath('members', 'dcf_edit_profile.html'), primary: true },
+            { icon: 'users', iconEmoji: '👥', text: 'My Connections', href: getPath('members', 'dcf_my_connections.html') },
+            { icon: 'message', iconEmoji: '💬', text: 'My Messages', href: getPath('members', 'dcf_private_messaging.html') },
+            { icon: 'chart', iconEmoji: '📊', text: 'My Analytics', href: getPath('members', 'dcf_personal_analytics.html') },
+            { icon: 'document', iconEmoji: '📋', text: 'My Projects', action: 'window.location.href="' + getPath('projects', 'dcf_projects_home.html') + '"; setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
+            { icon: 'home', iconEmoji: '🏠', text: 'Member Home', href: getPath('members', 'dcf_member_home.html') }
         ],
         'members_directory': standardActions,
         'my_connections': [
-            { icon: '👥', text: 'Find Members', href: 'dcf_members_directory.html' },
-            { icon: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+            { icon: 'users', iconEmoji: '👥', text: 'Find Members', href: 'dcf_members_directory.html' },
+            { icon: 'message', iconEmoji: '💬', text: 'Send Message', href: 'dcf_private_messaging.html' },
+            { icon: 'home', iconEmoji: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'messaging': [
-            { icon: '💬', text: 'New Message', action: 'openNewMessageModal()' },
-            { icon: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+            { icon: 'message', iconEmoji: '💬', text: 'New Message', action: 'openNewMessageModal()' },
+            { icon: 'users', iconEmoji: '👥', text: 'My Connections', href: 'dcf_my_connections.html' },
+            { icon: 'home', iconEmoji: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'notifications': [
-            { icon: '✅', text: 'Mark All Read', action: 'markAllAsRead()' },
-            { icon: '🗑️', text: 'Clear All', action: 'clearAllNotifications()' },
-            { icon: '⚙️', text: 'Settings', action: 'openNotificationSettings()' },
-            { icon: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
+            { icon: 'success', iconEmoji: '✅', text: 'Mark All Read', action: 'markAllAsRead()' },
+            { icon: 'delete', iconEmoji: '🗑️', text: 'Clear All', action: 'clearAllNotifications()' },
+            { icon: 'settings', iconEmoji: '⚙️', text: 'Settings', action: 'openNotificationSettings()' },
+            { icon: 'home', iconEmoji: '🏠', text: 'Back to Home', href: 'dcf_member_home.html' }
         ],
         'profile_dashboard': [
-            { icon: '👤', text: 'Edit Profile', href: 'dcf_member_profile.html' },
-            { icon: '📊', text: 'View Analytics', href: 'dcf_personal_analytics.html' },
-            { icon: '💳', text: 'Donate', href: 'dcf_donate.html' },
-            { icon: '🏠', text: 'Member Home', href: 'dcf_member_home.html' }
+            { icon: 'user', iconEmoji: '👤', text: 'Edit Profile', href: 'dcf_member_profile.html' },
+            { icon: 'chart', iconEmoji: '📊', text: 'View Analytics', href: 'dcf_personal_analytics.html' },
+            { icon: 'donate', iconEmoji: '💳', text: 'Donate', href: 'dcf_donate.html' },
+            { icon: 'home', iconEmoji: '🏠', text: 'Member Home', href: 'dcf_member_home.html' }
         ],
         'analytics': standardActions,
         'personal_analytics': standardActions,
