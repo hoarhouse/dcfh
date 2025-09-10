@@ -843,54 +843,6 @@ async function confirmLogout() {
 // =============================================================================
 // 8. ICON SYSTEM INTEGRATION
 // =============================================================================
-async function loadCurrentIconSet() {
-    try {
-        const { data: setting } = await window.dcfSupabase
-            .from('site_settings')
-            .select('setting_value')
-            .eq('setting_key', 'current_icon_set')
-            .single();
-        
-        if (setting) {
-            const iconSetName = setting.setting_value;
-            const { data: iconSet } = await window.dcfSupabase
-                .from('icon_sets')
-                .select('id')
-                .eq('set_name', iconSetName)
-                .single();
-            
-            if (iconSet) {
-                const { data: icons } = await window.dcfSupabase
-                    .from('icons')
-                    .select('*')
-                    .eq('icon_set_id', iconSet.id);
-                return icons || [];
-            }
-        }
-        return [];
-    } catch (error) {
-        console.error('Error loading icon set:', error);
-        return [];
-    }
-}
-
-function getIconSvg(icons, iconName) {
-    const icon = icons.find(i => i.icon_name === iconName);
-    if (!icon) return '📋';
-    
-    // Fix malformed SVG paths that are missing the 'M' command
-    let svgContent = icon.svg_standard;
-    if (svgContent && svgContent.includes('<path d="') && !svgContent.includes('d="M') && !svgContent.includes('d="m')) {
-        svgContent = svgContent.replace(/d="([^"]+)"/g, (match, pathData) => {
-            if (!pathData.startsWith('M') && !pathData.startsWith('m')) {
-                return `d="M${pathData}"`;
-            }
-            return match;
-        });
-    }
-    
-    return svgContent || '📋';
-}
 
 // =============================================================================
 // 8.1. QUICK ACTIONS SYSTEM
@@ -902,14 +854,11 @@ async function initializeQuickActions() {
         return;
     }
     
-    // Load icons first
-    const icons = await loadCurrentIconSet();
-    
     // Get page-specific quick actions or use defaults
     const quickActions = window.pageQuickActions || getDefaultQuickActions();
     
     // Generate and insert HTML
-    container.innerHTML = getQuickActionsHTML(quickActions, icons);
+    container.innerHTML = getQuickActionsHTML(quickActions, null);
     console.log('✅ Quick Actions initialized');
 }
 
@@ -974,10 +923,6 @@ function getQuickActionsHTML(actions, icons) {
     }).join('');
 }
 
-function getIconSvg(icons, iconName) {
-    const icon = icons.find(i => i.icon_name === iconName);
-    return icon ? icon.svg_standard : '📋';
-}
 
 // =============================================================================
 // 9. QUICK ACTIONS SYSTEM
@@ -1009,8 +954,6 @@ function getCurrentPageType() {
 }
 
 async function getQuickActionsHTML(pageType) {
-    const icons = await loadCurrentIconSet();
-    console.log('Icons loaded for Quick Actions:', icons.length, 'icons');
     const basePath = getCorrectBasePath();
     
     switch (pageType) {
