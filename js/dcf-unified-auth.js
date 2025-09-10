@@ -845,8 +845,12 @@ async function confirmLogout() {
 // =============================================================================
 
 // =============================================================================
-// 8.1. QUICK ACTIONS SYSTEM - FINAL UNIFIED VERSION
+// 8.1. [REMOVED - QUICK ACTIONS SYSTEM]
 // =============================================================================
+// Quick Actions functionality has been completely removed from this file
+// This section is intentionally left empty
+
+// Placeholder function to prevent errors during transition
 async function initializeQuickActions() {
     const container = document.getElementById('quickActionsContainer');
     if (!container) return;
@@ -2734,7 +2738,7 @@ async function initializeDCF() {
         
          // ✅ RESTORED: Initialize components
         populateTopNavigation();
-        await initializeQuickActions();
+        // Quick Actions removed - no longer initializing
         initializeFooter();
         
         // ✅ RESTORED: Initialize notification system if logged in
@@ -3548,7 +3552,7 @@ function openCreateEventModal() {
 
 // Export Quick Actions functions
 // window.populateQuickActions = deprecated - use initializeQuickActions
-window.initializeQuickActions = initializeQuickActions;
+// Quick Actions exports removed
 window.focusMemberSearch = focusMemberSearch;
 window.focusProjectSearch = focusProjectSearch;
 window.focusResourceSearch = focusResourceSearch;
