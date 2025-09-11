@@ -3,6 +3,29 @@
  * Core functionality for managing and rendering icons across the platform
  */
 
+// Use the existing Supabase client from dcf-unified-auth.js
+let supabaseClient = null;
+
+// Wait for and use the global Supabase client
+function initializeSupabaseConnection() {
+    if (window.dcfSupabase) {
+        supabaseClient = window.dcfSupabase;
+        console.log('✅ Icon system connected to Supabase');
+        return true;
+    }
+    return false;
+}
+
+// Try to connect immediately, then retry if needed
+if (!initializeSupabaseConnection()) {
+    // Wait for dcf-unified-auth.js to initialize
+    const checkConnection = setInterval(() => {
+        if (initializeSupabaseConnection()) {
+            clearInterval(checkConnection);
+        }
+    }, 100);
+}
+
 class DCFIconSystem {
     constructor() {
         // Core icon mapping with emojis as fallbacks
@@ -106,7 +129,7 @@ class DCFIconSystem {
         // Current icon set (cached)
         this.currentIconSet = 'emoji'; // Default to emoji
         this.iconCache = {};
-        this.supabaseClient = null;
+        this.supabaseClient = supabaseClient; // Use the global client
         this.isInitialized = false;
     }
 
@@ -116,9 +139,10 @@ class DCFIconSystem {
      */
     async initializeIcons() {
         try {
-            // Wait for unified-auth.js to initialize the Supabase client
-            if (typeof window !== 'undefined' && window.dcfSupabase) {
-                this.supabaseClient = window.dcfSupabase;
+            // Use the global Supabase client if available
+            if (supabaseClient || (typeof window !== 'undefined' && window.dcfSupabase)) {
+                this.supabaseClient = supabaseClient || window.dcfSupabase;
+                console.log('🎨 Icon System: Connected to Supabase, loading database icons');
                 
                 // Load the default icon set from database
                 await this.loadIconSet();
