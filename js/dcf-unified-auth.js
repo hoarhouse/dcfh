@@ -590,7 +590,18 @@ function populateTopNavigation() {
             { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
             { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
             { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
-            { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' }
+            { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
+            { 
+                href: basePath + 'initiatives/initiatives_home.html', 
+                text: 'Initiatives',
+                dropdown: true,
+                submenu: [
+                    { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace', id: 'peace' },
+                    { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education', id: 'education' },
+                    { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health', id: 'health' },
+                    { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research', id: 'research' }
+                ]
+            }
         ];
     } else {
         console.log('✅ DEBUG NAV: Using public navigation');
