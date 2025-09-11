@@ -4880,6 +4880,36 @@ class DCFIconSystem {
 // Create global instance
 window.dcfIconSystem = new DCFIconSystem();
 
+// CRITICAL: Add backward compatibility alias for HTML pages
+window.iconSystem = window.dcfIconSystem;
+
+// Add missing functions expected by HTML pages
+window.waitForIconSystem = function() {
+    if (typeof window.iconSystem !== 'undefined' && window.iconSystem.isInitialized) {
+        const cacheSize = Object.keys(window.iconSystem.iconCache || {}).length;
+        if (cacheSize > 0 || window.iconSystem.currentIconSet === 'emoji') {
+            window.initializePageIcons();
+        } else {
+            setTimeout(window.waitForIconSystem, 100);
+        }
+    } else {
+        setTimeout(window.waitForIconSystem, 100);
+    }
+}
+
+window.initializePageIcons = function() {
+    document.querySelectorAll('[data-icon]').forEach(element => {
+        const iconName = element.getAttribute('data-icon');
+        const size = element.getAttribute('data-size') || 'standard';
+        const label = element.getAttribute('data-label') || iconName;
+        
+        if (window.iconSystem && window.iconSystem.getIcon) {
+            element.innerHTML = window.iconSystem.getIcon(iconName, size);
+            element.setAttribute('aria-label', label);
+        }
+    });
+}
+
 // Global convenience function for getting icons
 window.getIcon = function(iconName, size = 'standard', ariaLabel = '') {
     if (window.dcfIconSystem && window.dcfIconSystem.isInitialized) {
