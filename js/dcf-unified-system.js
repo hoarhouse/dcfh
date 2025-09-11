@@ -4597,24 +4597,37 @@ class DCFIconSystem {
     }
 
     /**
-     * Render emoji icon with accessibility
+     * Render missing icon indicator - NO EMOJI FALLBACK
      * @param {string} iconName - Name of the icon
      * @param {string} size - Size preset
      * @param {string} ariaLabel - ARIA label
      * @returns {string} HTML string
      */
-    renderEmojiIcon(iconName, size, ariaLabel) {
-        const emoji = this.coreIconMap[iconName] || '❓';
+    renderMissingIcon(iconName, size, ariaLabel) {
         const sizeConfig = this.sizeConfig[size];
         const label = ariaLabel || this.getDefaultAriaLabel(iconName);
         
-        return `<span class="dcf-icon dcf-icon-emoji ${sizeConfig.class}" 
+        return `<span class="dcf-icon dcf-icon-missing ${sizeConfig.class}" 
                       data-icon="${iconName}" 
                       role="img" 
                       aria-label="${label}"
-                      style="font-size: ${sizeConfig.width}px; line-height: ${sizeConfig.height}px;">
-                    ${emoji}
+                      style="display: inline-flex; align-items: center; justify-content: center;
+                             width: ${sizeConfig.width}px; height: ${sizeConfig.height}px;
+                             border: 2px dashed #ff0000; border-radius: 4px;
+                             color: #ff0000; font-size: 10px; font-weight: bold;
+                             background: #ffe0e0;" 
+                      title="Missing icon: ${iconName}">
+                    !
                 </span>`;
+    }
+    
+    /**
+     * DEPRECATED: Render emoji icon - SHOULD NOT BE USED
+     * @deprecated Database-only mode - no emoji fallbacks
+     */
+    renderEmojiIcon(iconName, size, ariaLabel) {
+        console.error(`❌ renderEmojiIcon called for "${iconName}" - This should not happen in database-only mode`);
+        return this.renderMissingIcon(iconName, size, ariaLabel);
     }
 
     /**
