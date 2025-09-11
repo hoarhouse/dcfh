@@ -4351,9 +4351,11 @@ class DCFIconSystem {
     async initializeIcons() {
         try {
             // Use the global Supabase client directly
-            if (window.dcfSupabase) {
-                this.supabaseClient = window.dcfSupabase;
+            this.supabaseClient = window.dcfSupabase || this.supabaseClient;
+            
+            if (this.supabaseClient) {
                 console.log('🎨 Icon System: Connected to unified Supabase client');
+                console.log('🎨 Client status:', !!this.supabaseClient);
                 
                 // Load the default icon set from database
                 await this.loadIconSet();
@@ -4422,6 +4424,12 @@ class DCFIconSystem {
      * @returns {Promise<void>}
      */
     async loadIconSet() {
+        console.log('🔍 loadIconSet() Debug:');
+        console.log('  - this.supabaseClient:', this.supabaseClient);
+        console.log('  - window.dcfSupabase exists:', !!window.dcfSupabase);
+        console.log('  - Current icon set:', this.currentIconSet);
+        console.log('  - Is client a function?:', typeof this.supabaseClient?.from === 'function');
+        
         if (!this.supabaseClient || typeof this.supabaseClient.from !== 'function') {
             console.log('📊 No database connection, using emoji icons');
             return;
