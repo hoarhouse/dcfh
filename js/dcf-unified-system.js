@@ -4340,7 +4340,7 @@ class DCFIconSystem {
         this.currentIconSet = 'emoji'; // Default to emoji
         this.iconCache = {};
         // INTEGRATED: Use window.dcfSupabase directly
-        this.supabaseClient = null;
+        this.supabaseClient = window.dcfSupabase || null;
         this.isInitialized = false;
     }
 
