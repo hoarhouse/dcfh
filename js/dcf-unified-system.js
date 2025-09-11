@@ -456,28 +456,9 @@ function addNavigationItems() {
         navItem.href = item.href;
         navItem.className = 'dropdown-item nav-item';
         
-        // Map emoji icons to icon system names
-        const iconMap = {
-            '🏠': 'home',
-            '👤': 'user',
-            '💬': 'message',
-            '👥': 'user', // Using user for teams
-            '📋': 'edit', // Using edit for projects
-            '📅': 'calendar',
-            '📊': 'search', // Using search for analytics
-            '✏️': 'edit'
-        };
-        
-        const iconName = iconMap[item.icon] || 'info';
-        let iconHtml = item.icon; // Default to emoji
-        
-        // Use icon system if available
-        if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
-            iconHtml = window.iconSystem.getIcon(iconName, 'small');
-        }
-        
+        // Use simple emoji icons directly
         navItem.innerHTML = `
-            <span class="dropdown-icon">${iconHtml}</span>
+            <span class="dropdown-icon">${item.icon}</span>
             ${item.text}
         `;
         navSection.appendChild(navItem);
