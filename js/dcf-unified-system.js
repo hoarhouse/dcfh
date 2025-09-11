@@ -4296,15 +4296,7 @@ class DCFIconSystem {
     getIcon(iconName, size = 'standard', ariaLabel = '') {
         // Debug logging
         console.log('🔍 Looking for icon:', iconName);
-        console.log('🔍 Icon exists in coreIconMap:', iconName in this.coreIconMap);
         
-        // Validate icon name
-        if (!this.coreIconMap[iconName]) {
-            console.warn(`⚠️ Icon "${iconName}" not found in coreIconMap, using placeholder`);
-            console.log('🔍 Available icons in coreIconMap:', Object.keys(this.coreIconMap));
-            iconName = 'info';
-        }
-
         // Validate size
         if (!this.sizeConfig[size]) {
             size = 'standard';
@@ -4313,8 +4305,6 @@ class DCFIconSystem {
         // Check if we have a cached SVG version
         const cacheKey = `${this.currentIconSet}-${iconName}-${size}`;
         console.log('🔍 Cache key:', cacheKey);
-        console.log('🔍 Available cache keys (first 10):', Object.keys(this.iconCache).slice(0, 10));
-        console.log('🔍 Cache keys with "heart":', Object.keys(this.iconCache).filter(k => k.includes('heart')));
         console.log('🔍 Cache hit result:', !!this.iconCache[cacheKey]);
         
         if (this.iconCache[cacheKey]) {
@@ -4322,14 +4312,12 @@ class DCFIconSystem {
             return this.renderIcon(this.iconCache[cacheKey], iconName, size, ariaLabel);
         }
 
-        // Log cache miss for debugging (only if not emoji mode)
-        if (this.currentIconSet !== 'emoji') {
-            console.log(`❌ Cache miss for ${cacheKey} - falling back to emoji`);
-        }
-
-        // Always fall back to emoji if not in cache
-        // (Icons should be pre-loaded during initialization)
-        return this.renderEmojiIcon(iconName, size, ariaLabel);
+        // NO FALLBACK - Show error for missing icons
+        console.error(`❌ ICON NOT IN DATABASE: "${iconName}" - No fallback available`);
+        console.log('📊 Available cache keys:', Object.keys(this.iconCache).length, 'icons');
+        
+        // Return error indicator instead of emoji
+        return this.renderMissingIcon(iconName, size, ariaLabel);
     }
 
     /**
