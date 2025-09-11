@@ -451,6 +451,14 @@ function addNavigationItems() {
     const navSection = document.createElement('div');
     navSection.innerHTML = '<div class="dropdown-divider"></div>';
 
+    // Check if icon cache is ready
+    const iconCacheReady = window.iconSystem?.iconCache && 
+                          Object.keys(window.iconSystem.iconCache).length > 0;
+    
+    console.log('📊 Icon cache status:', iconCacheReady ? 
+                `Ready with ${Object.keys(window.iconSystem.iconCache).length} icons` : 
+                'Not ready');
+
     navigationItems.forEach(item => {
         const navItem = document.createElement('a');
         navItem.href = item.href;
@@ -471,23 +479,49 @@ function addNavigationItems() {
         const iconName = iconMap[item.icon] || 'info';
         let iconHtml = item.icon; // Default to emoji
         
-        // Use icon system if available
-        if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+        // Use icon system only if cache is ready
+        if (iconCacheReady && typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
             iconHtml = window.iconSystem.getIcon(iconName, 'small');
         }
         
         navItem.innerHTML = `
-            <span class="dropdown-icon">${iconHtml}</span>
+            <span class="dropdown-icon" data-icon-name="${iconName}" data-icon-fallback="${item.icon}">${iconHtml}</span>
             ${item.text}
         `;
         navSection.appendChild(navItem);
     });
+    
+    // If icons weren't ready, retry loading them after a delay
+    if (!iconCacheReady) {
+        setTimeout(() => {
+            const iconSpans = navSection.querySelectorAll('.dropdown-icon[data-icon-name]');
+            const updatedCacheReady = window.iconSystem?.iconCache && 
+                                     Object.keys(window.iconSystem.iconCache).length > 0;
+            
+            if (updatedCacheReady) {
+                console.log('🔄 Retrying icon loading with', Object.keys(window.iconSystem.iconCache).length, 'cached icons');
+                iconSpans.forEach(span => {
+                    const iconName = span.getAttribute('data-icon-name');
+                    if (iconName && window.iconSystem && window.iconSystem.getIcon) {
+                        span.innerHTML = window.iconSystem.getIcon(iconName, 'small');
+                    }
+                });
+            }
+        }, 1000); // Retry after 1 second
+    }
 
     const logoutItem = document.createElement('div');
+    let logoutIconHtml = '🚪'; // Default emoji
+    
+    // Use icon system for logout if cache is ready
+    if (iconCacheReady && window.iconSystem && window.iconSystem.getIcon) {
+        logoutIconHtml = window.iconSystem.getIcon('logout', 'small');
+    }
+    
     logoutItem.innerHTML = `
         <div class="dropdown-divider"></div>
         <button onclick="handleLogout()" class="dropdown-item logout-btn">
-            <span class="dropdown-icon">🚪</span>
+            <span class="dropdown-icon" data-icon-name="logout" data-icon-fallback="🚪">${logoutIconHtml}</span>
             Sign Out
         </button>
     `;
