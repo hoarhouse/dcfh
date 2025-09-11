@@ -327,14 +327,22 @@ function updateUserInterface() {
 }
 
 function showLoggedOutState() {
+    console.log('🚨 showLoggedOutState() called - preserving avatar click functionality');
+    
     const avatarElement = document.getElementById('userAvatar');
     if (avatarElement) {
         avatarElement.className = 'user-avatar logged-out';
         avatarElement.textContent = '👤';
         avatarElement.style.backgroundImage = '';
         avatarElement.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
-        avatarElement.removeAttribute('onclick');
-        avatarElement.style.cursor = 'default';
+        // PRESERVED: Keep onclick handler so users can access dropdown menu
+        // avatarElement.removeAttribute('onclick'); // REMOVED - keep avatar clickable
+        avatarElement.style.cursor = 'pointer'; // CHANGED from 'default' to 'pointer'
+        
+        // Ensure onclick is set if not already present
+        if (!avatarElement.onclick) {
+            avatarElement.setAttribute('onclick', 'toggleUserMenu()');
+        }
     }
     
     // Show login/signup buttons
