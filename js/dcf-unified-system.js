@@ -257,8 +257,17 @@ function updateUserInterface() {
     
     const user = window.dcfUser;
     
-    if (!user.isLoggedIn || !user.profile) {
-        console.log('ℹ️ User not logged in, showing login state');
+    // Debug logging to understand auth state
+    console.log('🔍 DEBUG - window.dcfUser:', window.dcfUser);
+    console.log('🔍 DEBUG - user object:', user);
+    console.log('🔍 DEBUG - user.isLoggedIn:', user?.isLoggedIn);
+    console.log('🔍 DEBUG - user.profile:', user?.profile);
+    
+    if (!user || !user.isLoggedIn || !user.profile) {
+        console.log('ℹ️ User not logged in or profile missing:');
+        console.log('  - user exists:', !!user);
+        console.log('  - isLoggedIn:', user?.isLoggedIn);
+        console.log('  - profile exists:', !!user?.profile);
         showLoggedOutState();
         return;
     }
@@ -327,22 +336,18 @@ function updateUserInterface() {
 }
 
 function showLoggedOutState() {
-    console.log('🚨 showLoggedOutState() called - preserving avatar click functionality');
+    console.log('⚠️ showLoggedOutState() called - user is NOT logged in');
     
+    // Hide avatar for logged-out users
     const avatarElement = document.getElementById('userAvatar');
     if (avatarElement) {
-        avatarElement.className = 'user-avatar logged-out';
-        avatarElement.textContent = '👤';
-        avatarElement.style.backgroundImage = '';
-        avatarElement.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
-        // PRESERVED: Keep onclick handler so users can access dropdown menu
-        // avatarElement.removeAttribute('onclick'); // REMOVED - keep avatar clickable
-        avatarElement.style.cursor = 'pointer'; // CHANGED from 'default' to 'pointer'
-        
-        // Ensure onclick is set if not already present
-        if (!avatarElement.onclick) {
-            avatarElement.setAttribute('onclick', 'toggleUserMenu()');
-        }
+        avatarElement.style.display = 'none';
+    }
+    
+    // Hide dropdown menu
+    const dropdownMenu = document.getElementById('userDropdown');
+    if (dropdownMenu) {
+        dropdownMenu.style.display = 'none';
     }
     
     // Show login/signup buttons
