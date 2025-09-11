@@ -4838,13 +4838,14 @@ window.getIcon = function(iconName, size = 'standard', ariaLabel = '') {
     if (window.dcfIconSystem && window.dcfIconSystem.isInitialized) {
         return window.dcfIconSystem.getIcon(iconName, size, ariaLabel);
     }
-    // Fallback to emoji if system not initialized
-    const fallbackIcons = {
-        success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', 
-        heart: '❤️', user: '👤', home: '🏠', menu: '☰'
-    };
-    const emoji = fallbackIcons[iconName] || '❓';
-    return `<span class="dcf-icon dcf-icon-emoji" role="img" aria-label="${ariaLabel || iconName}">${emoji}</span>`;
+    // NO FALLBACK - Database-only mode
+    console.error(`❌ Icon system not initialized - Cannot load icon: "${iconName}"`);
+    return `<span class="dcf-icon dcf-icon-missing" 
+                  style="display: inline-flex; align-items: center; justify-content: center;
+                         width: 24px; height: 24px; border: 2px dashed #ff0000; 
+                         border-radius: 4px; color: #ff0000; font-size: 10px; 
+                         font-weight: bold; background: #ffe0e0;" 
+                  title="Icon system not ready: ${iconName}">!</span>`;
 };
 
 // Initialize icon system after auth initialization
