@@ -4579,7 +4579,7 @@ class DCFIconSystem {
         const sizeConfig = this.sizeConfig[size];
         const label = ariaLabel || this.getDefaultAriaLabel(iconName);
         
-        // Check if content is SVG or emoji
+        // Check if content is SVG
         const isSVG = content.includes('<svg') || content.includes('<?xml');
         
         if (isSVG) {
@@ -4591,8 +4591,9 @@ class DCFIconSystem {
                         ${this.processSVG(content, sizeConfig)}
                     </span>`;
         } else {
-            // Render emoji
-            return this.renderEmojiIcon(iconName, size, ariaLabel);
+            // NO EMOJI FALLBACK - Return error indicator
+            console.error(`❌ Non-SVG content for icon "${iconName}" - Database-only mode`);
+            return this.renderMissingIcon(iconName, size, ariaLabel);
         }
     }
 
