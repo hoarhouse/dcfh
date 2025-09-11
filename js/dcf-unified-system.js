@@ -2470,6 +2470,9 @@ async function validateUsername(username) {
 // 14. GLOBAL EXPORTS
 // =============================================================================
 window.toggleUserMenu = toggleUserMenu;
+window.openUserMenu = openUserMenu;
+window.closeUserMenu = closeUserMenu;
+window.addNavigationItems = addNavigationItems;
 window.handleLogout = handleLogout;
 window.closeLogoutModal = closeLogoutModal;
 window.confirmLogout = confirmLogout;
@@ -2487,6 +2490,8 @@ window.validateUsername = validateUsername;
 window.initializeDCF = initializeDCF;
 window.generateInitials = generateInitials;
 window.subscribeNewsletter = subscribeNewsletter;
+window.updateUserInterface = updateUserInterface;
+window.populateTopNavigation = populateTopNavigation;
 
 // =============================================================================
 // 17. STANDARDIZED ALERT SYSTEM
