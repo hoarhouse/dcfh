@@ -443,7 +443,7 @@ function addNavigationItems() {
         { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
         { href: basePath + 'members/dcf_private_messaging.html', icon: '💬', text: 'My Messages' },
         { href: basePath + 'members/dcf_my_connections.html', icon: '👥', text: 'My Connections' },
-        { href: basePath + 'projects/dcf_projects_home.html#my-projects', icon: '📋', text: 'My Projects', onclick: 'setTimeout(function() { if (typeof switchTab === "function") { switchTab("my"); } else { var myTab = document.querySelector(".tab-btn:nth-child(2)"); if (myTab) myTab.click(); } }, 100);' },
+        { href: basePath + 'projects/dcf_projects.html', icon: '📋', text: 'My Projects' },
         { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
         { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
         { href: basePath + 'members/dcf_edit_profile.html', icon: '✏️', text: 'Edit Profile' }
