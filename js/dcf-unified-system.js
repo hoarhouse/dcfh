@@ -472,8 +472,8 @@ function addNavigationItems() {
         let iconHtml = item.icon; // Default to emoji
         
         // Use icon system if available
-        if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
-            iconHtml = iconSystem.getIcon(iconName, 'small');
+        if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+            iconHtml = window.iconSystem.getIcon(iconName, 'small');
         }
         
         navItem.innerHTML = `
