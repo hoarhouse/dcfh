@@ -832,12 +832,43 @@ function addSearchToUserMenu() {
         const style = document.createElement('style');
         style.id = 'search-bar-css';
         style.textContent = `
+            /* Fix navigation spacing and centering */
+            .nav-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 2rem;
+            }
+            
+            .logo {
+                display: flex;
+                align-items: center;
+                font-weight: 600;
+                color: #333;
+                text-decoration: none;
+                margin-right: 3rem; /* Add gap after logo text */
+                flex-shrink: 0; /* Prevent logo from shrinking */
+            }
+            
+            .nav-menu {
+                display: flex;
+                list-style: none;
+                gap: 2rem;
+                flex: 1; /* Allow nav to expand */
+                justify-content: center; /* Center the nav links */
+                margin: 0 2rem; /* Add margins on both sides */
+                padding: 0; /* Reset any default padding */
+            }
+            
             .nav-search-container {
                 display: flex;
                 align-items: center;
                 margin-left: auto;
                 margin-right: 1rem;
                 position: relative;
+                flex-shrink: 0; /* Prevent search from shrinking */
             }
             .search-icon-btn {
                 cursor: pointer;
