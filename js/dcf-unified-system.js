@@ -820,7 +820,7 @@ function addSearchToUserMenu() {
     searchContainer.className = 'user-menu-search';
     searchContainer.innerHTML = `
         <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
-            <span data-icon="search" data-size="small"></span>
+            <span data-icon="search" data-size="standard"></span>
         </div>
         <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; gap: 0.5rem; min-width: 280px; z-index: 1000;">
             <span data-icon="search" data-size="small" style="margin-left: 0.5rem; opacity: 0.5;"></span>
