@@ -775,6 +775,13 @@ function populateTopNavigation() {
 // 7. SEARCH FUNCTIONALITY
 // =============================================================================
 function addSearchToUserMenu() {
+    // Check if icon system is ready first
+    if (typeof window.iconSystem === 'undefined' || !window.iconSystem.isInitialized) {
+        // Retry after icon system loads
+        setTimeout(addSearchToUserMenu, 100);
+        return;
+    }
+    
     // Actually add to nav container, not user menu
     const navContainer = document.querySelector('.nav-container, .header-content');
     const userMenu = document.querySelector('.user-menu');
