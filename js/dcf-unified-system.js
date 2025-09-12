@@ -1261,9 +1261,8 @@ function initializeFooter() {
     }
 
     .copyright {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.6);
         font-size: 0.875rem;
-        font-weight: 400;
         margin: 0;
     }
 
@@ -1273,22 +1272,26 @@ function initializeFooter() {
     }
 
     .legal-link {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.6);
         text-decoration: none;
         font-size: 0.875rem;
-        font-weight: 400;
         transition: color 0.2s ease;
     }
 
     .legal-link:hover {
-        color: #1e293b;
+        color: white;
     }
 
     /* Responsive Design */
     @media (max-width: 1024px) {
         .footer-main {
-            grid-template-columns: 1fr 200px 250px;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 2.5rem;
+        }
+        
+        .footer-brand,
+        .footer-newsletter {
+            grid-column: span 3;
         }
         
         .footer-contact {
