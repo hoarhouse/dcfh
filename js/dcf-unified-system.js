@@ -1192,7 +1192,7 @@ function initializeFooter() {
     .newsletter-btn {
         width: 100%;
         padding: 0.75rem 1rem;
-        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         color: white;
         border: none;
         border-radius: 8px;
@@ -1201,18 +1201,18 @@ function initializeFooter() {
         font-weight: 600;
         transition: all 0.2s ease;
         letter-spacing: 0.025em;
-        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
     }
 
     .newsletter-btn:hover {
-        background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
     }
 
     .newsletter-btn:active {
         transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        box-shadow: 0 2px 4px rgba(79, 172, 254, 0.2);
     }
 
     .newsletter-btn:disabled {
@@ -1224,7 +1224,7 @@ function initializeFooter() {
     }
 
     .newsletter-privacy {
-        color: #9ca3af;
+        color: #546e7a;
         font-size: 0.75rem;
         text-align: center;
         font-weight: 400;
@@ -1245,7 +1245,7 @@ function initializeFooter() {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: #64748b;
+        color: #546e7a;
         text-decoration: none;
         font-size: 0.875rem;
         font-weight: 400;
@@ -1255,8 +1255,8 @@ function initializeFooter() {
     }
 
     .contact-link:hover {
-        color: #1e293b;
-        background: rgba(241, 245, 249, 0.8);
+        color: #2c3e50;
+        background: rgba(255, 255, 255, 0.5);
         padding-left: 0.5rem;
     }
 
@@ -1273,7 +1273,8 @@ function initializeFooter() {
     /* Footer Bottom */
     .footer-bottom {
         padding: 1.5rem 0;
-        background: rgba(248, 250, 252, 0.8);
+        background: rgba(255, 255, 255, 0.3);
+        border-top: 1px solid rgba(195, 207, 226, 0.3);
     }
 
     .footer-bottom-content {
@@ -1285,7 +1286,7 @@ function initializeFooter() {
     }
 
     .copyright {
-        color: rgba(255, 255, 255, 0.6);
+        color: #546e7a;
         font-size: 0.875rem;
         margin: 0;
     }
@@ -1296,14 +1297,14 @@ function initializeFooter() {
     }
 
     .legal-link {
-        color: rgba(255, 255, 255, 0.6);
+        color: #546e7a;
         text-decoration: none;
         font-size: 0.875rem;
         transition: color 0.2s ease;
     }
 
     .legal-link:hover {
-        color: white;
+        color: #2c3e50;
     }
 
     /* Responsive Design */
