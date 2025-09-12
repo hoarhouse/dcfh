@@ -763,10 +763,102 @@ function populateTopNavigation() {
         
         navMenu.appendChild(li);
     });
+    
+    // Add search icon to navigation
+    const searchContainer = document.createElement('li');
+    searchContainer.className = 'nav-search-container';
+    searchContainer.style.cssText = 'margin-left: auto; position: relative; display: flex; align-items: center;';
+    searchContainer.innerHTML = `
+        <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
+            <span data-icon="search" data-size="small"></span>
+        </div>
+        <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; gap: 0.5rem; min-width: 280px; z-index: 1000;">
+            <span data-icon="search" data-size="small" style="margin-left: 0.5rem; opacity: 0.5;"></span>
+            <input type="text" class="nav-search-input" placeholder="Search DCF..." style="border: none; outline: none; flex: 1; padding: 0.5rem; font-size: 0.9rem; background: transparent;" onkeypress="handleSearchKeypress(event)" />
+            <button class="search-close-btn" onclick="collapseSearch()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; color: #999; transition: color 0.2s ease;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">×</button>
+        </div>
+    `;
+    navMenu.appendChild(searchContainer);
+    
+    // Add search bar CSS if not already added
+    if (!document.getElementById('search-bar-css')) {
+        const style = document.createElement('style');
+        style.id = 'search-bar-css';
+        style.textContent = `
+            .nav-search-container {
+                position: relative;
+            }
+            .search-icon-btn:hover {
+                opacity: 0.7;
+            }
+            .search-bar-expanded {
+                animation: slideIn 0.3s ease;
+            }
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-50%) translateX(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(-50%) translateX(0);
+                }
+            }
+            @media (max-width: 768px) {
+                .search-bar-expanded {
+                    min-width: 200px;
+                    right: -10px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // =============================================================================
-// 7. LOGOUT FUNCTIONALITY
+// 7. SEARCH FUNCTIONALITY
+// =============================================================================
+window.expandSearch = function() {
+    const container = document.querySelector('.nav-search-container');
+    const icon = container.querySelector('.search-icon-btn');
+    const searchBar = container.querySelector('.search-bar-expanded');
+    
+    icon.style.display = 'none';
+    searchBar.style.display = 'flex';
+    
+    // Focus on input
+    const input = searchBar.querySelector('.nav-search-input');
+    setTimeout(() => input.focus(), 100);
+}
+
+window.collapseSearch = function() {
+    const container = document.querySelector('.nav-search-container');
+    const icon = container.querySelector('.search-icon-btn');
+    const searchBar = container.querySelector('.search-bar-expanded');
+    
+    icon.style.display = 'flex';
+    searchBar.style.display = 'none';
+    
+    // Clear input
+    searchBar.querySelector('.nav-search-input').value = '';
+}
+
+window.handleSearchKeypress = function(event) {
+    if (event.key === 'Enter') {
+        const searchTerm = event.target.value.trim();
+        if (searchTerm) {
+            // Placeholder for search functionality
+            console.log('Searching for:', searchTerm);
+            alert(`Search functionality coming soon!\nYou searched for: "${searchTerm}"`);
+            collapseSearch();
+        }
+    } else if (event.key === 'Escape') {
+        collapseSearch();
+    }
+}
+
+// =============================================================================
+// 8. LOGOUT FUNCTIONALITY
 // =============================================================================
 function handleLogout() {
     closeUserMenu();
