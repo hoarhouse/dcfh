@@ -884,20 +884,43 @@ function initializeFooter() {
                     </div>
                 </div>
 
-                <!-- Column 2: Navigation -->
-                <div class="footer-navigation">
-                    <h4 class="footer-heading">Navigation</h4>
+                <!-- Column 2: Initiatives -->
+                <div class="footer-initiatives">
+                    <h4 class="footer-heading">Our Initiatives</h4>
                     <nav class="footer-nav">
-                        <a href="${basePath}index.html" class="footer-link">Home</a>
-                        <a href="${basePath}public/dcf_about.html" class="footer-link">About Us</a>
-                        <a href="${basePath}public/dcf_events_public.html" class="footer-link">Events</a>
-                        <a href="${basePath}public/dcf_projects_public.html" class="footer-link">Projects</a>
-                        <a href="${basePath}public/dcf_resources_public.html" class="footer-link">Resources</a>
-                        <a href="${basePath}initiatives/initiatives_home.html" class="footer-link">Initiatives</a>
+                        <a href="${basePath}initiatives/peace/initiative_peace.html" class="footer-link">
+                            <span data-icon="peace" data-size="small" aria-label="Peace"></span>
+                            <span>Peace Initiative</span>
+                        </a>
+                        <a href="${basePath}initiatives/education/initiative_education.html" class="footer-link">
+                            <span data-icon="education" data-size="small" aria-label="Education"></span>
+                            <span>Education Initiative</span>
+                        </a>
+                        <a href="${basePath}initiatives/health/initiative_health.html" class="footer-link">
+                            <span data-icon="health" data-size="small" aria-label="Health"></span>
+                            <span>Health Initiative</span>
+                        </a>
+                        <a href="${basePath}initiatives/research/initiative_research.html" class="footer-link">
+                            <span data-icon="research" data-size="small" aria-label="Research"></span>
+                            <span>Research Initiative</span>
+                        </a>
                     </nav>
                 </div>
 
-                <!-- Column 3: Newsletter -->
+                <!-- Column 3: Navigation -->
+                <div class="footer-navigation">
+                    <h4 class="footer-heading">Quick Links</h4>
+                    <nav class="footer-nav">
+                        <a href="${basePath}index.html" class="footer-link">Home</a>
+                        <a href="${basePath}public/dcf_about.html" class="footer-link">About Us</a>
+                        <a href="${basePath}news/dcf_news.html" class="footer-link">News & Updates</a>
+                        <a href="${basePath}public/dcf_events_public.html" class="footer-link">Events</a>
+                        <a href="${basePath}public/dcf_projects_public.html" class="footer-link">Projects</a>
+                        <a href="${basePath}public/dcf_resources_public.html" class="footer-link">Resources</a>
+                    </nav>
+                </div>
+
+                <!-- Column 4: Newsletter -->
                 <div class="footer-newsletter">
                     <h4 class="footer-heading">Stay Informed</h4>
                     <p class="newsletter-description">
@@ -923,7 +946,7 @@ function initializeFooter() {
                     </div>
                 </div>
 
-                <!-- Column 4: Contact & Legal -->
+                <!-- Column 5: Contact & Legal -->
                 <div class="footer-contact">
                     <h4 class="footer-heading">Get in Touch</h4>
                     <div class="contact-info">
@@ -966,27 +989,27 @@ function initializeFooter() {
     </footer>
 
     <style>
-    /* Foundation Footer Styling */
+    /* Foundation Footer Styling - Matching Initiative Pages */
     .site-footer {
-        background: linear-gradient(135deg, #f8fafb 0%, #f1f5f9 100%);
-        border-top: 1px solid #e2e8f0;
+        background: #1a1a1a;
+        color: white;
         margin-top: 4rem;
-        color: #334155;
+        padding: 4rem 0 2rem;
     }
 
     .footer-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 1.5rem;
+        padding: 0 2rem;
     }
 
-    /* Main Footer Grid */
+    /* Main Footer Grid - 5 columns */
     .footer-main {
         display: grid;
-        grid-template-columns: 1fr 200px 280px 200px;
+        grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1fr;
         gap: 3rem;
-        padding: 3rem 0;
-        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 3rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     /* Brand Section */
@@ -1003,8 +1026,8 @@ function initializeFooter() {
     .footer-logo-icon {
         width: 32px;
         height: 32px;
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: 8px;
+        background: white;
+        border-radius: 50%;
         margin-right: 0.75rem;
         display: flex;
         align-items: center;
@@ -1014,12 +1037,12 @@ function initializeFooter() {
     .footer-logo-text {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #1e293b;
+        color: white;
         letter-spacing: -0.025em;
     }
 
     .footer-mission {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.8);
         font-size: 0.875rem;
         line-height: 1.6;
         margin-bottom: 1.5rem;
@@ -1034,13 +1057,13 @@ function initializeFooter() {
     .social-link {
         width: 40px;
         height: 40px;
-        background: white;
-        border: 1px solid #e2e8f0;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.7);
         text-decoration: none;
         transition: all 0.2s ease;
     }
