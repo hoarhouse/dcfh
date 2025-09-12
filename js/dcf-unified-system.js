@@ -778,10 +778,46 @@ function addSearchToUserMenu() {
     const userMenu = document.querySelector('.user-menu');
     if (!userMenu || userMenu.querySelector('.user-menu-search')) return;
     
+    // Add search bar CSS if not already added
+    if (!document.getElementById('search-bar-css')) {
+        const style = document.createElement('style');
+        style.id = 'search-bar-css';
+        style.textContent = `
+            .user-menu-search {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                margin-right: 1rem;
+            }
+            .search-icon-btn:hover {
+                opacity: 0.7;
+            }
+            .search-bar-expanded {
+                animation: slideIn 0.3s ease;
+            }
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @media (max-width: 768px) {
+                .search-bar-expanded {
+                    min-width: 200px;
+                    right: -10px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     // Create search container for user menu
     const searchContainer = document.createElement('div');
     searchContainer.className = 'user-menu-search';
-    searchContainer.style.cssText = 'position: relative; display: inline-flex; align-items: center; margin-right: 1rem;';
     searchContainer.innerHTML = `
         <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
             <span data-icon="search" data-size="small"></span>
