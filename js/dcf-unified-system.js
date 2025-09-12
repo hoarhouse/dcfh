@@ -984,11 +984,6 @@ function initializeFooter() {
                                 Subscribe
                             </button>
                         </div>
-                        <div style="margin-top: 1rem;">
-                            <a href="${basePath}public/dcf_newsletter.html" class="footer-link" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 0.2s ease;">
-                                <span data-icon="newsletter_archive" data-size="small"></span> View Newsletter Archive
-                            </a>
-                        </div>
                     </div>
                 </div>
 
