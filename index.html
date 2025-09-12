@@ -1943,91 +1943,25 @@
 
         // Initialize icon system for dynamic icons
         function initializePageIcons() {
-            // Icon mappings for special cases
-            const iconMappings = {
-                'peace': 'peace',
-                'education': 'education', 
-                'health': 'health',
-                'research': 'research',
-                'news': 'notification', // Using notification icon for news
-                'calendar': 'calendar',
-                'donate': 'share', // Using share icon for donate
-                'megaphone': 'notification', // Using notification for megaphone
-                'clock': 'warning', // Using warning icon for clock
-                'justice': 'peace', // Using peace icon for justice
-                'globe': 'home' // Using home icon for globe
-            };
-
-            // Replace all icon placeholders with actual icons
             document.querySelectorAll('[data-icon]').forEach(element => {
                 const iconName = element.dataset.icon;
-                const mappedIcon = iconMappings[iconName] || iconName;
-                
-                // Determine size based on element class
-                let size = 'large';
-                if (element.classList.contains('content-icon')) {
-                    size = 'standard';
-                }
+                const size = element.dataset.size || 'standard';
                 
                 if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
-                    // Use icon system if available
-                    element.innerHTML = iconSystem.getIcon(mappedIcon, size);
-                } else {
-                    // Fallback to emoji
-                    const emojiMap = {
-                        'peace': '☮️',
-                        'education': '📚',
-                        'health': '🏥',
-                        'research': '🔬',
-                        'news': '📰',
-                        'calendar': '📅',
-                        'donate': '💰',
-                        'megaphone': '📢',
-                        'clock': '⏰',
-                        'justice': '⚖️',
-                        'globe': '🌍'
-                    };
-                    element.innerHTML = emojiMap[iconName] || '❓';
+                    element.innerHTML = iconSystem.getIcon(iconName, size);
                 }
             });
         }
 
-        // Initialize icons on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for icon system to fully initialize and cache icons
-            function waitForIconSystem() {
-                if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
-                    // Check if cache has icons (not just emoji mode)
-                    const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
-                    console.log(`🎯 Icon system ready. Cache size: ${cacheSize}, Current set: ${iconSystem.currentIconSet}`);
-                    
-                    // If we have cached icons OR we're in emoji mode, proceed
-                    if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
-                        console.log('✅ Initializing page icons now');
-                        initializePageIcons();
-                        
-                        // Listen for icon set changes (if admin changes the set)
-                        const originalUpdateIcons = iconSystem.updateAllIcons;
-                        iconSystem.updateAllIcons = function() {
-                            if (originalUpdateIcons) {
-                                originalUpdateIcons.call(iconSystem);
-                            }
-                            // Update our page icons too
-                            initializePageIcons();
-                        };
-                    } else {
-                        // Cache still loading, wait a bit more
-                        console.log('⏳ Waiting for icon cache to populate...');
-                        setTimeout(waitForIconSystem, 100);
-                    }
-                } else {
-                    // Icon system not ready yet, check again
-                    console.log('⏳ Waiting for icon system to initialize...');
-                    setTimeout(waitForIconSystem, 100);
-                }
+        function waitForIconSystem() {
+            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+                initializePageIcons();
+            } else {
+                setTimeout(waitForIconSystem, 100);
             }
-            
-            // Start checking after a small delay to let scripts load
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
             setTimeout(waitForIconSystem, 500);
         });
     </script>
