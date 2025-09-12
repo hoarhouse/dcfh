@@ -772,7 +772,46 @@ function populateTopNavigation() {
 }
 
 // =============================================================================
-// 7. SEARCH FUNCTIONALITY
+// 7. LOGO TEXT UPDATE
+// =============================================================================
+function updateLogoText() {
+    // Update any navigation logo text from "Domus Communis Foundation" to "DCF"
+    const logoElements = document.querySelectorAll('.logo, .logo-text, .brand-name, .site-title');
+    logoElements.forEach(element => {
+        if (element.textContent && element.textContent.includes('Domus Communis Foundation')) {
+            element.textContent = element.textContent.replace('Domus Communis Foundation', 'DCF');
+            console.log('✅ Updated logo text to DCF');
+        }
+    });
+    
+    // Also check for any text nodes that might contain the old name
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: function(node) {
+                if (node.nodeValue && node.nodeValue.includes('Domus Communis Foundation')) {
+                    // Skip if it's in a script or style tag
+                    const parent = node.parentElement;
+                    if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+                return NodeFilter.FILTER_REJECT;
+            }
+        }
+    );
+    
+    let node;
+    while (node = walker.nextNode()) {
+        node.nodeValue = node.nodeValue.replace('Domus Communis Foundation', 'DCF');
+        console.log('✅ Updated text node to DCF');
+    }
+}
+
+// =============================================================================
+// 8. SEARCH FUNCTIONALITY
 // =============================================================================
 function addSearchToUserMenu() {
     // Check if icon system is ready first
@@ -1207,7 +1246,7 @@ function initializeFooter() {
             <div class="footer-bottom">
                 <div class="footer-bottom-content">
                     <p class="copyright">
-                        © ${new Date().getFullYear()} Domus Communis Foundation Hungary. All rights reserved.
+                        © ${new Date().getFullYear()} DCF Hungary. All rights reserved.
                     </p>
                     <div class="footer-legal">
                         <a href="#" class="legal-link">Privacy Policy</a>
