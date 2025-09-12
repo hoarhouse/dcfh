@@ -844,6 +844,26 @@ async function confirmLogout() {
 // =============================================================================
 // 9. FOOTER FUNCTIONALITY
 // =============================================================================
+// Helper function to render footer icons
+function renderFooterIcons() {
+    const footer = document.querySelector('.site-footer');
+    if (!footer) return;
+    
+    const footerIcons = footer.querySelectorAll('[data-icon]');
+    footerIcons.forEach(element => {
+        const iconName = element.getAttribute('data-icon');
+        const size = element.getAttribute('data-size') || 'small';
+        const label = element.getAttribute('aria-label') || iconName;
+        
+        if (window.iconSystem && window.iconSystem.getIcon) {
+            const iconHTML = window.iconSystem.getIcon(iconName, size, label);
+            element.innerHTML = iconHTML;
+        }
+    });
+    
+    console.log(`✅ Rendered ${footerIcons.length} icons in footer`);
+}
+
 function initializeFooter() {
     // Only add footer if one doesn't exist
     if (document.querySelector('.site-footer')) return;
@@ -1375,6 +1395,19 @@ function initializeFooter() {
     `;
 
     document.body.insertAdjacentHTML('beforeend', footerHTML);
+    
+    // Render icons in footer if icon system is ready
+    if (window.iconSystem && window.iconSystem.isInitialized) {
+        renderFooterIcons();
+    } else {
+        // Wait for icon system to be ready
+        const checkIconSystem = setInterval(() => {
+            if (window.iconSystem && window.iconSystem.isInitialized) {
+                clearInterval(checkIconSystem);
+                renderFooterIcons();
+            }
+        }, 100);
+    }
     
     // Initialize newsletter input sanitization
     setTimeout(() => {
