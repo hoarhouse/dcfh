@@ -570,6 +570,7 @@ function populateTopNavigation() {
             { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
             { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
             { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
+            { href: basePath + 'news/dcf_news.html', text: 'News' },
             { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
             { 
                 href: basePath + 'initiatives/initiatives_home.html', 
@@ -590,6 +591,7 @@ function populateTopNavigation() {
             { href: basePath + 'public/dcf_about.html', text: 'About' },
             { href: basePath + 'public/dcf_contact.html', text: 'Contact' },
             { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
+            { href: basePath + 'news/dcf_news.html', text: 'News' },
             { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
             { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
             { 
