@@ -909,6 +909,23 @@ window.handleSearchKeypress = function(event) {
     }
 }
 
+// Function to reinitialize search icons after icon system is ready
+window.initializeSearchIcons = function() {
+    const searchIcons = document.querySelectorAll('.user-menu-search [data-icon="search"]');
+    if (searchIcons.length > 0 && typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+        searchIcons.forEach(element => {
+            const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+            if (iconHTML) {
+                element.innerHTML = iconHTML;
+                console.log('✅ Search icon initialized');
+            } else {
+                console.warn('⚠️ Search icon not found in database');
+                element.innerHTML = '🔍'; // Fallback
+            }
+        });
+    }
+}
+
 // =============================================================================
 // 8. LOGOUT FUNCTIONALITY
 // =============================================================================
@@ -1572,12 +1589,20 @@ function initializeFooter() {
     // Render icons in footer if icon system is ready
     if (window.iconSystem && window.iconSystem.isInitialized) {
         renderFooterIcons();
+        // Also initialize search icons
+        if (window.initializeSearchIcons) {
+            window.initializeSearchIcons();
+        }
     } else {
         // Wait for icon system to be ready
         const checkIconSystem = setInterval(() => {
             if (window.iconSystem && window.iconSystem.isInitialized) {
                 clearInterval(checkIconSystem);
                 renderFooterIcons();
+                // Also initialize search icons
+                if (window.initializeSearchIcons) {
+                    window.initializeSearchIcons();
+                }
             }
         }, 100);
     }
@@ -5138,6 +5163,13 @@ function initializeIconSystemAfterAuth() {
             try {
                 await window.dcfIconSystem.initializeIcons();
                 console.log('✅ Icon System fully initialized with unified auth');
+                
+                // Initialize search icons after icon system is ready
+                if (window.initializeSearchIcons) {
+                    setTimeout(() => {
+                        window.initializeSearchIcons();
+                    }, 100);
+                }
             } catch (error) {
                 console.error('❌ Error initializing Icon System:', error);
             }
