@@ -867,38 +867,19 @@ function addSearchToUserMenu() {
     // Insert between nav menu and user menu in the nav container
     navContainer.insertBefore(searchContainer, userMenu);
     
-    // Initialize icons for search with enhanced check
-    setTimeout(() => {
-        if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
-            const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
-            searchIcons.forEach(element => {
-                const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
-                if (iconHTML) {
-                    element.innerHTML = iconHTML;
-                } else {
-                    console.warn('Search icon not found in database, using fallback');
-                    element.innerHTML = '🔍'; // Fallback icon
-                }
-            });
-        } else if (typeof window.iconSystem !== 'undefined' && window.iconSystem.isInitialized) {
-            // Try alternative initialization method
-            window.iconSystem.initializeIcons();
+    // Initialize icons immediately since we've already verified icon system is ready
+    const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
+    searchIcons.forEach(element => {
+        const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
+        if (iconHTML) {
+            element.innerHTML = iconHTML;
+            console.log('✅ Search icon initialized');
         } else {
-            console.log('Icon system not yet initialized, will retry');
-            // Retry after a longer delay
-            setTimeout(() => {
-                if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
-                    const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
-                    searchIcons.forEach(element => {
-                        const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
-                        if (iconHTML) {
-                            element.innerHTML = iconHTML;
-                        }
-                    });
-                }
-            }, 500);
+            // Only use fallback if icon truly doesn't exist (very rare)
+            console.warn('⚠️ Search icon not found in database');
+            element.innerHTML = '🔍';
         }
-    }, 100);
+    });
 }
 
 window.expandSearch = function() {
@@ -958,6 +939,25 @@ window.initializeSearchIcons = function() {
                 element.innerHTML = '🔍'; // Fallback
             }
         });
+    }
+}
+
+// Wrapper to safely add search icon only when ready
+window.addSearchIconWhenReady = function() {
+    // Check if we should add search icon
+    const navContainer = document.querySelector('.nav-container, .header-content');
+    const userMenu = document.querySelector('.user-menu');
+    
+    if (!navContainer || !userMenu || navContainer.querySelector('.nav-search-container')) {
+        return; // Already added or elements not ready
+    }
+    
+    // Only add if icon system is ready
+    if (typeof window.iconSystem !== 'undefined' && window.iconSystem.isInitialized) {
+        addSearchToUserMenu();
+    } else {
+        // Check again in 100ms
+        setTimeout(window.addSearchIconWhenReady, 100);
     }
 }
 
