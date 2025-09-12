@@ -323,8 +323,8 @@ function updateUserInterface() {
     // Add notification bell
     addNotificationBell();
     
-    // Add search icon for logged-in users
-    addSearchToUserMenu();
+    // Add search icon for logged-in users (with proper timing)
+    window.addSearchIconWhenReady();
     
     console.log('✅ UI update complete');
 }
@@ -360,8 +360,8 @@ function showLoggedOutState() {
             `;
         }
         
-        // Add search icon after login/signup buttons
-        addSearchToUserMenu();
+        // Add search icon after login/signup buttons (with proper timing)
+        window.addSearchIconWhenReady();
     }
 }
 
