@@ -1273,7 +1273,6 @@ function initializeFooter() {
     /* Footer Bottom */
     .footer-bottom {
         padding: 1.5rem 0;
-        background: rgba(255, 255, 255, 0.3);
         border-top: 1px solid rgba(195, 207, 226, 0.3);
     }
 
