@@ -855,9 +855,9 @@ function addSearchToUserMenu() {
         document.head.appendChild(style);
     }
     
-    // Create search container for user menu
+    // Create search container for navigation
     const searchContainer = document.createElement('div');
-    searchContainer.className = 'user-menu-search';
+    searchContainer.className = 'nav-search-container';
     searchContainer.innerHTML = `
         <div class="search-icon-btn" onclick="expandSearch()">
             <span data-icon="search" data-size="standard"></span>
@@ -869,8 +869,8 @@ function addSearchToUserMenu() {
         </div>
     `;
     
-    // Insert at the beginning of user menu
-    userMenu.insertBefore(searchContainer, userMenu.firstChild);
+    // Insert between nav menu and user menu in the nav container
+    navContainer.insertBefore(searchContainer, userMenu);
     
     // Initialize icons for search with enhanced check
     setTimeout(() => {
@@ -907,7 +907,7 @@ function addSearchToUserMenu() {
 }
 
 window.expandSearch = function() {
-    const container = document.querySelector('.user-menu-search');
+    const container = document.querySelector('.nav-search-container');
     if (!container) return;
     
     const icon = container.querySelector('.search-icon-btn');
@@ -922,7 +922,7 @@ window.expandSearch = function() {
 }
 
 window.collapseSearch = function() {
-    const container = document.querySelector('.user-menu-search');
+    const container = document.querySelector('.nav-search-container');
     if (!container) return;
     
     const icon = container.querySelector('.search-icon-btn');
