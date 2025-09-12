@@ -819,18 +819,6 @@ function addSearchToUserMenu() {
                 padding: 0.5rem;
                 min-height: 40px;
             }
-            .notification-bell {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 40px;
-                width: 40px;
-            }
-            .user-avatar {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
             @keyframes slideIn {
                 from {
                     opacity: 0;
@@ -951,7 +939,7 @@ window.handleSearchKeypress = function(event) {
 
 // Function to reinitialize search icons after icon system is ready
 window.initializeSearchIcons = function() {
-    const searchIcons = document.querySelectorAll('.user-menu-search [data-icon="search"]');
+    const searchIcons = document.querySelectorAll('.nav-search-container [data-icon="search"]');
     if (searchIcons.length > 0 && typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
         searchIcons.forEach(element => {
             const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
