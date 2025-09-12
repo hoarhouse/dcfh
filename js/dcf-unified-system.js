@@ -323,6 +323,9 @@ function updateUserInterface() {
     // Add notification bell
     addNotificationBell();
     
+    // Add search icon for logged-in users
+    addSearchToUserMenu();
+    
     console.log('✅ UI update complete');
 }
 
@@ -356,6 +359,9 @@ function showLoggedOutState() {
                 <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
             `;
         }
+        
+        // Add search icon after login/signup buttons
+        addSearchToUserMenu();
     }
 }
 
@@ -763,63 +769,48 @@ function populateTopNavigation() {
         
         navMenu.appendChild(li);
     });
-    
-    // Add search icon to navigation
-    const searchContainer = document.createElement('li');
-    searchContainer.className = 'nav-search-container';
-    searchContainer.style.cssText = 'margin-left: auto; position: relative; display: flex; align-items: center;';
-    searchContainer.innerHTML = `
-        <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
-            <span data-icon="search" data-size="small"></span>
-        </div>
-        <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; gap: 0.5rem; min-width: 280px; z-index: 1000;">
-            <span data-icon="search" data-size="small" style="margin-left: 0.5rem; opacity: 0.5;"></span>
-            <input type="text" class="nav-search-input" placeholder="Search DCF..." style="border: none; outline: none; flex: 1; padding: 0.5rem; font-size: 0.9rem; background: transparent;" onkeypress="handleSearchKeypress(event)" />
-            <button class="search-close-btn" onclick="collapseSearch()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; color: #999; transition: color 0.2s ease;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">×</button>
-        </div>
-    `;
-    navMenu.appendChild(searchContainer);
-    
-    // Add search bar CSS if not already added
-    if (!document.getElementById('search-bar-css')) {
-        const style = document.createElement('style');
-        style.id = 'search-bar-css';
-        style.textContent = `
-            .nav-search-container {
-                position: relative;
-            }
-            .search-icon-btn:hover {
-                opacity: 0.7;
-            }
-            .search-bar-expanded {
-                animation: slideIn 0.3s ease;
-            }
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-50%) translateX(10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(-50%) translateX(0);
-                }
-            }
-            @media (max-width: 768px) {
-                .search-bar-expanded {
-                    min-width: 200px;
-                    right: -10px;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
 }
 
 // =============================================================================
 // 7. SEARCH FUNCTIONALITY
 // =============================================================================
+function addSearchToUserMenu() {
+    const userMenu = document.querySelector('.user-menu');
+    if (!userMenu || userMenu.querySelector('.user-menu-search')) return;
+    
+    // Create search container for user menu
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'user-menu-search';
+    searchContainer.style.cssText = 'position: relative; display: inline-flex; align-items: center; margin-right: 1rem;';
+    searchContainer.innerHTML = `
+        <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
+            <span data-icon="search" data-size="small"></span>
+        </div>
+        <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; gap: 0.5rem; min-width: 280px; z-index: 1000;">
+            <span data-icon="search" data-size="small" style="margin-left: 0.5rem; opacity: 0.5;"></span>
+            <input type="text" class="nav-search-input" placeholder="Search DCF..." style="border: none; outline: none; flex: 1; padding: 0.5rem; font-size: 0.9rem; background: transparent;" onkeypress="handleSearchKeypress(event)" />
+            <button class="search-close-btn" onclick="collapseSearch()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; color: #999; transition: color 0.2s ease;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">×</button>
+        </div>
+    `;
+    
+    // Insert at the beginning of user menu
+    userMenu.insertBefore(searchContainer, userMenu.firstChild);
+    
+    // Initialize icons for search
+    setTimeout(() => {
+        if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+            const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
+            searchIcons.forEach(element => {
+                element.innerHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small');
+            });
+        }
+    }, 100);
+}
+
 window.expandSearch = function() {
-    const container = document.querySelector('.nav-search-container');
+    const container = document.querySelector('.user-menu-search');
+    if (!container) return;
+    
     const icon = container.querySelector('.search-icon-btn');
     const searchBar = container.querySelector('.search-bar-expanded');
     
@@ -832,7 +823,9 @@ window.expandSearch = function() {
 }
 
 window.collapseSearch = function() {
-    const container = document.querySelector('.nav-search-container');
+    const container = document.querySelector('.user-menu-search');
+    if (!container) return;
+    
     const icon = container.querySelector('.search-icon-btn');
     const searchBar = container.querySelector('.search-bar-expanded');
     
