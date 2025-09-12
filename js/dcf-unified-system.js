@@ -775,19 +775,28 @@ function populateTopNavigation() {
 // 7. SEARCH FUNCTIONALITY
 // =============================================================================
 function addSearchToUserMenu() {
+    // Actually add to nav container, not user menu
+    const navContainer = document.querySelector('.nav-container, .header-content');
     const userMenu = document.querySelector('.user-menu');
-    if (!userMenu || userMenu.querySelector('.user-menu-search')) return;
+    
+    if (!navContainer || !userMenu || navContainer.querySelector('.nav-search-container')) return;
     
     // Add search bar CSS if not already added
     if (!document.getElementById('search-bar-css')) {
         const style = document.createElement('style');
         style.id = 'search-bar-css';
         style.textContent = `
+            .user-menu {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                height: 100%;
+            }
             .user-menu-search {
                 position: relative;
                 display: flex;
                 align-items: center;
-                margin-right: 1rem;
+                margin-right: 0.5rem;
                 height: 100%;
             }
             .search-icon-btn {
@@ -815,6 +824,18 @@ function addSearchToUserMenu() {
                 border-radius: 8px;
                 padding: 0.5rem;
                 min-height: 40px;
+            }
+            .notification-bell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 40px;
+                width: 40px;
+            }
+            .user-avatar {
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             @keyframes slideIn {
                 from {
@@ -844,10 +865,10 @@ function addSearchToUserMenu() {
     const searchContainer = document.createElement('div');
     searchContainer.className = 'user-menu-search';
     searchContainer.innerHTML = `
-        <div class="search-icon-btn" onclick="expandSearch()" style="cursor: pointer; padding: 0.5rem; display: flex; align-items: center; transition: opacity 0.3s ease;">
+        <div class="search-icon-btn" onclick="expandSearch()">
             <span data-icon="search" data-size="standard"></span>
         </div>
-        <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; gap: 0.5rem; min-width: 280px; z-index: 1000;">
+        <div class="search-bar-expanded" style="display: none; position: absolute; right: 0; top: calc(100% + 5px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px; z-index: 1000;">
             <span data-icon="search" data-size="small" style="margin-left: 0.5rem; opacity: 0.5;"></span>
             <input type="text" class="nav-search-input" placeholder="Search DCF..." style="border: none; outline: none; flex: 1; padding: 0.5rem; font-size: 0.9rem; background: transparent;" onkeypress="handleSearchKeypress(event)" />
             <button class="search-close-btn" onclick="collapseSearch()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; color: #999; transition: color 0.2s ease;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">×</button>
