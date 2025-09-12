@@ -569,13 +569,13 @@ function populateTopNavigation() {
             { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
             { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
             { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
-            { href: basePath + 'events/dcf_events_calendar.html', text: 'Events' },
             { 
                 href: basePath + 'news/dcf_news.html', 
                 text: 'News',
                 dropdown: true,
                 submenu: [
                     { href: basePath + 'news/dcf_news.html', text: 'News & Updates', id: 'news' },
+                    { href: basePath + 'events/dcf_events_calendar.html', text: 'Events', id: 'events' },
                     { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter Archive', id: 'newsletter' }
                 ]
             },
@@ -606,13 +606,13 @@ function populateTopNavigation() {
                     { href: basePath + 'public/dcf_contact.html', text: 'Contact', id: 'contact' }
                 ]
             },
-            { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
             { 
                 href: basePath + 'news/dcf_news.html', 
                 text: 'News',
                 dropdown: true,
                 submenu: [
                     { href: basePath + 'news/dcf_news.html', text: 'News & Updates', id: 'news' },
+                    { href: basePath + 'public/dcf_events_public.html', text: 'Events', id: 'events' },
                     { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter Archive', id: 'newsletter' }
                 ]
             },
