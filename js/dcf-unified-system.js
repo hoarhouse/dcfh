@@ -785,15 +785,36 @@ function addSearchToUserMenu() {
         style.textContent = `
             .user-menu-search {
                 position: relative;
-                display: inline-flex;
+                display: flex;
                 align-items: center;
                 margin-right: 1rem;
+                height: 100%;
+            }
+            .search-icon-btn {
+                cursor: pointer;
+                padding: 0.5rem;
+                border-radius: 6px;
+                transition: background-color 0.2s ease, opacity 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 40px;
+                width: 40px;
             }
             .search-icon-btn:hover {
-                opacity: 0.7;
+                background-color: rgba(0, 0, 0, 0.05);
+                opacity: 0.8;
             }
             .search-bar-expanded {
                 animation: slideIn 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: white;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                padding: 0.5rem;
+                min-height: 40px;
             }
             @keyframes slideIn {
                 from {
@@ -809,6 +830,10 @@ function addSearchToUserMenu() {
                 .search-bar-expanded {
                     min-width: 200px;
                     right: -10px;
+                }
+                .search-icon-btn {
+                    height: 36px;
+                    width: 36px;
                 }
             }
         `;
@@ -837,7 +862,7 @@ function addSearchToUserMenu() {
         if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
             const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
             searchIcons.forEach(element => {
-                const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+                const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
                 if (iconHTML) {
                     element.innerHTML = iconHTML;
                 } else {
@@ -855,7 +880,7 @@ function addSearchToUserMenu() {
                 if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
                     const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
                     searchIcons.forEach(element => {
-                        const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+                        const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
                         if (iconHTML) {
                             element.innerHTML = iconHTML;
                         }
@@ -914,7 +939,7 @@ window.initializeSearchIcons = function() {
     const searchIcons = document.querySelectorAll('.user-menu-search [data-icon="search"]');
     if (searchIcons.length > 0 && typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
         searchIcons.forEach(element => {
-            const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+            const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'standard', 'Search');
             if (iconHTML) {
                 element.innerHTML = iconHTML;
                 console.log('✅ Search icon initialized');
