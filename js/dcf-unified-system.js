@@ -960,9 +960,6 @@ function initializeFooter() {
                                 Subscribe
                             </button>
                         </div>
-                        <p class="newsletter-privacy">
-                            We respect your privacy. Unsubscribe at any time.
-                        </p>
                     </div>
                 </div>
 
