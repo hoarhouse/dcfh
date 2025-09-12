@@ -1078,22 +1078,24 @@ function initializeFooter() {
     .social-link {
         width: 40px;
         height: 40px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: white;
+        border: 1px solid rgba(195, 207, 226, 0.5);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255, 255, 255, 0.7);
+        color: #546e7a;
         text-decoration: none;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .social-link:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);
+        background: #2c3e50;
+        border-color: #2c3e50;
         color: white;
         transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     /* Navigation Section */
@@ -1103,7 +1105,7 @@ function initializeFooter() {
     .footer-heading {
         font-size: 1.1rem;
         font-weight: 600;
-        color: white;
+        color: #2c3e50;
         margin-bottom: 1.5rem;
     }
 
@@ -1114,7 +1116,7 @@ function initializeFooter() {
     }
 
     .footer-link {
-        color: rgba(255, 255, 255, 0.7);
+        color: #546e7a;
         text-decoration: none;
         font-size: 0.9rem;
         padding: 0.25rem 0;
@@ -1125,7 +1127,7 @@ function initializeFooter() {
     }
 
     .footer-link:hover {
-        color: white;
+        color: #2c3e50;
     }
 
     /* Initiative links with icons */
@@ -1147,7 +1149,7 @@ function initializeFooter() {
     }
 
     .newsletter-description {
-        color: rgba(255, 255, 255, 0.7);
+        color: #546e7a;
         font-size: 0.875rem;
         line-height: 1.5;
         margin-bottom: 1.5rem;
@@ -1166,13 +1168,14 @@ function initializeFooter() {
     .newsletter-input {
         width: 100%;
         padding: 0.75rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(195, 207, 226, 0.5);
         border-radius: 8px;
         font-size: 0.875rem;
         outline: none;
         transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
+        background: white;
+        color: #333;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .newsletter-input:focus {
