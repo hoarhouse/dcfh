@@ -971,22 +971,16 @@ function initializeFooter() {
                     <h4 class="footer-heading">Get in Touch</h4>
                     <div class="contact-info">
                         <a href="${basePath}public/dcf_contact.html" class="contact-link">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                            </svg>
-                            Contact Us
+                            <span data-icon="mail" data-size="small" aria-label="Email"></span>
+                            <span>Contact Us</span>
                         </a>
                         <a href="${basePath}auth/dcf_profile_signup.html" class="contact-link">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                            Join Our Mission
+                            <span data-icon="user-plus" data-size="small" aria-label="Join"></span>
+                            <span>Join Our Mission</span>
                         </a>
                         <a href="${basePath}auth/dcf_login_page.html" class="contact-link">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>
-                            </svg>
-                            Member Login
+                            <span data-icon="login" data-size="small" aria-label="Login"></span>
+                            <span>Member Login</span>
                         </a>
                     </div>
                 </div>
@@ -1260,13 +1254,23 @@ function initializeFooter() {
         padding-left: 0.5rem;
     }
 
-    .contact-link svg {
+    .contact-link [data-icon] {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
+    }
+
+    .contact-link [data-icon] svg {
+        width: 16px;
+        height: 16px;
         opacity: 0.7;
         transition: opacity 0.2s ease;
     }
 
-    .contact-link:hover svg {
+    .contact-link:hover [data-icon] svg {
         opacity: 1;
     }
 
