@@ -1069,11 +1069,10 @@ function initializeFooter() {
     }
 
     .social-link:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #334155;
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: white;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     /* Navigation Section */
@@ -1081,11 +1080,10 @@ function initializeFooter() {
     }
 
     .footer-heading {
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 1rem;
-        letter-spacing: -0.025em;
+        color: white;
+        margin-bottom: 1.5rem;
     }
 
     .footer-nav {
@@ -1095,16 +1093,32 @@ function initializeFooter() {
     }
 
     .footer-link {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.7);
         text-decoration: none;
-        font-size: 0.875rem;
-        font-weight: 400;
+        font-size: 0.9rem;
         padding: 0.25rem 0;
-        transition: color 0.2s ease;
+        transition: color 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .footer-link:hover {
-        color: #1e293b;
+        color: white;
+    }
+
+    /* Initiative links with icons */
+    .footer-initiatives .footer-link [data-icon] {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .footer-initiatives .footer-link svg {
+        width: 16px;
+        height: 16px;
     }
 
     /* Newsletter Section */
@@ -1112,11 +1126,10 @@ function initializeFooter() {
     }
 
     .newsletter-description {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.875rem;
         line-height: 1.5;
         margin-bottom: 1.5rem;
-        font-weight: 400;
     }
 
     .newsletter-form {
@@ -1132,14 +1145,13 @@ function initializeFooter() {
     .newsletter-input {
         width: 100%;
         padding: 0.75rem 1rem;
-        border: 1px solid #d1d5db;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 8px;
         font-size: 0.875rem;
         outline: none;
         transition: all 0.2s ease;
-        background: white;
-        color: #374151;
-        font-weight: 400;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
     }
 
     .newsletter-input:focus {
