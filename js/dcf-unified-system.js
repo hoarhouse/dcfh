@@ -832,13 +832,36 @@ function addSearchToUserMenu() {
     // Insert at the beginning of user menu
     userMenu.insertBefore(searchContainer, userMenu.firstChild);
     
-    // Initialize icons for search
+    // Initialize icons for search with enhanced check
     setTimeout(() => {
         if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
             const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
             searchIcons.forEach(element => {
-                element.innerHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small');
+                const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+                if (iconHTML) {
+                    element.innerHTML = iconHTML;
+                } else {
+                    console.warn('Search icon not found in database, using fallback');
+                    element.innerHTML = '🔍'; // Fallback icon
+                }
             });
+        } else if (typeof window.iconSystem !== 'undefined' && window.iconSystem.isInitialized) {
+            // Try alternative initialization method
+            window.iconSystem.initializeIcons();
+        } else {
+            console.log('Icon system not yet initialized, will retry');
+            // Retry after a longer delay
+            setTimeout(() => {
+                if (typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+                    const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
+                    searchIcons.forEach(element => {
+                        const iconHTML = window.iconSystem.getIcon('search', element.dataset.size || 'small', 'Search');
+                        if (iconHTML) {
+                            element.innerHTML = iconHTML;
+                        }
+                    });
+                }
+            }, 500);
         }
     }, 100);
 }
