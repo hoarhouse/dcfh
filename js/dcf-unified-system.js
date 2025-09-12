@@ -4395,6 +4395,10 @@ class DCFIconSystem {
         console.log('  - Current icon set:', this.currentIconSet);
         console.log('  - Is client a function?:', typeof this.supabaseClient?.from === 'function');
         
+        // Clear existing cache to load new icons including social media icons
+        this.iconCache = {};
+        console.log('🔄 Clearing icon cache to load new social media icons');
+        
         if (!this.supabaseClient || typeof this.supabaseClient.from !== 'function') {
             console.log('📊 No database connection, using emoji icons');
             return;
@@ -4514,6 +4518,27 @@ class DCFIconSystem {
                             }
                         });
                         console.log(`✅ Cached ${cachedCount} SVG icons from ${this.currentIconSet} set (out of ${icons.length} total)`);
+                        
+                        // Debug logging for new social media icons
+                        console.log('🔍 Checking for social media icons:');
+                        const socialIcons = ['x', 'facebook', 'instagram', 'youtube', 'linkedin'];
+                        socialIcons.forEach(iconName => {
+                            const cacheKey = `${this.currentIconSet}-${iconName}-standard`;
+                            if (this.iconCache[cacheKey]) {
+                                console.log(`  ✅ Social icon cached: ${iconName}`);
+                            } else {
+                                console.log(`  ❌ Social icon missing: ${iconName}`);
+                            }
+                        });
+                        
+                        // Also check for variations of X/Twitter icon
+                        const twitterVariations = ['x', 'twitter', 'x-twitter'];
+                        twitterVariations.forEach(iconName => {
+                            const cacheKey = `${this.currentIconSet}-${iconName}-standard`;
+                            if (this.iconCache[cacheKey]) {
+                                console.log(`  ✅ Twitter/X variation found: ${iconName}`);
+                            }
+                        });
                     } else {
                         console.warn(`⚠️ No icons found for ${this.currentIconSet} set (ID: ${iconSet.id})`);
                         console.log('Falling back to emoji icons');
@@ -4869,6 +4894,30 @@ window.dcfIconSystem = new DCFIconSystem();
 
 // CRITICAL: Add backward compatibility alias for HTML pages
 window.iconSystem = window.dcfIconSystem;
+
+// Add force refresh method for loading new social media icons
+window.forceIconRefresh = async function() {
+    console.log('🔄 Force refreshing icon cache to load new social media icons...');
+    if (window.iconSystem && window.iconSystem.loadIconSet) {
+        await window.iconSystem.loadIconSet();
+        console.log('✅ Icon cache refreshed. Check console for social media icon status.');
+        
+        // Re-render all icons on the page
+        document.querySelectorAll('[data-icon]').forEach(element => {
+            const iconName = element.getAttribute('data-icon');
+            const size = element.getAttribute('data-size') || 'standard';
+            const label = element.getAttribute('aria-label') || iconName;
+            
+            if (window.iconSystem && window.iconSystem.getIcon) {
+                const iconHTML = window.iconSystem.getIcon(iconName, size, label);
+                element.innerHTML = iconHTML;
+            }
+        });
+        console.log('✅ All icons on page re-rendered');
+    } else {
+        console.error('❌ Icon system not available');
+    }
+};
 
 // Add missing functions expected by HTML pages
 window.waitForIconSystem = function() {
