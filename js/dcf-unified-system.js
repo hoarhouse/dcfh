@@ -1011,8 +1011,9 @@ function initializeFooter() {
     <style>
     /* Foundation Footer Styling - Matching Initiative Pages */
     .site-footer {
-        background: #1a1a1a;
-        color: white;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-top: 1px solid rgba(195, 207, 226, 0.3);
+        color: #333;
         margin-top: 4rem;
         padding: 4rem 0 2rem;
     }
@@ -1029,7 +1030,7 @@ function initializeFooter() {
         grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1fr;
         gap: 3rem;
         padding-bottom: 3rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(195, 207, 226, 0.3);
     }
 
     /* Brand Section */
@@ -1046,7 +1047,7 @@ function initializeFooter() {
     .footer-logo-icon {
         width: 32px;
         height: 32px;
-        background: white;
+        background: #333;
         border-radius: 50%;
         margin-right: 0.75rem;
         display: flex;
@@ -1057,12 +1058,12 @@ function initializeFooter() {
     .footer-logo-text {
         font-size: 1.25rem;
         font-weight: 700;
-        color: white;
+        color: #2c3e50;
         letter-spacing: -0.025em;
     }
 
     .footer-mission {
-        color: rgba(255, 255, 255, 0.8);
+        color: #546e7a;
         font-size: 0.875rem;
         line-height: 1.6;
         margin-bottom: 1.5rem;
