@@ -602,10 +602,10 @@ function populateTopNavigation() {
                 dropdown: true,
                 submenu: [
                     { href: basePath + 'public/dcf_about.html', text: 'About Us', id: 'about' },
-                    { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report', id: 'impact' }
+                    { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report', id: 'impact' },
+                    { href: basePath + 'public/dcf_contact.html', text: 'Contact', id: 'contact' }
                 ]
             },
-            { href: basePath + 'public/dcf_contact.html', text: 'Contact' },
             { href: basePath + 'public/dcf_events_public.html', text: 'Events' },
             { 
                 href: basePath + 'news/dcf_news.html', 
