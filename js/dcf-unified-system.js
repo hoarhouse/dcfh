@@ -786,18 +786,12 @@ function addSearchToUserMenu() {
         const style = document.createElement('style');
         style.id = 'search-bar-css';
         style.textContent = `
-            .user-menu {
+            .nav-search-container {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                height: 100%;
-            }
-            .user-menu-search {
+                margin-left: auto;
+                margin-right: 1rem;
                 position: relative;
-                display: flex;
-                align-items: center;
-                margin-right: 0.5rem;
-                height: 100%;
             }
             .search-icon-btn {
                 cursor: pointer;
