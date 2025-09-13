@@ -493,6 +493,7 @@ function addNavigationItems() {
  * SIMPLIFIED NAVIGATION STRUCTURE (December 2024)
  * 
  * LOGGED OUT STATE:
+ * - Initiatives (dropdown: Peace, Education, Health, Research)
  * - About (dropdown: About DCF, Impact Report, Contact)
  * - Projects
  * - Resources  
@@ -616,8 +617,19 @@ function populateTopNavigation() {
         ];
     } else {
         console.log('✅ DEBUG NAV: Using public navigation');
-        // SIMPLIFIED LOGGED OUT NAVIGATION
+        // LOGGED OUT NAVIGATION WITH INITIATIVES FIRST
         navItems = [
+            { 
+                href: basePath + 'initiatives/initiatives_home.html', 
+                text: 'Initiatives',
+                dropdown: true,
+                submenu: [
+                    { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace Initiative', id: 'peace' },
+                    { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education Initiative', id: 'education' },
+                    { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health Initiative', id: 'health' },
+                    { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research Initiative', id: 'research' }
+                ]
+            },
             { 
                 href: basePath + 'public/dcf_about.html', 
                 text: 'About',
