@@ -1244,6 +1244,7 @@ function initializeFooter() {
                         <a href="${basePath}public/dcf_events_public.html" class="footer-link">Events</a>
                         <a href="${basePath}public/dcf_projects_public.html" class="footer-link">Projects</a>
                         <a href="${basePath}public/dcf_resources_public.html" class="footer-link">Resources</a>
+                        <a href="${basePath}public/dcf_sitemap.html" class="footer-link">Sitemap</a>
                     </nav>
                 </div>
 
