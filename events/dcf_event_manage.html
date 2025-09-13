@@ -1175,7 +1175,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-unified-auth.js"></script>
+    <script src="../js/dcf-unified-system.js"></script>
 </head>
 
 <body>
@@ -1245,7 +1245,7 @@
                         <br>
                         <p>📱 <strong>Quick edit:</strong> Click "Edit" to modify any event inline.</p>
                         <br>
-                        <p>👥 <strong>Registrations:</strong> View and manage attendees for each event.</p>
+                        <p><span data-icon="users" data-size="small"></span> <strong>Registrations:</strong> View and manage attendees for each event.</p>
                     </div>
                 </div>
             </div>
@@ -1659,9 +1659,9 @@
                         <div class="event-info">
                             <h3 class="event-title">${event.title}</h3>
                             <div class="event-meta">
-                                📍 ${event.event_type === 'online' ? 'Virtual' : event.location || 'Location TBD'} • 
+                                <span data-icon="pin" data-size="small"></span> ${event.event_type === 'online' ? 'Virtual' : event.location || 'Location TBD'} • 
                                 ⏰ ${formatTime(event.start_time)} ${event.timezone || 'UTC'} • 
-                                🏷️ ${event.category || 'General'}
+                                <span data-icon="tag" data-size="small"></span> ${event.category || 'General'}
                             </div>
                             <div class="event-description">
                                 ${event.description ? (event.description.length > 150 ? event.description.substring(0, 150) + '...' : event.description) : 'No description available'}
@@ -1670,9 +1670,9 @@
                     </div>
                     <div class="event-actions">
                         <span class="status-badge status-${event.status || 'active'}">${(event.status || 'active').toUpperCase()}</span>
-                        <button class="btn btn-secondary btn-small" onclick="editEvent('${event.id}')">✏️ Edit</button>
-                        <button class="btn btn-secondary btn-small" onclick="viewRegistrations('${event.id}')">👥 Registrations</button>
-                        <button class="btn btn-secondary btn-small" onclick="window.open('dcf_event_details.html?id=${event.id}', '_blank')">👁️ View</button>
+                        <button class="btn btn-secondary btn-small" onclick="editEvent('${event.id}')"><span data-icon="edit" data-size="small"></span> Edit</button>
+                        <button class="btn btn-secondary btn-small" onclick="viewRegistrations('${event.id}')"><span data-icon="users" data-size="small"></span> Registrations</button>
+                        <button class="btn btn-secondary btn-small" onclick="window.open('dcf_event_details.html?id=${event.id}', '_blank')"><span data-icon="eye" data-size="small"></span> View</button>
                     </div>
                 </div>
 
@@ -1759,7 +1759,7 @@
                                         <div class="toggle-description">Virtual meeting</div>
                                     </div>
                                     <div class="toggle-option ${(event.event_type === 'in-person' || event.event_type === 'irl') ? 'active' : ''}" onclick="selectEditEventType('${event.id}', 'in-person', this)">
-                                        <div class="toggle-icon">📍</div>
+                                        <div class="toggle-icon"><span data-icon="pin" data-size="small"></span></div>
                                         <div class="toggle-title">In-Person</div>
                                         <div class="toggle-description">Physical location</div>
                                     </div>
@@ -1963,7 +1963,7 @@
                         </div>
                     </div>
                     <div class="form-actions">
-                        <button class="btn btn-secondary" onclick="exportAttendees('${event.id}')">📊 Export List</button>
+                        <button class="btn btn-secondary" onclick="exportAttendees('${event.id}')"><span data-icon="chart" data-size="small"></span> Export List</button>
                         <button class="btn btn-secondary" onclick="closeRegistrations('${event.id}')">Close</button>
                         <button class="btn btn-primary" onclick="emailAttendees('${event.id}')">📧 Email All</button>
                     </div>
@@ -2720,6 +2720,32 @@
         function showAllRegistrations() {
             showInfoAlert('Comprehensive registration management would open here.');
         }
+    </script>
+    
+    <script>
+    function initializePageIcons() {
+        document.querySelectorAll('[data-icon]').forEach(element => {
+            const iconName = element.dataset.icon;
+            const size = element.dataset.size || 'small';
+            const label = element.dataset.label || '';
+            
+            if (typeof iconSystem !== 'undefined' && iconSystem.getIcon) {
+                element.innerHTML = iconSystem.getIcon(iconName, size, label);
+            }
+        });
+    }
+
+    function waitForIconSystem() {
+        if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
+            initializePageIcons();
+        } else {
+            setTimeout(waitForIconSystem, 100);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(waitForIconSystem, 500);
+    });
     </script>
 </body>
 </html>
