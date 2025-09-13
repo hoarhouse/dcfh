@@ -1879,7 +1879,7 @@
                                 </button>
                                 <div class="share-menu" id="shareMenu">
                                     <div class="share-item" onclick="copyLink()">
-                                        <span>🔗</span>
+                                        <span data-icon="link" data-size="small"></span>
                                         <span>Copy Link</span>
                                     </div>
                                     <div class="share-item" onclick="shareEmail()">
@@ -1887,11 +1887,11 @@
                                         <span>Share via Email</span>
                                     </div>
                                     <div class="share-item" onclick="shareTwitter()">
-                                        <span>🐦</span>
+                                        <span data-icon="share" data-size="small"></span>
                                         <span>Share on Twitter</span>
                                     </div>
                                     <div class="share-item" onclick="shareLinkedIn()">
-                                        <span>💼</span>
+                                        <span data-icon="linkedin" data-size="small"></span>
                                         <span>Share on LinkedIn</span>
                                     </div>
                                 </div>
@@ -1961,7 +1961,7 @@
             <div class="join-event-card" id="joinEventCard">
                 <h3 id="joinCardTitle">Register for This Event</h3>
                 <p id="joinCardDescription">Reserve your spot and receive event updates</p>
-                <button class="btn" id="joinEventBtn" onclick="handleJoinEvent()">📝 Register Now</button>
+                <button class="btn" id="joinEventBtn" onclick="handleJoinEvent()"><span data-icon="edit" data-size="small"></span> Register Now</button>
                 <button class="btn manage-btn-stats" id="manageEventBtn" onclick="manageEvent()" style="display: none;"><span data-icon="settings" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;"></span> Manage Event</button>
             </div>
         </div>
@@ -2868,7 +2868,7 @@
                                         font-size: 1rem;
                                         color: #475569;
                                         font-weight: 500;
-                                    ">🕐 ${eventTime}</div>
+                                    "><span data-icon="calendar" data-size="small"></span> ${eventTime}</div>
                                 </div>
                             </div>
                         </div>
@@ -2932,7 +2932,7 @@
                             background: #f8fafc;
                             border-radius: 8px;
                         ">
-                            <span data-icon="target" style="display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem;"></span>
+                            <span data-icon="goals" style="display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem;"></span>
                             <div>
                                 <div style="
                                     font-size: 0.75rem;
@@ -2956,7 +2956,7 @@
                             background: #f8fafc;
                             border-radius: 8px;
                         ">
-                            <span style="font-size: 1.25rem;"><span data-icon="users" data-size="large"></span></span>
+                            <span style="font-size: 1.25rem;"><span data-icon="student" data-size="large"></span></span>
                             <div>
                                 <div style="
                                     font-size: 0.75rem;
@@ -2981,7 +2981,7 @@
                             background: #fef3c7;
                             border-radius: 8px;
                         ">
-                            <span style="font-size: 1.25rem;">⏰</span>
+                            <span data-icon="calendar" data-size="large"></span>
                             <div>
                                 <div style="
                                     font-size: 0.75rem;
@@ -4050,10 +4050,10 @@
                 
                 if (joinBtn) {
                     if (joinPolicy === 'application') {
-                        joinBtn.innerHTML = '📝 Apply to Join';
+                        joinBtn.innerHTML = '<span data-icon="edit" data-size="small"></span> Apply to Join';
                         joinBtn.onclick = () => applyToJoinEvent(eventId);
                     } else {
-                        joinBtn.innerHTML = '🤝 Join Project';
+                        joinBtn.innerHTML = '<span data-icon="partnership" data-size="small"></span> Join Project';
                         joinBtn.onclick = () => joinEvent(eventId);
                     }
                     joinBtn.style.display = 'inline-flex';
@@ -4089,13 +4089,14 @@
             
             try {
                 const { data, error } = await window.dcfSupabase
-                    .from('project_members')
+                    .from('event_registrations')
                     .insert({
-                        project_id: eventId,
+                        event_id: eventId,
                         user_id: currentUser.id,
-                        role: 'viewer',
-                        status: 'active',
-                        joined_at: new Date().toISOString()
+                        attendee_name: currentUser.name || currentUser.username,
+                        attendee_email: currentUser.email,
+                        status: 'registered',
+                        registered_at: new Date().toISOString()
                     });
                 
                 if (error) throw error;
@@ -4176,10 +4177,12 @@
                 
                 // Register for event
                 const { data, error } = await window.dcfSupabase
-                    .from('event_attendees')
+                    .from('event_registrations')
                     .insert({
                         event_id: eventId,
                         user_id: currentUser.id,
+                        attendee_name: currentUser.name || currentUser.username,
+                        attendee_email: currentUser.email,
                         status: status,
                         registered_at: new Date().toISOString()
                     });
@@ -4237,7 +4240,7 @@
                             joinBtn.disabled = true;
                         }
                     } else {
-                        joinBtn.innerHTML = '📝 Register Now';
+                        joinBtn.innerHTML = '<span data-icon="edit" data-size="small"></span> Register Now';
                         joinBtn.disabled = false;
                         joinBtn.classList.remove('following');
                     }
@@ -4246,7 +4249,7 @@
                 // No registration found is expected, not an error
                 const joinBtn = document.getElementById('joinEventBtn');
                 if (joinBtn) {
-                    joinBtn.innerHTML = '📝 Register Now';
+                    joinBtn.innerHTML = '<span data-icon="edit" data-size="small"></span> Register Now';
                     joinBtn.disabled = false;
                     joinBtn.classList.remove('following');
                 }
