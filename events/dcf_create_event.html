@@ -2842,7 +2842,8 @@
                 }
                 
                 // Handle sub-photo uploads
-                let subPhotoUrls = {};
+                // Collect all gallery photo URLs into an array
+                let galleryPhotoUrls = [];
                 for (const [photoType, file] of Object.entries(eventData.subPhotos || {})) {
                     if (file && file instanceof File) {
                         const fileName = `event_${photoType}_${Date.now()}_${file.name}`;
@@ -2858,13 +2859,16 @@
                                 .from('media')
                                 .getPublicUrl(`events/gallery/${fileName}`);
                             
-                            subPhotoUrls[photoType] = urlData.publicUrl;
+                            galleryPhotoUrls.push(urlData.publicUrl);
                         } catch (error) {
                             console.error(`Error uploading ${photoType}:`, error);
                             // Continue with other photos even if one fails
                         }
                     }
                 }
+                
+                // Combine cover image with gallery photos for image_urls array
+                const allImageUrls = [...imageUrls, ...galleryPhotoUrls];
 
                 // SECURITY: Final sanitization before database insertion
                 const eventRecord = {
@@ -2893,10 +2897,7 @@
                     website_url: sanitizeUrl(eventData.eventExternalUrl || '') || null,
                     cover_image_url: imageUrls[0] || null,
                     cover_position: 'center',
-                    image_urls: imageUrls,
-                    sub_photo_1_url: subPhotoUrls.subPhoto1 || null,
-                    sub_photo_2_url: subPhotoUrls.subPhoto2 || null,
-                    sub_photo_3_url: subPhotoUrls.subPhoto3 || null,
+                    image_urls: allImageUrls,
                     agenda: null,
                     organizer_id: session?.user?.id || currentUser.id,
                     status: 'active',
