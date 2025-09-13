@@ -443,11 +443,15 @@ function addNavigationItems() {
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
     
-    // SIMPLIFIED USER DROPDOWN MENU - Logged In State
+    // COMPLETE USER DROPDOWN MENU - Logged In State
     const navigationItems = [
         { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
-        { href: basePath + 'projects/dcf_projects_home.html', icon: '📋', text: 'My Projects' },
-        { href: basePath + 'members/dcf_edit_profile.html', icon: '⚙️', text: 'Settings' }
+        { href: basePath + 'members/dcf_my_connections.html', icon: '👥', text: 'My Connections' },
+        { href: basePath + 'projects/dcf_projects_home.html', icon: '📁', text: 'My Projects' },
+        { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
+        { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
+        { href: basePath + 'members/dcf_edit_profile.html', icon: '⚙️', text: 'Settings' },
+        { href: basePath + 'public/dcf_contact.html', icon: '💬', text: 'Help & Support' }
     ];
     
     const navSection = document.createElement('div');
@@ -504,8 +508,13 @@ function addNavigationItems() {
  * 
  * USER DROPDOWN (Logged In):
  * - My Profile
+ * - My Connections
  * - My Projects
+ * - My Events
+ * - My Stats
  * - Settings
+ * - Help & Support
+ * --- divider ---
  * - Sign Out
  */
 function getCorrectBasePath() {
