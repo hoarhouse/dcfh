@@ -1015,10 +1015,10 @@
                 <div class="form-group" id="briefDescription-group">
                     <label class="form-label" for="briefDescription">Brief Description *</label>
                     <textarea id="briefDescription" name="briefDescription" class="textarea" rows="3" 
-                        placeholder="Brief summary of your event (25-180 characters)" 
-                        minlength="25" maxlength="180" required></textarea>
+                        placeholder="Brief summary of your event (50-180 characters)" 
+                        minlength="50" maxlength="180" required></textarea>
                     <span class="validation-icon" id="briefDescription-icon"></span>
-                    <div id="briefDescriptionCount" class="char-counter invalid">0/180 characters (minimum 25)</div>
+                    <div id="briefDescriptionCount" class="char-counter invalid">0/180 characters (minimum 50)</div>
                 </div>
                 <div class="form-group" id="fullDescription-group">
                     <label class="form-label" for="fullDescription">Full Description *</label>
@@ -1068,7 +1068,7 @@
                             <div class="toggle-title">Online</div>
                             <div class="toggle-description">Virtual meeting via video platform</div>
                         </div>
-                        <div class="toggle-option" onclick="selectEventType('irl')">
+                        <div class="toggle-option" onclick="selectEventType('in-person')">
                             <div class="toggle-icon"><span data-icon="location" data-size="small"></span></div>
                             <div class="toggle-title">In-Person</div>
                             <div class="toggle-description">Physical location gathering</div>
@@ -1706,7 +1706,7 @@
                     isValid = false;
                     errorMessage = 'Brief description must be at least 25 characters';
                     if (counter) {
-                        counter.textContent = `${length}/180 characters (minimum 25)`;
+                        counter.textContent = `${length}/180 characters (minimum 50)`;
                         counter.className = 'char-counter invalid';
                     }
                 } else if (length > 180) {
@@ -1770,8 +1770,8 @@
                 // Craft gentle, helpful messages
                 if (fieldId === 'eventTitle' && value.length < 5) {
                     messageEl.textContent = `Please add ${5 - value.length} more character${5 - value.length !== 1 ? 's' : ''} (minimum 5)`;
-                } else if (fieldId === 'briefDescription' && value.length < 25) {
-                    messageEl.textContent = `Please add ${25 - value.length} more character${25 - value.length !== 1 ? 's' : ''} (minimum 25)`;
+                } else if (fieldId === 'briefDescription' && value.length < 50) {
+                    messageEl.textContent = `Please add ${50 - value.length} more character${50 - value.length !== 1 ? 's' : ''} (minimum 50)`;
                 } else if (fieldId === 'fullDescription' && value.length < 100) {
                     messageEl.textContent = `Please add ${100 - value.length} more character${100 - value.length !== 1 ? 's' : ''} (minimum 100)`;
                 } else {
@@ -2099,7 +2099,7 @@
                     physicalAddressField.value = ''; // Clear the field
                 }
                 
-            } else if (selectedEventType === 'irl' || selectedEventType === 'in-person') {
+            } else if (selectedEventType === 'in-person') {
                 // In-person: Show only physical location
                 onlineLocation.classList.remove('show');
                 physicalLocation.classList.add('show');
@@ -2445,7 +2445,7 @@
                 }
                 eventData.meetingLink = meetingLink;
                 eventData.physicalAddress = ''; // Ensure it's empty
-            } else if (selectedEventType === 'irl' || selectedEventType === 'in-person') {
+            } else if (selectedEventType === 'in-person') {
                 if (!physicalAddress.trim()) {
                     await showAlert('<span data-icon="location" data-size="small"></span> Physical location is REQUIRED for in-person events', 'error');
                     return;
@@ -2552,7 +2552,7 @@
             if (!eventData.title || eventData.title.length < 5 || eventData.title.length > 100) {
                 errors.push('Event Title must be 5-100 characters');
             }
-            if (!eventData.briefDescription || eventData.briefDescription.length < 25 || eventData.briefDescription.length > 180) {
+            if (!eventData.briefDescription || eventData.briefDescription.length < 50 || eventData.briefDescription.length > 180) {
                 errors.push('Brief Description must be 25-180 characters');
             }
             if (!eventData.fullDescription || eventData.fullDescription.length < 100 || eventData.fullDescription.length > 2500) {
@@ -2656,7 +2656,7 @@
                 return '<span data-icon="document" data-size="small"></span> Brief description is required. Please provide a brief summary of your event.';
             }
             
-            if (eventData.briefDescription && eventData.briefDescription.length < 25) {
+            if (eventData.briefDescription && eventData.briefDescription.length < 50) {
                 return '<span data-icon="document" data-size="small"></span> Brief description must be at least 25 characters long.';
             }
             
@@ -2737,7 +2737,7 @@
                     showAlert('Please provide a brief description', 'error');
                     return false;
                 }
-                if (briefDescription.length < 25) {
+                if (briefDescription.length < 50) {
                     showAlert('Brief description must be at least 25 characters', 'error');
                     return false;
                 }
@@ -2778,7 +2778,7 @@
                 if (selectedEventType === 'online' && !meetingLink) {
                     showAlert('Meeting link is required for online events', 'error');
                     return false;
-                } else if (selectedEventType === 'irl' && !physicalAddress) {
+                } else if (selectedEventType === 'in-person' && !physicalAddress) {
                     showAlert('Physical location is required for in-person events', 'error');
                     return false;
                 } else if (selectedEventType === 'hybrid') {
@@ -2879,13 +2879,13 @@
 
                 // SECURITY: Final sanitization before database insertion
                 const eventRecord = {
-                    title: sanitizeText(eventData.title, 25),
-                    description: sanitizeText(eventData.briefDescription, 180),
-                    brief_description: sanitizeText(eventData.briefDescription, 100),
-                    full_description: sanitizeText(eventData.fullDescription || '', 2500) || null,
+                    title: sanitizeText(eventData.title, 255),
+                    description: sanitizeText(eventData.briefDescription, 500),
+                    brief_description: sanitizeText(eventData.briefDescription, 180),
+                    full_description: sanitizeText(eventData.fullDescription || eventData.briefDescription, 2500),
                     category: sanitizeText(eventData.category, 100),
-                    event_type: eventData.type === 'irl' ? 'in-person' : eventData.type,
-                    event_format: eventData.type === 'irl' ? 'in-person' : eventData.type,
+                    event_type: eventData.type,
+                    event_format: eventData.type,
                     visibility: eventData.visibility,
                     event_date: sanitizeText(eventData.date, 50),
                     start_time: sanitizeText(eventData.startTime, 50),
@@ -3003,7 +3003,7 @@
             const addressField = document.getElementById('physicalAddress');
             if (addressField) {
                 addressField.addEventListener('blur', function() {
-                    if ((selectedEventType === 'irl' || selectedEventType === 'in-person' || selectedEventType === 'hybrid') && !this.value.trim()) {
+                    if ((selectedEventType === 'in-person' || selectedEventType === 'hybrid') && !this.value.trim()) {
                         this.style.borderColor = '#ef9a9a'; // Soft red
                         showFieldError(this, 'Physical location is required for ' + selectedEventType + ' events');
                     } else {
