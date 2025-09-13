@@ -1358,8 +1358,9 @@
                     <textarea id="organizerNotes" name="organizerNotes" class="textarea" placeholder="Any final instructions, what to expect, or special requirements"></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="contactEmail">Contact Email for Questions</label>
-                    <input type="email" id="contactEmail" name="contactEmail" class="form-input" placeholder="Event organizer contact email">
+                    <label class="form-label" for="contactEmail">Contact Email for Questions *</label>
+                    <input type="email" id="contactEmail" name="contactEmail" class="form-input" placeholder="Event organizer contact email" required>
+                    <div class="form-hint">This email is required and will be displayed for attendee questions</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="eventExternalUrl">Event External URL</label>
@@ -2869,6 +2870,12 @@
                 
                 // Combine cover image with gallery photos for image_urls array
                 const allImageUrls = [...imageUrls, ...galleryPhotoUrls];
+                
+                // MANDATORY: Validate contact email
+                const contactEmail = sanitizeEmail(eventData.contactEmail || currentUser.email);
+                if (!contactEmail || contactEmail.trim() === '') {
+                    throw new Error('Contact email is required. Please provide a valid email address.');
+                }
 
                 // SECURITY: Final sanitization before database insertion
                 const eventRecord = {
@@ -2893,8 +2900,7 @@
                     topics: eventData.topics || [],
                     additional_resources: sanitizeText(eventData.additionalResources || '', 2000) || null,
                     organizer_notes: sanitizeText(eventData.organizerNotes || '', 2000) || null,
-                    contact_email: sanitizeEmail(eventData.contactEmail || currentUser.email),
-                    website_url: sanitizeUrl(eventData.eventExternalUrl || '') || null,
+                    contact_email: contactEmail,
                     cover_image_url: imageUrls[0] || null,
                     cover_position: 'center',
                     image_urls: allImageUrls,
