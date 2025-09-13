@@ -443,15 +443,11 @@ function addNavigationItems() {
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
     
+    // SIMPLIFIED USER DROPDOWN MENU - Logged In State
     const navigationItems = [
-        { href: basePath + 'members/dcf_member_home.html', icon: '🏠', text: 'My Feed' },
         { href: basePath + 'members/dcf_member_profile.html', icon: '👤', text: 'My Profile' },
-        { href: basePath + 'members/dcf_private_messaging.html', icon: '💬', text: 'My Messages' },
-        { href: basePath + 'members/dcf_my_connections.html', icon: '👥', text: 'My Connections' },
-        { href: basePath + 'projects/dcf_projects.html', icon: '📋', text: 'My Projects' },
-        { href: basePath + 'events/dcf_events_calendar.html', icon: '📅', text: 'My Events' },
-        { href: basePath + 'members/dcf_personal_analytics.html', icon: '📊', text: 'My Stats' },
-        { href: basePath + 'members/dcf_edit_profile.html', icon: '✏️', text: 'Edit Profile' }
+        { href: basePath + 'projects/dcf_projects_home.html', icon: '📋', text: 'My Projects' },
+        { href: basePath + 'members/dcf_edit_profile.html', icon: '⚙️', text: 'Settings' }
     ];
     
     const navSection = document.createElement('div');
@@ -489,6 +485,29 @@ function addNavigationItems() {
 // =============================================================================
 // 6. NAVIGATION FUNCTIONS
 // =============================================================================
+/**
+ * SIMPLIFIED NAVIGATION STRUCTURE (December 2024)
+ * 
+ * LOGGED OUT STATE:
+ * - About (dropdown: About DCF, Impact Report, Contact)
+ * - Projects
+ * - Resources  
+ * - News (dropdown: Latest News, Events)
+ * - Right: [Search] [Login] [Join Us]
+ * 
+ * LOGGED IN STATE:
+ * - Dashboard
+ * - Projects
+ * - Resources
+ * - Community (dropdown: News & Updates, Events, Member Directory)
+ * - Right: [Search] [Notifications] [User Avatar]
+ * 
+ * USER DROPDOWN (Logged In):
+ * - My Profile
+ * - My Projects
+ * - Settings
+ * - Sign Out
+ */
 function getCorrectBasePath() {
     const pathname = window.location.pathname;
     const pathParts = pathname.split('/').filter(p => p);
@@ -570,69 +589,45 @@ function populateTopNavigation() {
     // Check if user is logged in
     if (window.dcfUser?.isLoggedIn) {
         console.log('✅ DEBUG NAV: Using member navigation');
-        // Member navigation
+        // SIMPLIFIED LOGGED IN NAVIGATION
         navItems = [
-            { href: basePath + 'members/dcf_member_home.html', text: 'Home' },
-            { href: basePath + 'members/dcf_members_directory.html', text: 'Members' },
+            { href: basePath + 'members/dcf_member_home.html', text: 'Dashboard' },
             { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
+            { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
             { 
                 href: basePath + 'news/dcf_news.html', 
-                text: 'News',
+                text: 'Community',
                 dropdown: true,
                 submenu: [
                     { href: basePath + 'news/dcf_news.html', text: 'News & Updates', id: 'news' },
                     { href: basePath + 'events/dcf_events_calendar.html', text: 'Events', id: 'events' },
-                    { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter Archive', id: 'newsletter' }
-                ]
-            },
-            { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
-            { 
-                href: basePath + 'initiatives/initiatives_home.html', 
-                text: 'Initiatives',
-                dropdown: true,
-                submenu: [
-                    { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace', id: 'peace' },
-                    { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education', id: 'education' },
-                    { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health', id: 'health' },
-                    { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research', id: 'research' }
+                    { href: basePath + 'members/dcf_members_directory.html', text: 'Member Directory', id: 'members' }
                 ]
             }
         ];
     } else {
         console.log('✅ DEBUG NAV: Using public navigation');
-        // Public navigation
+        // SIMPLIFIED LOGGED OUT NAVIGATION
         navItems = [
             { 
                 href: basePath + 'public/dcf_about.html', 
                 text: 'About',
                 dropdown: true,
                 submenu: [
-                    { href: basePath + 'public/dcf_about.html', text: 'About Us', id: 'about' },
+                    { href: basePath + 'public/dcf_about.html', text: 'About DCF', id: 'about' },
                     { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report', id: 'impact' },
                     { href: basePath + 'public/dcf_contact.html', text: 'Contact', id: 'contact' }
-                ]
-            },
-            { 
-                href: basePath + 'news/dcf_news.html', 
-                text: 'News',
-                dropdown: true,
-                submenu: [
-                    { href: basePath + 'news/dcf_news.html', text: 'News & Updates', id: 'news' },
-                    { href: basePath + 'public/dcf_events_public.html', text: 'Events', id: 'events' },
-                    { href: basePath + 'public/dcf_newsletter.html', text: 'Newsletter Archive', id: 'newsletter' }
                 ]
             },
             { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
             { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
             { 
-                href: basePath + 'initiatives/initiatives_home.html', 
-                text: 'Initiatives',
+                href: basePath + 'news/dcf_news.html', 
+                text: 'News',
                 dropdown: true,
                 submenu: [
-                    { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace', id: 'peace' },
-                    { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education', id: 'education' },
-                    { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health', id: 'health' },
-                    { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research', id: 'research' }
+                    { href: basePath + 'news/dcf_news.html', text: 'Latest News', id: 'news' },
+                    { href: basePath + 'public/dcf_events_public.html', text: 'Events', id: 'events' }
                 ]
             }
         ];
