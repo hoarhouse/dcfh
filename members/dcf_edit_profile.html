@@ -1088,6 +1088,10 @@
     <script src="../js/dcf-unified-system.js"></script>
     
     <script>
+        // Track unsaved changes
+        let hasUnsavedChanges = false;
+        let isNavigatingAway = false;
+        
         // ============================================
         // SECURITY: Comprehensive Input Sanitization
         // ============================================
@@ -1611,6 +1615,9 @@
                 // Initialize comprehensive input sanitization
                 initializeEditProfileSanitization();
                 
+                // Setup change tracking for all form inputs
+                setupChangeTracking();
+                
                 showLoading(false);
                 console.log('Profile data loaded:', data);
                 
@@ -1844,11 +1851,158 @@
             `;
             
             container.insertBefore(tagElement, input);
+            hasUnsavedChanges = true;
         }
 
         // Remove tag
         function removeTag(element) {
             element.parentElement.remove();
+            hasUnsavedChanges = true;
+        }
+        
+        // Setup change tracking for all form inputs
+        function setupChangeTracking() {
+            // Track all input, textarea, and select elements
+            const formElements = document.querySelectorAll('input, textarea, select');
+            formElements.forEach(element => {
+                element.addEventListener('change', () => {
+                    hasUnsavedChanges = true;
+                });
+                element.addEventListener('input', () => {
+                    hasUnsavedChanges = true;
+                });
+            });
+            
+            // Track radio buttons and checkboxes
+            const radioCheckboxes = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+            radioCheckboxes.forEach(element => {
+                element.addEventListener('click', () => {
+                    hasUnsavedChanges = true;
+                });
+            });
+        }
+        
+        // Show unsaved changes dialog
+        async function showUnsavedChangesDialog() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'unsaved-modal';
+                modal.innerHTML = `
+                    <div class="unsaved-modal-content">
+                        <h3>Unsaved Changes</h3>
+                        <p>You have unsaved changes. What would you like to do?</p>
+                        <div class="unsaved-modal-buttons">
+                            <button class="btn btn-primary" onclick="saveAndLeave()">Save & Leave</button>
+                            <button class="btn btn-secondary" onclick="leaveWithoutSaving()">Leave Without Saving</button>
+                            <button class="btn btn-ghost" onclick="cancelNavigation()">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Add styles for modal
+                if (!document.getElementById('unsaved-modal-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'unsaved-modal-styles';
+                    style.textContent = `
+                        .unsaved-modal {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: rgba(0, 0, 0, 0.5);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            z-index: 10000;
+                        }
+                        .unsaved-modal-content {
+                            background: white;
+                            padding: 2rem;
+                            border-radius: 12px;
+                            max-width: 500px;
+                            width: 90%;
+                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                        }
+                        .unsaved-modal-content h3 {
+                            margin-bottom: 1rem;
+                            color: #333;
+                        }
+                        .unsaved-modal-content p {
+                            margin-bottom: 1.5rem;
+                            color: #666;
+                        }
+                        .unsaved-modal-buttons {
+                            display: flex;
+                            gap: 1rem;
+                            justify-content: flex-end;
+                        }
+                        .unsaved-modal-buttons .btn-ghost {
+                            background: transparent;
+                            color: #666;
+                            border: 1px solid #ddd;
+                        }
+                        .unsaved-modal-buttons .btn-ghost:hover {
+                            background: #f8f9fa;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // Store resolve function globally for button handlers
+                window.unsavedDialogResolve = resolve;
+            });
+        }
+        
+        // Handle save and leave
+        window.saveAndLeave = async function() {
+            const modal = document.querySelector('.unsaved-modal');
+            if (modal) modal.remove();
+            
+            // Save the profile
+            await saveProfile();
+            hasUnsavedChanges = false;
+            isNavigatingAway = true;
+            
+            // Continue with navigation
+            if (window.pendingNavigation) {
+                window.location.href = window.pendingNavigation;
+            }
+            
+            if (window.unsavedDialogResolve) {
+                window.unsavedDialogResolve(true);
+            }
+        }
+        
+        // Handle leave without saving
+        window.leaveWithoutSaving = function() {
+            const modal = document.querySelector('.unsaved-modal');
+            if (modal) modal.remove();
+            
+            hasUnsavedChanges = false;
+            isNavigatingAway = true;
+            
+            // Continue with navigation
+            if (window.pendingNavigation) {
+                window.location.href = window.pendingNavigation;
+            }
+            
+            if (window.unsavedDialogResolve) {
+                window.unsavedDialogResolve(true);
+            }
+        }
+        
+        // Handle cancel navigation
+        window.cancelNavigation = function() {
+            const modal = document.querySelector('.unsaved-modal');
+            if (modal) modal.remove();
+            
+            window.pendingNavigation = null;
+            
+            if (window.unsavedDialogResolve) {
+                window.unsavedDialogResolve(false);
+            }
         }
 
         // Display tags in container
@@ -2012,6 +2166,26 @@
         }
 
         // Save profile
+        // Intercept navigation attempts
+        window.addEventListener('beforeunload', function(e) {
+            if (hasUnsavedChanges && !isNavigatingAway) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+        
+        // Intercept link clicks
+        document.addEventListener('click', async function(e) {
+            // Check if it's a link or button that navigates
+            const link = e.target.closest('a');
+            if (link && link.href && hasUnsavedChanges && !isNavigatingAway) {
+                e.preventDefault();
+                window.pendingNavigation = link.href;
+                await showUnsavedChangesDialog();
+            }
+        }, true);
+        
         async function saveProfile() {
             try {
                 showLoading(true);
@@ -2073,6 +2247,9 @@
                 }
                 
                 showNotification('Profile updated successfully!', 'success');
+                
+                // Reset unsaved changes flag
+                hasUnsavedChanges = false;
                 
                 // Redirect back to profile after delay
                 setTimeout(() => {
