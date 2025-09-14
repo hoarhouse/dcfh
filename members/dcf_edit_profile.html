@@ -1728,12 +1728,28 @@
                 // Show position controls
                 document.getElementById('coverPositionControls').style.display = 'block';
                 
+                // Also set the preview box image
+                const previewImage = document.getElementById('coverPreviewImage');
+                if (previewImage) {
+                    previewImage.src = profile.cover_image_url;
+                    previewImage.style.display = 'block';
+                }
+                
                 // Set position if available
                 if (profile.cover_position) {
                     const match = profile.cover_position.match(/(\d+)%/);
                     if (match) {
                         coverPosition = parseInt(match[1]);
                         document.getElementById('coverPositionSlider').value = coverPosition;
+                        
+                        // Update positions in both previews
+                        const img = uploadArea.querySelector('img');
+                        if (img) {
+                            img.style.objectPosition = `center ${coverPosition}%`;
+                        }
+                        if (previewImage) {
+                            previewImage.style.objectPosition = `center ${coverPosition}%`;
+                        }
                     }
                 }
             }
@@ -2151,25 +2167,39 @@
                 return;
             }
             
+            // Store file for upload
             coverFile = file;
             
             // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
+                const imageData = e.target.result;
+                
+                // Update main upload area preview
                 const uploadArea = document.getElementById('coverUploadArea');
                 uploadArea.classList.add('has-image');
-                uploadArea.innerHTML = `<img src="${e.target.result}" class="upload-preview" alt="Cover Preview">`;
+                uploadArea.innerHTML = `<img src="${imageData}" class="upload-preview" alt="Cover Preview" style="object-position: center ${coverPosition}%;">`;
                 
                 // Show position controls
-                document.getElementById('coverPositionControls').style.display = 'block';
-                
-                // Also update the preview box
-                const previewBox = document.getElementById('coverPreviewBox');
-                const previewImage = document.getElementById('coverPreviewImage');
-                if (previewBox && previewImage) {
-                    previewImage.src = e.target.result;
-                    previewImage.style.objectPosition = `center ${coverPosition}%`;
+                const positionControls = document.getElementById('coverPositionControls');
+                if (positionControls) {
+                    positionControls.style.display = 'block';
                 }
+                
+                // SET THE PREVIEW BOX IMAGE SOURCE
+                const previewImage = document.getElementById('coverPreviewImage');
+                if (previewImage) {
+                    previewImage.src = imageData;
+                    previewImage.style.objectPosition = `center ${coverPosition}%`;
+                    // Ensure the image is visible
+                    previewImage.style.display = 'block';
+                }
+                
+                // Mark as having unsaved changes
+                hasUnsavedChanges = true;
+                
+                // Show success notification
+                showNotification(`Cover photo ready for upload: ${file.name}`, 'success');
             };
             reader.readAsDataURL(file);
         }
