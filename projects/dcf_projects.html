@@ -898,16 +898,27 @@
             if (project) {
                 const confirmed = await showConfirm(`Are you sure you want to delete "${project.title}"?\n\nThis action cannot be undone.`, 'Delete Project');
                 if (confirmed) {
-                // Remove from array
-                userProjects = userProjects.filter(p => p.id !== projectId);
-                
-                // Update localStorage
-                localStorage.setItem('dcf_user_projects', JSON.stringify(userProjects));
-                
-                // Reload display
-                loadUserProjects();
-                
-                showAlert(`Project "${project.title}" has been deleted.`, 'success', 'Project Deleted');
+                    try {
+                        // Delete from database
+                        const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?id=eq.${projectId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                                'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            // Reload display
+                            await loadUserProjects();
+                            showAlert(`Project "${project.title}" has been deleted.`, 'success', 'Project Deleted');
+                        } else {
+                            showAlert('Failed to delete project. Please try again.', 'error', 'Delete Failed');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting project:', error);
+                        showAlert('Error deleting project. Please try again.', 'error', 'Delete Error');
+                    }
                 }
             }
         }
