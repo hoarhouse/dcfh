@@ -2534,20 +2534,28 @@
     </script>
     
     <script>
-    // Wait for unified system to load, then initialize icons
+    // Wait for both DOM and unified system to be ready
     document.addEventListener('DOMContentLoaded', function() {
-        function waitForIconSystem() {
-            if (window.iconSystem && window.iconSystem.getIcon) {
+        function initializeIconsWhenReady() {
+            // Check if unified system is loaded AND has set iconSystem
+            if (window.dcfSupabase && window.iconSystem && typeof window.iconSystem.getIcon === 'function') {
+                console.log('✅ Icon system ready, initializing icons...');
+                
                 document.querySelectorAll('[data-icon]').forEach(element => {
                     const iconName = element.dataset.icon;
                     const size = element.dataset.size || 'small';
                     element.innerHTML = window.iconSystem.getIcon(iconName, size);
                 });
+                
+                console.log('✅ Icons initialized successfully');
             } else {
-                setTimeout(waitForIconSystem, 100);
+                // Keep checking every 100ms for up to 10 seconds
+                setTimeout(initializeIconsWhenReady, 100);
             }
         }
-        setTimeout(waitForIconSystem, 500);
+        
+        // Start checking after scripts have had time to load
+        setTimeout(initializeIconsWhenReady, 100);
     });
     </script>
     
