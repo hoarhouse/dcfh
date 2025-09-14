@@ -679,20 +679,49 @@
         };
 
         // Load and display projects
-        function loadUserProjects() {
-            // Get projects from localStorage
-            const projectsData = localStorage.getItem('dcf_user_projects');
-            userProjects = projectsData ? JSON.parse(projectsData) : [];
+        async function loadUserProjects() {
+            // Get current user
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const userEmail = currentUser ? currentUser.email : null;
             
-            console.log('Loaded projects:', userProjects);
+            if (!userEmail) {
+                console.log('No user logged in');
+                userProjects = [];
+                calculateProjectStats();
+                updateProjectStats();
+                updateProjectTabs();
+                displayProjects();
+                return;
+            }
             
-            // Calculate stats
-            calculateProjectStats();
-            
-            // Update UI
-            updateProjectStats();
-            updateProjectTabs();
-            displayProjects();
+            try {
+                // Fetch projects from database
+                const response = await fetch(`https://atzommnkkwzgbktuzjti.supabase.co/rest/v1/projects?select=*&author_email=eq.${userEmail}&order=created_at.desc`, {
+                    headers: {
+                        'apikey': 'sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8',
+                        'Authorization': 'Bearer sb_publishable_H7mmmUclubQKjq1tGwTalA_omRtGoV8'
+                    }
+                });
+                
+                userProjects = await response.json();
+                console.log('Loaded projects from database:', userProjects);
+                
+                // Calculate stats
+                calculateProjectStats();
+                
+                // Update UI
+                updateProjectStats();
+                updateProjectTabs();
+                displayProjects();
+                
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                userProjects = [];
+                calculateProjectStats();
+                updateProjectStats();
+                updateProjectTabs();
+                displayProjects();
+            }
         }
 
         // Calculate project statistics
@@ -916,18 +945,38 @@
 
             
 
-            // Load and display projects
-            loadUserProjects();
-            
-            // Fix dropdown username timing issue
-            setTimeout(() => {
-                const currentUser = window.getCurrentUser();
-                const username = currentUser ? currentUser.username || currentUser.name : null;
-                const dropdownName = document.getElementById('dropdownUserName');
-                if (dropdownName && username) {
-                    dropdownName.textContent = username;
+            // Wait for user authentication before loading projects
+            function waitForUserAndLoadProjects(attempt = 0) {
+                const maxAttempts = 25; // 5 seconds max wait time (25 * 200ms)
+                
+                if (window.getCurrentUser && window.getCurrentUser()) {
+                    const user = window.getCurrentUser();
+                    if (user && user.email) {
+                        console.log('✅ User authenticated, loading projects for:', user.email);
+                        loadUserProjects();
+                        
+                        // Update dropdown username
+                        const username = user.username || user.name || user.email;
+                        const dropdownName = document.getElementById('dropdownUserName');
+                        if (dropdownName && username) {
+                            dropdownName.textContent = username;
+                        }
+                        return;
+                    }
                 }
-            }, 200);
+                
+                if (attempt < maxAttempts) {
+                    console.log(`⏳ Waiting for user authentication... (attempt ${attempt + 1}/${maxAttempts})`);
+                    setTimeout(() => waitForUserAndLoadProjects(attempt + 1), 200);
+                } else {
+                    console.log('⚠️ Timeout waiting for user authentication');
+                    // Still try to load in case user is there
+                    loadUserProjects();
+                }
+            }
+            
+            // Start waiting for user authentication
+            waitForUserAndLoadProjects();
             
             console.log('Projects page initialized with', userProjects.length, 'projects');
 
