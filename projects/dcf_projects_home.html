@@ -2333,7 +2333,9 @@ document.addEventListener('DOMContentLoaded', function() {
    
    loadProjectsOptimized(1, {});
    updateStats();
-   loadMyProjectsReal();
+   
+   // Wait for user authentication before loading My Projects
+   waitForUserAndLoadMyProjects();
    
    // Add filter listeners
    const searchInput = document.querySelector('.search-input');
@@ -2434,6 +2436,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return false;
+    }
+
+    // Wait for user authentication before loading My Projects
+    function waitForUserAndLoadMyProjects(attempt = 0) {
+        const maxAttempts = 25; // 5 seconds max wait time (25 * 200ms)
+        
+        if (window.getCurrentUser && window.getCurrentUser()) {
+            const user = window.getCurrentUser();
+            if (user && user.email) {
+                console.log('✅ User authenticated, loading My Projects for:', user.email);
+                loadMyProjectsReal();
+            }
+        } else if (attempt < maxAttempts) {
+            console.log(`⏳ Waiting for user authentication to load My Projects... (attempt ${attempt + 1}/${maxAttempts})`);
+            setTimeout(() => waitForUserAndLoadMyProjects(attempt + 1), 200);
+        } else {
+            console.log('⚠️ Timeout waiting for user authentication - My Projects tab will show login message');
+            // Still try to load in case user is there
+            loadMyProjectsReal();
+        }
     }
 
     // Wait for user to be fully loaded before checking status
