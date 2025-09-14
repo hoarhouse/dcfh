@@ -2536,39 +2536,15 @@
     </script>
     
     <script>
-    // Wait for both DOM and unified system to be ready
+    // Wait for both DOM and the correct icon set to load
     document.addEventListener('DOMContentLoaded', function() {
-        // DIAGNOSTIC LOGGING
-        console.log('=== ICON SYSTEM DIAGNOSTIC ===');
-        console.log('1. DOM Ready at:', new Date().toISOString());
-        console.log('2. window.dcfSupabase exists:', !!window.dcfSupabase);
-        console.log('3. window.iconSystem exists:', !!window.iconSystem);
-        console.log('4. iconSystem.getIcon type:', typeof window.iconSystem?.getIcon);
-        
-        // Check every 500ms for 10 seconds and log what we find:
-        let checkCount = 0;
-        const diagnosticInterval = setInterval(() => {
-            checkCount++;
-            console.log(`Check ${checkCount}:`);
-            console.log('  - dcfSupabase:', !!window.dcfSupabase);
-            console.log('  - iconSystem:', !!window.iconSystem);
-            console.log('  - iconSystem.getIcon:', typeof window.iconSystem?.getIcon);
-            
-            if (checkCount >= 20) clearInterval(diagnosticInterval);
-        }, 500);
-        
-        // Check what dcf-unified-system.js actually exports:
-        setTimeout(() => {
-            console.log('=== UNIFIED SYSTEM CHECK ===');
-            console.log('All window properties with "icon":', Object.keys(window).filter(k => k.toLowerCase().includes('icon')));
-            console.log('All window properties with "dcf":', Object.keys(window).filter(k => k.toLowerCase().includes('dcf')));
-            console.log('All window properties with "system":', Object.keys(window).filter(k => k.toLowerCase().includes('system')));
-        }, 2000);
-        
         function initializeIconsWhenReady() {
-            // Check if unified system is loaded AND has set iconSystem
-            if (window.dcfSupabase && window.iconSystem && typeof window.iconSystem.getIcon === 'function') {
-                console.log('✅ Icon system ready, initializing icons...');
+            // Wait for icon system AND correct icon set
+            if (window.iconSystem && 
+                typeof window.iconSystem.getIcon === 'function' &&
+                window.iconSystem.currentIconSet === 'sacred-minimalist') {
+                
+                console.log('✅ Sacred-minimalist icon set ready, initializing sidebar icons...');
                 
                 document.querySelectorAll('[data-icon]').forEach(element => {
                     const iconName = element.dataset.icon;
@@ -2576,15 +2552,15 @@
                     element.innerHTML = window.iconSystem.getIcon(iconName, size);
                 });
                 
-                console.log('✅ Icons initialized successfully');
+                console.log('✅ Sidebar icons initialized successfully');
             } else {
-                // Keep checking every 100ms for up to 10 seconds
-                setTimeout(initializeIconsWhenReady, 100);
+                // Keep checking - the sacred-minimalist set loads after emoji set
+                setTimeout(initializeIconsWhenReady, 200);
             }
         }
         
-        // Start checking after scripts have had time to load
-        setTimeout(initializeIconsWhenReady, 100);
+        // Wait longer initially to let the unified system fully load
+        setTimeout(initializeIconsWhenReady, 2000);
     });
     </script>
     
