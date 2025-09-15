@@ -500,7 +500,29 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Quill.js Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
+    <style>
+        /* Quill Editor Custom Styles */
+        .ql-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+        }
+        .ql-editor {
+            min-height: 500px;
+            line-height: 1.6;
+        }
+        .ql-toolbar {
+            background: #f8f9fa;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .ql-container {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+    </style>
 </head>
 
 <body>
@@ -730,39 +752,58 @@
             setupFormListeners();
         });
 
-        // Initialize TinyMCE
+        // Initialize Quill Editor
         async function initializeEditor() {
             return new Promise((resolve) => {
-                tinymce.init({
-                    selector: '#postContent',
-                    height: 500,
-                    menubar: true,
-                    plugins: [
-                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                        'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
-                    ],
-                    toolbar: 'undo redo | blocks | ' +
-                        'bold italic forecolor | alignleft aligncenter ' +
-                        'alignright alignjustify | bullist numlist outdent indent | ' +
-                        'link image media | removeformat | code fullscreen | help',
-                    toolbar_mode: 'sliding',
-                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
-                    branding: false,
-                    statusbar: true,
-                    setup: function(editor) {
-                        editorInstance = editor;
-                        
-                        editor.on('init', function() {
-                            resolve();
-                        });
-                        
-                        editor.on('change keyup', function() {
-                            hasUnsavedChanges = true;
-                            updateWordCount();
-                        });
-                    }
+                // Get the textarea
+                const textarea = document.getElementById('postContent');
+                if (!textarea) {
+                    resolve();
+                    return;
+                }
+                
+                // Create Quill container
+                const quillContainer = document.createElement('div');
+                quillContainer.id = 'quillEditor';
+                
+                // Hide textarea and insert Quill container
+                textarea.style.display = 'none';
+                textarea.parentNode.insertBefore(quillContainer, textarea.nextSibling);
+                
+                // Initialize Quill with comprehensive toolbar
+                editorInstance = new Quill('#quillEditor', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            [{ 'font': [] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'script': 'sub'}, { 'script': 'super' }],
+                            [{ 'indent': '-1'}, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'align': [] }],
+                            ['link', 'image', 'video'],
+                            ['clean']
+                        ]
+                    },
+                    placeholder: 'Write your blog post content here...'
                 });
+                
+                // Set up event listeners
+                editorInstance.on('text-change', function() {
+                    hasUnsavedChanges = true;
+                    updateWordCount();
+                });
+                
+                // Set initial content if editing
+                if (textarea.value) {
+                    editorInstance.root.innerHTML = textarea.value;
+                }
+                
+                resolve();
             });
         }
 
@@ -814,9 +855,9 @@
                 document.getElementById('metaTitle').value = post.meta_title || '';
                 document.getElementById('metaDescription').value = post.meta_description || '';
                 
-                // Set content in TinyMCE
+                // Set content in Quill
                 if (editorInstance) {
-                    editorInstance.setContent(post.content || '');
+                    editorInstance.root.innerHTML = post.content || '';
                 }
                 
                 // Handle scheduled date
@@ -913,7 +954,7 @@
                 title: document.getElementById('postTitle').value,
                 slug: document.getElementById('postSlug').value,
                 excerpt: document.getElementById('postExcerpt').value,
-                content: editorInstance ? editorInstance.getContent() : '',
+                content: editorInstance ? editorInstance.root.innerHTML : '',
                 blog_id: document.getElementById('postBlog').value,
                 status: document.getElementById('postStatus').value,
                 meta_title: document.getElementById('metaTitle').value,
@@ -1005,7 +1046,9 @@
         // Update word count
         function updateWordCount() {
             if (editorInstance) {
-                const wordCount = editorInstance.plugins.wordcount.getCount();
+                const text = editorInstance.getText();
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                const wordCount = words.length;
                 document.getElementById('wordCount').textContent = wordCount;
             }
         }

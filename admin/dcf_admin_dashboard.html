@@ -1863,7 +1863,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
     <script src="../js/icon-system.js"></script>
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Quill.js Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
 </head>
 
 <body>
@@ -4018,29 +4020,61 @@ ${JSON.stringify(error, null, 2)}
             window.location.href = 'dcf_blog_post_editor.html';
         }
 
-        function initializeTinyMCE() {
-            // Destroy existing instance if any
-            if (tinymce.get('postContent')) {
-                tinymce.get('postContent').remove();
+        let quillEditor = null;
+        
+        function initializeQuillEditor() {
+            // Remove existing instance if any
+            if (quillEditor) {
+                quillEditor = null;
+                const existingContainer = document.getElementById('quillEditor');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
             }
             
-            // Initialize TinyMCE
-            tinymce.init({
-                selector: '#postContent',
-                height: 400,
-                menubar: false,
-                plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
-                ],
-                toolbar: 'undo redo | blocks | ' +
-                    'bold italic forecolor | alignleft aligncenter ' +
-                    'alignright alignjustify | bullist numlist outdent indent | ' +
-                    'link image media | removeformat | help',
-                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px }',
-                branding: false
+            // Get the textarea and create a div for Quill
+            const textarea = document.getElementById('postContent');
+            if (!textarea) return;
+            
+            // Create Quill container
+            const quillContainer = document.createElement('div');
+            quillContainer.id = 'quillEditor';
+            quillContainer.style.height = '400px';
+            quillContainer.style.background = 'white';
+            quillContainer.style.marginTop = '0.5rem';
+            
+            // Hide textarea and insert Quill container
+            textarea.style.display = 'none';
+            textarea.parentNode.insertBefore(quillContainer, textarea.nextSibling);
+            
+            // Initialize Quill
+            quillEditor = new Quill('#quillEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Write your blog post content here...'
             });
+            
+            // Set initial content if editing
+            if (textarea.value) {
+                quillEditor.root.innerHTML = textarea.value;
+            }
+        }
+        
+        // Keep the old function name for compatibility
+        function initializeTinyMCE() {
+            initializeQuillEditor();
         }
 
         async function editPost(postId) {
@@ -4123,9 +4157,18 @@ ${JSON.stringify(error, null, 2)}
         }
 
         function closePostModal() {
-            // Destroy TinyMCE instance
-            if (tinymce.get('postContent')) {
-                tinymce.get('postContent').remove();
+            // Destroy Quill instance
+            if (quillEditor) {
+                quillEditor = null;
+                const quillContainer = document.getElementById('quillEditor');
+                if (quillContainer) {
+                    quillContainer.remove();
+                }
+                // Show textarea again
+                const textarea = document.getElementById('postContent');
+                if (textarea) {
+                    textarea.style.display = 'block';
+                }
             }
             
             document.getElementById('postModal').style.display = 'none';
@@ -4162,8 +4205,8 @@ ${JSON.stringify(error, null, 2)}
                     
                     const formData = new FormData(this);
                     
-                    // Get content from TinyMCE
-                    const tinyContent = tinymce.get('postContent') ? tinymce.get('postContent').getContent() : formData.get('content');
+                    // Get content from Quill
+                    const quillContent = quillEditor ? quillEditor.root.innerHTML : formData.get('content');
                     
                     const postData = {
                         title: formData.get('title'),
@@ -4171,7 +4214,7 @@ ${JSON.stringify(error, null, 2)}
                         blog_id: formData.get('blog_id'),
                         status: formData.get('status'),
                         excerpt: formData.get('excerpt'),
-                        content: tinyContent,
+                        content: quillContent,
                         meta_title: formData.get('meta_title'),
                         meta_description: formData.get('meta_description'),
                         author_id: window.currentUser?.id || null
