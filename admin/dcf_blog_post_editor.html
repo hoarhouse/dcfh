@@ -1961,15 +1961,21 @@
             }, 1500);
         }
         
-        // Update existing functions to check preview mode
-        const originalSavePost = savePost;
-        savePost = async function(isAutoSave = false) {
-            // Don't auto-save in preview mode
-            if (isPreviewMode && isAutoSave) {
-                return;
+        // Modify auto-save to not run in preview mode
+        function startAutoSave() {
+            // Clear any existing interval
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
             }
-            return originalSavePost(isAutoSave);
-        };
+            
+            // Auto-save every 30 seconds, but not in preview mode
+            autoSaveInterval = setInterval(() => {
+                if (hasUnsavedChanges && !isPreviewMode) {
+                    const postData = collectFormData();
+                    savePost(postData, true);
+                }
+            }, 30000);
+        }
         
         // Warn about unsaved changes when in preview
         window.addEventListener('beforeunload', (e) => {
