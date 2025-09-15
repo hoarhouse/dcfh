@@ -2559,7 +2559,7 @@
         });
 
         // Blog Management Functions
-        function showBlogManagement(event) {
+        async function showBlogManagement(event) {
             event.preventDefault();
             
             // Hide main dashboard content
@@ -2579,6 +2579,113 @@
             
             // Update page title
             document.title = 'Blog Management - DCF Hungary Admin';
+            
+            // Load blogs data
+            await loadBlogs();
+        }
+
+        // Load blogs from Supabase
+        async function loadBlogs() {
+            const tbody = document.querySelector('#all-blogs tbody');
+            if (!tbody) return;
+            
+            // Show loading state
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                            <div class="spinner"></div>
+                            <span>Loading blogs...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                // Query blogs from Supabase
+                const { data: blogs, error } = await window.dcfSupabase
+                    .from('blogs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                // Clear loading state
+                tbody.innerHTML = '';
+                
+                if (!blogs || blogs.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
+                                No blogs found. Create your first blog to get started.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Populate table with blog data
+                blogs.forEach(blog => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${escapeHtml(blog.name)}</strong></td>
+                        <td>${escapeHtml(blog.initiative || 'General')}</td>
+                        <td>${blog.post_count || 0}</td>
+                        <td>${formatDate(blog.updated_at || blog.created_at)}</td>
+                        <td><span class="status-badge status-${blog.status === 'active' ? 'active' : 'pending'}">${blog.status || 'Draft'}</span></td>
+                        <td>
+                            <button class="action-btn" onclick="editBlog('${blog.id}')">Edit</button>
+                            <button class="action-btn" onclick="deleteBlog('${blog.id}')" style="color: #dc3545;">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #dc3545;">
+                            Error loading blogs: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper function to format date
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            // Less than 1 hour
+            if (diff < 3600000) {
+                const mins = Math.floor(diff / 60000);
+                return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+            }
+            // Less than 24 hours
+            if (diff < 86400000) {
+                const hours = Math.floor(diff / 3600000);
+                return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+            }
+            // Less than 7 days
+            if (diff < 604800000) {
+                const days = Math.floor(diff / 86400000);
+                return `${days} day${days !== 1 ? 's' : ''} ago`;
+            }
+            
+            // Format as date
+            return date.toLocaleDateString();
         }
 
         function backToDashboard() {
