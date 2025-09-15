@@ -2875,9 +2875,13 @@ async function initializeDCF() {
         // ✅ RESTORED: Update UI based on auth state
         updateUserInterface();
         
-         // ✅ RESTORED: Initialize components
+        // ✅ RESTORED: Initialize components
         populateTopNavigation();
         initializeFooter();
+        
+        // Initialize analytics
+        loadUserInteractions();
+        initializeInteractionButtons();
         
         // ✅ RESTORED: Initialize notification system if logged in
         if (isLoggedIn && window.dcfSupabase) {
