@@ -4377,6 +4377,9 @@ ${JSON.stringify(error, null, 2)}
                 card.className = 'media-card';
                 card.dataset.id = file.id;
                 
+                // Handle both filename and file_name columns
+                const displayName = file.filename || file.file_name || 'Unnamed file';
+                
                 const fileIcon = getFileIcon(file.file_type);
                 const isImage = file.file_type && file.file_type.startsWith('image');
                 
@@ -4384,12 +4387,12 @@ ${JSON.stringify(error, null, 2)}
                     <input type="checkbox" class="media-checkbox" onchange="toggleMediaSelection('${file.id}')">
                     <div class="media-thumbnail" onclick="openMediaPreview('${file.id}')">
                         ${isImage && file.url ? 
-                            `<img src="${file.url}" alt="${file.alt_text || file.filename}">` : 
+                            `<img src="${file.url}" alt="${file.alt_text || displayName}">` : 
                             `<span>${fileIcon}</span>`
                         }
                     </div>
                     <div class="media-info">
-                        <div class="media-filename" title="${escapeHtml(file.filename)}">${escapeHtml(file.filename)}</div>
+                        <div class="media-filename" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
                         <div class="media-filesize">${formatFileSize(file.file_size)}</div>
                     </div>
                 `;
@@ -4578,19 +4581,30 @@ ${JSON.stringify(error, null, 2)}
                     throw new Error('Database connection not available');
                 }
                 
+                // Validate file object
+                if (!file || !file.name) {
+                    throw new Error('Invalid file object - missing file name');
+                }
+                
+                // Extract and validate filename
+                const originalFileName = file.name || 'unnamed_file';
+                console.log('Original filename:', originalFileName);
+                
                 // Update progress to 10%
                 if (progressBar) {
                     progressBar.style.width = '10%';
                     progressBar.style.transition = 'width 0.3s ease';
                 }
                 
-                // Generate unique filename
+                // Generate unique filename for storage
                 const timestamp = Date.now();
-                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const filename = `${timestamp}_${sanitizedName}`;
-                const filePath = `blog-media/${filename}`;
+                const sanitizedName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const uniqueFilename = `${timestamp}_${sanitizedName}`;
+                const filePath = `blog-media/${uniqueFilename}`;
                 
-                console.log('Uploading to path:', filePath);
+                console.log('Original name:', originalFileName);
+                console.log('Sanitized name:', sanitizedName);
+                console.log('Storage path:', filePath);
                 
                 // Update progress to 30%
                 if (progressBar) progressBar.style.width = '30%';
@@ -4635,18 +4649,39 @@ ${JSON.stringify(error, null, 2)}
                 
                 console.log('Public URL:', urlData.publicUrl);
                 
+                // Prepare database insert data with proper column mapping
+                const dbInsertData = {
+                    file_name: originalFileName,  // Map to file_name column (required)
+                    filename: originalFileName,    // Also include filename if column exists
+                    file_type: file.type || 'application/octet-stream',
+                    file_size: file.size || 0,
+                    url: urlData.publicUrl,
+                    storage_path: filePath,
+                    alt_text: '',          // Initialize empty alt text
+                    caption: '',           // Initialize empty caption
+                    description: '',       // Initialize empty description
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Validate required fields before insert
+                console.log('Database insert data:', dbInsertData);
+                
+                if (!dbInsertData.file_name) {
+                    throw new Error('File name is required but missing');
+                }
+                if (!dbInsertData.url) {
+                    throw new Error('File URL is required but missing');
+                }
+                if (!dbInsertData.storage_path) {
+                    throw new Error('Storage path is required but missing');
+                }
+                
                 // Save metadata to database
                 console.log('Saving metadata to database...');
                 const { data: dbData, error: dbError } = await window.dcfSupabase
                     .from('blog_media')
-                    .insert([{
-                        filename: file.name,
-                        file_type: file.type,
-                        file_size: file.size,
-                        url: urlData.publicUrl,
-                        storage_path: filePath,
-                        created_at: new Date().toISOString()
-                    }])
+                    .insert([dbInsertData])
                     .select();
                 
                 if (dbError) {
@@ -4713,11 +4748,13 @@ ${JSON.stringify(error, null, 2)}
 
         function searchMedia() {
             const searchTerm = document.getElementById('mediaSearchInput').value.toLowerCase();
-            const filtered = allMedia.filter(file => 
-                file.filename.toLowerCase().includes(searchTerm) ||
-                (file.alt_text && file.alt_text.toLowerCase().includes(searchTerm)) ||
-                (file.caption && file.caption.toLowerCase().includes(searchTerm))
-            );
+            const filtered = allMedia.filter(file => {
+                // Handle both filename and file_name columns
+                const fileName = (file.filename || file.file_name || '').toLowerCase();
+                return fileName.includes(searchTerm) ||
+                    (file.alt_text && file.alt_text.toLowerCase().includes(searchTerm)) ||
+                    (file.caption && file.caption.toLowerCase().includes(searchTerm));
+            });
             displayMedia(filtered);
         }
 
@@ -4840,8 +4877,9 @@ ${JSON.stringify(error, null, 2)}
             
             currentMediaId = mediaId;
             
-            // Populate preview modal
-            document.getElementById('mediaPreviewTitle').textContent = media.filename;
+            // Populate preview modal (handle both filename and file_name columns)
+            const displayName = media.filename || media.file_name || 'Unnamed file';
+            document.getElementById('mediaPreviewTitle').textContent = displayName;
             document.getElementById('mediaUrl').value = media.url || '';
             document.getElementById('mediaAltText').value = media.alt_text || '';
             document.getElementById('mediaCaption').value = media.caption || '';
