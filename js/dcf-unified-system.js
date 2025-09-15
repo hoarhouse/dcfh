@@ -578,16 +578,7 @@ function getCorrectBasePath() {
 function populateTopNavigation() {
     console.log('🚀 populateTopNavigation() called');
     
-    // Admin page detection
-    const isAdminPage = window.location.pathname.includes('/admin/') || 
-                       window.location.pathname.includes('dcf_admin') || 
-                       window.location.pathname.includes('blog_post_editor');
-    
-    if (isAdminPage) {
-        console.log('🛡️ Admin page detected - loading admin navigation');
-        populateAdminNavigation();
-        return;
-    }
+    // Admin navigation removed - unified system handles all pages the same way
     
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
     console.log('🔍 DEBUG NAV: navMenu element found:', !!navMenu);
@@ -799,125 +790,7 @@ function populateTopNavigation() {
     });
 }
 
-// Admin Navigation Function
-function populateAdminNavigation() {
-    console.log('🛡️ Populating admin navigation');
-    
-    // Find or create navigation container
-    let navContainer = document.querySelector('.nav-container, .admin-nav-container');
-    if (!navContainer) {
-        const header = document.querySelector('.header');
-        if (header) {
-            navContainer = document.createElement('nav');
-            navContainer.className = 'nav-container admin-nav-container';
-            header.innerHTML = '';
-            header.appendChild(navContainer);
-        }
-    }
-    
-    const currentPath = window.location.pathname;
-    const adminNavHTML = `
-        <a href="dcf_admin_dashboard.html" class="logo">
-            <div class="logo-icon"></div>
-            <span class="nav-title">DCF Admin</span>
-        </a>
-        
-        <ul class="nav-menu admin-nav-menu" id="navMenu">
-            <li><a href="dcf_admin_dashboard.html" class="nav-link ${currentPath.includes('dashboard') ? 'active' : ''}">
-                Dashboard
-            </a></li>
-            <li><a href="dcf_admin_dashboard.html#blog-management" class="nav-link ${currentPath.includes('blog') ? 'active' : ''}">
-                Blog Management
-            </a></li>
-            <li><a href="dcf_admin_dashboard.html#user-permissions" class="nav-link">
-                User Permissions
-            </a></li>
-            <li><a href="icon-management.html" class="nav-link ${currentPath.includes('icon') ? 'active' : ''}">
-                Icon System
-            </a></li>
-            <li><a href="alerts.html" class="nav-link ${currentPath.includes('alerts') ? 'active' : ''}">
-                System Alerts
-            </a></li>
-        </ul>
-        
-        <div class="nav-actions">
-            <button class="btn btn-secondary btn-small" onclick="exitAdminMode()">
-                Exit Admin
-            </button>
-            
-            <!-- Notification Bell -->
-            <div class="notification-wrapper">
-                <button class="notification-bell" onclick="toggleNotifications()" id="notificationBell">
-                    <span>🔔</span>
-                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-                </button>
-                <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
-                    <div class="notification-header">
-                        <h3>Notifications</h3>
-                        <button class="mark-all-read" onclick="markAllNotificationsRead()">Mark all as read</button>
-                    </div>
-                    <div class="notification-list" id="notificationList">
-                        <div class="notification-empty">No new notifications</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- User Dropdown -->
-            <div class="user-dropdown">
-                <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">U</div>
-                <div class="dropdown-menu" id="userDropdown" style="display: none;">
-                    <div class="dropdown-header">
-                        <div class="dropdown-avatar" id="dropdownAvatar">U</div>
-                        <div class="dropdown-info">
-                            <div class="dropdown-name" id="dropdownUserName">User</div>
-                            <div class="dropdown-email" id="dropdownUserEmail">Loading...</div>
-                        </div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="../profile.html" class="dropdown-item">
-                        <span>👤</span> My Profile
-                    </a>
-                    <a href="../settings.html" class="dropdown-item">
-                        <span>⚙️</span> Settings
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" onclick="logout()" class="dropdown-item">
-                        <span>🚪</span> Logout
-                    </a>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    navContainer.innerHTML = adminNavHTML;
-    
-    // Initialize user data if logged in
-    if (window.dcfUser?.isLoggedIn && window.dcfUser.profile) {
-        const profile = window.dcfUser.profile;
-        const initials = profile.email ? profile.email.substring(0, 2).toUpperCase() : 'U';
-        
-        // Update avatars
-        const userAvatar = document.getElementById('userAvatar');
-        const dropdownAvatar = document.getElementById('dropdownAvatar');
-        if (userAvatar) userAvatar.textContent = initials;
-        if (dropdownAvatar) dropdownAvatar.textContent = initials;
-        
-        // Update dropdown info
-        const dropdownName = document.getElementById('dropdownUserName');
-        const dropdownEmail = document.getElementById('dropdownUserEmail');
-        if (dropdownName) {
-            dropdownName.textContent = profile.name || profile.username || 'Admin User';
-        }
-        if (dropdownEmail) {
-            dropdownEmail.textContent = profile.email || '';
-        }
-    }
-}
-
-// Exit admin mode function
-window.exitAdminMode = function() {
-    window.location.href = '../index.html';
-}
+// Admin navigation functions removed - unified system treats all pages the same
 
 // =============================================================================
 // 7. LOGO TEXT UPDATE
