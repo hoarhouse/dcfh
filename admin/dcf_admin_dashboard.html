@@ -3876,38 +3876,54 @@ ${JSON.stringify(error, null, 2)}
             const tbody = document.querySelector('#postsTable tbody');
             if (!tbody) return;
             
+            // Clear any existing content
             tbody.innerHTML = '';
             
+            // Check if posts array is valid and has items
             if (!posts || posts.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 2rem; color: #666;">
-                            No posts found. Create your first post to get started.
+                        <td colspan="7" style="text-align: center; padding: 3rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 3rem; color: #dee2e6; margin-bottom: 1rem;">📝</div>
+                                <h3 style="color: #495057; margin-bottom: 0.5rem;">No posts found</h3>
+                                <p style="color: #6c757d; margin-bottom: 1.5rem;">
+                                    ${posts ? 'No posts match your current filters.' : 'Create your first post to get started.'}
+                                </p>
+                            </div>
+                            <button class="btn btn-primary" onclick="createNewPost()">
+                                <span style="margin-right: 0.5rem;">✏️</span> Create New Post
+                            </button>
                         </td>
                     </tr>
                 `;
                 return;
             }
             
+            // Add each post to the table
             posts.forEach(post => {
-                const row = document.createElement('tr');
-                const statusClass = post.status === 'published' ? 'active' : post.status === 'scheduled' ? 'warning' : 'pending';
-                const statusText = post.status.charAt(0).toUpperCase() + post.status.slice(1);
-                
-                row.innerHTML = `
-                    <td><strong>${escapeHtml(post.title)}</strong></td>
-                    <td>${escapeHtml(post.blogs?.name || 'Unknown')}</td>
-                    <td>${escapeHtml(post.user_profiles?.full_name || 'Unknown')}</td>
-                    <td>${formatDate(post.created_at)}</td>
-                    <td>${post.views || 0}</td>
-                    <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
-                    <td>
-                        <button class="action-btn" onclick="editPost('${post.id}')">Edit</button>
-                        <button class="action-btn" onclick="togglePostStatus('${post.id}', '${post.status}')">${post.status === 'published' ? 'Unpublish' : 'Publish'}</button>
-                        <button class="action-btn" onclick="deletePost('${post.id}')" style="color: #dc3545;">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
+                try {
+                    const row = document.createElement('tr');
+                    const statusClass = post.status === 'published' ? 'active' : post.status === 'scheduled' ? 'warning' : 'pending';
+                    const statusText = post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : 'Draft';
+                    
+                    row.innerHTML = `
+                        <td><strong>${escapeHtml(post.title || 'Untitled')}</strong></td>
+                        <td>${escapeHtml(post.blogs?.name || 'Unknown Blog')}</td>
+                        <td>${escapeHtml(post.user_profiles?.full_name || 'Unknown Author')}</td>
+                        <td>${formatDate(post.created_at)}</td>
+                        <td>${post.views || 0}</td>
+                        <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="action-btn" onclick="editPost('${post.id}')">Edit</button>
+                            <button class="action-btn" onclick="togglePostStatus('${post.id}', '${post.status || 'draft'}')">${post.status === 'published' ? 'Unpublish' : 'Publish'}</button>
+                            <button class="action-btn" onclick="deletePost('${post.id}')" style="color: #dc3545;">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                } catch (rowError) {
+                    console.error('Error displaying post row:', rowError, post);
+                }
             });
         }
 
