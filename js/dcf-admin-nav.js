@@ -9,6 +9,20 @@
         const path = window.location.pathname;
         return path.includes('/admin/') || path.includes('dcf_admin') || path.includes('blog_post_editor');
     }
+    
+    // Prevent main navigation from loading in admin sections
+    if (isAdminPage()) {
+        console.log('🛡️ Admin page detected - preventing main navigation');
+        
+        // Override the populateTopNavigation function from dcf-unified-auth.js
+        window.populateTopNavigation = function() {
+            console.log('🚫 Blocked main navigation in admin section');
+            return; // Do nothing in admin pages
+        };
+        
+        // Set a flag to indicate admin mode
+        window.isAdminMode = true;
+    }
 
     // Create admin navigation HTML
     function createAdminNavigation() {
@@ -160,42 +174,53 @@
     // Initialize admin navigation
     function initializeAdminNav() {
         if (!isAdminPage()) {
+            console.log('❌ Not an admin page, skipping admin nav');
             return; // Not an admin page, don't initialize
         }
 
+        console.log('✅ Initializing admin navigation');
+        
         // Set admin mode in session
         sessionStorage.setItem('adminMode', 'true');
 
-        // Replace or update the header navigation
+        // Wait for header to be ready
         const header = document.querySelector('.header');
-        if (header) {
-            // Check if we already have admin nav
-            if (!header.querySelector('.admin-nav-container')) {
-                // Replace the nav container
-                const existingNav = header.querySelector('.nav-container');
-                if (existingNav) {
-                    const adminNav = createAdminNavigation();
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = adminNav;
-                    header.innerHTML = '';
-                    header.appendChild(tempDiv.firstElementChild);
-                }
-            }
+        if (!header) {
+            console.log('⏳ Header not ready, retrying...');
+            setTimeout(initializeAdminNav, 100);
+            return;
+        }
 
-            // Add sub-navigation if needed
-            if (isCurrentPage('blog') && !document.getElementById('blogSubNav')) {
-                const subNav = createBlogSubNav();
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = subNav;
-                header.parentNode.insertBefore(tempDiv.firstElementChild, header.nextSibling);
-            }
+        // Check if we already have admin nav
+        if (header.querySelector('.admin-nav-container')) {
+            console.log('✅ Admin nav already present');
+            return;
+        }
+
+        // Clear header and add admin navigation
+        console.log('🔄 Replacing navigation with admin nav');
+        const adminNav = createAdminNavigation();
+        header.innerHTML = adminNav;
+
+        // Add sub-navigation if needed
+        if (isCurrentPage('blog') && !document.getElementById('blogSubNav')) {
+            const subNav = createBlogSubNav();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = subNav;
+            header.parentNode.insertBefore(tempDiv.firstElementChild, header.nextSibling);
+        }
+
+        // Mark navigation as admin to prevent override
+        const navContainer = header.querySelector('.nav-container');
+        if (navContainer) {
+            navContainer.setAttribute('data-admin-nav', 'true');
         }
 
         // Initialize user menu data
-        initializeUserMenu();
-        
-        // Initialize notification system
-        initializeNotifications();
+        setTimeout(() => {
+            initializeUserMenu();
+            initializeNotifications();
+        }, 100);
     }
 
     // Initialize user menu with current user data
@@ -272,11 +297,42 @@
     window.showBlogManagementFromNav = showBlogManagementFromNav;
     window.initializeAdminNav = initializeAdminNav;
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAdminNav);
-    } else {
-        initializeAdminNav();
+    // Initialize immediately if on admin page
+    if (isAdminPage()) {
+        console.log('🚀 Admin page detected - initializing immediately');
+        
+        // Initialize as soon as possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('📄 DOM ready - initializing admin nav');
+                initializeAdminNav();
+            });
+        } else {
+            console.log('📄 DOM already ready - initializing admin nav now');
+            setTimeout(initializeAdminNav, 0);
+        }
+        
+        // Also add a MutationObserver to watch for navigation changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    const header = document.querySelector('.header');
+                    if (header && !header.querySelector('[data-admin-nav="true"]')) {
+                        console.log('⚠️ Navigation was replaced - reinitializing admin nav');
+                        initializeAdminNav();
+                    }
+                }
+            });
+        });
+        
+        // Start observing when body is available
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                observer.observe(document.body, { childList: true, subtree: true });
+            });
+        }
     }
 
 })();
