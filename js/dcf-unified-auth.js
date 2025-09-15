@@ -562,16 +562,15 @@ function getCorrectBasePath() {
 function populateTopNavigation() {
     console.log('🚀 populateTopNavigation() called');
     
-    // ADMIN CHECK: Don't override admin navigation
+    // ADMIN CHECK: Determine if we're in admin section
     const isAdminPage = window.location.pathname.includes('/admin/') || 
                        window.location.pathname.includes('dcf_admin') || 
-                       window.location.pathname.includes('blog_post_editor') ||
-                       window.isAdminMode === true ||
-                       document.querySelector('[data-admin-nav="true"]');
+                       window.location.pathname.includes('blog_post_editor');
     
     if (isAdminPage) {
-        console.log('🛡️ Blocked navigation override - admin page detected');
-        return; // Exit immediately for admin pages
+        console.log('🛡️ Admin page detected - loading admin navigation');
+        populateAdminNavigation();
+        return;
     }
     
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
@@ -769,6 +768,136 @@ function populateTopNavigation() {
         
         navMenu.appendChild(li);
     });
+}
+
+// Admin Navigation Function
+function populateAdminNavigation() {
+    console.log('🛡️ Populating admin navigation');
+    
+    // First, update the logo to show admin
+    const logo = document.querySelector('.logo');
+    if (logo) {
+        logo.innerHTML = '<div class="logo-icon"></div><span class="nav-title">DCF Admin</span>';
+        logo.href = '/admin/dcf_admin_dashboard.html';
+    }
+    
+    // Find or create the navigation container
+    let navContainer = document.querySelector('.nav-container, .admin-nav-container');
+    if (!navContainer) {
+        const header = document.querySelector('.header');
+        if (header) {
+            navContainer = document.createElement('nav');
+            navContainer.className = 'nav-container admin-nav-container';
+            header.innerHTML = '';
+            header.appendChild(navContainer);
+        }
+    }
+    
+    // Create complete admin navigation HTML
+    const currentPath = window.location.pathname;
+    const adminNavHTML = `
+        <a href="/admin/dcf_admin_dashboard.html" class="logo">
+            <div class="logo-icon"></div>
+            <span class="nav-title">DCF Admin</span>
+        </a>
+        
+        <ul class="nav-menu admin-nav-menu" id="navMenu">
+            <li><a href="/admin/dcf_admin_dashboard.html" class="nav-link ${currentPath.includes('dashboard') ? 'active' : ''}">
+                <span data-icon="dashboard"></span> Dashboard
+            </a></li>
+            <li><a href="/admin/dcf_admin_dashboard.html#blog-management" class="nav-link ${currentPath.includes('blog') ? 'active' : ''}">
+                <span data-icon="blog"></span> Blog Management
+            </a></li>
+            <li><a href="/admin/user-management.html" class="nav-link ${currentPath.includes('user-management') ? 'active' : ''}">
+                <span data-icon="users"></span> User Management
+            </a></li>
+            <li><a href="/admin/system-settings.html" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">
+                <span data-icon="settings"></span> System Settings
+            </a></li>
+            <li><a href="/admin/analytics.html" class="nav-link ${currentPath.includes('analytics') ? 'active' : ''}">
+                <span data-icon="chart"></span> Analytics
+            </a></li>
+        </ul>
+        
+        <div class="nav-actions">
+            <button class="btn btn-secondary btn-small exit-admin-btn" onclick="exitAdminMode()">
+                <span data-icon="exit"></span> Exit Admin
+            </button>
+            
+            <!-- Notification bell -->
+            <div class="notification-wrapper">
+                <button class="notification-bell" onclick="toggleNotifications()">
+                    <span data-icon="bell"></span>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read">Mark all as read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <!-- Notifications populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User dropdown -->
+            <div class="user-dropdown">
+                <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                <div class="dropdown-menu" id="userDropdown" style="display: none;">
+                    <div class="dropdown-header">
+                        <div class="dropdown-avatar"></div>
+                        <div class="dropdown-info">
+                            <div class="dropdown-name" id="dropdownUserName"></div>
+                            <div class="dropdown-email" id="dropdownUserEmail"></div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="../profile.html" class="dropdown-item">
+                        <span data-icon="user"></span> My Profile
+                    </a>
+                    <a href="../settings.html" class="dropdown-item">
+                        <span data-icon="settings"></span> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout()" class="dropdown-item">
+                        <span data-icon="logout"></span> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    navContainer.innerHTML = adminNavHTML;
+    navContainer.setAttribute('data-admin-nav', 'true');
+    
+    // Initialize user data in admin nav
+    if (window.dcfUser?.isLoggedIn) {
+        const avatar = document.getElementById('userAvatar');
+        const dropdownName = document.getElementById('dropdownUserName');
+        const dropdownEmail = document.getElementById('dropdownUserEmail');
+        
+        if (avatar) {
+            const initials = window.dcfUser.profile?.email ? 
+                window.dcfUser.profile.email.substring(0, 2).toUpperCase() : 'U';
+            avatar.textContent = initials;
+        }
+        
+        if (dropdownName) {
+            dropdownName.textContent = window.dcfUser.profile?.name || 'Admin User';
+        }
+        
+        if (dropdownEmail) {
+            dropdownEmail.textContent = window.dcfUser.profile?.email || '';
+        }
+    }
+    
+    console.log('✅ Admin navigation populated');
+}
+
+// Exit admin mode function
+window.exitAdminMode = function() {
+    window.location.href = '/index.html';
 }
 
 // =============================================================================
