@@ -845,6 +845,24 @@ function populateAdminNavigation() {
                 Exit Admin
             </button>
             
+            <!-- Notification Bell -->
+            <div class="notification-wrapper">
+                <button class="notification-bell" onclick="toggleNotifications()" id="notificationBell">
+                    <span>🔔</span>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read" onclick="markAllNotificationsRead()">Mark all as read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new notifications</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Dropdown -->
             <div class="user-dropdown">
                 <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">U</div>
                 <div class="dropdown-menu" id="userDropdown" style="display: none;">
