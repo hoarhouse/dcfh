@@ -578,6 +578,17 @@ function getCorrectBasePath() {
 function populateTopNavigation() {
     console.log('🚀 populateTopNavigation() called');
     
+    // Admin page detection
+    const isAdminPage = window.location.pathname.includes('/admin/') || 
+                       window.location.pathname.includes('dcf_admin') || 
+                       window.location.pathname.includes('blog_post_editor');
+    
+    if (isAdminPage) {
+        console.log('🛡️ Admin page detected - loading admin navigation');
+        populateAdminNavigation();
+        return;
+    }
+    
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
     console.log('🔍 DEBUG NAV: navMenu element found:', !!navMenu);
     if (!navMenu) {
@@ -786,6 +797,72 @@ function populateTopNavigation() {
         
         navMenu.appendChild(li);
     });
+}
+
+// Admin Navigation Function
+function populateAdminNavigation() {
+    console.log('🛡️ Populating admin navigation');
+    
+    // Find or create navigation container
+    let navContainer = document.querySelector('.nav-container, .admin-nav-container');
+    if (!navContainer) {
+        const header = document.querySelector('.header');
+        if (header) {
+            navContainer = document.createElement('nav');
+            navContainer.className = 'nav-container admin-nav-container';
+            header.innerHTML = '';
+            header.appendChild(navContainer);
+        }
+    }
+    
+    const currentPath = window.location.pathname;
+    const adminNavHTML = `
+        <a href="dcf_admin_dashboard.html" class="logo">
+            <div class="logo-icon"></div>
+            <span class="nav-title">DCF Admin</span>
+        </a>
+        
+        <ul class="nav-menu admin-nav-menu" id="navMenu">
+            <li><a href="dcf_admin_dashboard.html" class="nav-link ${currentPath.includes('dashboard') ? 'active' : ''}">
+                Dashboard
+            </a></li>
+            <li><a href="dcf_admin_dashboard.html#blog-management" class="nav-link ${currentPath.includes('blog') ? 'active' : ''}">
+                Blog Management
+            </a></li>
+            <li><a href="dcf_admin_dashboard.html#user-permissions" class="nav-link">
+                User Permissions
+            </a></li>
+            <li><a href="icon-management.html" class="nav-link ${currentPath.includes('icon') ? 'active' : ''}">
+                Icon System
+            </a></li>
+            <li><a href="alerts.html" class="nav-link ${currentPath.includes('alerts') ? 'active' : ''}">
+                System Alerts
+            </a></li>
+        </ul>
+        
+        <div class="nav-actions">
+            <button class="btn btn-secondary btn-small" onclick="exitAdminMode()">
+                Exit Admin
+            </button>
+            <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">U</div>
+        </div>
+    `;
+    
+    navContainer.innerHTML = adminNavHTML;
+    
+    // Initialize user avatar if logged in
+    if (window.dcfUser?.isLoggedIn && window.dcfUser.profile?.email) {
+        const avatar = document.getElementById('userAvatar');
+        if (avatar) {
+            const initials = window.dcfUser.profile.email.substring(0, 2).toUpperCase();
+            avatar.textContent = initials;
+        }
+    }
+}
+
+// Exit admin mode function
+window.exitAdminMode = function() {
+    window.location.href = '../index.html';
 }
 
 // =============================================================================
