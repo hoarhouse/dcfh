@@ -1371,6 +1371,230 @@
         }
 
         // Toast notification
+        // Featured Media Functions
+        function selectFeaturedMedia() {
+            document.getElementById('featuredMediaInput').click();
+        }
+        
+        function replaceFeaturedMedia() {
+            selectFeaturedMedia();
+        }
+        
+        async function handleFeaturedMediaSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+            const isImage = validImageTypes.includes(file.type);
+            const isVideo = validVideoTypes.includes(file.type);
+            
+            if (!isImage && !isVideo) {
+                showToast('Invalid file type. Please upload an image or video.', 'error');
+                return;
+            }
+            
+            // Validate file size
+            const maxImageSize = 5 * 1024 * 1024; // 5MB
+            const maxVideoSize = 50 * 1024 * 1024; // 50MB
+            const maxSize = isImage ? maxImageSize : maxVideoSize;
+            
+            if (file.size > maxSize) {
+                const maxSizeMB = maxSize / (1024 * 1024);
+                showToast(`File too large. Maximum size is ${maxSizeMB}MB.`, 'error');
+                return;
+            }
+            
+            // Upload the file
+            await uploadFeaturedMedia(file, isImage ? 'image' : 'video');
+        }
+        
+        async function uploadFeaturedMedia(file, mediaType) {
+            // Show progress
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('uploadProgressBar');
+            uploadProgress.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            try {
+                // Generate unique filename
+                const timestamp = Date.now();
+                const extension = file.name.split('.').pop();
+                const filename = `featured_${timestamp}.${extension}`;
+                const filePath = `featured-media/${filename}`;
+                
+                // Create a mock progress animation
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressBar.style.width = `${progress}%`;
+                    }
+                }, 200);
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .upload(filePath, file);
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: urlData } = window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .getPublicUrl(filePath);
+                
+                // Update current featured media
+                currentFeaturedMedia = {
+                    url: urlData.publicUrl,
+                    type: mediaType,
+                    filename: file.name,
+                    size: file.size
+                };
+                
+                // Display the media
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    displayFeaturedMedia();
+                    hasUnsavedChanges = true;
+                    showToast('Featured media uploaded successfully', 'success');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error uploading featured media:', error);
+                uploadProgress.style.display = 'none';
+                showToast('Failed to upload media. Please try again.', 'error');
+            }
+        }
+        
+        function displayFeaturedMedia() {
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            const previewArea = document.getElementById('featuredMediaPreview');
+            const previewContent = document.getElementById('mediaPreviewContent');
+            const mediaInfo = document.getElementById('mediaInfo');
+            const typeBadge = document.getElementById('mediaTypeBadge');
+            
+            if (!currentFeaturedMedia.url) return;
+            
+            // Hide upload area, show preview
+            uploadArea.style.display = 'none';
+            previewArea.style.display = 'block';
+            
+            // Clear and set preview content
+            previewContent.innerHTML = '';
+            
+            if (currentFeaturedMedia.type === 'image') {
+                const img = document.createElement('img');
+                img.src = currentFeaturedMedia.url;
+                img.alt = 'Featured image';
+                previewContent.appendChild(img);
+                
+                typeBadge.textContent = 'IMAGE';
+                typeBadge.style.display = 'inline-block';
+            } else if (currentFeaturedMedia.type === 'video') {
+                const video = document.createElement('video');
+                video.src = currentFeaturedMedia.url;
+                video.controls = true;
+                video.setAttribute('controlsList', 'nodownload');
+                previewContent.appendChild(video);
+                
+                typeBadge.textContent = 'VIDEO';
+                typeBadge.style.display = 'inline-block';
+            }
+            
+            // Show media info
+            const sizeInMB = (currentFeaturedMedia.size / (1024 * 1024)).toFixed(2);
+            mediaInfo.innerHTML = `
+                <div class="media-info-item">
+                    📁 ${currentFeaturedMedia.filename || 'Featured Media'}
+                </div>
+                <div class="media-info-item">
+                    💾 ${sizeInMB} MB
+                </div>
+                <div class="media-info-item">
+                    ${currentFeaturedMedia.type === 'image' ? '🖼️' : '🎬'} ${currentFeaturedMedia.type.toUpperCase()}
+                </div>
+            `;
+        }
+        
+        async function removeFeaturedMedia() {
+            if (!confirm('Remove featured media from this post?')) return;
+            
+            // If there's a URL and it's in our storage, delete it
+            if (currentFeaturedMedia.url && currentFeaturedMedia.url.includes('supabase')) {
+                try {
+                    // Extract file path from URL
+                    const urlParts = currentFeaturedMedia.url.split('/');
+                    const filePath = `featured-media/${urlParts[urlParts.length - 1]}`;
+                    
+                    await window.dcfSupabase
+                        .storage
+                        .from('media')
+                        .remove([filePath]);
+                } catch (error) {
+                    console.error('Error removing media from storage:', error);
+                }
+            }
+            
+            // Reset featured media
+            currentFeaturedMedia = {
+                url: null,
+                type: 'none',
+                filename: null,
+                size: null
+            };
+            
+            // Reset UI
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            const previewArea = document.getElementById('featuredMediaPreview');
+            const typeBadge = document.getElementById('mediaTypeBadge');
+            
+            uploadArea.style.display = 'block';
+            previewArea.style.display = 'none';
+            typeBadge.style.display = 'none';
+            
+            // Clear file input
+            document.getElementById('featuredMediaInput').value = '';
+            
+            hasUnsavedChanges = true;
+            showToast('Featured media removed', 'info');
+        }
+        
+        // Set up drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('drag-over');
+                });
+                
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const file = files[0];
+                        document.getElementById('featuredMediaInput').files = files;
+                        handleFeaturedMediaSelect({ target: { files: [file] } });
+                    }
+                });
+            }
+        });
+        
         function showToast(message, type = 'info') {
             // Remove existing toast if any
             const existingToast = document.querySelector('.toast-notification');
