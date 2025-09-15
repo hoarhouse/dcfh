@@ -4686,11 +4686,7 @@ window.getBulkInteractionCounts = getBulkInteractionCounts;
 window.getUserInteractionHistory = getUserInteractionHistory;
 window.initializeAnalyticsButtons = initializeAnalyticsButtons;
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadUserInteractions();
-    initializeInteractionButtons();
-});
+// Analytics initialization will be handled by main init
 
 console.log('✅ Universal Analytics System loaded - tracks all interactions for all content types');
 
