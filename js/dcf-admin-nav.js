@@ -14,14 +14,23 @@
     if (isAdminPage()) {
         console.log('🛡️ Admin page detected - preventing main navigation');
         
+        // Set admin mode flag IMMEDIATELY
+        window.isAdminMode = true;
+        
         // Override the populateTopNavigation function from dcf-unified-auth.js
+        const originalPopulate = window.populateTopNavigation;
         window.populateTopNavigation = function() {
             console.log('🚫 Blocked main navigation in admin section');
-            return; // Do nothing in admin pages
+            // Check if admin nav exists
+            if (document.querySelector('[data-admin-nav="true"]')) {
+                console.log('✅ Admin navigation already present');
+                return;
+            }
+            // If no admin nav yet, call the admin nav initialization
+            console.log('⚠️ Admin nav missing - initializing now');
+            initializeAdminNav();
+            return; // Don't call original populate
         };
-        
-        // Set a flag to indicate admin mode
-        window.isAdminMode = true;
     }
 
     // Create admin navigation HTML

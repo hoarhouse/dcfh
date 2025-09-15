@@ -562,6 +562,18 @@ function getCorrectBasePath() {
 function populateTopNavigation() {
     console.log('🚀 populateTopNavigation() called');
     
+    // ADMIN CHECK: Don't override admin navigation
+    const isAdminPage = window.location.pathname.includes('/admin/') || 
+                       window.location.pathname.includes('dcf_admin') || 
+                       window.location.pathname.includes('blog_post_editor') ||
+                       window.isAdminMode === true ||
+                       document.querySelector('[data-admin-nav="true"]');
+    
+    if (isAdminPage) {
+        console.log('🛡️ Blocked navigation override - admin page detected');
+        return; // Exit immediately for admin pages
+    }
+    
     const navMenu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
     console.log('🔍 DEBUG NAV: navMenu element found:', !!navMenu);
     if (!navMenu) {
@@ -2388,8 +2400,22 @@ async function initializeDCF() {
         // ✅ RESTORED: Update UI based on auth state
         updateUserInterface();
         
-         // ✅ RESTORED: Initialize components
-        populateTopNavigation();
+        // Check if we're in admin section BEFORE initializing navigation
+        const isAdminPage = window.location.pathname.includes('/admin/') || 
+                           window.location.pathname.includes('dcf_admin') || 
+                           window.location.pathname.includes('blog_post_editor') ||
+                           window.isAdminMode === true;
+        
+        if (isAdminPage) {
+            console.log('🛡️ Admin page detected - skipping standard navigation initialization');
+            // Don't populate standard navigation in admin pages
+            // Admin navigation is handled by dcf-admin-nav.js
+        } else {
+            // ✅ RESTORED: Initialize components for non-admin pages
+            console.log('📋 Standard page - initializing normal navigation');
+            populateTopNavigation();
+        }
+        
         initializeFooter();
         
         // ✅ RESTORED: Initialize notification system if logged in
