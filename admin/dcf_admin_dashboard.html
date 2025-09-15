@@ -3614,6 +3614,8 @@
                 await loadPosts();
             } else if (tabId === 'media-library') {
                 await loadMedia();
+            } else if (tabId === 'user-permissions') {
+                await loadUserPermissions();
             }
         }
 
@@ -4667,14 +4669,476 @@
             showToast('Media selector coming soon', 'info');
         }
 
-        function addBlogUser() {
-            console.log('Adding blog user...');
-            // Implement add user functionality
+        // User Permissions Functions
+        let allUsers = [];
+        let allBlogs = [];
+        let allPermissions = [];
+        let currentEditUserId = null;
+        let pendingPermissions = {};
+        let matrixViewMode = false;
+
+        async function loadUserPermissions() {
+            try {
+                // Load users
+                const { data: users, error: usersError } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('*')
+                    .order('full_name');
+                
+                if (usersError) throw usersError;
+                allUsers = users || [];
+                
+                // Load blogs
+                const { data: blogs, error: blogsError } = await window.dcfSupabase
+                    .from('blogs')
+                    .select('*')
+                    .order('name');
+                
+                if (blogsError) throw blogsError;
+                allBlogs = blogs || [];
+                
+                // Load permissions
+                const { data: permissions, error: permissionsError } = await window.dcfSupabase
+                    .from('blog_permissions')
+                    .select('*');
+                
+                if (permissionsError) throw permissionsError;
+                allPermissions = permissions || [];
+                
+                // Display data
+                displayUsers();
+                updatePermissionSummary();
+                
+            } catch (error) {
+                console.error('Error loading permissions:', error);
+                showToast('Error loading permissions: ' + error.message, 'error');
+            }
         }
 
-        function editPermissions(userId) {
-            console.log('Editing permissions for user:', userId);
-            // Implement permissions edit functionality
+        function displayUsers() {
+            const tbody = document.querySelector('#permissionsTable tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!allUsers || allUsers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem; color: #666;">
+                            No users found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            allUsers.forEach(user => {
+                const userPermissions = allPermissions.filter(p => p.user_id === user.id);
+                const blogCount = new Set(userPermissions.map(p => p.blog_id)).size;
+                const primaryRole = getMostCommonRole(userPermissions);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-info">
+                                <div class="user-name">${escapeHtml(user.full_name || 'Unknown')}</div>
+                                <div class="user-email">${escapeHtml(user.email || '')}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="role-badge role-${primaryRole}">${getRoleBadge(primaryRole)}</span>
+                    </td>
+                    <td>${blogCount} blog${blogCount !== 1 ? 's' : ''}</td>
+                    <td>${formatDate(user.updated_at || user.created_at)}</td>
+                    <td>
+                        <button class="action-btn" onclick="editUserPermissions('${user.id}')">Edit</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getMostCommonRole(permissions) {
+            if (!permissions || permissions.length === 0) return 'none';
+            
+            const roleCounts = permissions.reduce((acc, p) => {
+                acc[p.role] = (acc[p.role] || 0) + 1;
+                return acc;
+            }, {});
+            
+            return Object.entries(roleCounts)
+                .sort((a, b) => b[1] - a[1])[0]?.[0] || 'none';
+        }
+
+        function getRoleBadge(role) {
+            const badges = {
+                'admin': 'A',
+                'editor': 'E',
+                'contributor': 'C',
+                'viewer': 'V',
+                'none': '-'
+            };
+            return badges[role] || '-';
+        }
+
+        function updatePermissionSummary() {
+            const counts = {
+                admin: 0,
+                editor: 0,
+                contributor: 0,
+                viewer: 0
+            };
+            
+            // Count unique users per role
+            const userRoles = {};
+            allPermissions.forEach(p => {
+                if (!userRoles[p.user_id]) {
+                    userRoles[p.user_id] = new Set();
+                }
+                userRoles[p.user_id].add(p.role);
+            });
+            
+            Object.values(userRoles).forEach(roles => {
+                if (roles.has('admin')) counts.admin++;
+                else if (roles.has('editor')) counts.editor++;
+                else if (roles.has('contributor')) counts.contributor++;
+                else if (roles.has('viewer')) counts.viewer++;
+            });
+            
+            document.getElementById('adminCount').textContent = counts.admin;
+            document.getElementById('editorCount').textContent = counts.editor;
+            document.getElementById('contributorCount').textContent = counts.contributor;
+            document.getElementById('viewerCount').textContent = counts.viewer;
+        }
+
+        function searchUsers() {
+            const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+            const filtered = allUsers.filter(user => 
+                (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
+                (user.email && user.email.toLowerCase().includes(searchTerm))
+            );
+            
+            // Update display with filtered users
+            const tempUsers = allUsers;
+            allUsers = filtered;
+            displayUsers();
+            allUsers = tempUsers;
+        }
+
+        function filterUsersByRole() {
+            const roleFilter = document.getElementById('roleFilterSelect').value;
+            
+            if (!roleFilter) {
+                displayUsers();
+                return;
+            }
+            
+            const usersWithRole = allPermissions
+                .filter(p => p.role === roleFilter)
+                .map(p => p.user_id);
+            
+            const filtered = allUsers.filter(user => usersWithRole.includes(user.id));
+            
+            const tempUsers = allUsers;
+            allUsers = filtered;
+            displayUsers();
+            allUsers = tempUsers;
+        }
+
+        function togglePermissionMatrix() {
+            matrixViewMode = !matrixViewMode;
+            const tableView = document.getElementById('tableView');
+            const matrixView = document.getElementById('matrixView');
+            const toggleText = document.getElementById('matrixToggleText');
+            
+            if (matrixViewMode) {
+                tableView.style.display = 'none';
+                matrixView.style.display = 'block';
+                toggleText.textContent = 'Show Table View';
+                buildPermissionMatrix();
+            } else {
+                tableView.style.display = 'block';
+                matrixView.style.display = 'none';
+                toggleText.textContent = 'Show Matrix View';
+            }
+        }
+
+        function buildPermissionMatrix() {
+            const header = document.getElementById('matrixHeader');
+            const tbody = document.querySelector('#permissionMatrix tbody');
+            
+            // Clear existing content
+            header.innerHTML = '<th class="matrix-user-col">User</th>';
+            tbody.innerHTML = '';
+            
+            // Add blog columns to header
+            allBlogs.forEach(blog => {
+                const th = document.createElement('th');
+                th.textContent = blog.name;
+                th.style.minWidth = '100px';
+                header.appendChild(th);
+            });
+            
+            // Add user rows
+            allUsers.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // User cell
+                const userCell = document.createElement('td');
+                userCell.innerHTML = `
+                    <div style="white-space: nowrap;">
+                        <strong>${escapeHtml(user.full_name || 'Unknown')}</strong><br>
+                        <small style="color: #666;">${escapeHtml(user.email || '')}</small>
+                    </div>
+                `;
+                row.appendChild(userCell);
+                
+                // Permission cells for each blog
+                allBlogs.forEach(blog => {
+                    const cell = document.createElement('td');
+                    const permission = allPermissions.find(
+                        p => p.user_id === user.id && p.blog_id === blog.id
+                    );
+                    
+                    const role = permission ? permission.role : 'none';
+                    cell.innerHTML = `
+                        <select class="role-selector" 
+                                data-user="${user.id}" 
+                                data-blog="${blog.id}"
+                                onchange="updateMatrixPermission(this)">
+                            <option value="none" ${role === 'none' ? 'selected' : ''}>-</option>
+                            <option value="admin" ${role === 'admin' ? 'selected' : ''}>A</option>
+                            <option value="editor" ${role === 'editor' ? 'selected' : ''}>E</option>
+                            <option value="contributor" ${role === 'contributor' ? 'selected' : ''}>C</option>
+                            <option value="viewer" ${role === 'viewer' ? 'selected' : ''}>V</option>
+                        </select>
+                    `;
+                    row.appendChild(cell);
+                });
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        async function updateMatrixPermission(selector) {
+            const userId = selector.dataset.user;
+            const blogId = selector.dataset.blog;
+            const role = selector.value;
+            
+            try {
+                if (role === 'none') {
+                    // Delete permission
+                    const { error } = await window.dcfSupabase
+                        .from('blog_permissions')
+                        .delete()
+                        .eq('user_id', userId)
+                        .eq('blog_id', blogId);
+                    
+                    if (error) throw error;
+                } else {
+                    // Check if permission exists
+                    const existing = allPermissions.find(
+                        p => p.user_id === userId && p.blog_id === blogId
+                    );
+                    
+                    if (existing) {
+                        // Update existing
+                        const { error } = await window.dcfSupabase
+                            .from('blog_permissions')
+                            .update({ 
+                                role: role,
+                                granted_by: window.currentUser?.id,
+                                granted_at: new Date().toISOString()
+                            })
+                            .eq('id', existing.id);
+                        
+                        if (error) throw error;
+                    } else {
+                        // Insert new
+                        const { error } = await window.dcfSupabase
+                            .from('blog_permissions')
+                            .insert([{
+                                user_id: userId,
+                                blog_id: blogId,
+                                role: role,
+                                granted_by: window.currentUser?.id
+                            }]);
+                        
+                        if (error) throw error;
+                    }
+                }
+                
+                showToast('Permission updated successfully', 'success');
+                await loadUserPermissions();
+                
+            } catch (error) {
+                console.error('Error updating permission:', error);
+                showToast('Error updating permission: ' + error.message, 'error');
+                selector.value = selector.dataset.originalValue;
+            }
+        }
+
+        async function editUserPermissions(userId) {
+            currentEditUserId = userId;
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Populate modal header
+            document.getElementById('modalUserName').textContent = user.full_name || 'Unknown';
+            document.getElementById('modalUserEmail').textContent = user.email || '';
+            document.getElementById('modalUserAvatar').textContent = 
+                (user.full_name || 'U').charAt(0).toUpperCase();
+            
+            // Load blog permissions
+            const permissionsList = document.getElementById('blogPermissionsList');
+            permissionsList.innerHTML = '';
+            
+            allBlogs.forEach(blog => {
+                const permission = allPermissions.find(
+                    p => p.user_id === userId && p.blog_id === blog.id
+                );
+                
+                const item = document.createElement('div');
+                item.className = 'blog-permission-item';
+                item.innerHTML = `
+                    <span class="blog-permission-name">${escapeHtml(blog.name)}</span>
+                    <select class="role-selector" data-blog="${blog.id}">
+                        <option value="none" ${!permission ? 'selected' : ''}>No Access</option>
+                        <option value="admin" ${permission?.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <option value="editor" ${permission?.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="contributor" ${permission?.role === 'contributor' ? 'selected' : ''}>Contributor</option>
+                        <option value="viewer" ${permission?.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                    </select>
+                `;
+                permissionsList.appendChild(item);
+            });
+            
+            // Show modal
+            document.getElementById('userPermissionModal').style.display = 'block';
+        }
+
+        function setAllPermissions(role) {
+            const selectors = document.querySelectorAll('#blogPermissionsList .role-selector');
+            selectors.forEach(selector => {
+                selector.value = role;
+            });
+        }
+
+        async function saveUserPermissions() {
+            if (!currentEditUserId) return;
+            
+            const selectors = document.querySelectorAll('#blogPermissionsList .role-selector');
+            const updates = [];
+            
+            selectors.forEach(selector => {
+                const blogId = selector.dataset.blog;
+                const role = selector.value;
+                updates.push({ blogId, role });
+            });
+            
+            try {
+                for (const update of updates) {
+                    const existing = allPermissions.find(
+                        p => p.user_id === currentEditUserId && p.blog_id === update.blogId
+                    );
+                    
+                    if (update.role === 'none') {
+                        if (existing) {
+                            // Delete permission
+                            const { error } = await window.dcfSupabase
+                                .from('blog_permissions')
+                                .delete()
+                                .eq('id', existing.id);
+                            
+                            if (error) throw error;
+                        }
+                    } else {
+                        if (existing) {
+                            // Update existing
+                            const { error } = await window.dcfSupabase
+                                .from('blog_permissions')
+                                .update({ 
+                                    role: update.role,
+                                    granted_by: window.currentUser?.id,
+                                    granted_at: new Date().toISOString()
+                                })
+                                .eq('id', existing.id);
+                            
+                            if (error) throw error;
+                        } else {
+                            // Insert new
+                            const { error } = await window.dcfSupabase
+                                .from('blog_permissions')
+                                .insert([{
+                                    user_id: currentEditUserId,
+                                    blog_id: update.blogId,
+                                    role: update.role,
+                                    granted_by: window.currentUser?.id
+                                }]);
+                            
+                            if (error) throw error;
+                        }
+                    }
+                }
+                
+                showToast('Permissions saved successfully', 'success');
+                closePermissionModal();
+                await loadUserPermissions();
+                
+            } catch (error) {
+                console.error('Error saving permissions:', error);
+                showToast('Error saving permissions: ' + error.message, 'error');
+            }
+        }
+
+        function closePermissionModal() {
+            document.getElementById('userPermissionModal').style.display = 'none';
+            currentEditUserId = null;
+        }
+
+        async function exportPermissions() {
+            try {
+                const exportData = [];
+                
+                allUsers.forEach(user => {
+                    allBlogs.forEach(blog => {
+                        const permission = allPermissions.find(
+                            p => p.user_id === user.id && p.blog_id === blog.id
+                        );
+                        
+                        exportData.push({
+                            'User Name': user.full_name || 'Unknown',
+                            'User Email': user.email || '',
+                            'Blog': blog.name,
+                            'Role': permission ? permission.role : 'none',
+                            'Granted At': permission ? formatDate(permission.granted_at) : 'N/A'
+                        });
+                    });
+                });
+                
+                const csv = convertToCSV(exportData);
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `blog_permissions_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Permissions exported successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error exporting permissions:', error);
+                showToast('Error exporting permissions: ' + error.message, 'error');
+            }
+        }
+
+        function openAddUserModal() {
+            // This would open a modal to add a new user
+            // For now, just a placeholder
+            showToast('Add user functionality coming soon', 'info');
         }
 
         // Form submission handlers
