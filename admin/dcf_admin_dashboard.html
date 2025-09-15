@@ -3739,9 +3739,9 @@
             const tbody = document.querySelector('#postsTable tbody');
             if (!tbody) return;
             
-            // Show loading state
+            // Clear existing content and show loading state
             tbody.innerHTML = `
-                <tr>
+                <tr id="loadingRow">
                     <td colspan="7" style="text-align: center; padding: 2rem;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
                             <div class="spinner"></div>
@@ -3750,6 +3750,23 @@
                     </td>
                 </tr>
             `;
+            
+            // Set loading timeout (10 seconds)
+            const loadingTimeout = setTimeout(() => {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: #dc3545; margin-bottom: 1rem;">
+                                <strong>Loading took too long</strong>
+                            </div>
+                            <p style="color: #666; margin-bottom: 1rem;">The request timed out. Please check your connection and try again.</p>
+                            <button class="btn btn-secondary btn-small" onclick="loadPosts()">
+                                <span style="margin-right: 0.5rem;">🔄</span> Retry
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }, 10000);
             
             try {
                 // Query posts with joins to blogs and user profiles
@@ -3762,20 +3779,93 @@
                     `)
                     .order('created_at', { ascending: false });
                 
-                if (error) throw error;
+                // Clear the timeout since load completed
+                clearTimeout(loadingTimeout);
                 
+                if (error) {
+                    console.error('Database query error:', error);
+                    throw error;
+                }
+                
+                // Handle the response
                 allPosts = posts || [];
-                displayPosts(allPosts);
                 
-                // Load blogs for filter dropdown
-                await loadBlogsForFilter();
+                // Clear loading state
+                tbody.innerHTML = '';
+                
+                // Check if posts exist
+                if (!posts || posts.length === 0) {
+                    // Show empty state with create button
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 3rem;">
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 3rem; color: #dee2e6; margin-bottom: 1rem;">📝</div>
+                                    <h3 style="color: #495057; margin-bottom: 0.5rem;">No posts have been created yet</h3>
+                                    <p style="color: #6c757d; margin-bottom: 1.5rem;">Get started by creating your first blog post</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="createNewPost()">
+                                    <span style="margin-right: 0.5rem;">✏️</span> Create First Post
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    // Display the posts
+                    displayPosts(allPosts);
+                }
+                
+                // Load blogs for filter dropdown (don't await to not block)
+                loadBlogsForFilter().catch(err => {
+                    console.error('Error loading blogs for filter:', err);
+                });
                 
             } catch (error) {
+                // Clear the timeout
+                clearTimeout(loadingTimeout);
+                
                 console.error('Error loading posts:', error);
+                
+                // Determine error message
+                let errorMessage = 'An unexpected error occurred';
+                let errorDetails = error.message || 'Unknown error';
+                
+                if (error.code === 'PGRST116') {
+                    errorMessage = 'Table or columns not found';
+                    errorDetails = 'The blog_posts table or its relationships may not be properly configured.';
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Network connection error';
+                    errorDetails = 'Unable to connect to the database. Please check your internet connection.';
+                } else if (error.message && error.message.includes('JWT')) {
+                    errorMessage = 'Authentication error';
+                    errorDetails = 'Your session may have expired. Please refresh the page and log in again.';
+                }
+                
+                // Show error state with retry button
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 2rem; color: #dc3545;">
-                            Error loading posts: ${error.message}
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: #dc3545; margin-bottom: 1rem;">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+                                <strong>${errorMessage}</strong>
+                            </div>
+                            <p style="color: #666; margin-bottom: 1rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                                ${errorDetails}
+                            </p>
+                            <div style="display: flex; gap: 1rem; justify-content: center;">
+                                <button class="btn btn-secondary btn-small" onclick="loadPosts()">
+                                    <span style="margin-right: 0.5rem;">🔄</span> Retry
+                                </button>
+                                <button class="btn btn-primary btn-small" onclick="createNewPost()">
+                                    <span style="margin-right: 0.5rem;">✏️</span> Create New Post
+                                </button>
+                            </div>
+                            <details style="margin-top: 1rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+                                <summary style="cursor: pointer; color: #666; font-size: 0.85rem;">Technical Details</summary>
+                                <pre style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-top: 0.5rem; white-space: pre-wrap; word-break: break-all;">
+${JSON.stringify(error, null, 2)}
+                                </pre>
+                            </details>
                         </td>
                     </tr>
                 `;
