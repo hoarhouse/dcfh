@@ -4788,11 +4788,18 @@ ${JSON.stringify(error, null, 2)}
             }, 5000);
         }
 
+        // Working upload function adapted from featured media with exact blog_media schema
         async function uploadFile(file, progressId) {
             console.log('Starting upload for:', file.name, 'Size:', file.size, 'Type:', file.type);
             
             const progressBar = document.querySelector(`#${progressId} .upload-progress-fill`);
             const progressItem = document.getElementById(progressId);
+            
+            // Show initial progress
+            if (progressBar) {
+                progressBar.style.width = '10%';
+                progressBar.style.transition = 'width 0.3s ease';
+            }
             
             try {
                 // Check if Supabase is available
@@ -4800,123 +4807,113 @@ ${JSON.stringify(error, null, 2)}
                     throw new Error('Database connection not available');
                 }
                 
-                // Validate file object
-                if (!file || !file.name) {
-                    throw new Error('Invalid file object - missing file name');
+                // Get current user for uploaded_by field
+                const { data: { user } } = await window.dcfSupabase.auth.getUser();
+                if (!user) {
+                    throw new Error('User not authenticated');
                 }
                 
-                // Extract and validate filename
-                const originalFileName = file.name || 'unnamed_file';
-                console.log('Original filename:', originalFileName);
-                
-                // Update progress to 10%
-                if (progressBar) {
-                    progressBar.style.width = '10%';
-                    progressBar.style.transition = 'width 0.3s ease';
+                // Determine file type category
+                let fileTypeCategory = 'document';
+                if (file.type.startsWith('image/')) {
+                    fileTypeCategory = 'image';
+                } else if (file.type.startsWith('video/')) {
+                    fileTypeCategory = 'video';
                 }
                 
                 // Generate unique filename for storage
                 const timestamp = Date.now();
-                const sanitizedName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const uniqueFilename = `${timestamp}_${sanitizedName}`;
-                const filePath = `blog-media/${uniqueFilename}`;
+                const extension = file.name.split('.').pop();
+                const uniqueFilename = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const storagePath = `blog-media/${uniqueFilename}`;
                 
-                console.log('Original name:', originalFileName);
-                console.log('Sanitized name:', sanitizedName);
-                console.log('Storage path:', filePath);
+                console.log('Uploading to storage path:', storagePath);
                 
                 // Update progress to 30%
                 if (progressBar) progressBar.style.width = '30%';
                 
-                // Create a FileReader to track upload progress
-                const reader = new FileReader();
+                // Create a mock progress animation
+                let progress = 30;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 80 && progressBar) {
+                        progressBar.style.width = `${progress}%`;
+                    }
+                }, 200);
                 
-                // Upload to Supabase Storage with progress tracking
-                console.log('Uploading to Supabase Storage...');
+                // Upload to Supabase Storage (same pattern as featured media)
                 const { data: uploadData, error: uploadError } = await window.dcfSupabase
                     .storage
                     .from('media')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                        onUploadProgress: (progress) => {
-                            const percentage = Math.round((progress.loaded / progress.total) * 100);
-                            console.log('Upload progress:', percentage + '%');
-                            if (progressBar) {
-                                // Map 30% to 90% for upload progress
-                                const mappedProgress = 30 + (percentage * 0.6);
-                                progressBar.style.width = mappedProgress + '%';
-                            }
-                        }
-                    });
+                    .upload(storagePath, file);
+                
+                clearInterval(progressInterval);
                 
                 if (uploadError) {
-                    console.error('Upload error:', uploadError);
+                    console.error('Storage upload error:', uploadError);
                     throw uploadError;
                 }
                 
-                console.log('Upload successful, getting public URL...');
-                
-                // Update progress to 90%
-                if (progressBar) progressBar.style.width = '90%';
+                // Update progress to 85%
+                if (progressBar) progressBar.style.width = '85%';
                 
                 // Get public URL
                 const { data: urlData } = window.dcfSupabase
                     .storage
                     .from('media')
-                    .getPublicUrl(filePath);
+                    .getPublicUrl(storagePath);
                 
-                console.log('Public URL:', urlData.publicUrl);
+                const publicUrl = urlData.publicUrl;
+                console.log('Public URL generated:', publicUrl);
                 
-                // Prepare database insert data with proper column mapping
-                const dbInsertData = {
-                    file_name: originalFileName,  // Map to file_name column (required)
-                    filename: originalFileName,    // Also include filename if column exists
-                    file_type: file.type || 'application/octet-stream',
-                    file_size: file.size || 0,
-                    url: urlData.publicUrl,
-                    storage_path: filePath,
-                    alt_text: '',          // Initialize empty alt text
-                    caption: '',           // Initialize empty caption
-                    description: '',       // Initialize empty description
+                // Prepare complete database record with ALL blog_media columns
+                const dbRecord = {
+                    // Primary columns
+                    file_name: file.name,           // Original filename
+                    file_type: fileTypeCategory,    // image/video/document
+                    file_url: publicUrl,            // Public URL from storage
+                    file_size: file.size,           // Size in bytes
+                    mime_type: file.type,           // MIME type
+                    
+                    // Optional text fields
+                    alt_text: '',                   // Empty for now
+                    caption: '',                    // Empty for now
+                    description: '',                // Empty for now
+                    
+                    // User and timestamps
+                    uploaded_by: user.id,           // Current user ID
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+                    
+                    // Compatibility columns
+                    filename: file.name,            // Duplicate for compatibility
+                    storage_path: storagePath,      // Storage bucket path
+                    url: publicUrl,                 // Duplicate for compatibility
                 };
                 
-                // Validate required fields before insert
-                console.log('Database insert data:', dbInsertData);
+                console.log('Inserting to blog_media with data:', dbRecord);
                 
-                if (!dbInsertData.file_name) {
-                    throw new Error('File name is required but missing');
-                }
-                if (!dbInsertData.url) {
-                    throw new Error('File URL is required but missing');
-                }
-                if (!dbInsertData.storage_path) {
-                    throw new Error('Storage path is required but missing');
-                }
+                // Update progress to 90%
+                if (progressBar) progressBar.style.width = '90%';
                 
-                // Save metadata to database
-                console.log('Saving metadata to database...');
+                // Insert into blog_media table
                 const { data: dbData, error: dbError } = await window.dcfSupabase
                     .from('blog_media')
-                    .insert([dbInsertData])
+                    .insert([dbRecord])
                     .select();
                 
                 if (dbError) {
-                    console.error('Database error:', dbError);
+                    console.error('Database insert error:', dbError);
                     throw dbError;
                 }
                 
-                console.log('Database insert successful:', dbData);
+                console.log('Successfully inserted to blog_media:', dbData);
                 
-                // Update progress to 100%
+                // Update progress to 100% - SUCCESS
                 if (progressBar) {
                     progressBar.style.width = '100%';
                     progressBar.style.background = '#28a745';
                 }
                 
-                // Mark as successful
                 if (progressItem) {
                     progressItem.style.background = '#d4edda';
                     progressItem.style.borderLeft = '4px solid #28a745';
@@ -4927,21 +4924,21 @@ ${JSON.stringify(error, null, 2)}
                 return { success: true, data: dbData };
                 
             } catch (error) {
-                console.error('Error uploading file:', error);
+                console.error('Upload failed:', error);
                 
-                // Show detailed error message
-                let errorMessage = error.message || 'Unknown error';
-                if (error.statusCode === 413) {
+                // Determine user-friendly error message
+                let errorMessage = 'Upload failed';
+                if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.code === '23505') {
+                    errorMessage = 'File already exists';
+                } else if (error.code === '42501') {
+                    errorMessage = 'Permission denied';
+                } else if (error.statusCode === 413) {
                     errorMessage = 'File too large';
-                } else if (error.statusCode === 401) {
-                    errorMessage = 'Authentication required';
-                } else if (error.statusCode === 403) {
-                    errorMessage = 'Permission denied - check storage bucket policies';
                 }
                 
-                showToast(`Error uploading ${file.name}: ${errorMessage}`, 'error');
-                
-                // Mark as failed
+                // Update progress bar to show error
                 if (progressBar) {
                     progressBar.style.width = '100%';
                     progressBar.style.background = '#dc3545';
@@ -4951,15 +4948,16 @@ ${JSON.stringify(error, null, 2)}
                     progressItem.style.background = '#f8d7da';
                     progressItem.style.borderLeft = '4px solid #dc3545';
                     
-                    // Add error message to progress item
+                    // Add error message
                     const errorDiv = document.createElement('div');
-                    errorDiv.className = 'upload-error';
                     errorDiv.style.fontSize = '0.85rem';
                     errorDiv.style.color = '#721c24';
                     errorDiv.style.marginTop = '0.25rem';
                     errorDiv.textContent = errorMessage;
                     progressItem.appendChild(errorDiv);
                 }
+                
+                showToast(`Error: ${errorMessage}`, 'error');
                 
                 return { success: false, error: errorMessage };
             }
