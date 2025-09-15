@@ -913,6 +913,13 @@
                 </div>
             </div>
 
+            <!-- Search controls for Sacred Minimalist set only -->
+            <div id="sacredMinimalistControls" style="display: none; margin-bottom: 1rem;">
+                <input type="text" id="iconSearch" placeholder="Search 126 Sacred Minimalist icons..." 
+                       style="width: 100%; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 8px;" 
+                       oninput="filterSacredIcons(this.value)" />
+            </div>
+
             <div class="icon-grid" id="iconGrid">
                 <!-- Icons will be dynamically inserted here -->
             </div>
@@ -1006,10 +1013,26 @@
                     console.log('Found icon set with ID:', iconSet.id);
                     
                     // Load icons for this set
-                    const { data: icons, error: iconsError } = await window.dcfSupabase
-                        .from('icons')
-                        .select('icon_name, svg_small, svg_standard, svg_large')
-                        .eq('set_id', iconSet.id);
+                    let icons, iconsError;
+                    
+                    if (setName === 'sacred_minimalist') {
+                        // Special query for Sacred Minimalist to get ALL 126 icons
+                        const result = await window.dcfSupabase
+                            .from('icons')
+                            .select('icon_name, icon_category, svg_small, svg_standard, svg_large')
+                            .eq('set_id', iconSet.id)
+                            .order('icon_name');
+                        icons = result.data;
+                        iconsError = result.error;
+                    } else {
+                        // Keep existing query for other sets (only core icons)
+                        const result = await window.dcfSupabase
+                            .from('icons')
+                            .select('icon_name, svg_small, svg_standard, svg_large')
+                            .eq('set_id', iconSet.id);
+                        icons = result.data;
+                        iconsError = result.error;
+                    }
 
                     if (iconsError) {
                         console.error('Error fetching icons:', iconsError);
@@ -1261,8 +1284,22 @@
             await new Promise(resolve => setTimeout(resolve, 100));
             
             grid.innerHTML = '';
+            
+            // Show/hide Sacred Minimalist search controls
+            const searchControls = document.getElementById('sacredMinimalistControls');
+            if (searchControls) {
+                searchControls.style.display = setName === 'sacred_minimalist' ? 'block' : 'none';
+                // Clear search input when switching sets
+                const searchInput = document.getElementById('iconSearch');
+                if (searchInput) searchInput.value = '';
+            }
 
-            coreIcons.forEach(iconName => {
+            // Determine which icons to render
+            const iconsToRender = (setName === 'sacred_minimalist' && previewIcons[setName]) 
+                ? Object.keys(previewIcons[setName]).sort()
+                : coreIcons;
+
+            iconsToRender.forEach(iconName => {
                 const card = document.createElement('div');
                 card.className = 'icon-card';
                 
