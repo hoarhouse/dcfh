@@ -790,7 +790,78 @@ function populateTopNavigation() {
     });
 }
 
-// Admin navigation functions removed - unified system treats all pages the same
+// =============================================================================
+// 6.5 ADMIN MENU BAR - Separate admin tools menu
+// =============================================================================
+function populateAdminMenu() {
+    const adminMenu = document.getElementById('dcfAdminMenu');
+    if (!adminMenu) return;
+    
+    // Check if this is an admin page
+    const isAdminPage = window.location.pathname.includes('/admin/') || 
+                       window.location.pathname.includes('dcf_admin');
+    
+    if (!isAdminPage) {
+        console.log('📍 Not an admin page, skipping admin menu');
+        return;
+    }
+    
+    console.log('🛠️ Populating admin menu bar');
+    
+    // Admin menu items configuration
+    const adminMenuItems = [
+        {
+            href: 'icon-management.html',
+            icon: '⚙️',
+            title: 'Icon Management',
+            subtitle: 'Control site-wide icon system'
+        },
+        {
+            href: 'icons.html',
+            icon: '🎨',
+            title: 'Icon Library',
+            subtitle: 'Browse and select icon styles'
+        },
+        {
+            href: 'alerts.html',
+            icon: '🔔',
+            title: 'System Alerts',
+            subtitle: 'Manage alert configurations'
+        },
+        {
+            href: '#blog-management',
+            icon: '📝',
+            title: 'Blog Management',
+            subtitle: 'Manage all blog instances and posts',
+            onclick: 'showBlogManagement(event)'
+        }
+    ];
+    
+    // Build admin menu HTML
+    const adminMenuHTML = `
+        <div class="dcf-admin-menu-container">
+            <ul class="dcf-admin-menu-items">
+                ${adminMenuItems.map(item => `
+                    <li class="dcf-admin-menu-item">
+                        <a href="${item.href}" 
+                           class="dcf-admin-menu-link ${window.location.pathname.includes(item.href.replace('.html', '')) ? 'active' : ''}"
+                           ${item.onclick ? `onclick="${item.onclick}"` : ''}>
+                            <span class="dcf-admin-menu-icon">${item.icon}</span>
+                            <div>
+                                <div class="dcf-admin-menu-text">${item.title}</div>
+                                <div class="dcf-admin-menu-subtitle">${item.subtitle}</div>
+                            </div>
+                        </a>
+                    </li>
+                `).join('')}
+            </ul>
+            <span class="dcf-admin-badge">ADMIN TOOLS</span>
+        </div>
+    `;
+    
+    adminMenu.innerHTML = adminMenuHTML;
+    adminMenu.classList.add('active');
+}
 
 // =============================================================================
 // 7. LOGO TEXT UPDATE
@@ -2768,6 +2839,7 @@ async function initializeDCF() {
         
         // ✅ RESTORED: Initialize components
         populateTopNavigation();
+        populateAdminMenu(); // Initialize admin menu if on admin page
         initializeFooter();
         
         // Initialize analytics
