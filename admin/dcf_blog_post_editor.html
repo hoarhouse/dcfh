@@ -1139,6 +1139,26 @@
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Blog post editor initializing...');
+            
+            // Wait for Supabase to be ready
+            let retries = 0;
+            while (!window.dcfSupabase && retries < 10) {
+                console.log('Waiting for Supabase client...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                retries++;
+            }
+            
+            // Check for Supabase
+            if (!window.dcfSupabase) {
+                console.error('Supabase client not found after waiting!');
+                showToast('Database connection error. Please refresh the page.', 'error');
+                return;
+            }
+            
+            console.log('Supabase client ready');
+            await testSupabaseConnection();
+            
             await initializeEditor();
             
             // Get URL parameters
@@ -1533,6 +1553,25 @@
                 }
             }
             window.location.href = 'dcf_admin_dashboard.html#blog-management';
+        }
+        
+        // Add debug function to test Supabase connection
+        async function testSupabaseConnection() {
+            console.log('Testing Supabase connection...');
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('blogs')
+                    .select('id, name')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Supabase test query error:', error);
+                } else {
+                    console.log('Supabase connection successful. Test data:', data);
+                }
+            } catch (err) {
+                console.error('Supabase connection test failed:', err);
+            }
         }
 
         // Update save status indicator
