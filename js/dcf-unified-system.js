@@ -844,18 +844,54 @@ function populateAdminNavigation() {
             <button class="btn btn-secondary btn-small" onclick="exitAdminMode()">
                 Exit Admin
             </button>
-            <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">U</div>
+            
+            <div class="user-dropdown">
+                <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">U</div>
+                <div class="dropdown-menu" id="userDropdown" style="display: none;">
+                    <div class="dropdown-header">
+                        <div class="dropdown-avatar" id="dropdownAvatar">U</div>
+                        <div class="dropdown-info">
+                            <div class="dropdown-name" id="dropdownUserName">User</div>
+                            <div class="dropdown-email" id="dropdownUserEmail">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="../profile.html" class="dropdown-item">
+                        <span>👤</span> My Profile
+                    </a>
+                    <a href="../settings.html" class="dropdown-item">
+                        <span>⚙️</span> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout()" class="dropdown-item">
+                        <span>🚪</span> Logout
+                    </a>
+                </div>
+            </div>
         </div>
     `;
     
     navContainer.innerHTML = adminNavHTML;
     
-    // Initialize user avatar if logged in
-    if (window.dcfUser?.isLoggedIn && window.dcfUser.profile?.email) {
-        const avatar = document.getElementById('userAvatar');
-        if (avatar) {
-            const initials = window.dcfUser.profile.email.substring(0, 2).toUpperCase();
-            avatar.textContent = initials;
+    // Initialize user data if logged in
+    if (window.dcfUser?.isLoggedIn && window.dcfUser.profile) {
+        const profile = window.dcfUser.profile;
+        const initials = profile.email ? profile.email.substring(0, 2).toUpperCase() : 'U';
+        
+        // Update avatars
+        const userAvatar = document.getElementById('userAvatar');
+        const dropdownAvatar = document.getElementById('dropdownAvatar');
+        if (userAvatar) userAvatar.textContent = initials;
+        if (dropdownAvatar) dropdownAvatar.textContent = initials;
+        
+        // Update dropdown info
+        const dropdownName = document.getElementById('dropdownUserName');
+        const dropdownEmail = document.getElementById('dropdownUserEmail');
+        if (dropdownName) {
+            dropdownName.textContent = profile.name || profile.username || 'Admin User';
+        }
+        if (dropdownEmail) {
+            dropdownEmail.textContent = profile.email || '';
         }
     }
 }
