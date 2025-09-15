@@ -1389,6 +1389,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
     <script src="../js/icon-system.js"></script>
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 
 <body>
@@ -2958,7 +2959,7 @@
             document.title = 'Admin Dashboard - DCF Hungary';
         }
 
-        function showBlogTab(event, tabId) {
+        async function showBlogTab(event, tabId) {
             // Remove active class from all tabs
             const tabs = document.querySelectorAll('.blog-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
@@ -2974,6 +2975,11 @@
             const selectedContent = document.getElementById(tabId);
             if (selectedContent) {
                 selectedContent.classList.add('active');
+            }
+            
+            // Load data for specific tabs
+            if (tabId === 'manage-posts') {
+                await loadPosts();
             }
         }
 
@@ -3274,6 +3280,34 @@
             
             // Load blogs for selection
             await loadBlogsForFilter();
+            
+            // Initialize TinyMCE
+            initializeTinyMCE();
+        }
+
+        function initializeTinyMCE() {
+            // Destroy existing instance if any
+            if (tinymce.get('postContent')) {
+                tinymce.get('postContent').remove();
+            }
+            
+            // Initialize TinyMCE
+            tinymce.init({
+                selector: '#postContent',
+                height: 400,
+                menubar: false,
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                    'bold italic forecolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'link image media | removeformat | help',
+                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px }',
+                branding: false
+            });
         }
 
         async function editPost(postId) {
@@ -3304,6 +3338,14 @@
                 document.getElementById('postModalTitle').textContent = 'Edit Post';
                 document.getElementById('postForm').dataset.editId = postId;
                 document.getElementById('postModal').style.display = 'block';
+                
+                // Initialize TinyMCE with content
+                initializeTinyMCE();
+                setTimeout(() => {
+                    if (tinymce.get('postContent')) {
+                        tinymce.get('postContent').setContent(post.content || '');
+                    }
+                }, 500);
                 
                 // Load attached media
                 await loadPostMedia(postId);
