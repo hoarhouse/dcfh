@@ -399,6 +399,162 @@
             color: #dc3545;
         }
 
+        /* Featured Media Upload Styles */
+        .featured-media-section {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .featured-media-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .featured-media-title {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .media-type-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: #f0f0f0;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .featured-media-upload {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: #f8f9fa;
+        }
+
+        .featured-media-upload:hover {
+            border-color: #333;
+            background: #fff;
+        }
+
+        .featured-media-upload.drag-over {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .featured-media-preview {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .featured-media-preview img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .featured-media-preview video {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            background: #000;
+        }
+
+        .media-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .media-control-btn {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .media-control-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .media-control-btn.remove {
+            color: #dc3545;
+        }
+
+        .upload-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 123, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+            width: 0;
+        }
+
+        .media-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .media-info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        input[type="file"]#featuredMediaInput {
+            display: none;
+        }
+
         /* Responsive Design */
         @media (max-width: 1200px) {
             .editor-container {
@@ -579,6 +735,46 @@
             </div>
 
             <form id="postForm">
+                <!-- Featured Media Section -->
+                <div class="featured-media-section">
+                    <div class="featured-media-header">
+                        <div class="featured-media-title">
+                            🖼️ Featured Media
+                            <span class="media-type-badge" id="mediaTypeBadge" style="display: none;"></span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #666;">
+                            Optional • Images (5MB) or Videos (50MB)
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Area -->
+                    <div id="featuredMediaContainer">
+                        <div class="featured-media-upload" id="featuredMediaUpload" onclick="selectFeaturedMedia()">
+                            <input type="file" id="featuredMediaInput" accept="image/*,video/*" onchange="handleFeaturedMediaSelect(event)">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">Click to upload or drag and drop</div>
+                            <div class="upload-hint">JPG, PNG, GIF, WebP, MP4, MOV, AVI</div>
+                            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Area (hidden by default) -->
+                        <div class="featured-media-preview" id="featuredMediaPreview" style="display: none;">
+                            <div class="media-controls">
+                                <button type="button" class="media-control-btn" onclick="replaceFeaturedMedia()" title="Replace">
+                                    🔄
+                                </button>
+                                <button type="button" class="media-control-btn remove" onclick="removeFeaturedMedia()" title="Remove">
+                                    ✕
+                                </button>
+                            </div>
+                            <div id="mediaPreviewContent"></div>
+                            <div class="media-info" id="mediaInfo"></div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Title -->
                 <div class="form-group">
                     <input type="text" 
@@ -721,6 +917,12 @@
         let autoSaveTimer = null;
         let hasUnsavedChanges = false;
         let editorInstance = null;
+        let currentFeaturedMedia = {
+            url: null,
+            type: 'none',
+            filename: null,
+            size: null
+        };
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
@@ -860,6 +1062,13 @@
                     editorInstance.root.innerHTML = post.content || '';
                 }
                 
+                // Load featured media if exists
+                if (post.featured_image_url) {
+                    currentFeaturedMedia.url = post.featured_image_url;
+                    currentFeaturedMedia.type = post.featured_media_type || 'image';
+                    displayFeaturedMedia();
+                }
+                
                 // Handle scheduled date
                 if (post.scheduled_for) {
                     document.getElementById('scheduledDate').value = post.scheduled_for.slice(0, 16);
@@ -955,6 +1164,8 @@
                 slug: document.getElementById('postSlug').value,
                 excerpt: document.getElementById('postExcerpt').value,
                 content: editorInstance ? editorInstance.root.innerHTML : '',
+                featured_image_url: currentFeaturedMedia.url,
+                featured_media_type: currentFeaturedMedia.type,
                 blog_id: document.getElementById('postBlog').value,
                 status: document.getElementById('postStatus').value,
                 meta_title: document.getElementById('metaTitle').value,
