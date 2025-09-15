@@ -3264,6 +3264,8 @@
             // Load data for specific tabs
             if (tabId === 'manage-posts') {
                 await loadPosts();
+            } else if (tabId === 'media-library') {
+                await loadMedia();
             }
         }
 
@@ -3819,9 +3821,502 @@
             }
         });
 
-        function uploadMedia() {
-            console.log('Opening media upload...');
-            // Implement media upload functionality
+        // Media Library Functions
+        let allMedia = [];
+        let selectedMedia = new Set();
+        let bulkSelectMode = false;
+        let currentMediaId = null;
+
+        async function loadMedia() {
+            const grid = document.getElementById('mediaGrid');
+            if (!grid) return;
+            
+            // Show loading state
+            grid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 1rem;">Loading media library...</p>
+                </div>
+            `;
+            
+            try {
+                const { data: media, error } = await window.dcfSupabase
+                    .from('blog_media')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                allMedia = media || [];
+                displayMedia(allMedia);
+                calculateStorageUsage();
+                
+            } catch (error) {
+                console.error('Error loading media:', error);
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #dc3545;">
+                        Error loading media: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayMedia(media) {
+            const grid = document.getElementById('mediaGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            if (!media || media.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #666;">
+                        No media files uploaded yet. Click "Upload Media" to add files.
+                    </div>
+                `;
+                return;
+            }
+            
+            media.forEach(file => {
+                const card = document.createElement('div');
+                card.className = 'media-card';
+                card.dataset.id = file.id;
+                
+                const fileIcon = getFileIcon(file.file_type);
+                const isImage = file.file_type && file.file_type.startsWith('image');
+                
+                card.innerHTML = `
+                    <input type="checkbox" class="media-checkbox" onchange="toggleMediaSelection('${file.id}')">
+                    <div class="media-thumbnail" onclick="openMediaPreview('${file.id}')">
+                        ${isImage && file.url ? 
+                            `<img src="${file.url}" alt="${file.alt_text || file.filename}">` : 
+                            `<span>${fileIcon}</span>`
+                        }
+                    </div>
+                    <div class="media-info">
+                        <div class="media-filename" title="${escapeHtml(file.filename)}">${escapeHtml(file.filename)}</div>
+                        <div class="media-filesize">${formatFileSize(file.file_size)}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function getFileIcon(fileType) {
+            if (!fileType) return '📄';
+            if (fileType.startsWith('image')) return '🖼️';
+            if (fileType.startsWith('video')) return '🎥';
+            if (fileType.includes('pdf')) return '📑';
+            if (fileType.includes('word') || fileType.includes('doc')) return '📝';
+            return '📄';
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function calculateStorageUsage() {
+            const totalBytes = allMedia.reduce((sum, file) => sum + (file.file_size || 0), 0);
+            const totalMB = totalBytes / (1024 * 1024);
+            const maxMB = 1024; // 1 GB limit
+            const percentage = (totalMB / maxMB) * 100;
+            
+            document.getElementById('storageUsed').style.width = percentage + '%';
+            document.getElementById('storageText').textContent = 
+                `${totalMB.toFixed(1)} MB used of ${(maxMB / 1024).toFixed(0)} GB`;
+        }
+
+        function openUploadModal() {
+            const dropZone = document.getElementById('dropZone');
+            if (dropZone.style.display === 'none') {
+                dropZone.style.display = 'block';
+                setupDragAndDrop();
+            } else {
+                dropZone.style.display = 'none';
+            }
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('active'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('active'), false);
+            });
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+
+        async function handleFiles(files) {
+            const progressContainer = document.getElementById('uploadProgress');
+            progressContainer.style.display = 'block';
+            progressContainer.innerHTML = '';
+            
+            for (const file of files) {
+                // Validate file
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast(`File ${file.name} exceeds 10MB limit`, 'error');
+                    continue;
+                }
+                
+                // Create progress item
+                const progressId = 'progress_' + Date.now() + '_' + Math.random();
+                const progressItem = document.createElement('div');
+                progressItem.className = 'upload-progress-item';
+                progressItem.id = progressId;
+                progressItem.innerHTML = `
+                    <div class="upload-filename">${escapeHtml(file.name)}</div>
+                    <div class="upload-progress-bar">
+                        <div class="upload-progress-fill" style="width: 0%"></div>
+                    </div>
+                `;
+                progressContainer.appendChild(progressItem);
+                
+                // Upload file
+                await uploadFile(file, progressId);
+            }
+            
+            // Reload media after all uploads
+            await loadMedia();
+            
+            // Hide progress after 3 seconds
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 3000);
+        }
+
+        async function uploadFile(file, progressId) {
+            try {
+                // Generate unique filename
+                const timestamp = Date.now();
+                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const filename = `${timestamp}_${sanitizedName}`;
+                const filePath = `blog-media/${filename}`;
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: urlData } = window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .getPublicUrl(filePath);
+                
+                // Save metadata to database
+                const { error: dbError } = await window.dcfSupabase
+                    .from('blog_media')
+                    .insert([{
+                        filename: file.name,
+                        file_type: file.type,
+                        file_size: file.size,
+                        url: urlData.publicUrl,
+                        storage_path: filePath
+                    }]);
+                
+                if (dbError) throw dbError;
+                
+                // Update progress to 100%
+                const progressBar = document.querySelector(`#${progressId} .upload-progress-fill`);
+                if (progressBar) {
+                    progressBar.style.width = '100%';
+                }
+                
+                showToast(`${file.name} uploaded successfully`, 'success');
+                
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showToast(`Error uploading ${file.name}: ${error.message}`, 'error');
+                
+                // Mark as failed
+                const progressItem = document.getElementById(progressId);
+                if (progressItem) {
+                    progressItem.style.background = '#fee';
+                }
+            }
+        }
+
+        function searchMedia() {
+            const searchTerm = document.getElementById('mediaSearchInput').value.toLowerCase();
+            const filtered = allMedia.filter(file => 
+                file.filename.toLowerCase().includes(searchTerm) ||
+                (file.alt_text && file.alt_text.toLowerCase().includes(searchTerm)) ||
+                (file.caption && file.caption.toLowerCase().includes(searchTerm))
+            );
+            displayMedia(filtered);
+        }
+
+        function filterMedia() {
+            const typeFilter = document.getElementById('mediaTypeFilter').value;
+            
+            let filtered = allMedia;
+            
+            if (typeFilter === 'image') {
+                filtered = filtered.filter(file => file.file_type && file.file_type.startsWith('image'));
+            } else if (typeFilter === 'video') {
+                filtered = filtered.filter(file => file.file_type && file.file_type.startsWith('video'));
+            } else if (typeFilter === 'document') {
+                filtered = filtered.filter(file => 
+                    file.file_type && (
+                        file.file_type.includes('pdf') ||
+                        file.file_type.includes('doc') ||
+                        file.file_type.includes('text')
+                    )
+                );
+            }
+            
+            displayMedia(filtered);
+        }
+
+        function toggleBulkSelect() {
+            bulkSelectMode = !bulkSelectMode;
+            const grid = document.getElementById('mediaGrid');
+            const btnText = document.getElementById('bulkSelectText');
+            const deleteBtn = document.getElementById('bulkDeleteBtn');
+            
+            if (bulkSelectMode) {
+                grid.classList.add('bulk-select-mode');
+                btnText.textContent = 'Cancel Selection';
+                deleteBtn.style.display = 'inline-block';
+            } else {
+                grid.classList.remove('bulk-select-mode');
+                btnText.textContent = 'Select Multiple';
+                deleteBtn.style.display = 'none';
+                selectedMedia.clear();
+                updateSelectedCount();
+                
+                // Uncheck all checkboxes
+                document.querySelectorAll('.media-checkbox').forEach(cb => cb.checked = false);
+                document.querySelectorAll('.media-card').forEach(card => card.classList.remove('selected'));
+            }
+        }
+
+        function toggleMediaSelection(mediaId) {
+            const card = document.querySelector(`.media-card[data-id="${mediaId}"]`);
+            const checkbox = card.querySelector('.media-checkbox');
+            
+            if (checkbox.checked) {
+                selectedMedia.add(mediaId);
+                card.classList.add('selected');
+            } else {
+                selectedMedia.delete(mediaId);
+                card.classList.remove('selected');
+            }
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedMedia.size;
+        }
+
+        async function bulkDeleteMedia() {
+            if (selectedMedia.size === 0) {
+                showToast('No files selected', 'warning');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${selectedMedia.size} file(s)? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                // Delete each selected file
+                for (const mediaId of selectedMedia) {
+                    const media = allMedia.find(m => m.id === mediaId);
+                    if (media && media.storage_path) {
+                        // Delete from storage
+                        await window.dcfSupabase
+                            .storage
+                            .from('media')
+                            .remove([media.storage_path]);
+                    }
+                    
+                    // Delete from database
+                    await window.dcfSupabase
+                        .from('blog_media')
+                        .delete()
+                        .eq('id', mediaId);
+                }
+                
+                showToast(`${selectedMedia.size} file(s) deleted successfully`, 'success');
+                toggleBulkSelect();
+                await loadMedia();
+                
+            } catch (error) {
+                console.error('Error deleting files:', error);
+                showToast('Error deleting files: ' + error.message, 'error');
+            }
+        }
+
+        async function openMediaPreview(mediaId) {
+            if (bulkSelectMode) {
+                // In bulk select mode, clicking toggles selection
+                const checkbox = document.querySelector(`.media-card[data-id="${mediaId}"] .media-checkbox`);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    toggleMediaSelection(mediaId);
+                }
+                return;
+            }
+            
+            const media = allMedia.find(m => m.id === mediaId);
+            if (!media) return;
+            
+            currentMediaId = mediaId;
+            
+            // Populate preview modal
+            document.getElementById('mediaPreviewTitle').textContent = media.filename;
+            document.getElementById('mediaUrl').value = media.url || '';
+            document.getElementById('mediaAltText').value = media.alt_text || '';
+            document.getElementById('mediaCaption').value = media.caption || '';
+            document.getElementById('mediaDescription').value = media.description || '';
+            document.getElementById('mediaType').textContent = media.file_type || 'Unknown';
+            document.getElementById('mediaSize').textContent = formatFileSize(media.file_size);
+            document.getElementById('mediaDate').textContent = formatDate(media.created_at);
+            
+            // Show preview
+            const previewContent = document.getElementById('mediaPreviewContent');
+            if (media.file_type && media.file_type.startsWith('image')) {
+                previewContent.innerHTML = `<img src="${media.url}" alt="${media.alt_text || media.filename}">`;
+            } else {
+                const icon = getFileIcon(media.file_type);
+                previewContent.innerHTML = `
+                    <div style="font-size: 5rem; color: #6c757d; margin: 2rem 0;">${icon}</div>
+                    <p>${escapeHtml(media.filename)}</p>
+                `;
+            }
+            
+            // Check usage in posts
+            await checkMediaUsage(mediaId);
+            
+            // Show modal
+            document.getElementById('mediaPreviewModal').style.display = 'block';
+        }
+
+        async function checkMediaUsage(mediaId) {
+            try {
+                // This would check if the media is used in any posts
+                // For now, we'll just show a placeholder
+                document.getElementById('mediaUsage').textContent = 'Not used in any posts';
+            } catch (error) {
+                console.error('Error checking media usage:', error);
+            }
+        }
+
+        function closeMediaPreview() {
+            document.getElementById('mediaPreviewModal').style.display = 'none';
+            currentMediaId = null;
+        }
+
+        function copyMediaUrl() {
+            const urlInput = document.getElementById('mediaUrl');
+            urlInput.select();
+            document.execCommand('copy');
+            showToast('URL copied to clipboard', 'success');
+        }
+
+        async function saveMediaMetadata() {
+            if (!currentMediaId) return;
+            
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('blog_media')
+                    .update({
+                        alt_text: document.getElementById('mediaAltText').value,
+                        caption: document.getElementById('mediaCaption').value,
+                        description: document.getElementById('mediaDescription').value,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentMediaId);
+                
+                if (error) throw error;
+                
+                showToast('Media metadata updated successfully', 'success');
+                await loadMedia();
+                
+            } catch (error) {
+                console.error('Error updating media:', error);
+                showToast('Error updating media: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteMediaFile() {
+            if (!currentMediaId) return;
+            
+            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const media = allMedia.find(m => m.id === currentMediaId);
+                
+                if (media && media.storage_path) {
+                    // Delete from storage
+                    const { error: storageError } = await window.dcfSupabase
+                        .storage
+                        .from('media')
+                        .remove([media.storage_path]);
+                    
+                    if (storageError) throw storageError;
+                }
+                
+                // Delete from database
+                const { error: dbError } = await window.dcfSupabase
+                    .from('blog_media')
+                    .delete()
+                    .eq('id', currentMediaId);
+                
+                if (dbError) throw dbError;
+                
+                showToast('File deleted successfully', 'success');
+                closeMediaPreview();
+                await loadMedia();
+                
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                showToast('Error deleting file: ' + error.message, 'error');
+            }
+        }
+
+        // Function to attach media to post (called from post editor)
+        function attachMediaToPost() {
+            // This would open a media selector modal
+            // For now, just a placeholder
+            showToast('Media selector coming soon', 'info');
         }
 
         function addBlogUser() {
