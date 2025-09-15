@@ -3147,53 +3147,84 @@
         </div>
     </div>
 
-    <!-- Media Preview Modal -->
-    <div class="modal" id="mediaPreviewModal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2 class="modal-title" id="mediaPreviewTitle">Media Preview</h2>
-                <button class="close-btn" onclick="closeMediaPreview()">&times;</button>
+    <!-- Enhanced Media Preview Modal -->
+    <div class="media-preview-enhanced" id="mediaPreviewEnhanced">
+        <div class="preview-container">
+            <button class="preview-close" onclick="closeMediaPreview()">&times;</button>
+            
+            <!-- Media Display Area -->
+            <div class="preview-content" id="previewContent">
+                <!-- Dynamic content loaded here -->
             </div>
-            <div class="modal-body">
-                <div class="media-preview-container">
-                    <div id="mediaPreviewContent">
-                        <!-- Preview content will be loaded here -->
+            
+            <!-- Metadata Sidebar -->
+            <div class="preview-sidebar">
+                <h2 id="mediaTitle" style="margin-bottom: 1.5rem;">Media Details</h2>
+                
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" id="mediaTitleInput" class="form-input" placeholder="Enter media title" maxlength="255">
+                    <div class="char-counter" id="titleCounter">0 / 255</div>
+                </div>
+                
+                <!-- Meta Description -->
+                <div class="form-group">
+                    <label class="form-label">Meta Description</label>
+                    <textarea id="mediaMetaDescription" class="form-textarea" rows="3" placeholder="SEO description for search engines" maxlength="160"></textarea>
+                    <div class="char-counter" id="descCounter">0 / 160</div>
+                </div>
+                
+                <!-- Tags -->
+                <div class="form-group">
+                    <label class="form-label">Tags</label>
+                    <div class="tag-input-container">
+                        <div class="tag-input" id="tagInput">
+                            <input type="text" placeholder="Add tags..." onkeydown="handleTagInput(event)">
+                        </div>
+                    </div>
+                    <small class="form-hint">Press Enter to add tags</small>
+                </div>
+                
+                <!-- Alt Text (for images) -->
+                <div class="form-group" id="altTextGroup">
+                    <label class="form-label">Alt Text</label>
+                    <input type="text" id="mediaAltText" class="form-input" placeholder="Describe this image for accessibility">
+                </div>
+                
+                <!-- Caption -->
+                <div class="form-group">
+                    <label class="form-label">Caption</label>
+                    <input type="text" id="mediaCaption" class="form-input" placeholder="Display caption">
+                </div>
+                
+                <!-- File Information -->
+                <div class="media-info-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e5e5;">
+                    <h4 style="margin-bottom: 1rem;">File Information</h4>
+                    <div class="info-grid" style="display: grid; gap: 0.5rem; font-size: 0.9rem;">
+                        <div><strong>Type:</strong> <span id="mediaType"></span></div>
+                        <div><strong>Size:</strong> <span id="mediaSize"></span></div>
+                        <div><strong>Dimensions:</strong> <span id="mediaDimensions">N/A</span></div>
+                        <div><strong>Uploaded:</strong> <span id="mediaDate"></span></div>
+                        <div><strong>Uploaded By:</strong> <span id="mediaUploader"></span></div>
                     </div>
                 </div>
-                <div class="media-details">
-                    <div class="form-group">
-                        <label>File URL</label>
-                        <div class="input-group">
-                            <input type="text" id="mediaUrl" readonly>
-                            <button class="btn btn-secondary btn-small" onclick="copyMediaUrl()">Copy URL</button>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="mediaAltText">Alt Text</label>
-                            <input type="text" id="mediaAltText" placeholder="Describe this media">
-                        </div>
-                        <div class="form-group">
-                            <label for="mediaCaption">Caption</label>
-                            <input type="text" id="mediaCaption" placeholder="Caption for this media">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="mediaDescription">Description</label>
-                        <textarea id="mediaDescription" rows="3" placeholder="Detailed description"></textarea>
-                    </div>
-                    <div class="media-meta">
-                        <p><strong>File Type:</strong> <span id="mediaType"></span></p>
-                        <p><strong>File Size:</strong> <span id="mediaSize"></span></p>
-                        <p><strong>Uploaded:</strong> <span id="mediaDate"></span></p>
-                        <p><strong>Used in Posts:</strong> <span id="mediaUsage"></span></p>
+                
+                <!-- URL Copy -->
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label">File URL</label>
+                    <div class="input-group">
+                        <input type="text" id="mediaUrl" class="form-input" readonly>
+                        <button class="btn btn-secondary btn-small" onclick="copyMediaUrl()">Copy</button>
                     </div>
                 </div>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeMediaPreview()">Close</button>
-                <button type="button" class="btn btn-primary" onclick="saveMediaMetadata()">Save Changes</button>
-                <button type="button" class="btn btn-danger" onclick="deleteMediaFile()">Delete File</button>
+                
+                <!-- Action Buttons -->
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="saveMediaMetadata()">Save Changes</button>
+                    <button class="btn btn-secondary" onclick="closeMediaPreview()">Close</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteMediaFile()">Delete</button>
+                </div>
             </div>
         </div>
     </div>
@@ -4844,6 +4875,7 @@ ${JSON.stringify(error, null, 2)}
             if (!grid) return;
             
             grid.innerHTML = '';
+            grid.className = 'media-grid-enhanced';  // Use enhanced grid styling
             
             if (!media || media.length === 0) {
                 grid.innerHTML = `
@@ -4856,26 +4888,60 @@ ${JSON.stringify(error, null, 2)}
             
             media.forEach(file => {
                 const card = document.createElement('div');
-                card.className = 'media-card';
+                card.className = 'media-card-enhanced';
                 card.dataset.id = file.id;
                 
                 // Handle both filename and file_name columns
-                const displayName = file.filename || file.file_name || 'Unnamed file';
+                const displayName = file.title || file.filename || file.file_name || 'Unnamed file';
+                const tags = file.tags ? (typeof file.tags === 'string' ? JSON.parse(file.tags) : file.tags) : [];
                 
                 const fileIcon = getFileIcon(file.file_type);
                 const isImage = file.file_type && file.file_type.startsWith('image');
+                const isVideo = file.file_type && file.file_type.startsWith('video');
                 
                 card.innerHTML = `
-                    <input type="checkbox" class="media-checkbox" onchange="toggleMediaSelection('${file.id}')">
-                    <div class="media-thumbnail" onclick="openMediaPreview('${file.id}')">
-                        ${isImage && file.url ? 
-                            `<img src="${file.url}" alt="${file.alt_text || displayName}">` : 
-                            `<span>${fileIcon}</span>`
-                        }
+                    <div class="card-select">
+                        <input type="checkbox" class="media-checkbox" onchange="toggleMediaSelection('${file.id}')">
                     </div>
-                    <div class="media-info">
-                        <div class="media-filename" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
-                        <div class="media-filesize">${formatFileSize(file.file_size)}</div>
+                    <div class="card-thumbnail" onclick="openMediaPreview('${file.id}')">
+                        ${isImage && file.url ? 
+                            `<img src="${file.url}" alt="${file.alt_text || displayName}" loading="lazy">` : 
+                            isVideo && file.url ?
+                            `<video src="${file.url}" muted></video>` :
+                            `<div class="file-icon-large">${fileIcon}</div>`
+                        }
+                        <div class="thumbnail-overlay">
+                            <button class="btn-icon" onclick="event.stopPropagation(); openMediaPreview('${file.id}')">
+                                <span>👁️</span>
+                            </button>
+                            <button class="btn-icon" onclick="event.stopPropagation(); copyMediaUrl('${file.url}')">
+                                <span>🔗</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-metadata">
+                        <h4 class="media-title" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</h4>
+                        ${file.meta_description ? 
+                            `<p class="media-description">${escapeHtml(file.meta_description)}</p>` : 
+                            `<p class="media-description text-muted">No description</p>`
+                        }
+                        <div class="media-meta-row">
+                            <span class="meta-item">
+                                <span class="meta-icon">${getFileIcon(file.file_type)}</span>
+                                ${formatFileSize(file.file_size)}
+                            </span>
+                            <span class="meta-item">
+                                ${formatDate(file.uploaded_at)}
+                            </span>
+                        </div>
+                        ${tags.length > 0 ? `
+                            <div class="media-tags">
+                                ${tags.slice(0, 3).map(tag => 
+                                    `<span class="tag-pill">${escapeHtml(tag)}</span>`
+                                ).join('')}
+                                ${tags.length > 3 ? `<span class="tag-more">+${tags.length - 3}</span>` : ''}
+                            </div>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -5344,7 +5410,7 @@ ${JSON.stringify(error, null, 2)}
         async function openMediaPreview(mediaId) {
             if (bulkSelectMode) {
                 // In bulk select mode, clicking toggles selection
-                const checkbox = document.querySelector(`.media-card[data-id="${mediaId}"] .media-checkbox`);
+                const checkbox = document.querySelector(`.media-card-enhanced[data-id="${mediaId}"] .media-checkbox`);
                 if (checkbox) {
                     checkbox.checked = !checkbox.checked;
                     toggleMediaSelection(mediaId);
@@ -5357,34 +5423,69 @@ ${JSON.stringify(error, null, 2)}
             
             currentMediaId = mediaId;
             
-            // Populate preview modal (handle both filename and file_name columns)
-            const displayName = media.filename || media.file_name || 'Unnamed file';
-            document.getElementById('mediaPreviewTitle').textContent = displayName;
-            document.getElementById('mediaUrl').value = media.url || '';
+            // Show enhanced preview modal
+            const modal = document.getElementById('mediaPreviewEnhanced');
+            modal.style.display = 'flex';
+            
+            // Populate metadata fields
+            const displayName = media.title || media.filename || media.file_name || 'Unnamed file';
+            document.getElementById('mediaTitleInput').value = displayName;
+            document.getElementById('mediaMetaDescription').value = media.meta_description || '';
             document.getElementById('mediaAltText').value = media.alt_text || '';
             document.getElementById('mediaCaption').value = media.caption || '';
-            document.getElementById('mediaDescription').value = media.description || '';
-            document.getElementById('mediaType').textContent = media.file_type || 'Unknown';
-            document.getElementById('mediaSize').textContent = formatFileSize(media.file_size);
-            document.getElementById('mediaDate').textContent = formatDate(media.created_at);
             
-            // Show preview
-            const previewContent = document.getElementById('mediaPreviewContent');
+            // Update character counters
+            updateCharCounter('mediaTitleInput', 'titleCounter', 255);
+            updateCharCounter('mediaMetaDescription', 'descCounter', 160);
+            
+            // Load tags
+            loadMediaTags(media.tags);
+            
+            // Show/hide alt text field based on file type
+            const altTextGroup = document.getElementById('altTextGroup');
             if (media.file_type && media.file_type.startsWith('image')) {
-                previewContent.innerHTML = `<img src="${media.url}" alt="${media.alt_text || media.filename}">`;
+                altTextGroup.style.display = 'block';
+            } else {
+                altTextGroup.style.display = 'none';
+            }
+            
+            // Display media content
+            const previewContent = document.getElementById('previewContent');
+            if (media.file_type && media.file_type.startsWith('image')) {
+                previewContent.innerHTML = `
+                    <img src="${media.url}" alt="${media.alt_text || displayName}">
+                    <div class="media-info-overlay">
+                        <span>${media.file_type} • ${formatFileSize(media.file_size)}</span>
+                    </div>
+                `;
+            } else if (media.file_type && media.file_type.startsWith('video')) {
+                previewContent.innerHTML = `
+                    <video src="${media.url}" controls></video>
+                    <div class="media-info-overlay">
+                        <span>${media.file_type} • ${formatFileSize(media.file_size)}</span>
+                    </div>
+                `;
             } else {
                 const icon = getFileIcon(media.file_type);
                 previewContent.innerHTML = `
-                    <div style="font-size: 5rem; color: #6c757d; margin: 2rem 0;">${icon}</div>
-                    <p>${escapeHtml(media.filename)}</p>
+                    <div class="file-preview-large">
+                        <div style="font-size: 8rem; margin-bottom: 1rem;">${icon}</div>
+                        <h3>${escapeHtml(displayName)}</h3>
+                        <p style="color: #666;">${media.file_type || 'Unknown type'} • ${formatFileSize(media.file_size)}</p>
+                    </div>
                 `;
             }
             
-            // Check usage in posts
-            await checkMediaUsage(mediaId);
-            
-            // Show modal
-            document.getElementById('mediaPreviewModal').style.display = 'block';
+            // Add action buttons
+            const actionBar = document.createElement('div');
+            actionBar.className = 'preview-actions';
+            actionBar.innerHTML = `
+                <button class="btn btn-secondary" onclick="copyMediaUrl('${media.url}')">Copy URL</button>
+                <button class="btn btn-secondary" onclick="downloadMedia('${media.url}', '${displayName}')">Download</button>
+                <button class="btn btn-danger" onclick="deleteMediaFile('${mediaId}')">Delete</button>
+                <button class="btn btn-primary" onclick="saveMediaMetadata('${mediaId}')">Save Changes</button>
+            `;
+            document.querySelector('.preview-sidebar').appendChild(actionBar);
         }
 
         async function checkMediaUsage(mediaId) {
