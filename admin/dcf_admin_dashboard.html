@@ -3164,14 +3164,16 @@
                 <!-- Title Field -->
                 <div class="form-group">
                     <label class="form-label">Title *</label>
-                    <input type="text" id="mediaTitleInput" class="form-input" placeholder="Enter media title" maxlength="255">
+                    <input type="text" id="mediaTitleInput" class="form-input" placeholder="Enter media title" maxlength="255" 
+                           oninput="updateCharCounter('mediaTitleInput', 'titleCounter', 255)">
                     <div class="char-counter" id="titleCounter">0 / 255</div>
                 </div>
                 
                 <!-- Meta Description -->
                 <div class="form-group">
                     <label class="form-label">Meta Description</label>
-                    <textarea id="mediaMetaDescription" class="form-textarea" rows="3" placeholder="SEO description for search engines" maxlength="160"></textarea>
+                    <textarea id="mediaMetaDescription" class="form-textarea" rows="3" placeholder="SEO description for search engines" maxlength="160"
+                              oninput="updateCharCounter('mediaMetaDescription', 'descCounter', 160)"></textarea>
                     <div class="char-counter" id="descCounter">0 / 160</div>
                 </div>
                 
@@ -5297,7 +5299,15 @@ ${JSON.stringify(error, null, 2)}
             const filtered = allMedia.filter(file => {
                 // Handle both filename and file_name columns
                 const fileName = (file.filename || file.file_name || '').toLowerCase();
+                const title = (file.title || '').toLowerCase();
+                const metaDesc = (file.meta_description || '').toLowerCase();
+                const tags = file.tags ? (typeof file.tags === 'string' ? JSON.parse(file.tags) : file.tags) : [];
+                const tagString = tags.join(' ').toLowerCase();
+                
                 return fileName.includes(searchTerm) ||
+                    title.includes(searchTerm) ||
+                    metaDesc.includes(searchTerm) ||
+                    tagString.includes(searchTerm) ||
                     (file.alt_text && file.alt_text.toLowerCase().includes(searchTerm)) ||
                     (file.caption && file.caption.toLowerCase().includes(searchTerm));
             });
@@ -5306,9 +5316,11 @@ ${JSON.stringify(error, null, 2)}
 
         function filterMedia() {
             const typeFilter = document.getElementById('mediaTypeFilter').value;
+            const searchTerm = document.getElementById('mediaSearchInput').value.toLowerCase();
             
             let filtered = allMedia;
             
+            // Apply type filter
             if (typeFilter === 'image') {
                 filtered = filtered.filter(file => file.file_type && file.file_type.startsWith('image'));
             } else if (typeFilter === 'video') {
@@ -5323,7 +5335,37 @@ ${JSON.stringify(error, null, 2)}
                 );
             }
             
+            // Apply search filter if present
+            if (searchTerm) {
+                filtered = filtered.filter(file => {
+                    const fileName = (file.filename || file.file_name || '').toLowerCase();
+                    const title = (file.title || '').toLowerCase();
+                    const metaDesc = (file.meta_description || '').toLowerCase();
+                    const tags = file.tags ? (typeof file.tags === 'string' ? JSON.parse(file.tags) : file.tags) : [];
+                    const tagString = tags.join(' ').toLowerCase();
+                    
+                    return fileName.includes(searchTerm) ||
+                        title.includes(searchTerm) ||
+                        metaDesc.includes(searchTerm) ||
+                        tagString.includes(searchTerm) ||
+                        (file.alt_text && file.alt_text.toLowerCase().includes(searchTerm)) ||
+                        (file.caption && file.caption.toLowerCase().includes(searchTerm));
+                });
+            }
+            
             displayMedia(filtered);
+        }
+
+        // Advanced filter by tag
+        function filterByTag(tag) {
+            const filtered = allMedia.filter(file => {
+                const tags = file.tags ? (typeof file.tags === 'string' ? JSON.parse(file.tags) : file.tags) : [];
+                return tags.includes(tag);
+            });
+            displayMedia(filtered);
+            
+            // Update search input to show tag filter
+            document.getElementById('mediaSearchInput').value = `tag:${tag}`;
         }
 
         function toggleBulkSelect() {
@@ -5499,35 +5541,150 @@ ${JSON.stringify(error, null, 2)}
         }
 
         function closeMediaPreview() {
-            document.getElementById('mediaPreviewModal').style.display = 'none';
+            const enhancedModal = document.getElementById('mediaPreviewEnhanced');
+            const oldModal = document.getElementById('mediaPreviewModal');
+            
+            if (enhancedModal) enhancedModal.style.display = 'none';
+            if (oldModal) oldModal.style.display = 'none';
+            
+            // Clear action buttons
+            const actionBar = document.querySelector('.preview-actions');
+            if (actionBar) actionBar.remove();
+            
             currentMediaId = null;
         }
 
-        function copyMediaUrl() {
-            const urlInput = document.getElementById('mediaUrl');
-            urlInput.select();
-            document.execCommand('copy');
-            showToast('URL copied to clipboard', 'success');
+        function copyMediaUrl(url) {
+            if (!url) {
+                const urlInput = document.getElementById('mediaUrl');
+                if (urlInput) {
+                    urlInput.select();
+                    document.execCommand('copy');
+                }
+            } else {
+                // Create temporary input to copy URL
+                const tempInput = document.createElement('input');
+                tempInput.value = url;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+            showToast('Media URL copied to clipboard!', 'success');
         }
 
-        async function saveMediaMetadata() {
-            if (!currentMediaId) return;
+        // Character counter for input fields
+        function updateCharCounter(inputId, counterId, maxLength) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            if (!input || !counter) return;
+            
+            const currentLength = input.value.length;
+            counter.textContent = `${currentLength} / ${maxLength}`;
+            
+            // Add warning color if near limit
+            if (currentLength > maxLength * 0.9) {
+                counter.style.color = '#ff6b6b';
+            } else {
+                counter.style.color = '#666';
+            }
+        }
+
+        // Tag management functions
+        function loadMediaTags(tags) {
+            const tagInput = document.getElementById('tagInput');
+            if (!tagInput) return;
+            
+            // Clear existing tags
+            const existingTags = tagInput.querySelectorAll('.tag-chip');
+            existingTags.forEach(tag => tag.remove());
+            
+            // Parse tags if string
+            const tagArray = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+            
+            // Add tag chips
+            tagArray.forEach(tag => {
+                addTagChip(tag);
+            });
+        }
+
+        function addTagChip(tagText) {
+            const tagInput = document.getElementById('tagInput');
+            const input = tagInput.querySelector('input');
+            
+            const chip = document.createElement('span');
+            chip.className = 'tag-chip';
+            chip.innerHTML = `
+                ${escapeHtml(tagText)}
+                <button onclick="removeTag(this)" class="tag-remove">×</button>
+            `;
+            
+            tagInput.insertBefore(chip, input);
+        }
+
+        function handleTagInput(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                const tagText = input.value.trim();
+                
+                if (tagText) {
+                    addTagChip(tagText);
+                    input.value = '';
+                }
+            }
+        }
+
+        function removeTag(button) {
+            button.parentElement.remove();
+        }
+
+        function getTagsFromInput() {
+            const tagChips = document.querySelectorAll('#tagInput .tag-chip');
+            return Array.from(tagChips).map(chip => 
+                chip.textContent.replace('×', '').trim()
+            );
+        }
+
+        // Download media file
+        function downloadMedia(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Download started', 'success');
+        }
+
+        async function saveMediaMetadata(mediaId) {
+            const id = mediaId || currentMediaId;
+            if (!id) return;
             
             try {
+                // Gather metadata
+                const tags = getTagsFromInput();
+                const updateData = {
+                    title: document.getElementById('mediaTitleInput').value,
+                    meta_description: document.getElementById('mediaMetaDescription').value,
+                    alt_text: document.getElementById('mediaAltText').value,
+                    caption: document.getElementById('mediaCaption').value,
+                    tags: JSON.stringify(tags),
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Update in database
                 const { error } = await window.dcfSupabase
                     .from('blog_media')
-                    .update({
-                        alt_text: document.getElementById('mediaAltText').value,
-                        caption: document.getElementById('mediaCaption').value,
-                        description: document.getElementById('mediaDescription').value,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', currentMediaId);
+                    .update(updateData)
+                    .eq('id', id);
                 
                 if (error) throw error;
                 
                 showToast('Media metadata updated successfully', 'success');
-                await loadMedia();
+                await loadMedia(); // Reload media list
+                closeMediaPreview(); // Close modal
                 
             } catch (error) {
                 console.error('Error updating media:', error);
