@@ -811,6 +811,12 @@ function populateAdminMenu() {
     // Admin menu items configuration
     const adminMenuItems = [
         {
+            href: 'dcf_admin_dashboard.html',
+            icon: '📊',
+            title: 'Dashboard',
+            subtitle: 'Admin overview and stats'
+        },
+        {
             href: 'icon-management.html',
             icon: '⚙️',
             title: 'Icon Management',
