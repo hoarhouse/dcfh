@@ -4304,6 +4304,7 @@ ${JSON.stringify(error, null, 2)}
         let currentMediaId = null;
 
         async function loadMedia() {
+            console.log('Loading media library...');
             const grid = document.getElementById('mediaGrid');
             if (!grid) return;
             
@@ -4316,12 +4317,27 @@ ${JSON.stringify(error, null, 2)}
             `;
             
             try {
+                // Test storage bucket access first
+                console.log('Testing storage bucket access...');
+                const { data: bucketList, error: bucketError } = await window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .list('blog-media', { limit: 1 });
+                
+                if (bucketError) {
+                    console.error('Storage bucket error:', bucketError);
+                    // Continue anyway to load from database
+                }
+                
+                console.log('Fetching media from database...');
                 const { data: media, error } = await window.dcfSupabase
                     .from('blog_media')
                     .select('*')
                     .order('created_at', { ascending: false });
                 
                 if (error) throw error;
+                
+                console.log('Media loaded:', media?.length || 0, 'files');
                 
                 allMedia = media || [];
                 displayMedia(allMedia);
@@ -4331,7 +4347,11 @@ ${JSON.stringify(error, null, 2)}
                 console.error('Error loading media:', error);
                 grid.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #dc3545;">
-                        Error loading media: ${error.message}
+                        <div style="margin-bottom: 1rem;">❌ Error loading media</div>
+                        <div style="font-size: 0.9rem;">${error.message}</div>
+                        <button class="btn btn-secondary btn-small" onclick="loadMedia()" style="margin-top: 1rem;">
+                            🔄 Retry
+                        </button>
                     </div>
                 `;
             }
