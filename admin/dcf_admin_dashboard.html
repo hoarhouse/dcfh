@@ -1209,6 +1209,100 @@
             font-size: 0.75rem;
             color: #999;
         }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            max-width: 500px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .toast-message {
+            flex: 1;
+            color: #333;
+        }
+
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast-success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-error .toast-icon {
+            color: #dc3545;
+        }
+
+        .toast-warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .toast-warning .toast-icon {
+            color: #ffc107;
+        }
+
+        .toast-info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .toast-info .toast-icon {
+            color: #17a2b8;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments for toast */
+        @media (max-width: 768px) {
+            .toast-notification {
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-auth.js"></script>
@@ -2867,17 +2961,118 @@
         document.addEventListener('DOMContentLoaded', function() {
             const createBlogForm = document.getElementById('createBlogForm');
             if (createBlogForm) {
-                createBlogForm.addEventListener('submit', function(e) {
+                createBlogForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
+                    
+                    // Get form data
                     const formData = new FormData(this);
-                    console.log('Creating blog with data:', Object.fromEntries(formData));
-                    // Implement blog creation
-                    alert('Blog created successfully!');
-                    this.reset();
-                    showBlogTab({target: document.querySelector('.blog-tab:first-child')}, 'all-blogs');
+                    const blogData = {
+                        name: formData.get('blogName'),
+                        initiative: formData.get('blogInitiative'),
+                        description: formData.get('blogDescription'),
+                        slug: formData.get('blogUrl'),
+                        status: 'active',
+                        post_count: 0
+                    };
+                    
+                    // Validate required fields
+                    if (!blogData.name || !blogData.initiative) {
+                        showToast('Please fill in all required fields', 'error');
+                        return;
+                    }
+                    
+                    // Generate slug if not provided
+                    if (!blogData.slug) {
+                        blogData.slug = blogData.name.toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                    }
+                    
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Saving...';
+                    
+                    try {
+                        const editId = this.dataset.editId;
+                        let result;
+                        
+                        if (editId) {
+                            // Update existing blog
+                            blogData.updated_at = new Date().toISOString();
+                            result = await window.dcfSupabase
+                                .from('blogs')
+                                .update(blogData)
+                                .eq('id', editId);
+                                
+                            delete this.dataset.editId;
+                            submitBtn.textContent = 'Create Blog';
+                        } else {
+                            // Create new blog
+                            result = await window.dcfSupabase
+                                .from('blogs')
+                                .insert([blogData]);
+                        }
+                        
+                        if (result.error) throw result.error;
+                        
+                        showToast(editId ? 'Blog updated successfully!' : 'Blog created successfully!', 'success');
+                        this.reset();
+                        
+                        // Switch back to All Blogs tab and reload
+                        showBlogTab({target: document.querySelector('.blog-tab:first-child')}, 'all-blogs');
+                        await loadBlogs();
+                        
+                    } catch (error) {
+                        console.error('Error saving blog:', error);
+                        showToast('Error saving blog: ' + error.message, 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
                 });
             }
         });
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${getToastIcon(type)}</span>
+                    <span class="toast-message">${message}</span>
+                </div>
+            `;
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function getToastIcon(type) {
+            switch(type) {
+                case 'success': return '✓';
+                case 'error': return '✕';
+                case 'warning': return '⚠';
+                default: return 'ℹ';
+            }
+        }
     </script>
 </body>
 </html>
