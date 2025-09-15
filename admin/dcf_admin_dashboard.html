@@ -3786,20 +3786,85 @@
                 // Check initial hash
                 handleHashChange();
                 
-                // Force avatar display fix
+                // Force avatar and dropdown display fix
                 setTimeout(() => {
                     const userAvatar = document.getElementById('userAvatar');
-                    if (userAvatar && window.dcfUser && window.dcfUser.profile) {
-                        if (window.dcfUser.profile.avatar_url) {
-                            userAvatar.style.backgroundImage = `url(${window.dcfUser.profile.avatar_url})`;
-                            userAvatar.style.backgroundSize = 'cover';
-                            userAvatar.style.backgroundPosition = 'center';
-                            userAvatar.textContent = '';
-                        } else if (window.dcfUser.profile.email) {
-                            // Use initials if no avatar
-                            const initials = window.dcfUser.profile.email.substring(0, 2).toUpperCase();
-                            userAvatar.textContent = initials;
-                            userAvatar.style.backgroundImage = '';
+                    if (userAvatar) {
+                        // Ensure onclick handler
+                        userAvatar.setAttribute('onclick', 'toggleUserMenu()');
+                        userAvatar.style.cursor = 'pointer';
+                        
+                        // Check if dropdown exists, if not create it
+                        let dropdown = document.getElementById('userDropdown');
+                        if (!dropdown) {
+                            const dropdownHTML = `
+                                <div class="dropdown-menu" id="userDropdown" style="display: none;">
+                                    <div class="dropdown-header">
+                                        <div class="dropdown-avatar" id="dropdownAvatar">U</div>
+                                        <div class="dropdown-info">
+                                            <div class="dropdown-name" id="dropdownUserName">User</div>
+                                            <div class="dropdown-email" id="dropdownUserEmail">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="../profile.html" class="dropdown-item">
+                                        <span>👤</span> My Profile
+                                    </a>
+                                    <a href="../settings.html" class="dropdown-item">
+                                        <span>⚙️</span> Settings
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="#" onclick="logout(); return false;" class="dropdown-item">
+                                        <span>🚪</span> Logout
+                                    </a>
+                                </div>
+                            `;
+                            
+                            // Add dropdown to user-dropdown container if it exists, otherwise after avatar
+                            const userDropdownContainer = userAvatar.closest('.user-dropdown');
+                            if (userDropdownContainer) {
+                                userDropdownContainer.insertAdjacentHTML('beforeend', dropdownHTML);
+                            } else if (userAvatar.parentElement) {
+                                userAvatar.parentElement.insertAdjacentHTML('beforeend', dropdownHTML);
+                            }
+                        }
+                        
+                        // Update avatar and dropdown info
+                        if (window.dcfUser && window.dcfUser.profile) {
+                            // Update main avatar
+                            if (window.dcfUser.profile.avatar_url) {
+                                userAvatar.style.backgroundImage = `url(${window.dcfUser.profile.avatar_url})`;
+                                userAvatar.style.backgroundSize = 'cover';
+                                userAvatar.style.backgroundPosition = 'center';
+                                userAvatar.textContent = '';
+                            } else if (window.dcfUser.profile.email) {
+                                const initials = window.dcfUser.profile.email.substring(0, 2).toUpperCase();
+                                userAvatar.textContent = initials;
+                                userAvatar.style.backgroundImage = '';
+                            }
+                            
+                            // Update dropdown info
+                            const dropdownName = document.getElementById('dropdownUserName');
+                            const dropdownEmail = document.getElementById('dropdownUserEmail');
+                            const dropdownAvatar = document.getElementById('dropdownAvatar');
+                            
+                            if (dropdownName) {
+                                dropdownName.textContent = window.dcfUser.profile.full_name || window.dcfUser.profile.email || 'User';
+                            }
+                            if (dropdownEmail) {
+                                dropdownEmail.textContent = window.dcfUser.profile.email || '';
+                            }
+                            if (dropdownAvatar) {
+                                if (window.dcfUser.profile.avatar_url) {
+                                    dropdownAvatar.style.backgroundImage = `url(${window.dcfUser.profile.avatar_url})`;
+                                    dropdownAvatar.style.backgroundSize = 'cover';
+                                    dropdownAvatar.style.backgroundPosition = 'center';
+                                    dropdownAvatar.textContent = '';
+                                } else {
+                                    dropdownAvatar.textContent = userAvatar.textContent;
+                                    dropdownAvatar.style.backgroundImage = '';
+                                }
+                            }
                         }
                     }
                 }, 500);
@@ -4090,11 +4155,33 @@
             return emergencyIcons[iconName] || '❓';
         }
         
-        // Notification functions (fallback if unified system doesn't provide them)
+        // Notification functions with dropdown handling
         function toggleNotifications() {
             const dropdown = document.getElementById('notificationDropdown');
-            if (dropdown) {
-                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            if (!dropdown) return;
+            
+            const isOpen = dropdown.style.display !== 'none';
+            if (isOpen) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('click', handleNotificationClickOutside);
+            } else {
+                dropdown.style.display = 'block';
+                // Close when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', handleNotificationClickOutside);
+                }, 0);
+            }
+        }
+        
+        function handleNotificationClickOutside(event) {
+            const bell = document.querySelector('.notification-bell');
+            const dropdown = document.getElementById('notificationDropdown');
+            
+            if (bell && dropdown && 
+                !bell.contains(event.target) && 
+                !dropdown.contains(event.target)) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('click', handleNotificationClickOutside);
             }
         }
         
@@ -4106,6 +4193,49 @@
             const notificationList = document.getElementById('notificationList');
             if (notificationList) {
                 notificationList.innerHTML = '<div class="notification-empty">No new notifications</div>';
+            }
+        }
+        
+        // User dropdown toggle functions
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            if (!dropdown) return;
+            
+            const isOpen = dropdown.classList.contains('active');
+            if (isOpen) {
+                dropdown.classList.remove('active');
+                dropdown.style.display = '';
+                document.removeEventListener('click', handleClickOutside);
+            } else {
+                dropdown.style.display = 'block';
+                // Force reflow for animation
+                dropdown.offsetHeight;
+                dropdown.classList.add('active');
+                // Close when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', handleClickOutside);
+                }, 0);
+            }
+        }
+        
+        function handleClickOutside(event) {
+            const userAvatar = document.getElementById('userAvatar');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (userAvatar && dropdown && 
+                !userAvatar.contains(event.target) && 
+                !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+                dropdown.style.display = '';
+                document.removeEventListener('click', handleClickOutside);
+            }
+        }
+        
+        function logout() {
+            if (window.dcfSupabase) {
+                window.dcfSupabase.auth.signOut().then(() => {
+                    window.location.href = '../index.html';
+                });
             }
         }
 
