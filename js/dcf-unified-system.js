@@ -812,33 +812,23 @@ function populateAdminMenu() {
     const adminMenuItems = [
         {
             href: 'dcf_admin_dashboard.html',
-            icon: '📊',
-            title: 'Dashboard',
-            subtitle: 'Admin overview and stats'
+            title: 'Dashboard'
         },
         {
             href: 'icon-management.html',
-            icon: '⚙️',
-            title: 'Icon Management',
-            subtitle: 'Control site-wide icon system'
+            title: 'Icon Management'
         },
         {
             href: 'icons.html',
-            icon: '🎨',
-            title: 'Icon Library',
-            subtitle: 'Browse and select icon styles'
+            title: 'Icon Library'
         },
         {
             href: 'alerts.html',
-            icon: '🔔',
-            title: 'System Alerts',
-            subtitle: 'Manage alert configurations'
+            title: 'System Alerts'
         },
         {
             href: '#blog-management',
-            icon: '📝',
             title: 'Blog Management',
-            subtitle: 'Manage all blog instances and posts',
             onclick: 'showBlogManagement(event)'
         }
     ];
@@ -852,11 +842,7 @@ function populateAdminMenu() {
                         <a href="${item.href}" 
                            class="dcf-admin-menu-link ${window.location.pathname.includes(item.href.replace('.html', '')) ? 'active' : ''}"
                            ${item.onclick ? `onclick="${item.onclick}"` : ''}>
-                            <span class="dcf-admin-menu-icon">${item.icon}</span>
-                            <div>
-                                <div class="dcf-admin-menu-text">${item.title}</div>
-                                <div class="dcf-admin-menu-subtitle">${item.subtitle}</div>
-                            </div>
+                            <span class="dcf-admin-menu-text">${item.title}</span>
                         </a>
                     </li>
                 `).join('')}
