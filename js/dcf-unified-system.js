@@ -795,17 +795,12 @@ function populateTopNavigation() {
 // =============================================================================
 function populateAdminMenu() {
     const adminMenu = document.getElementById('dcfAdminMenu');
-    if (!adminMenu) return;
-    
-    // Check if this is an admin page
-    const isAdminPage = window.location.pathname.includes('/admin/') || 
-                       window.location.pathname.includes('dcf_admin');
-    
-    if (!isAdminPage) {
-        console.log('📍 Not an admin page, skipping admin menu');
+    if (!adminMenu) {
+        // No admin menu container, not an admin page
         return;
     }
     
+    // If the admin menu container exists, populate it
     console.log('🛠️ Populating admin menu bar');
     
     // Admin menu items configuration
