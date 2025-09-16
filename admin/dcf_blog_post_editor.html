@@ -1636,6 +1636,10 @@
                     const option = document.createElement('option');
                     option.value = blog.id;
                     option.textContent = blog.name;
+                    // Add slug as data attribute for URL generation
+                    option.dataset.slug = blog.slug || blog.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
                     select.appendChild(option);
                 });
                 
@@ -1755,7 +1759,18 @@
                 updateLastSaved();
                 
                 if (!isAutoSave) {
-                    showToast('Post saved successfully', 'success');
+                    // Check if this is a publish action
+                    if (postData.status === 'published') {
+                        // Get blog info for URL generation
+                        const blogSelect = document.getElementById('postBlog');
+                        const selectedOption = blogSelect.options[blogSelect.selectedIndex];
+                        postData.blog_slug = selectedOption.dataset.slug || 'blog';
+                        
+                        // Show success modal instead of toast for publish
+                        showPublishSuccessModal(postData, currentPostId);
+                    } else {
+                        showToast('Post saved successfully', 'success');
+                    }
                 }
                 
             } catch (error) {
@@ -2360,21 +2375,17 @@
         }
         
         async function publishFromPreview() {
-            // Set status to published and save
-            document.getElementById('postStatus').value = 'published';
-            await savePost(false);
+            // Collect post data and set status to published
+            const postData = collectPostData();
+            postData.status = 'published';
+            
+            // Save the post
+            await savePost(postData, false);
             
             // Exit preview mode
             hidePreview();
             
-            showToast('Post published successfully!', 'success');
-            
-            // Optionally redirect to posts list after a delay
-            setTimeout(() => {
-                if (confirm('Post published! Return to posts list?')) {
-                    returnToPosts();
-                }
-            }, 1500);
+            // The success modal will be shown by the savePost function
         }
         
         
