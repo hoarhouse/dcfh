@@ -690,6 +690,93 @@
             color: #dc3545;
         }
 
+        /* Required/Optional Indicators */
+        .required-indicator {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .optional-indicator {
+            color: #6c757d;
+            font-weight: normal;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: 0.25rem;
+            color: #6c757d;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        /* Editor Footer */
+        .editor-footer {
+            background: linear-gradient(to bottom, #f8f9fa, #fff);
+            border-top: 2px solid #dee2e6;
+            padding: 1.5rem 2rem;
+            margin-top: 3rem;
+            margin-left: -2rem;
+            margin-right: -2rem;
+            margin-bottom: -2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+
+        .editor-footer-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .required-note {
+            color: #6c757d;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .auto-save-status {
+            color: #28a745;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .editor-footer-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .editor-footer-actions .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .editor-footer-actions .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .editor-footer-actions .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
         /* Media Insert Button */
         .media-insert-btn {
             display: inline-flex;
@@ -1296,13 +1383,26 @@
     <div class="editor-container">
         <!-- Preview Container -->
         <div class="preview-container" id="previewContainer">
-            <div class="preview-header">
-                <div class="preview-breadcrumb">
-                    Editor > <span>Preview</span>
+            <div class="preview-header" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 2rem; margin: -2rem -2rem 2rem -2rem; border-radius: 8px 8px 0 0;">
+                <div class="preview-notice" style="text-align: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: #495057; margin: 0 0 0.5rem 0; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">👁️</span>
+                        Preview Mode
+                    </h2>
+                    <p style="color: #6c757d; margin: 0; font-size: 1.1rem;">
+                        This is how your post will appear to readers
+                    </p>
                 </div>
-                <div class="preview-actions">
-                    <button class="btn btn-secondary" onclick="togglePreview()">← Back to Editor</button>
-                    <button class="btn btn-primary" onclick="publishFromPreview()">Publish Post</button>
+                <div class="preview-actions" style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="togglePreview()" style="padding: 0.75rem 1.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ← Back to Editor
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveDraft()" style="padding: 0.75rem 1.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        💾 Save as Draft
+                    </button>
+                    <button class="btn btn-primary" onclick="publishFromPreview()" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; gap: 0.5rem;">
+                        🚀 Publish This Post
+                    </button>
                 </div>
             </div>
             
@@ -1315,12 +1415,9 @@
         <div class="editor-main">
             <div class="editor-header">
                 <h1 class="editor-title" id="editorTitle">Create New Post</h1>
-                <div class="editor-actions">
-                    <button class="btn btn-secondary" onclick="togglePreview()" id="previewBtn">Preview Post</button>
-                    <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
-                    <button class="btn btn-primary" onclick="publishPost()">Publish</button>
-                    <button class="btn btn-secondary" onclick="returnToPosts()">Return to Posts</button>
-                </div>
+                <button class="btn btn-secondary" onclick="returnToPosts()" style="position: absolute; right: 2rem; top: 2rem;">
+                    ← Back to Posts
+                </button>
             </div>
 
             <form id="postForm">
@@ -1366,6 +1463,9 @@
                 
                 <!-- Title -->
                 <div class="form-group">
+                    <label class="form-label">
+                        Post Title <span class="required-indicator">*</span>
+                    </label>
                     <input type="text" 
                            id="postTitle" 
                            class="form-input title-input" 
@@ -1377,33 +1477,60 @@
 
                 <!-- Slug -->
                 <div class="form-group">
-                    <label class="form-label">URL Slug</label>
+                    <label class="form-label">
+                        URL Slug <span class="optional-indicator">(optional)</span>
+                    </label>
                     <input type="text" 
                            id="postSlug" 
                            class="form-input" 
                            placeholder="auto-generated-from-title">
+                    <small class="form-hint">Leave empty to auto-generate from title</small>
                 </div>
 
                 <!-- Excerpt -->
                 <div class="form-group">
-                    <label class="form-label">Excerpt</label>
+                    <label class="form-label">
+                        Excerpt <span class="optional-indicator">(optional)</span>
+                    </label>
                     <textarea id="postExcerpt" 
                               class="form-textarea" 
                               rows="3" 
                               placeholder="Brief description of your post..."
                               maxlength="160"></textarea>
                     <div class="char-counter" id="excerptCounter">0 / 160</div>
+                    <small class="form-hint">A short summary that appears in search results and post listings</small>
                 </div>
 
                 <!-- Content Editor -->
                 <div class="form-group">
-                    <label class="form-label">Content</label>
+                    <label class="form-label">
+                        Content <span class="required-indicator">*</span>
+                    </label>
                     <div style="margin-bottom: 1rem;">
                         <button type="button" class="media-insert-btn" onclick="openMediaLibrary()">
                             📷 Insert Media
                         </button>
                     </div>
                     <textarea id="postContent" name="content"></textarea>
+                </div>
+
+                <!-- Action Buttons at Bottom -->
+                <div class="editor-footer">
+                    <div class="editor-footer-info">
+                        <span class="required-note"><span class="required-indicator">*</span> Required fields</span>
+                        <span id="autoSaveStatus" class="auto-save-status"></span>
+                    </div>
+                    <div class="editor-footer-actions">
+                        <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                            💾 Save Draft
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="togglePreview()">
+                            👁️ Preview
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="publishPost()">
+                            🚀 Publish
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -1976,23 +2103,39 @@
         function updateSaveStatus(status) {
             const indicator = document.getElementById('saveIndicator');
             const statusText = document.getElementById('saveStatus');
+            const autoSaveIndicator = document.getElementById('autoSaveStatus');
             
-            indicator.classList.remove('saving', 'error');
+            if (indicator) {
+                indicator.classList.remove('saving', 'error');
+            }
             
             switch(status) {
                 case 'saving':
-                    indicator.classList.add('saving');
-                    statusText.textContent = 'Saving...';
+                    if (indicator) indicator.classList.add('saving');
+                    if (statusText) statusText.textContent = 'Saving...';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '⏳ Saving...';
+                        autoSaveIndicator.style.color = '#ffc107';
+                    }
                     break;
                 case 'saved':
-                    statusText.textContent = 'All changes saved';
+                    if (statusText) statusText.textContent = 'All changes saved';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '✓ All changes saved';
+                        autoSaveIndicator.style.color = '#28a745';
+                    }
                     break;
                 case 'error':
-                    indicator.classList.add('error');
-                    statusText.textContent = 'Error saving';
+                    if (indicator) indicator.classList.add('error');
+                    if (statusText) statusText.textContent = 'Error saving';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '✗ Error saving';
+                        autoSaveIndicator.style.color = '#dc3545';
+                    }
                     break;
                 default:
-                    statusText.textContent = 'Ready';
+                    if (statusText) statusText.textContent = 'Ready';
+                    if (autoSaveIndicator) autoSaveIndicator.textContent = '';
             }
         }
 
