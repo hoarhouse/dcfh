@@ -633,6 +633,8 @@ function populateTopNavigation() {
                     { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research Initiative', id: 'research' }
                 ]
             },
+            { href: basePath + 'blog/index.html', text: 'Blog' },
+            { href: basePath + 'people/index.html', text: 'People' },
             { 
                 href: basePath + 'public/dcf_about.html', 
                 text: 'About',
