@@ -827,16 +827,20 @@ function populateAdminMenu() {
             onclick: 'showBlogManagement(event)'
         },
         {
+            href: 'blogmanage.html',
+            title: 'Manage Blogs'
+        },
+        {
             href: 'createblogwiz.html',
-            title: '📚 Create Blog'
+            title: 'Create Blog'
         },
         {
             href: 'blogwiz.html',
-            title: '✏️ Create Post'
+            title: 'Create Post'
         },
         {
             href: 'blogpostsmanage.html',
-            title: '📋 Manage Posts'
+            title: 'Manage Posts'
         }
     ];
     
