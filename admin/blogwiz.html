@@ -462,6 +462,55 @@
             font-weight: normal;
         }
 
+        /* People Post Publication Options */
+        .publication-options {
+            display: grid;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .publication-option {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .publication-option:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .publication-option.selected {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .publication-option input[type="radio"] {
+            margin-top: 0.25rem;
+        }
+
+        .publication-option-content {
+            flex: 1;
+        }
+
+        .publication-option-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .publication-option-description {
+            color: #666;
+            line-height: 1.5;
+        }
+
         .wizard-header {
             text-align: center;
             margin-bottom: 3rem;
@@ -1003,8 +1052,8 @@
 
     <div class="wizard-container">
         <div class="wizard-header">
-            <h1 class="wizard-title">Create New Blog Post</h1>
-            <p class="wizard-subtitle">Follow these simple steps to publish your post</p>
+            <h1 class="wizard-title" id="wizardTitle">Create New Blog Post</h1>
+            <p class="wizard-subtitle" id="wizardSubtitle">Follow these simple steps to publish your post</p>
             
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
@@ -1045,13 +1094,39 @@
             </div>
         </div>
 
-        <!-- Step 2: Select Blog -->
+        <!-- Step 2: Select Blog / Publication Location -->
         <div class="wizard-step" id="step2">
-            <h2 class="step-title">Which blog do you want to post to?</h2>
-            <p class="step-description">Select the blog where your post will be published</p>
+            <h2 class="step-title" id="step2Title">Which blog do you want to post to?</h2>
+            <p class="step-description" id="step2Description">Select the blog where your post will be published</p>
             
-            <div class="blog-grid" id="blogGrid">
+            <!-- Blog selection for regular posts -->
+            <div class="blog-grid" id="blogGrid" style="display: none;">
                 <!-- Blogs will be loaded here -->
+            </div>
+            
+            <!-- Publication options for People Posts -->
+            <div class="publication-options" id="peoplePostOptions" style="display: none;">
+                <label class="publication-option" data-publication="front_page">
+                    <input type="radio" name="publicationLocation" value="front_page">
+                    <div class="publication-option-content">
+                        <div class="publication-option-title">🏠 Front Page</div>
+                        <div class="publication-option-description">
+                            This person profile will appear in the main people directory on the front page, 
+                            making it easily discoverable by visitors browsing all profiles.
+                        </div>
+                    </div>
+                </label>
+                
+                <label class="publication-option" data-publication="standalone">
+                    <input type="radio" name="publicationLocation" value="standalone">
+                    <div class="publication-option-content">
+                        <div class="publication-option-title">📄 Stand Alone</div>
+                        <div class="publication-option-description">
+                            Create an individual profile page only. The profile will be accessible via 
+                            direct link but won't appear in the main directory listing.
+                        </div>
+                    </div>
+                </label>
             </div>
             
             <div class="btn-group">
@@ -1305,6 +1380,7 @@
         let totalSteps = 5; // Will be 6 for people posts
         let selectedPostType = null;
         let selectedBlog = null;
+        let selectedPublicationLocation = null; // For people posts
         let featuredMedia = null;
         let personPhoto = null;
         let personLinksCount = 1;
@@ -1337,8 +1413,19 @@
             element.classList.add('selected');
             selectedPostType = element.dataset.type;
             
-            // Update total steps and UI based on post type
+            // Update contextual language based on post type
             if (selectedPostType === 'people_post') {
+                // Update wizard header
+                document.getElementById('wizardTitle').textContent = 'Create New People Post';
+                document.getElementById('wizardSubtitle').textContent = 'Follow these simple steps to create a person profile';
+                
+                // Update Step 2 for People Posts
+                document.getElementById('step2Title').textContent = 'Where should this People Post appear?';
+                document.getElementById('step2Description').textContent = 'Choose how this person profile will be displayed';
+                
+                // Setup publication options event listeners
+                setupPeoplePublicationOptions();
+                
                 totalSteps = 6;
                 // Add 6th step dot if not exists
                 const stepIndicator = document.getElementById('stepIndicator');
@@ -1351,6 +1438,14 @@
                 // Show 6th dot
                 document.querySelector('.step-dot[data-step="6"]').style.display = 'block';
             } else {
+                // Reset to blog post language
+                document.getElementById('wizardTitle').textContent = 'Create New Blog Post';
+                document.getElementById('wizardSubtitle').textContent = 'Follow these simple steps to publish your post';
+                
+                // Reset Step 2 for Blog Posts
+                document.getElementById('step2Title').textContent = 'Which blog do you want to post to?';
+                document.getElementById('step2Description').textContent = 'Select the blog where your post will be published';
+                
                 totalSteps = 5;
                 // Hide 6th dot if exists
                 const dot6 = document.querySelector('.step-dot[data-step="6"]');
@@ -1359,6 +1454,29 @@
             
             // Enable next button
             document.getElementById('step1Next').disabled = false;
+        }
+
+        function setupPeoplePublicationOptions() {
+            document.querySelectorAll('.publication-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    selectPublicationLocation(this);
+                });
+            });
+        }
+
+        function selectPublicationLocation(element) {
+            // Remove previous selection
+            document.querySelectorAll('.publication-option').forEach(opt => 
+                opt.classList.remove('selected'));
+            
+            // Select current
+            element.classList.add('selected');
+            const radio = element.querySelector('input[type="radio"]');
+            radio.checked = true;
+            selectedPublicationLocation = radio.value;
+            
+            // Enable next button
+            document.getElementById('step2Next').disabled = false;
         }
 
         async function loadBlogs() {
@@ -1888,6 +2006,19 @@
                 // Handle people step visibility
                 if (newStepId === 'step4People') {
                     newElement.style.display = 'block';
+                }
+                
+                // Handle Step 2 - Show appropriate content based on post type
+                if (currentStep === 2) {
+                    if (selectedPostType === 'people_post') {
+                        // Show people post publication options
+                        document.getElementById('blogGrid').style.display = 'none';
+                        document.getElementById('peoplePostOptions').style.display = 'grid';
+                    } else {
+                        // Show blog selection for regular posts
+                        document.getElementById('blogGrid').style.display = 'grid';
+                        document.getElementById('peoplePostOptions').style.display = 'none';
+                    }
                 }
             }
             
