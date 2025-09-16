@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Posts Management - DCF Hungary Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 1px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            border-color: #333;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        /* Filters & Search */
+        .controls-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-filters {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-input, .form-select {
+            padding: 0.75rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .view-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .view-toggle button.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .bulk-actions {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .bulk-actions.show {
+            display: flex;
+        }
+
+        /* Posts Container */
+        .posts-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .posts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            background: #f8f9fa;
+        }
+
+        .results-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .sort-dropdown {
+            position: relative;
+        }
+
+        .sort-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Posts List */
+        .posts-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post-item {
+            display: grid;
+            grid-template-columns: 40px 1fr auto;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s ease;
+        }
+
+        .post-item:hover {
+            background: #f8f9fa;
+        }
+
+        .post-item.selected {
+            background: #e7f3ff;
+        }
+
+        .post-checkbox {
+            display: flex;
+            align-items: flex-start;
+            padding-top: 0.25rem;
+        }
+
+        .post-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .post-main {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-info {
+            min-width: 0;
+        }
+
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .post-title a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .post-title a:hover {
+            text-decoration: underline;
+        }
+
+        .post-slug {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #f8f9fa;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #666;
+            border: 1px solid #e5e5e5;
+            user-select: all;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .post-slug:hover {
+            background: #e9ecef;
+            border-color: #333;
+        }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .status-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-scheduled {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .post-excerpt {
+            color: #666;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .post-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .action-btn:hover {
+            border-color: #333;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.primary {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .action-btn.danger {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .search-filters {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .post-main {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .post-stats {
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .post-item {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .post-checkbox {
+                display: none;
+            }
+
+            .post-actions {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"></div>
+                DCF Hungary Admin
+            </a>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Blog Posts Management</h1>
+            <div class="header-actions">
+                <a href="create-blog.html" class="btn btn-secondary">+ Create Blog</a>
+                <a href="blogwiz.html" class="btn btn-primary">+ Create Post</a>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls-section">
+            <div class="search-filters">
+                <input type="text" id="searchInput" class="form-input" placeholder="Search posts by title, content, or slug...">
+                <select id="blogFilter" class="form-select">
+                    <option value="">All Blogs</option>
+                </select>
+                <select id="statusFilter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                    <option value="scheduled">Scheduled</option>
+                </select>
+                <select id="authorFilter" class="form-select">
+                    <option value="">All Authors</option>
+                </select>
+            </div>
+            
+            <div class="view-controls">
+                <div class="bulk-actions" id="bulkActions">
+                    <span id="selectedCount">0 selected</span>
+                    <button class="btn btn-secondary btn-small" onclick="changeStatusBulk('published')">Publish</button>
+                    <button class="btn btn-secondary btn-small" onclick="changeStatusBulk('draft')">Draft</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteBulk()">Delete</button>
+                </div>
+                
+                <div class="view-toggle">
+                    <button class="active" data-view="list">List</button>
+                    <button data-view="table">Table</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posts Container -->
+        <div class="posts-container">
+            <div class="posts-header">
+                <div class="results-info" id="resultsInfo">
+                    Loading posts...
+                </div>
+                
+                <div class="sort-dropdown">
+                    <button class="sort-btn" onclick="toggleSortMenu()">
+                        <span id="currentSort">Sort: Newest First</span>
+                        <span>▼</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>Loading blog posts...</span>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📝</div>
+                <h3>No Blog Posts Found</h3>
+                <p>Create your first blog post to get started.</p>
+                <a href="blogwiz.html" class="btn btn-primary" style="margin-top: 1rem;">Create First Post</a>
+            </div>
+
+            <div id="postsList" class="posts-list" style="display: none;">
+                <!-- Posts will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // State
+        let posts = [];
+        let blogs = [];
+        let filteredPosts = [];
+        let selectedPosts = new Set();
+        let currentSort = 'newest';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadData();
+            setupEventListeners();
+        });
+
+        async function loadData() {
+            try {
+                // Load blogs for filter dropdown
+                const { data: blogsData, error: blogsError } = await supabase
+                    .from('blogs')
+                    .select('*')
+                    .order('name');
+
+                if (blogsError) throw blogsError;
+                blogs = blogsData || [];
+
+                // Populate blog filter
+                const blogFilter = document.getElementById('blogFilter');
+                blogFilter.innerHTML = '<option value="">All Blogs</option>';
+                blogs.forEach(blog => {
+                    blogFilter.innerHTML += `<option value="${blog.id}">${blog.name}</option>`;
+                });
+
+                // Load posts with blog information
+                const { data: postsData, error: postsError } = await supabase
+                    .from('blog_posts')
+                    .select(`
+                        *,
+                        blogs!inner(name, slug)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (postsError) throw postsError;
+                posts = postsData || [];
+                filteredPosts = [...posts];
+
+                displayPosts();
+                updateResultsInfo();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showToast('Failed to load posts', 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function setupEventListeners() {
+            // Search
+            document.getElementById('searchInput').addEventListener('input', debounce(filterPosts, 300));
+            
+            // Filters
+            document.getElementById('blogFilter').addEventListener('change', filterPosts);
+            document.getElementById('statusFilter').addEventListener('change', filterPosts);
+            document.getElementById('authorFilter').addEventListener('change', filterPosts);
+
+            // View toggle
+            document.querySelectorAll('.view-toggle button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelector('.view-toggle .active').classList.remove('active');
+                    this.classList.add('active');
+                    // View switching logic would go here
+                });
+            });
+        }
+
+        function filterPosts() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const blogId = document.getElementById('blogFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            filteredPosts = posts.filter(post => {
+                const matchesSearch = !search || 
+                    post.title.toLowerCase().includes(search) ||
+                    post.slug.toLowerCase().includes(search) ||
+                    (post.excerpt && post.excerpt.toLowerCase().includes(search)) ||
+                    (post.content && post.content.toLowerCase().includes(search));
+
+                const matchesBlog = !blogId || post.blog_id === blogId;
+                const matchesStatus = !status || post.status === status;
+
+                return matchesSearch && matchesBlog && matchesStatus;
+            });
+
+            displayPosts();
+            updateResultsInfo();
+        }
+
+        function displayPosts() {
+            const postsList = document.getElementById('postsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredPosts.length === 0) {
+                postsList.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            postsList.style.display = 'block';
+            postsList.innerHTML = '';
+
+            filteredPosts.forEach(post => {
+                const postItem = createPostItem(post);
+                postsList.appendChild(postItem);
+            });
+        }
+
+        function createPostItem(post) {
+            const item = document.createElement('div');
+            item.className = 'post-item';
+            item.dataset.postId = post.id;
+
+            const publishedDate = post.published_at ? 
+                new Date(post.published_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                }) : 'Not published';
+
+            const excerpt = post.excerpt || stripHtml(post.content).substring(0, 150) + '...';
+            const blogName = post.blogs?.name || 'Unknown Blog';
+
+            item.innerHTML = `
+                <div class="post-checkbox">
+                    <input type="checkbox" onchange="togglePostSelection('${post.id}', this.checked)">
+                </div>
+                
+                <div class="post-content">
+                    <div class="post-main">
+                        <div class="post-info">
+                            <div class="post-title">
+                                <a href="post-edit.html?id=${post.id}">${escapeHtml(post.title)}</a>
+                                <div class="post-slug" onclick="copyToClipboard('${post.slug}')" title="Click to copy slug">
+                                    ${post.slug}
+                                </div>
+                            </div>
+                            
+                            <div class="post-meta">
+                                <span class="status-badge status-${post.status}">${post.status}</span>
+                                <span>${blogName}</span>
+                                <span>${publishedDate}</span>
+                                <span>${post.view_count || 0} views</span>
+                            </div>
+                            
+                            <div class="post-excerpt">${escapeHtml(excerpt)}</div>
+                        </div>
+                        
+                        <div class="post-stats">
+                            <div>Views: ${post.view_count || 0}</div>
+                            <div>Created: ${new Date(post.created_at).toLocaleDateString()}</div>
+                            ${post.updated_at !== post.created_at ? 
+                                `<div>Updated: ${new Date(post.updated_at).toLocaleDateString()}</div>` : 
+                                ''
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="post-actions">
+                    <a href="blogwiz.html?post_id=${post.id}" class="action-btn primary">Edit</a>
+                    <a href="../blog/post.html?blog=${post.blogs?.slug}&post=${post.slug}" target="_blank" class="action-btn">View</a>
+                    <button onclick="duplicatePost('${post.id}')" class="action-btn">Duplicate</button>
+                    <button onclick="changePostStatus('${post.id}', '${post.status === 'published' ? 'draft' : 'published'}')" class="action-btn">
+                        ${post.status === 'published' ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button onclick="deletePost('${post.id}')" class="action-btn danger">Delete</button>
+                </div>
+            `;
+
+            return item;
+        }
+
+        function updateResultsInfo() {
+            const info = document.getElementById('resultsInfo');
+            const total = posts.length;
+            const filtered = filteredPosts.length;
+            
+            if (total === filtered) {
+                info.textContent = `${total} post${total !== 1 ? 's' : ''}`;
+            } else {
+                info.textContent = `${filtered} of ${total} posts`;
+            }
+        }
+
+        function togglePostSelection(postId, selected) {
+            if (selected) {
+                selectedPosts.add(postId);
+            } else {
+                selectedPosts.delete(postId);
+            }
+            
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const bulkActions = document.getElementById('bulkActions');
+            const count = selectedPosts.size;
+            
+            if (count > 0) {
+                bulkActions.classList.add('show');
+                document.getElementById('selectedCount').textContent = `${count} selected`;
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
+
+        async function changePostStatus(postId, newStatus) {
+            try {
+                const updateData = { 
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
+                };
+                
+                if (newStatus === 'published' && !posts.find(p => p.id === postId).published_at) {
+                    updateData.published_at = new Date().toISOString();
+                }
+
+                const { error } = await supabase
+                    .from('blog_posts')
+                    .update(updateData)
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                showToast(`Post ${newStatus === 'published' ? 'published' : 'unpublished'} successfully`, 'success');
+                loadData(); // Reload to reflect changes
+
+            } catch (error) {
+                console.error('Error updating post status:', error);
+                showToast('Failed to update post status', 'error');
+            }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('blog_posts')
+                    .delete()
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                showToast('Post deleted successfully', 'success');
+                loadData(); // Reload to reflect changes
+
+            } catch (error) {
+                console.error('Error deleting post:', error);
+                showToast('Failed to delete post', 'error');
+            }
+        }
+
+        async function duplicatePost(postId) {
+            try {
+                const originalPost = posts.find(p => p.id === postId);
+                if (!originalPost) throw new Error('Post not found');
+
+                const duplicatedPost = {
+                    ...originalPost,
+                    id: undefined, // Remove ID to create new
+                    title: `${originalPost.title} (Copy)`,
+                    slug: `${originalPost.slug}-copy-${Date.now()}`,
+                    status: 'draft',
+                    published_at: null,
+                    view_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('blog_posts')
+                    .insert([duplicatedPost]);
+
+                if (error) throw error;
+
+                showToast('Post duplicated successfully', 'success');
+                loadData(); // Reload to show new post
+
+            } catch (error) {
+                console.error('Error duplicating post:', error);
+                showToast('Failed to duplicate post', 'error');
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Slug copied to clipboard', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Slug copied to clipboard', 'success');
+            });
+        }
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
