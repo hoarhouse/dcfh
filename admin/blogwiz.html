@@ -1139,8 +1139,8 @@
 
         <!-- Step 3: Title & Slug -->
         <div class="wizard-step" id="step3">
-            <h2 class="step-title">What's your post title?</h2>
-            <p class="step-description">Give your post a compelling title that will grab readers' attention</p>
+            <h2 class="step-title" id="step3Title">What's your post title?</h2>
+            <p class="step-description" id="step3Description">Give your post a compelling title that will grab readers' attention</p>
             
             <div class="form-group">
                 <label class="form-label">Post Title</label>
@@ -1423,6 +1423,10 @@
                 document.getElementById('step2Title').textContent = 'Where should this People Post appear?';
                 document.getElementById('step2Description').textContent = 'Choose how this person profile will be displayed';
                 
+                // Update Step 3 for People Posts
+                document.getElementById('step3Title').textContent = 'What\'s the person\'s profile title?';
+                document.getElementById('step3Description').textContent = 'Create a title for this person\'s profile page';
+                
                 // Setup publication options event listeners
                 setupPeoplePublicationOptions();
                 
@@ -1445,6 +1449,10 @@
                 // Reset Step 2 for Blog Posts
                 document.getElementById('step2Title').textContent = 'Which blog do you want to post to?';
                 document.getElementById('step2Description').textContent = 'Select the blog where your post will be published';
+                
+                // Reset Step 3 for Blog Posts
+                document.getElementById('step3Title').textContent = 'What\'s your post title?';
+                document.getElementById('step3Description').textContent = 'Give your post a compelling title that will grab readers\' attention';
                 
                 totalSteps = 5;
                 // Hide 6th dot if exists
@@ -1480,6 +1488,11 @@
         }
 
         async function loadBlogs() {
+            // Skip loading blogs for people posts
+            if (selectedPostType === 'people_post') {
+                return;
+            }
+            
             try {
                 const { data: blogs, error } = await supabase
                     .from('blogs')
@@ -1930,6 +1943,23 @@
         }
 
         function nextStep() {
+            // Validate Step 2 based on post type
+            if (currentStep === 2) {
+                if (selectedPostType === 'people_post') {
+                    // Check if publication location is selected for people posts
+                    if (!selectedPublicationLocation) {
+                        showToast('Please select where this People Post should appear', 'error');
+                        return;
+                    }
+                } else {
+                    // Check if blog is selected for regular posts
+                    if (!selectedBlog) {
+                        showToast('Please select a blog', 'error');
+                        return;
+                    }
+                }
+            }
+            
             // Skip people fields step if not a people post
             let nextStepNum = currentStep + 1;
             
@@ -2064,7 +2094,7 @@
                 const publishType = selectedOption.dataset.option;
                 
                 const postData = {
-                    blog_id: selectedBlog.id,
+                    blog_id: selectedPostType === 'people_post' ? null : selectedBlog.id, // null for people posts
                     title: document.getElementById('postTitle').value,
                     slug: document.getElementById('postSlug').value,
                     content: quillEditor.root.innerHTML,
@@ -2093,6 +2123,7 @@
                     postData.person_last_name = document.getElementById('personLastName').value;
                     postData.person_photo_url = personPhoto ? personPhoto.url : null;
                     postData.person_links = JSON.stringify(collectPersonLinks());
+                    postData.publication_location = selectedPublicationLocation; // Add publication location
                 }
 
                 // Insert post
@@ -2109,7 +2140,15 @@
                 const successTitle = document.querySelector('#successStep .step-title');
                 successTitle.textContent = `${postTypeText} Published Successfully!`;
                 
-                const postUrl = `${window.location.origin}/blog/post.html?blog=${selectedBlog.slug}&post=${data.slug}`;
+                // Generate appropriate URL based on post type
+                let postUrl;
+                if (selectedPostType === 'people_post') {
+                    // Generate people post URL
+                    postUrl = `${window.location.origin}/people/profile.html?person=${data.slug}`;
+                } else {
+                    // Generate regular blog post URL
+                    postUrl = `${window.location.origin}/blog/post.html?blog=${selectedBlog.slug}&post=${data.slug}`;
+                }
                 document.getElementById('postUrl').textContent = postUrl;
                 
                 document.getElementById('loadingStep').classList.remove('active');
