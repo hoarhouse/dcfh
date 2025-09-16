@@ -13,23 +13,31 @@ console.log('🚀 DCF Unified System Loading (Auth + Icons)...');
 const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
 
-// SINGLE CLIENT - PREVENT MULTIPLE INSTANCES
-if (!window.dcfSupabase) {
-    if (typeof window !== 'undefined' && window.supabase) {
-        window.dcfSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    storage: window.localStorage
-  }
-});
-        console.log('✅ Single Supabase client created');
-    } else {
-        console.error('❌ Supabase library not loaded');
+// Initialize Supabase client with retry mechanism
+function initializeSupabaseClient() {
+    if (!window.dcfSupabase) {
+        if (typeof window !== 'undefined' && window.supabase) {
+            window.dcfSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    flowType: 'pkce',
+                    storage: window.localStorage
+                }
+            });
+            console.log('✅ Single Supabase client created');
+            return true;
+        } else {
+            console.log('⏳ Supabase library not yet loaded, will retry...');
+            return false;
+        }
     }
+    return true;
 }
+
+// Try to initialize immediately
+initializeSupabaseClient();
 
 // =============================================================================
 // 2. GLOBAL STATE - SINGLE SOURCE OF TRUTH
@@ -45,6 +53,12 @@ window.notificationDropdownOpen = false;// =====================================
 // 3. AUTHENTICATION CORE - NO HANGING PROMISES
 // =============================================================================
 async function initializeAuth() {
+    // Ensure Supabase client is initialized
+    if (!initializeSupabaseClient()) {
+        console.log('❌ Could not initialize Supabase client');
+        return false;
+    }
+    
     if (!window.dcfSupabase) {
         console.log('❌ No Supabase client available');
         return false;
@@ -2835,6 +2849,24 @@ async function initializeDCF() {
     console.log('🚀 Initializing DCF Authentication System - REDIRECTS DISABLED...');
     
     try {
+        // Ensure Supabase client is initialized first
+        let retries = 0;
+        while (!initializeSupabaseClient() && retries < 10) {
+            console.log(`⏳ Waiting for Supabase library... attempt ${retries + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        if (!window.dcfSupabase) {
+            console.error('❌ Failed to initialize Supabase client after 10 attempts');
+            return;
+        }
+        
+        // Make dcfSupabase available as authSupabase and masterSupabase for existing code
+        window.authSupabase = window.dcfSupabase;
+        window.masterSupabase = window.dcfSupabase;
+        console.log('✅ Supabase aliases created');
+        
         // Setup auth state listener
         setupAuthStateListener();
         
@@ -4684,9 +4716,7 @@ console.log('✅ Universal Analytics System loaded - tracks all interactions for
 // =============================================================================
 // Handle missing tables gracefully - REMOVED SINCE TABLES EXIST
 // Comments table is called 'post_comments' not 'comments'
-// Make dcfSupabase available as authSupabase and masterSupabase for existing code
-window.authSupabase = window.dcfSupabase;
-window.masterSupabase = window.dcfSupabase;
+// Aliases will be set after Supabase client is initialized
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM loaded, starting DCF initialization...');
     
