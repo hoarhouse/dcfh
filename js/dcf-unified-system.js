@@ -848,15 +848,22 @@ function populateAdminMenu() {
     const adminMenuHTML = `
         <div class="dcf-admin-menu-container">
             <ul class="dcf-admin-menu-items">
-                ${adminMenuItems.map(item => `
-                    <li class="dcf-admin-menu-item">
-                        <a href="${item.href}" 
-                           class="dcf-admin-menu-link ${window.location.pathname.includes(item.href.replace('.html', '')) ? 'active' : ''}"
-                           ${item.onclick ? `onclick="${item.onclick}"` : ''}>
-                            <span class="dcf-admin-menu-text">${item.title}</span>
-                        </a>
-                    </li>
-                `).join('')}
+                ${adminMenuItems.map(item => {
+                    // Get the current page filename
+                    const currentPage = window.location.pathname.split('/').pop();
+                    // Check if this is the active page (exact match)
+                    const isActive = currentPage === item.href;
+                    
+                    return `
+                        <li class="dcf-admin-menu-item">
+                            <a href="${item.href}" 
+                               class="dcf-admin-menu-link ${isActive ? 'active' : ''}"
+                               ${item.onclick ? `onclick="${item.onclick}"` : ''}>
+                                <span class="dcf-admin-menu-text">${item.title}</span>
+                            </a>
+                        </li>
+                    `;
+                }).join('')}
             </ul>
         </div>
     `;
