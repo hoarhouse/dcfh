@@ -842,7 +842,6 @@ function populateAdminMenu() {
                     </li>
                 `).join('')}
             </ul>
-            <span class="dcf-admin-badge">ADMIN TOOLS</span>
         </div>
     `;
     
