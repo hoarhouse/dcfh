@@ -2424,6 +2424,117 @@
                 default: return 'ℹ';
             }
         }
+
+        // Show publish success modal
+        function showPublishSuccessModal(postData, postId) {
+            const modal = document.getElementById('publishSuccessModal');
+            const titleElement = document.getElementById('publishedPostTitle');
+            const urlInput = document.getElementById('publishedPostUrl');
+            const viewBtn = document.getElementById('viewPostBtn');
+            
+            // Set post title
+            titleElement.textContent = `"${postData.title}"`;
+            
+            // Generate post URL (adjust this based on your URL structure)
+            const slug = postData.slug || postData.title.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+            
+            // Assuming the blog posts are served at /blog/[blog-slug]/[post-slug]
+            const postUrl = `${window.location.origin}/blog/${postData.blog_slug || 'news'}/${slug}`;
+            urlInput.value = postUrl;
+            viewBtn.href = postUrl;
+            
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        // Copy post URL to clipboard
+        function copyPostUrl() {
+            const urlInput = document.getElementById('publishedPostUrl');
+            urlInput.select();
+            document.execCommand('copy');
+            showToast('URL copied to clipboard!', 'success');
+        }
+
+        // Create another post
+        function createAnotherPost() {
+            // Reset form and close modal
+            document.getElementById('publishSuccessModal').style.display = 'none';
+            
+            // Clear form
+            document.getElementById('postForm').reset();
+            currentPostId = null;
+            currentFeaturedMedia = null;
+            
+            // Reset editor
+            if (window.postEditor) {
+                window.postEditor.setContents([]);
+            }
+            
+            // Update title
+            document.getElementById('editorTitle').textContent = 'Create New Post';
+            
+            // Clear featured media
+            document.getElementById('featuredMediaUpload').style.display = 'block';
+            document.getElementById('featuredMediaPreview').style.display = 'none';
+            
+            showToast('Ready to create a new post!', 'success');
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('publishSuccessModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     </script>
+
+    <!-- Publish Success Modal -->
+    <div id="publishSuccessModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 10000;">
+        <div class="modal-content" style="background: white; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 1.5rem; border-radius: 8px 8px 0 0;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem;">
+                    <span style="font-size: 1.5rem;">🎉</span>
+                    Post Published Successfully!
+                </h2>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                    <p style="color: #666; font-size: 1.1rem; margin-bottom: 0.5rem;">
+                        Your blog post has been published and is now live!
+                    </p>
+                    <p id="publishedPostTitle" style="font-weight: 600; color: #333; font-size: 1.2rem; margin: 1rem 0;">
+                        <!-- Post title will be inserted here -->
+                    </p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">Post URL:</p>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input id="publishedPostUrl" type="text" readonly 
+                               style="flex: 1; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px; background: white; font-size: 0.9rem;">
+                        <button onclick="copyPostUrl()" class="btn btn-secondary btn-small" style="white-space: nowrap; padding: 0.5rem 1rem;">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a id="viewPostBtn" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 0.75rem 1.5rem;">
+                        👁️ View Post
+                    </a>
+                    <button onclick="createAnotherPost()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        ➕ Create Another
+                    </button>
+                    <button onclick="returnToPosts()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        📝 Back to Posts
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
