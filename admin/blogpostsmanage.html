@@ -579,6 +579,56 @@
             color: #004085;
         }
 
+        /* Post Type Badges */
+        .type-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 0.5rem;
+        }
+
+        .type-blog {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .type-people {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .type-news {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        /* Person Info in Post Item */
+        .person-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .person-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e5e5e5;
+        }
+
+        .person-name {
+            font-weight: 500;
+            color: #333;
+        }
+
         .post-excerpt {
             color: #666;
             line-height: 1.4;
@@ -807,9 +857,15 @@
         <!-- Controls Section -->
         <div class="controls-section">
             <div class="search-filters">
-                <input type="text" id="searchInput" class="form-input" placeholder="Search posts by title, content, or slug...">
+                <input type="text" id="searchInput" class="form-input" placeholder="Search posts by title, content, slug, person name, or category...">
                 <select id="blogFilter" class="form-select">
                     <option value="">All Blogs</option>
+                </select>
+                <select id="postTypeFilter" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="blog_post">Blog Posts</option>
+                    <option value="people_post">People Posts</option>
+                    <option value="news_post">News Posts</option>
                 </select>
                 <select id="statusFilter" class="form-select">
                     <option value="">All Status</option>
@@ -916,12 +972,19 @@
                     blogFilter.innerHTML += `<option value="${blog.id}">${blog.name}</option>`;
                 });
 
-                // Load posts with blog information
+                // Load posts with blog information and type-specific fields
                 const { data: postsData, error: postsError } = await supabase
                     .from('blog_posts')
                     .select(`
                         *,
-                        blogs!inner(name, slug)
+                        blogs!inner(name, slug),
+                        post_type,
+                        person_first_name,
+                        person_last_name,
+                        person_photo_url,
+                        person_links,
+                        news_category,
+                        publication_date
                     `)
                     .order('created_at', { ascending: false });
 
@@ -946,6 +1009,7 @@
             
             // Filters
             document.getElementById('blogFilter').addEventListener('change', filterPosts);
+            document.getElementById('postTypeFilter').addEventListener('change', filterPosts);
             document.getElementById('statusFilter').addEventListener('change', filterPosts);
             document.getElementById('authorFilter').addEventListener('change', filterPosts);
 
@@ -962,19 +1026,34 @@
         function filterPosts() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const blogId = document.getElementById('blogFilter').value;
+            const postType = document.getElementById('postTypeFilter').value;
             const status = document.getElementById('statusFilter').value;
 
             filteredPosts = posts.filter(post => {
-                const matchesSearch = !search || 
+                // Enhanced search including type-specific fields
+                let matchesSearch = !search || 
                     post.title.toLowerCase().includes(search) ||
                     post.slug.toLowerCase().includes(search) ||
                     (post.excerpt && post.excerpt.toLowerCase().includes(search)) ||
                     (post.content && post.content.toLowerCase().includes(search));
+                
+                // Add people-specific search
+                if (!matchesSearch && post.post_type === 'people_post') {
+                    matchesSearch = 
+                        (post.person_first_name && post.person_first_name.toLowerCase().includes(search)) ||
+                        (post.person_last_name && post.person_last_name.toLowerCase().includes(search));
+                }
+                
+                // Add news-specific search
+                if (!matchesSearch && post.post_type === 'news_post') {
+                    matchesSearch = post.news_category && post.news_category.toLowerCase().includes(search);
+                }
 
                 const matchesBlog = !blogId || post.blog_id === blogId;
+                const matchesPostType = !postType || post.post_type === postType;
                 const matchesStatus = !status || post.status === status;
 
-                return matchesSearch && matchesBlog && matchesStatus;
+                return matchesSearch && matchesBlog && matchesPostType && matchesStatus;
             });
 
             displayPosts();
@@ -1006,6 +1085,43 @@
             item.className = 'post-item';
             item.dataset.postId = post.id;
 
+            // Determine post type and prepare type-specific displays
+            const postType = post.post_type || 'blog_post';
+            let typeLabel = 'Blog';
+            let typeClass = 'type-blog';
+            let additionalInfo = '';
+
+            if (postType === 'people_post') {
+                typeLabel = 'People';
+                typeClass = 'type-people';
+                
+                // Add person info if available
+                if (post.person_first_name || post.person_last_name) {
+                    const fullName = `${post.person_first_name || ''} ${post.person_last_name || ''}`.trim();
+                    const photoUrl = post.person_photo_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23e5e5e5"/><text x="50" y="55" font-size="30" fill="%23999" text-anchor="middle">👤</text></svg>';
+                    
+                    additionalInfo = `
+                        <div class="person-info">
+                            <img src="${photoUrl}" alt="${fullName}" class="person-photo" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><circle cx=\\'50\\' cy=\\'50\\' r=\\'40\\' fill=\\'%23e5e5e5\\'/><text x=\\'50\\' y=\\'55\\' font-size=\\'30\\' fill=\\'%23999\\' text-anchor=\\'middle\\'>👤</text></svg>'">
+                            <div class="person-name">Featured: ${escapeHtml(fullName)}</div>
+                        </div>
+                    `;
+                }
+            } else if (postType === 'news_post') {
+                typeLabel = 'News';
+                typeClass = 'type-news';
+                
+                // Add news-specific info
+                if (post.news_category || post.publication_date) {
+                    const parts = [];
+                    if (post.news_category) parts.push(`Category: ${escapeHtml(post.news_category)}`);
+                    if (post.publication_date) parts.push(`Published: ${new Date(post.publication_date).toLocaleDateString()}`);
+                    if (parts.length > 0) {
+                        additionalInfo = `<div style="margin-top: 0.5rem; color: #666; font-size: 0.85rem;">${parts.join(' • ')}</div>`;
+                    }
+                }
+            }
+
             const publishedDate = post.published_at ? 
                 new Date(post.published_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -1026,6 +1142,7 @@
                         <div class="post-info">
                             <div class="post-title">
                                 <a href="post-edit.html?id=${post.id}">${escapeHtml(post.title)}</a>
+                                <span class="type-badge ${typeClass}">${typeLabel}</span>
                                 <div class="post-slug" onclick="copyToClipboard('${post.slug}')" title="Click to copy slug">
                                     ${post.slug}
                                 </div>
@@ -1037,6 +1154,8 @@
                                 <span>${publishedDate}</span>
                                 <span>${post.view_count || 0} views</span>
                             </div>
+                            
+                            ${additionalInfo}
                             
                             <div class="post-excerpt">${escapeHtml(excerpt)}</div>
                         </div>
@@ -1163,7 +1282,15 @@
                     published_at: null,
                     view_count: 0,
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    // Preserve post type and type-specific fields
+                    post_type: originalPost.post_type,
+                    person_first_name: originalPost.person_first_name,
+                    person_last_name: originalPost.person_last_name,
+                    person_photo_url: originalPost.person_photo_url,
+                    person_links: originalPost.person_links,
+                    news_category: originalPost.news_category,
+                    publication_date: originalPost.publication_date
                 };
 
                 const { error } = await supabase
