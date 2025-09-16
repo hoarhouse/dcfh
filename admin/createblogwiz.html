@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Blog - DCF Hungary Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .wizard-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .wizard-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .wizard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .wizard-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            height: 6px;
+            border-radius: 3px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #333, #555);
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 33.33%;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dee2e6;
+            transition: background 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: #333;
+        }
+
+        .step-dot.completed {
+            background: #28a745;
+        }
+
+        .wizard-step {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .wizard-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .step-description {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-input.large {
+            font-size: 1.3rem;
+            padding: 1.25rem;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .auto-generated {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .form-hint {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        /* Preview */
+        .preview-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+
+        .preview-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-url {
+            font-family: monospace;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+            word-break: break-all;
+        }
+
+        .preview-description {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .preview-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-meta-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .preview-meta-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .preview-meta-value {
+            color: #666;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            border-color: #333;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Success */
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .wizard-container {
+                padding: 1rem;
+            }
+
+            .wizard-step {
+                padding: 2rem 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .preview-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h1 class="wizard-title">Create New Blog</h1>
+            <p class="wizard-subtitle">Set up a new blog for your content and community</p>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="step-indicator">
+                <div class="step-dot active" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+                <div class="step-dot" data-step="3"></div>
+            </div>
+        </div>
+
+        <!-- Step 1: Basic Information -->
+        <div class="wizard-step active" id="step1">
+            <h2 class="step-title">What's your blog about?</h2>
+            <p class="step-description">Give your blog a name and describe its purpose</p>
+            
+            <div class="form-group">
+                <label class="form-label">Blog Name <span class="required">*</span></label>
+                <input type="text" id="blogName" class="form-input large" placeholder="Enter your blog name..." maxlength="100">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">URL Slug <span class="required">*</span></label>
+                <input type="text" id="blogSlug" class="form-input" placeholder="auto-generated-from-name">
+                <div class="auto-generated">This will be part of your blog URL</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="blogDescription" class="form-textarea" placeholder="What is this blog about? What topics will you cover?"></textarea>
+                <div class="form-hint">This helps visitors understand what your blog is about</div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="nextStep()" id="step1Next" disabled>
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Settings -->
+        <div class="wizard-step" id="step2">
+            <h2 class="step-title">Configure your blog settings</h2>
+            <p class="step-description">Set up the audience and organization details</p>
+            
+            <div class="form-group">
+                <label class="form-label">Target Audience</label>
+                <select id="targetAudience" class="form-select">
+                    <option value="">Select audience...</option>
+                    <option value="General Public">General Public</option>
+                    <option value="Academics & Researchers">Academics & Researchers</option>
+                    <option value="Technology Professionals">Technology Professionals</option>
+                    <option value="Policy Makers">Policy Makers</option>
+                    <option value="Faith Communities">Faith Communities</option>
+                    <option value="Students & Educators">Students & Educators</option>
+                    <option value="Industry Leaders">Industry Leaders</option>
+                    <option value="Non-Profit Sector">Non-Profit Sector</option>
+                </select>
+                <div class="form-hint">Who is the primary audience for this blog?</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Initiative</label>
+                <select id="initiative" class="form-select">
+                    <option value="">Select initiative...</option>
+                    <option value="AI Ethics & Governance">AI Ethics & Governance</option>
+                    <option value="Digital Humanitarianism">Digital Humanitarianism</option>
+                    <option value="Faith & Technology">Faith & Technology</option>
+                    <option value="Cybersecurity & Safety">Cybersecurity & Safety</option>
+                    <option value="Educational Outreach">Educational Outreach</option>
+                    <option value="Policy & Advocacy">Policy & Advocacy</option>
+                    <option value="Research & Development">Research & Development</option>
+                    <option value="Community Building">Community Building</option>
+                </select>
+                <div class="form-hint">Which DCF initiative does this blog support?</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select id="blogStatus" class="form-select">
+                    <option value="active">Active - Ready for posts</option>
+                    <option value="draft">Draft - Not visible to public</option>
+                </select>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                <button class="btn btn-primary" onclick="nextStep()">Continue →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Review & Create -->
+        <div class="wizard-step" id="step3">
+            <h2 class="step-title">Review & Create Blog</h2>
+            <p class="step-description">Double-check everything looks good before creating</p>
+            
+            <div class="preview-container">
+                <div class="preview-title" id="previewName">Blog Name</div>
+                <div class="preview-url" id="previewUrl">https://yourdomain.com/blog/blog-slug</div>
+                <div class="preview-description" id="previewDescription">Blog description will appear here...</div>
+                
+                <div class="preview-meta">
+                    <div class="preview-meta-item">
+                        <div class="preview-meta-label">Target Audience</div>
+                        <div class="preview-meta-value" id="previewAudience">Not specified</div>
+                    </div>
+                    <div class="preview-meta-item">
+                        <div class="preview-meta-label">Initiative</div>
+                        <div class="preview-meta-value" id="previewInitiative">Not specified</div>
+                    </div>
+                    <div class="preview-meta-item">
+                        <div class="preview-meta-label">Status</div>
+                        <div class="preview-meta-value" id="previewStatus">Active</div>
+                    </div>
+                    <div class="preview-meta-item">
+                        <div class="preview-meta-label">Created By</div>
+                        <div class="preview-meta-value" id="previewCreator">Admin</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                <button class="btn btn-success" onclick="createBlog()">
+                    Create Blog
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Step -->
+        <div class="wizard-step" id="loadingStep">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Creating your blog...</p>
+            </div>
+        </div>
+
+        <!-- Success Step -->
+        <div class="wizard-step" id="successStep">
+            <div class="success-icon">✅</div>
+            <h2 class="step-title">Blog Created Successfully!</h2>
+            <p class="step-description">Your new blog is ready for content</p>
+            
+            <div class="preview-container">
+                <div class="preview-title" id="successBlogName">Blog Name</div>
+                <div class="preview-url" id="successBlogUrl">Blog URL</div>
+                <p style="margin-top: 1rem; color: #666;">
+                    You can now start creating posts for this blog using the blog post wizard.
+                </p>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="viewBlog()">👁️ View Blog</button>
+                <button class="btn btn-secondary" onclick="createPost()">✍️ Create Post</button>
+                <button class="btn btn-primary" onclick="backToDashboard()">📊 Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Wizard state
+        let currentStep = 1;
+        let blogData = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Blog name input
+            document.getElementById('blogName').addEventListener('input', function() {
+                const name = this.value;
+                document.getElementById('step1Next').disabled = !name.trim();
+                
+                // Auto-generate slug
+                if (name) {
+                    const slug = name.toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '_')
+                        .replace(/-+/g, '_')
+                        .trim();
+                    document.getElementById('blogSlug').value = slug;
+                }
+                
+                updatePreview();
+            });
+
+            // Slug input
+            document.getElementById('blogSlug').addEventListener('input', function() {
+                // Clean up slug input
+                this.value = this.value.toLowerCase()
+                    .replace(/[^a-z0-9_-]/g, '')
+                    .replace(/\s+/g, '_');
+                updatePreview();
+            });
+
+            // Other inputs
+            document.getElementById('blogDescription').addEventListener('input', updatePreview);
+            document.getElementById('targetAudience').addEventListener('change', updatePreview);
+            document.getElementById('initiative').addEventListener('change', updatePreview);
+            document.getElementById('blogStatus').addEventListener('change', updatePreview);
+        }
+
+        function updatePreview() {
+            const name = document.getElementById('blogName').value || 'Blog Name';
+            const slug = document.getElementById('blogSlug').value || 'blog-slug';
+            const description = document.getElementById('blogDescription').value || 'Blog description will appear here...';
+            const audience = document.getElementById('targetAudience').value || 'Not specified';
+            const initiative = document.getElementById('initiative').value || 'Not specified';
+            const status = document.getElementById('blogStatus').value === 'active' ? 'Active' : 'Draft';
+            
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewUrl').textContent = `${window.location.origin}/blog/category.html?blog=${slug}`;
+            document.getElementById('previewDescription').textContent = description;
+            document.getElementById('previewAudience').textContent = audience;
+            document.getElementById('previewInitiative').textContent = initiative;
+            document.getElementById('previewStatus').textContent = status;
+        }
+
+        function nextStep() {
+            if (currentStep < 3) {
+                showStep(currentStep + 1);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+
+        function showStep(step) {
+            // Hide current step
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            
+            // Show new step
+            currentStep = step;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            
+            // Update progress
+            updateProgress();
+            
+            // Update preview when reaching step 3
+            if (step === 3) {
+                updatePreview();
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / 3) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            
+            // Update step dots
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index + 1 < currentStep) {
+                    dot.classList.add('completed');
+                } else if (index + 1 === currentStep) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        async function createBlog() {
+            // Show loading
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('loadingStep').classList.add('active');
+
+            try {
+                // Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                // Collect blog data
+                const blogData = {
+                    name: document.getElementById('blogName').value,
+                    slug: document.getElementById('blogSlug').value,
+                    description: document.getElementById('blogDescription').value || null,
+                    target_audience: document.getElementById('targetAudience').value || null,
+                    initiative: document.getElementById('initiative').value || null,
+                    status: document.getElementById('blogStatus').value,
+                    created_by: user ? user.id : null,
+                    post_count: 0,
+                    theme_config: {},
+                    seo_settings: {
+                        title: document.getElementById('blogName').value,
+                        description: document.getElementById('blogDescription').value
+                    },
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                // Insert blog
+                const { data, error } = await supabase
+                    .from('blogs')
+                    .insert([blogData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Show success
+                const blogUrl = `${window.location.origin}/blog/category.html?blog=${data.slug}`;
+                document.getElementById('successBlogName').textContent = data.name;
+                document.getElementById('successBlogUrl').textContent = blogUrl;
+                
+                document.getElementById('loadingStep').classList.remove('active');
+                document.getElementById('successStep').classList.add('active');
+
+                // Store for buttons
+                window.newBlogData = { ...data, blogUrl };
+
+            } catch (error) {
+                console.error('Create blog error:', error);
+                showToast('Failed to create blog: ' + error.message, 'error');
+                
+                // Go back to step 3
+                document.getElementById('loadingStep').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+            }
+        }
+
+        function viewBlog() {
+            if (window.newBlogData) {
+                window.open(window.newBlogData.blogUrl, '_blank');
+            }
+        }
+
+        function createPost() {
+            if (window.newBlogData) {
+                window.location.href = `blogwiz.html?blog_id=${window.newBlogData.id}`;
+            }
+        }
+
+        function backToDashboard() {
+            window.location.href = 'dcf_admin_dashboard.html';
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
