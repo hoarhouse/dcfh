@@ -861,6 +861,11 @@
             color: #383d41;
         }
 
+        .status-scheduled {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
         .status-review {
             background: #fff3cd;
             color: #856404;
@@ -2966,8 +2971,25 @@ ${JSON.stringify(error, null, 2)}
             posts.forEach(post => {
                 try {
                     const row = document.createElement('tr');
-                    const statusClass = post.status === 'published' ? 'active' : post.status === 'scheduled' ? 'warning' : 'pending';
-                    const statusText = post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : 'Draft';
+                    // Map status to correct CSS class
+                    let statusClass = 'draft'; // default
+                    let statusText = 'Draft';
+                    
+                    switch(post.status) {
+                        case 'published':
+                            statusClass = 'published';
+                            statusText = 'Published';
+                            break;
+                        case 'scheduled':
+                            statusClass = 'scheduled';
+                            statusText = 'Scheduled';
+                            break;
+                        case 'draft':
+                        default:
+                            statusClass = 'draft';
+                            statusText = 'Draft';
+                            break;
+                    }
                     
                     row.innerHTML = `
                         <td><strong>${escapeHtml(post.title || 'Untitled')}</strong></td>
@@ -3078,6 +3100,11 @@ ${JSON.stringify(error, null, 2)}
         window.createNewPost = async function() {
             // Navigate to the dedicated post editor page
             window.location.href = 'dcf_blog_post_editor.html';
+        }
+
+        window.editPost = function(postId) {
+            // Navigate to post editor with post ID
+            window.location.href = `dcf_blog_post_editor.html?id=${postId}`;
         }
 
         let quillEditor = null;
