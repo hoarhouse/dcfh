@@ -854,16 +854,9 @@ function populateAdminMenu() {
 window.showBlogManagement = function(event) {
     if (event) event.preventDefault();
     
-    // Check if we're on the dashboard page
-    const currentPage = window.location.pathname.split('/').pop();
-    if (currentPage === 'dcf_admin_dashboard.html') {
-        // On dashboard, let the dashboard's own function handle it
-        return;
-    }
-    
-    // On other admin pages, navigate to the blog editor
+    // Navigate to the blog management page
     const basePath = getCorrectBasePath();
-    window.location.href = basePath + 'admin/dcf_blog_post_editor.html';
+    window.location.href = basePath + 'admin/dcf_manage_blog.html';
 };
 
 // =============================================================================
