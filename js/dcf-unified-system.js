@@ -593,6 +593,8 @@ function populateTopNavigation() {
     const currentPage = window.location.pathname.split('/').pop();
     const basePath = getCorrectBasePath();
     
+    console.log('🔍 DEBUG NAV: Current URL:', window.location.pathname);
+    console.log('🔍 DEBUG NAV: Base path:', basePath);
     console.log('🔍 DEBUG NAV: window.dcfUser:', window.dcfUser);
     console.log('🔍 DEBUG NAV: User login status:', window.dcfUser?.isLoggedIn);
     console.log('🔍 DEBUG NAV: Navigation type:', window.dcfUser?.isLoggedIn ? 'member' : 'public');
@@ -663,7 +665,8 @@ function populateTopNavigation() {
     
     console.log('🔍 DEBUG NAV: navItems:', navItems);
     console.log('DEBUG TOP NAV - basePath:', basePath);
-    console.log('DEBUG TOP NAV - navItems:', navItems);
+    console.log('DEBUG TOP NAV - Blog link will be:', basePath + 'blog/index.html');
+    console.log('DEBUG TOP NAV - People link will be:', basePath + 'people/index.html');
     console.log('DEBUG TOP NAV - isLoggedIn:', window.dcfUser?.isLoggedIn);
     
     // Detect current initiative page
