@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Blog Post - DCF Hungary</title>
+    <title id="pageTitle">Create Blog Post - DCF Hungary</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
     <style>
         * {
@@ -1441,7 +1441,7 @@
         <div class="wizard-step" id="loadingStep">
             <div class="loading">
                 <div class="spinner"></div>
-                <p>Publishing your post...</p>
+                <h3>Creating your post...</h3>
             </div>
         </div>
 
@@ -1456,7 +1456,7 @@
             </div>
             
             <div class="btn-group">
-                <button class="btn btn-secondary" onclick="viewPost()">👁️ View Post</button>
+                <button class="btn btn-secondary" onclick="viewPost()" id="viewPostBtn">👁️ View Post</button>
                 <button class="btn btn-secondary" onclick="createAnother()">➕ Create Another</button>
                 <button class="btn btn-primary" onclick="backToDashboard()">📊 Back to Dashboard</button>
             </div>
@@ -1492,15 +1492,245 @@
         let personLinksCount = 1;
         let quillEditor = null;
         let postData = {};
+        
+        // Edit mode variables
+        let isEditMode = false;
+        let editPostId = null;
+        let originalPostData = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check for edit mode
+            await checkEditMode();
+            
             setupPostTypeSelection();
             await loadBlogs();
             setupEventListeners();
             initializeEditor();
             setupPeopleFieldsValidation();
+            
+            // Load existing post data if in edit mode
+            if (isEditMode && editPostId) {
+                await loadPostForEdit();
+            }
         });
+
+        // Check if we're in edit mode
+        async function checkEditMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('post_id');
+            
+            if (postId) {
+                isEditMode = true;
+                editPostId = postId;
+                
+                // Update page title and UI elements
+                document.getElementById('pageTitle').textContent = 'Edit Blog Post - DCF Hungary';
+                document.title = 'Edit Blog Post - DCF Hungary';
+                
+                // Update breadcrumb if exists
+                const breadcrumb = document.querySelector('.breadcrumb-item.active');
+                if (breadcrumb) {
+                    breadcrumb.textContent = 'Edit Post';
+                }
+                
+                // Update wizard title
+                const wizardTitle = document.querySelector('.wizard-header h1');
+                if (wizardTitle) {
+                    wizardTitle.textContent = 'Edit Blog Post';
+                }
+                
+                // Update publish button text
+                setTimeout(() => {
+                    const publishBtn = document.getElementById('publishBtn');
+                    if (publishBtn) {
+                        publishBtn.innerHTML = '💾 Update Post';
+                    }
+                }, 100);
+                
+                console.log('Edit mode activated for post ID:', postId);
+            }
+        }
+        
+        // Load existing post data for editing
+        async function loadPostForEdit() {
+            try {
+                // Show loading state
+                showToast('Loading post data...', 'info');
+                
+                // Query the blog_posts table
+                const { data: post, error } = await supabase
+                    .from('blog_posts')
+                    .select('*')
+                    .eq('id', editPostId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (!post) {
+                    throw new Error('Post not found');
+                }
+                
+                // Store original data
+                originalPostData = post;
+                
+                console.log('Loaded post data:', post);
+                
+                // Pre-populate all fields based on post type
+                await populateFormWithPostData(post);
+                
+                showToast('Post data loaded successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error loading post:', error);
+                showToast('Failed to load post: ' + error.message, 'error');
+                
+                // Optionally redirect back to posts management
+                setTimeout(() => {
+                    if (confirm('Failed to load post. Return to posts management?')) {
+                        window.location.href = 'blogpostsmanage.html';
+                    }
+                }, 2000);
+            }
+        }
+        
+        // Populate form with existing post data
+        async function populateFormWithPostData(post) {
+            // Step 1: Set post type
+            selectedPostType = post.post_type || 'blog_post';
+            const postTypeCard = document.querySelector(`.post-type-card[data-type="${selectedPostType}"]`);
+            if (postTypeCard) {
+                selectPostType(postTypeCard);
+            }
+            
+            // Step 2: Set blog or publication location
+            if (selectedPostType === 'people_post') {
+                // Set publication location for people posts
+                selectedPublicationLocation = post.publication_location || 'people-page';
+                const locationCard = document.querySelector(`[data-location="${selectedPublicationLocation}"]`);
+                if (locationCard) {
+                    selectPublicationLocation(locationCard);
+                }
+            } else {
+                // Set blog for regular posts
+                if (post.blog_id) {
+                    // Find and select the blog
+                    const blogs = await loadBlogs();
+                    selectedBlog = blogs.find(b => b.id === post.blog_id);
+                    if (selectedBlog) {
+                        const blogCard = document.querySelector(`.blog-card[data-blog-id="${selectedBlog.id}"]`);
+                        if (blogCard) {
+                            selectBlog(blogCard);
+                        }
+                    }
+                }
+            }
+            
+            // Wait a moment for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Step 3: Person Information (for people posts)
+            if (selectedPostType === 'people_post') {
+                if (post.person_first_name) {
+                    document.getElementById('personFirstName').value = post.person_first_name;
+                }
+                if (post.person_last_name) {
+                    document.getElementById('personLastName').value = post.person_last_name;
+                }
+                
+                // Validate to enable continue button
+                const firstName = document.getElementById('personFirstName').value.trim();
+                const lastName = document.getElementById('personLastName').value.trim();
+                document.getElementById('step3PeopleNext').disabled = !(firstName && lastName);
+            }
+            
+            // Step 4: Title and Slug
+            if (selectedPostType === 'people_post') {
+                // For people posts, use the people-specific fields
+                document.getElementById('peoplePostTitle').value = post.title || '';
+                document.getElementById('peoplePostSlug').value = post.slug || '';
+                document.getElementById('step4PeopleNext').disabled = !post.title;
+            } else {
+                // For blog posts
+                document.getElementById('postTitle').value = post.title || '';
+                document.getElementById('postSlug').value = post.slug || '';
+                document.getElementById('step3Next').disabled = !post.title;
+            }
+            
+            // Step 5: Additional Person Information (for people posts)
+            if (selectedPostType === 'people_post') {
+                // Load person photo
+                if (post.person_photo_url) {
+                    personPhoto = {
+                        url: post.person_photo_url,
+                        type: 'image'
+                    };
+                    showPersonPhotoPreview(personPhoto.url);
+                }
+                
+                // Load person links
+                if (post.person_links) {
+                    try {
+                        const links = JSON.parse(post.person_links);
+                        if (Array.isArray(links) && links.length > 0) {
+                            // Clear existing links container
+                            const container = document.getElementById('personLinksContainer');
+                            container.innerHTML = '';
+                            personLinksCount = 0;
+                            
+                            // Add each link
+                            links.forEach((link, index) => {
+                                addPersonLink();
+                                document.getElementById(`linkLabel${index}`).value = link.label || '';
+                                document.getElementById(`linkUrl${index}`).value = link.url || '';
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Error parsing person links:', e);
+                    }
+                }
+            }
+            
+            // Step 6: Featured Media
+            if (post.featured_image_url) {
+                featuredMedia = {
+                    url: post.featured_image_url,
+                    type: post.featured_media_type || 'image'
+                };
+                showMediaPreview(featuredMedia.url, featuredMedia.type);
+            }
+            
+            // Step 7: Content
+            if (post.content && quillEditor) {
+                // Set content in Quill editor
+                quillEditor.root.innerHTML = post.content;
+                document.getElementById('step5Next').disabled = false;
+            }
+            
+            // Set excerpt
+            if (post.excerpt) {
+                document.getElementById('postExcerpt').value = post.excerpt;
+            }
+            
+            // Step 8: Publishing Options
+            if (post.status) {
+                const statusMap = {
+                    'published': 'publish',
+                    'draft': 'draft',
+                    'scheduled': 'schedule'
+                };
+                const option = statusMap[post.status] || 'draft';
+                const optionCard = document.querySelector(`.publish-option[data-option="${option}"]`);
+                if (optionCard) {
+                    selectPublishOption(optionCard);
+                }
+                
+                // If scheduled, set the date
+                if (post.status === 'scheduled' && post.scheduled_for) {
+                    document.getElementById('scheduleDate').value = post.scheduled_for;
+                }
+            }
+        }
 
         function setupPostTypeSelection() {
             document.querySelectorAll('.post-type-card').forEach(card => {
@@ -1998,6 +2228,13 @@
         }
 
         function selectPublishOption(option) {
+            // Handle both element and string parameter (for edit mode)
+            if (typeof option === 'string') {
+                option = document.querySelector(`.publish-option[data-option="${option}"]`);
+            }
+            
+            if (!option) return;
+            
             document.querySelectorAll('.publish-option').forEach(opt => 
                 opt.classList.remove('selected'));
             option.classList.add('selected');
@@ -2005,6 +2242,7 @@
             const optionType = option.dataset.option;
             const scheduleInput = option.querySelector('.schedule-input');
             const publishBtn = document.getElementById('publishBtn');
+            const actionText = isEditMode ? 'Update' : 'Publish';
 
             // Hide all schedule inputs
             document.querySelectorAll('.schedule-input').forEach(input => 
@@ -2012,11 +2250,11 @@
 
             if (optionType === 'schedule') {
                 scheduleInput.style.display = 'block';
-                publishBtn.textContent = '⏰ Schedule Post';
+                publishBtn.innerHTML = isEditMode ? '⏰ Update Schedule' : '⏰ Schedule Post';
             } else if (optionType === 'draft') {
-                publishBtn.textContent = '💾 Save Draft';
+                publishBtn.innerHTML = isEditMode ? '💾 Update Draft' : '💾 Save Draft';
             } else {
-                publishBtn.textContent = '🚀 Publish Now';
+                publishBtn.innerHTML = isEditMode ? '💾 Update Post' : '🚀 Publish Now';
             }
         }
 
@@ -2203,9 +2441,14 @@
         }
 
         async function publishPost() {
-            // Show loading
+            // Show loading with appropriate text
             document.getElementById('step6').classList.remove('active');
-            document.getElementById('loadingStep').classList.add('active');
+            const loadingStep = document.getElementById('loadingStep');
+            const loadingText = loadingStep.querySelector('h3');
+            if (loadingText) {
+                loadingText.textContent = isEditMode ? 'Updating your post...' : 'Creating your post...';
+            }
+            loadingStep.classList.add('active');
 
             try {
                 // Get current user
@@ -2256,19 +2499,54 @@
                     postData.publication_location = selectedPublicationLocation; // Add publication location
                 }
 
-                // Insert post
-                const { data, error } = await supabase
-                    .from('blog_posts')
-                    .insert([postData])
-                    .select()
-                    .single();
+                // Insert or Update based on edit mode
+                let data, error;
+                
+                if (isEditMode && editPostId) {
+                    // Update existing post
+                    postData.updated_at = new Date().toISOString();
+                    // Preserve original created_at and author_id
+                    delete postData.created_at;
+                    if (originalPostData && originalPostData.author_id) {
+                        postData.author_id = originalPostData.author_id;
+                    }
+                    
+                    ({ data, error } = await supabase
+                        .from('blog_posts')
+                        .update(postData)
+                        .eq('id', editPostId)
+                        .select()
+                        .single());
+                } else {
+                    // Insert new post
+                    ({ data, error } = await supabase
+                        .from('blog_posts')
+                        .insert([postData])
+                        .select()
+                        .single());
+                }
 
                 if (error) throw error;
 
                 // Show success with appropriate messaging
                 const postTypeText = selectedPostType === 'people_post' ? 'People Post' : 'Blog Post';
+                const actionText = isEditMode ? 'Updated' : 'Published';
                 const successTitle = document.querySelector('#successStep .step-title');
-                successTitle.textContent = `${postTypeText} Published Successfully!`;
+                successTitle.textContent = `${postTypeText} ${actionText} Successfully!`;
+                
+                // Update success description
+                const successDesc = document.querySelector('#successStep .step-description');
+                if (successDesc) {
+                    successDesc.textContent = isEditMode ? 
+                        'Your changes have been saved and are now live' : 
+                        'Your blog post is now live and available for readers';
+                }
+                
+                // Update view button text
+                const viewBtn = document.getElementById('viewPostBtn');
+                if (viewBtn) {
+                    viewBtn.innerHTML = isEditMode ? '👁️ View Updated Post' : '👁️ View Post';
+                }
                 
                 // Generate appropriate URL based on post type
                 let postUrl;
@@ -2277,7 +2555,8 @@
                     postUrl = `${window.location.origin}/people/profile.html?person=${data.slug}`;
                 } else {
                     // Generate regular blog post URL
-                    postUrl = `${window.location.origin}/blog/post.html?blog=${selectedBlog.slug}&post=${data.slug}`;
+                    const blogSlug = selectedBlog ? selectedBlog.slug : 'blog';
+                    postUrl = `${window.location.origin}/blog/post.html?blog=${blogSlug}&post=${data.slug}`;
                 }
                 document.getElementById('postUrl').textContent = postUrl;
                 
@@ -2289,7 +2568,8 @@
 
             } catch (error) {
                 console.error('Publish error:', error);
-                showToast('Failed to publish post: ' + error.message, 'error');
+                const actionText = isEditMode ? 'update' : 'publish';
+                showToast(`Failed to ${actionText} post: ` + error.message, 'error');
                 
                 // Go back to step 6
                 document.getElementById('loadingStep').classList.remove('active');
