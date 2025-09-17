@@ -1211,11 +1211,6 @@
                 </button>
             </div>
         </div>
-
-        <!-- Step 5: Additional Person Information (for People Posts only) -->
-        <div class="wizard-step" id="step5People" style="display: none;">
-            <h2 class="step-title">Additional Person Information</h2>
-            <p class="step-description">Add photo and links for the person being featured</p>
             
             <div class="people-fields-grid">
                 <div class="form-group">
@@ -1279,13 +1274,73 @@
             
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-                <button class="btn btn-primary" onclick="nextStep()" id="step4PeopleNext" disabled>
+                <button class="btn btn-primary" onclick="nextStep()" id="step5PeopleNext" disabled>
                     Continue →
                 </button>
             </div>
         </div>
 
-        <!-- Step 4/5: Featured Media -->
+        <!-- Step 5: Additional Person Information (for People Posts only) -->
+        <div class="wizard-step" id="step5People" style="display: none;">
+            <h2 class="step-title">Additional Person Information</h2>
+            <p class="step-description">Add photo and links for the person being featured</p>
+            
+            <div class="form-group">
+                <label class="form-label">Person's Photo</label>
+                <div class="person-photo-upload" id="personPhotoUpload">
+                    <input type="file" id="personPhotoInput" accept="image/*" style="display: none;">
+                    <div class="upload-icon">👤</div>
+                    <div class="upload-text">Click to upload person's photo</div>
+                    <div class="upload-hint">Optional - JPG, PNG, GIF, WebP (Max 10MB)</div>
+                </div>
+                
+                <div class="person-photo-preview" id="personPhotoPreview">
+                    <div class="media-controls">
+                        <button class="media-btn" onclick="changePersonPhoto()">Change</button>
+                        <button class="media-btn" onclick="removePersonPhoto()">Remove</button>
+                    </div>
+                    <div id="personPhotoContent"></div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Website/Social Links</label>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Add up to 3 links (optional)</p>
+                
+                <div id="personLinksContainer">
+                    <!-- First link -->
+                    <div class="link-field-group" data-link-index="0">
+                        <div class="link-field-header">
+                            <span class="link-field-title">Link 1 (Optional)</span>
+                        </div>
+                        <div class="link-fields">
+                            <select class="link-label-select" id="linkLabel0">
+                                <option value="">Select link type...</option>
+                                <option value="Website">Website</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Twitter">Twitter</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="GitHub">GitHub</option>
+                                <option value="YouTube">YouTube</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <input type="url" id="linkUrl0" class="form-input" placeholder="https://example.com">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="add-link-btn" id="addLinkBtn" onclick="addPersonLink()">+ Add Another Link</button>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                <button class="btn btn-secondary" onclick="nextStep()">Skip for now</button>
+                <button class="btn btn-primary" onclick="nextStep()" id="step5PeopleNextBtn">Continue →</button>
+            </div>
+        </div>
+
+        <!-- Step 4 (Blog) / Step 6 (People): Featured Media -->
         <div class="wizard-step" id="step4">
             <h2 class="step-title">Add a featured image or video</h2>
             <p class="step-description">This is optional but recommended - it will appear at the top of your post</p>
@@ -1312,7 +1367,7 @@
             </div>
         </div>
 
-        <!-- Step 5: Content -->
+        <!-- Step 5 (Blog) / Step 7 (People): Content -->
         <div class="wizard-step" id="step5">
             <h2 class="step-title">Write your post content</h2>
             <p class="step-description">Share your thoughts, insights, and ideas with the world</p>
@@ -1337,7 +1392,7 @@
             </div>
         </div>
 
-        <!-- Step 6: Publishing Options -->
+        <!-- Step 6 (Blog) / Step 8 (People): Publishing Options -->
         <div class="wizard-step" id="step6">
             <h2 class="step-title">How do you want to publish?</h2>
             <p class="step-description">Choose when and how your post goes live</p>
@@ -1665,11 +1720,37 @@
         }
 
         function setupPeopleFieldsValidation() {
-            // Person name fields
-            document.getElementById('personFirstName').addEventListener('input', validatePeopleFields);
-            document.getElementById('personLastName').addEventListener('input', validatePeopleFields);
+            // Step 3 - Person name fields (People Posts)
+            document.getElementById('personFirstName').addEventListener('input', function() {
+                const firstName = document.getElementById('personFirstName').value.trim();
+                const lastName = document.getElementById('personLastName').value.trim();
+                document.getElementById('step3PeopleNext').disabled = !(firstName && lastName);
+            });
             
-            // Person photo
+            document.getElementById('personLastName').addEventListener('input', function() {
+                const firstName = document.getElementById('personFirstName').value.trim();
+                const lastName = document.getElementById('personLastName').value.trim();
+                document.getElementById('step3PeopleNext').disabled = !(firstName && lastName);
+            });
+            
+            // Step 4 - Profile Title (People Posts)
+            const peoplePostTitle = document.getElementById('peoplePostTitle');
+            if (peoplePostTitle) {
+                peoplePostTitle.addEventListener('input', function() {
+                    const title = this.value.trim();
+                    document.getElementById('step4PeopleNext').disabled = !title;
+                    
+                    // Auto-generate slug
+                    if (title) {
+                        const slug = title.toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-|-$/g, '');
+                        document.getElementById('peoplePostSlug').value = slug;
+                    }
+                });
+            }
+            
+            // Step 5 - Person photo (optional, so no validation needed)
             const photoUpload = document.getElementById('personPhotoUpload');
             const photoInput = document.getElementById('personPhotoInput');
             
@@ -1695,19 +1776,12 @@
                 }
             });
             
-            // Person links
-            document.getElementById('linkLabel0').addEventListener('change', validatePeopleFields);
-            document.getElementById('linkUrl0').addEventListener('input', validatePeopleFields);
+            // Person links are optional, no validation needed
         }
 
         function validatePeopleFields() {
-            const firstName = document.getElementById('personFirstName').value.trim();
-            const lastName = document.getElementById('personLastName').value.trim();
-            const linkLabel = document.getElementById('linkLabel0').value;
-            const linkUrl = document.getElementById('linkUrl0').value.trim();
-            
-            const isValid = firstName && lastName && personPhoto && linkLabel && linkUrl;
-            document.getElementById('step4PeopleNext').disabled = !isValid;
+            // This function is no longer needed with the new step structure
+            // Each step has its own validation
         }
 
         async function handlePersonPhotoUpload(event) {
@@ -2004,83 +2078,67 @@
                 }
             }
             
-            // Skip people fields step if not a people post
-            let nextStepNum = currentStep + 1;
-            
-            if (selectedPostType === 'blog_post' && currentStep === 3) {
-                // Skip step 4 (people fields) for blog posts
-                nextStepNum = 5;
-            }
-            
+            // Navigate to next step based on post type
             if (currentStep < totalSteps) {
-                showStep(nextStepNum);
+                showStep(currentStep + 1);
             }
         }
 
         function prevStep() {
-            // Skip people fields step if not a people post when going back
-            let prevStepNum = currentStep - 1;
-            
-            if (selectedPostType === 'blog_post' && currentStep === 5) {
-                // Skip step 4 (people fields) for blog posts when going back
-                prevStepNum = 3;
-            }
-            
             if (currentStep > 1) {
-                showStep(prevStepNum);
+                showStep(currentStep - 1);
             }
         }
 
         function showStep(step) {
-            // Map step numbers to actual step IDs
+            // Map step numbers to actual step IDs based on post type
             const getStepId = (stepNum) => {
-                if (selectedPostType === 'people_post' && stepNum === 4) {
-                    return 'step4People';
-                }
-                // Adjust step IDs based on post type
                 if (selectedPostType === 'blog_post') {
-                    if (stepNum === 4) return 'step4'; // Featured media
-                    if (stepNum === 5) return 'step5'; // Content
-                    if (stepNum === 6) return 'step6'; // Publishing
+                    // Blog post workflow (5 steps)
+                    const blogStepMap = {
+                        1: 'step1',     // Post type
+                        2: 'step2',     // Blog selection
+                        3: 'step3',     // Title & Slug
+                        4: 'step4',     // Featured Media
+                        5: 'step5',     // Content
+                        6: 'step6'      // Publishing
+                    };
+                    return blogStepMap[stepNum];
                 } else if (selectedPostType === 'people_post') {
-                    if (stepNum === 5) return 'step4'; // Featured media  
-                    if (stepNum === 6) return 'step5'; // Content
-                    if (stepNum === 7) return 'step6'; // Publishing
+                    // People post workflow (7 steps)
+                    const peopleStepMap = {
+                        1: 'step1',         // Post type
+                        2: 'step2',         // Publication location
+                        3: 'step3People',   // Person Information (First/Last Name)
+                        4: 'step4People',   // Profile Title & Slug
+                        5: 'step5People',   // Additional Person Info (Photo/Links)
+                        6: 'step4',         // Featured Media
+                        7: 'step5',         // Content
+                        8: 'step6'          // Publishing
+                    };
+                    return peopleStepMap[stepNum];
                 }
-                
-                // Default mapping
-                const stepMap = {
-                    1: 'step1', // Post type
-                    2: 'step2', // Blog selection
-                    3: 'step3', // Title
-                    4: 'step4', // Featured media (blog) or People fields (people)
-                    5: 'step5', // Content (blog) or Featured media (people)
-                    6: 'step6'  // Publishing
-                };
-                return stepMap[stepNum] || `step${stepNum}`;
+                return `step${stepNum}`;
             };
             
-            // Hide current step
-            const currentStepId = getStepId(currentStep);
-            const currentElement = document.getElementById(currentStepId);
-            if (currentElement) {
-                currentElement.classList.remove('active');
-                // Also handle the people step visibility
-                if (currentStepId === 'step4People') {
-                    currentElement.style.display = 'none';
+            // Hide all steps first
+            document.querySelectorAll('.wizard-step').forEach(step => {
+                step.classList.remove('active');
+                if (step.id === 'step3People' || step.id === 'step4People' || step.id === 'step5People') {
+                    step.style.display = 'none';
                 }
-            }
+            });
             
-            // Show new step
+            // Update current step and show the new one
             currentStep = step;
             const newStepId = getStepId(currentStep);
             const newElement = document.getElementById(newStepId);
             if (newElement) {
-                newElement.classList.add('active');
-                // Handle people step visibility
-                if (newStepId === 'step4People') {
+                // Show the step
+                if (newStepId === 'step3People' || newStepId === 'step4People' || newStepId === 'step5People') {
                     newElement.style.display = 'block';
                 }
+                newElement.classList.add('active');
                 
                 // Handle Step 2 - Show appropriate content based on post type
                 if (currentStep === 2) {
@@ -2096,28 +2154,48 @@
                 }
             }
             
+            // Handle special visibility for people-only steps
+            if (newStepId === 'step3People' || newStepId === 'step4People' || newStepId === 'step5People') {
+                newElement.style.display = 'block';
+            }
+            
             // Update progress
             updateProgress();
             
-            // Update preview when reaching final step
+            // Update preview when reaching content step
             if ((selectedPostType === 'blog_post' && step === 5) || 
-                (selectedPostType === 'people_post' && step === 6)) {
+                (selectedPostType === 'people_post' && step === 7)) {
                 updatePreview();
             }
         }
 
         function updateProgress() {
-            const progress = (currentStep / totalSteps) * 100;
+            // Visual mapping for people posts (8 actual steps shown as 7)
+            let visualStep = currentStep;
+            let visualTotal = totalSteps;
+            
+            if (selectedPostType === 'people_post') {
+                // Map actual steps to visual dots
+                // Steps 1-5 map directly, steps 6-8 map to dots 6-7
+                if (currentStep <= 5) {
+                    visualStep = currentStep;
+                } else {
+                    visualStep = currentStep - 1; // Steps 6,7,8 become dots 5,6,7
+                }
+                visualTotal = 7;
+            }
+            
+            const progress = (visualStep / visualTotal) * 100;
             document.getElementById('progressFill').style.width = `${progress}%`;
             
             // Update step dots
-            const maxDots = selectedPostType === 'people_post' ? 6 : 5;
+            const maxDots = selectedPostType === 'people_post' ? 7 : 5;
             document.querySelectorAll('.step-dot').forEach((dot, index) => {
                 if (index < maxDots) {
                     dot.classList.remove('active', 'completed');
-                    if (index + 1 < currentStep) {
+                    if (index + 1 < visualStep) {
                         dot.classList.add('completed');
-                    } else if (index + 1 === currentStep) {
+                    } else if (index + 1 === visualStep) {
                         dot.classList.add('active');
                     }
                 }
@@ -2137,10 +2215,18 @@
                 const selectedOption = document.querySelector('.publish-option.selected');
                 const publishType = selectedOption.dataset.option;
                 
+                // Get title and slug based on post type
+                const title = selectedPostType === 'people_post' ? 
+                    document.getElementById('peoplePostTitle').value : 
+                    document.getElementById('postTitle').value;
+                const slug = selectedPostType === 'people_post' ? 
+                    document.getElementById('peoplePostSlug').value : 
+                    document.getElementById('postSlug').value;
+                
                 const postData = {
                     blog_id: selectedPostType === 'people_post' ? null : selectedBlog.id, // null for people posts
-                    title: document.getElementById('postTitle').value,
-                    slug: document.getElementById('postSlug').value,
+                    title: title,
+                    slug: slug,
                     content: quillEditor.root.innerHTML,
                     excerpt: document.getElementById('postExcerpt').value || null,
                     featured_image_url: featuredMedia ? featuredMedia.url : null,
@@ -2153,7 +2239,7 @@
                     scheduled_for: publishType === 'schedule' ? 
                         document.getElementById('scheduleDate').value : null,
                     seo_meta: {
-                        title: document.getElementById('postTitle').value,
+                        title: title,
                         description: document.getElementById('postExcerpt').value
                     },
                     view_count: 0,
