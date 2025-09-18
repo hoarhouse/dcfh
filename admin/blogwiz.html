@@ -1937,25 +1937,40 @@
                 return;
             }
             
+            if (!step3NextBtn) {
+                console.error('Step 3 Next button not found');
+                return;
+            }
+            
             function validatePersonNames() {
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
                 const isValid = !!(firstName && lastName);
                 
-                console.log('Validating person names:', { firstName, lastName, isValid });
+                console.log('Validating person names:', { 
+                    firstName, 
+                    lastName, 
+                    isValid,
+                    buttonExists: !!step3NextBtn 
+                });
                 
-                if (step3NextBtn) {
-                    step3NextBtn.disabled = !isValid;
-                    console.log('Step 3 button disabled state:', !isValid);
-                }
+                step3NextBtn.disabled = !isValid;
+                console.log('Step 3 button disabled state:', step3NextBtn.disabled);
             }
             
-            firstNameInput.addEventListener('input', validatePersonNames);
-            lastNameInput.addEventListener('input', validatePersonNames);
+            // Remove existing listeners first to avoid duplicates
+            const newFirstNameInput = firstNameInput.cloneNode(true);
+            const newLastNameInput = lastNameInput.cloneNode(true);
+            firstNameInput.parentNode.replaceChild(newFirstNameInput, firstNameInput);
+            lastNameInput.parentNode.replaceChild(newLastNameInput, lastNameInput);
+            
+            // Add fresh event listeners
+            newFirstNameInput.addEventListener('input', validatePersonNames);
+            newLastNameInput.addEventListener('input', validatePersonNames);
             
             // Also validate on blur to catch paste events
-            firstNameInput.addEventListener('blur', validatePersonNames);
-            lastNameInput.addEventListener('blur', validatePersonNames);
+            newFirstNameInput.addEventListener('blur', validatePersonNames);
+            newLastNameInput.addEventListener('blur', validatePersonNames);
             
             // Initial validation
             validatePersonNames();
