@@ -2819,9 +2819,21 @@
         }
 
         async function publishPost() {
-            // Show loading with appropriate text
-            document.getElementById('step6').classList.remove('active');
+            console.log('[DEBUG] publishPost called');
+            
+            // Ensure we have required elements
+            const step6 = document.getElementById('step6');
             const loadingStep = document.getElementById('loadingStep');
+            const successStep = document.getElementById('successStep');
+            
+            if (!step6 || !loadingStep || !successStep) {
+                console.error('[DEBUG] Required step elements not found');
+                showToast('Error: Page elements not found. Please refresh and try again.', 'error');
+                return;
+            }
+            
+            // Show loading with appropriate text
+            step6.classList.remove('active');
             const loadingText = loadingStep.querySelector('h3');
             if (loadingText) {
                 loadingText.textContent = isEditMode ? 'Updating your post...' : 'Creating your post...';
@@ -2829,20 +2841,42 @@
             loadingStep.classList.add('active');
 
             try {
+                console.log('[DEBUG] Getting current user...');
                 // Get current user
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError) {
+                    console.error('[DEBUG] User error:', userError);
+                    throw new Error('Authentication error: ' + userError.message);
+                }
                 
                 // Collect post data
                 const selectedOption = document.querySelector('.publish-option.selected');
+                if (!selectedOption) {
+                    throw new Error('Please select a publishing option');
+                }
                 const publishType = selectedOption.dataset.option;
+                console.log('[DEBUG] Publish type:', publishType);
                 
                 // Get title and slug based on post type
-                const title = selectedPostType === 'people_post' ? 
-                    document.getElementById('peoplePostTitle').value : 
-                    document.getElementById('postTitle').value;
-                const slug = selectedPostType === 'people_post' ? 
-                    document.getElementById('peoplePostSlug').value : 
-                    document.getElementById('postSlug').value;
+                const titleElement = selectedPostType === 'people_post' ? 
+                    document.getElementById('peoplePostTitle') : 
+                    document.getElementById('postTitle');
+                const slugElement = selectedPostType === 'people_post' ? 
+                    document.getElementById('peoplePostSlug') : 
+                    document.getElementById('postSlug');
+                    
+                if (!titleElement || !titleElement.value.trim()) {
+                    throw new Error('Title is required');
+                }
+                
+                const title = titleElement.value.trim();
+                const slug = slugElement.value.trim() || title.toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .trim();
+                    
+                console.log('[DEBUG] Title:', title, 'Slug:', slug);
                 
                 const postData = {
                     blog_id: selectedPostType === 'people_post' ? null : selectedBlog.id, // null for people posts
@@ -2963,13 +2997,26 @@
                     const blogSlug = selectedBlog ? selectedBlog.slug : 'blog';
                     postUrl = `${window.location.origin}/blog/post.html?blog=${blogSlug}&post=${data.slug}`;
                 }
-                document.getElementById('postUrl').textContent = postUrl;
                 
-                document.getElementById('loadingStep').classList.remove('active');
-                document.getElementById('successStep').classList.add('active');
+                console.log('[DEBUG] Post URL:', postUrl);
+                
+                // Update URL display
+                const postUrlElement = document.getElementById('postUrl');
+                if (postUrlElement) {
+                    postUrlElement.textContent = postUrl;
+                }
+                
+                // Hide loading, show success
+                console.log('[DEBUG] Showing success screen...');
+                loadingStep.classList.remove('active');
+                loadingStep.style.display = 'none';
+                successStep.classList.add('active');
+                successStep.style.display = 'block';
 
                 // Store for buttons
                 window.newPostData = { ...data, postUrl };
+                
+                console.log('[DEBUG] Post published successfully!');
 
             } catch (error) {
                 console.error('Publish error:', error);
