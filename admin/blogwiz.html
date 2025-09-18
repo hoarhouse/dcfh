@@ -1320,7 +1320,7 @@
             
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-                <button class="btn btn-primary" onclick="nextStep()" id="step5Next" disabled>
+                <button class="btn btn-primary" id="step5Next">
                     Continue →
                 </button>
             </div>
@@ -1478,21 +1478,18 @@
             initializeEditor();
             setupPeopleFieldsValidation();
             
-            // Add a fallback click handler for the content continue button
+            // Setup content continue button
             setTimeout(() => {
                 const step5NextBtn = document.getElementById('step5Next');
                 if (step5NextBtn) {
-                    // Remove any existing onclick to avoid conflicts
-                    step5NextBtn.removeAttribute('onclick');
-                    
-                    // Add our own click handler
-                    step5NextBtn.addEventListener('click', function(e) {
+                    // Set up the click handler
+                    step5NextBtn.onclick = function(e) {
                         e.preventDefault();
                         
                         // Check if we have content
                         if (quillEditor) {
                             const text = quillEditor.getText().trim();
-                            console.log('[DEBUG] Continue clicked, content length:', text.length);
+                            console.log('[DEBUG] Content continue clicked, content length:', text.length);
                             
                             if (text.length >= 10) {
                                 // We have content, proceed
@@ -1500,17 +1497,25 @@
                                 nextStep();
                             } else {
                                 console.log('[DEBUG] Not enough content');
-                                showToast('Please add some content to your post', 'error');
+                                showToast('Please add some content to your post (minimum 10 characters)', 'error');
                             }
                         } else {
-                            console.log('[DEBUG] Editor not initialized');
-                            nextStep(); // Try to proceed anyway
+                            console.log('[DEBUG] Editor not initialized, trying to proceed anyway');
+                            nextStep();
                         }
-                    });
+                    };
                     
-                    console.log('[DEBUG] Added fallback handler to step5Next button');
+                    // Initially disable if no content
+                    if (quillEditor) {
+                        const text = quillEditor.getText().trim();
+                        step5NextBtn.disabled = text.length < 10;
+                    } else {
+                        step5NextBtn.disabled = true;
+                    }
+                    
+                    console.log('[DEBUG] Content continue button configured');
                 }
-            }, 2000);
+            }, 1000);
             
             // Load existing post data if in edit mode
             if (isEditMode && editPostId) {
