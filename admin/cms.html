@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: https:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Management System - DCF Hungary Admin</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        /* Main header styles */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #dc3545;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* User menu styles */
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #000, #333);
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            border: 2px solid #e5e5e5;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-avatar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #000, #333);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            font-size: 0.85rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            color: #000;
+        }
+
+        .logout-btn {
+            color: #ef9a9a !important;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+            color: #ef9a9a !important;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        /* DCF Admin Menu Styles */
+        .dcf-admin-menu {
+            background: #000;
+            color: white;
+            padding: 0;
+            border-bottom: 1px solid #333;
+            display: none; /* Hidden by default, JS will show on admin pages */
+        }
+
+        .dcf-admin-menu.active {
+            display: block;
+        }
+
+        .dcf-admin-menu-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+        }
+
+        .dcf-admin-menu-items {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-item {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1.5rem;
+            height: 100%;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            border-right: 1px solid #333;
+        }
+
+        .dcf-admin-menu-link:hover {
+            background: #222;
+        }
+
+        .dcf-admin-menu-link.active {
+            background: #333;
+        }
+
+        .dcf-admin-menu-icon {
+            font-size: 1rem;
+        }
+
+        .dcf-admin-menu-text {
+            white-space: nowrap;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* CMS Specific Styles */
+        .cms-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .cms-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .slug-manager {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .slug-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slug-input-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .slug-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .slug-item {
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .slug-item:hover {
+            background: #e9ecef;
+            border-color: #333;
+        }
+
+        .slug-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .slug-text {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            color: #333;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .slug-order {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .slug-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 1px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            border-color: #333;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .form-input, .form-select {
+            padding: 0.75rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+            width: 100%;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .current-cards-preview {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .preview-card {
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-card h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .preview-card p {
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .slug-manager {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .slug-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-unified-system.js"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation Hungary
+            </a>
+            <ul class="nav-menu">
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar" id="dropdownAvatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Admin Menu Bar - Populated by unified-system.js -->
+    <div class="dcf-admin-menu" id="dcfAdminMenu">
+        <!-- Menu items will be populated by unified-system.js -->
+    </div>
+
+    <main class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Content Management System</h1>
+        </div>
+
+        <!-- DCF News Section Management -->
+        <div class="cms-section">
+            <h2>
+                <div class="section-icon">📰</div>
+                DCF News Section
+            </h2>
+            <p style="color: #666; margin-bottom: 2rem;">
+                Manage the 4 blog posts that appear in the DCF News section on the homepage. Add blog post slugs to populate the cards.
+            </p>
+
+            <div class="slug-manager">
+                <div class="slug-input-group">
+                    <label for="newSlug">Add Blog Post Slug</label>
+                    <input type="text" id="newSlug" class="form-input" placeholder="Enter blog post slug (e.g., ai-ethics-guidelines)" />
+                    <small style="color: #666; font-size: 0.8rem;">
+                        Enter the slug of a blog post. The system will automatically fetch the post details.
+                    </small>
+                </div>
+                <button onclick="addSlug()" class="btn btn-primary">
+                    + Add Slug
+                </button>
+            </div>
+
+            <div class="slug-list" id="slugList">
+                <!-- Slugs will be populated here -->
+            </div>
+
+            <div class="current-cards-preview" id="cardsPreview" style="display: none;">
+                <h3 style="color: #333; margin-bottom: 1rem;">Current Cards Preview</h3>
+                <div class="preview-grid" id="previewGrid">
+                    <!-- Preview cards will be populated here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Wait for dcf-unified-system.js to initialize Supabase
+        let supabase;
+        let dcfNewsSlugs = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get the Supabase client from dcf-unified-system.js
+            supabase = window.dcfSupabase || window.supabase;
+            
+            if (!supabase) {
+                console.error('Supabase client not found. Initializing...');
+                const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            
+            await loadDCFNewsSlugs();
+        });
+
+        async function loadDCFNewsSlugs() {
+            try {
+                // Check if cms_sections table exists and has dcf_news data
+                const { data, error } = await supabase
+                    .from('cms_sections')
+                    .select('*')
+                    .eq('section_name', 'dcf_news')
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+                    console.error('Error loading CMS sections:', error);
+                    // Create table if it doesn't exist
+                    await createCMSTable();
+                    return;
+                }
+
+                if (data && data.slugs) {
+                    dcfNewsSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                } else {
+                    dcfNewsSlugs = [];
+                }
+
+                displaySlugs();
+                await loadCardsPreview();
+
+            } catch (error) {
+                console.error('Error loading DCF news slugs:', error);
+                dcfNewsSlugs = [];
+                displaySlugs();
+            }
+        }
+
+        async function createCMSTable() {
+            // This would typically be done via migration, but for demo purposes
+            // we'll assume the table exists or create it manually
+            showToast('CMS table needs to be created. Please contact admin.', 'error');
+        }
+
+        async function addSlug() {
+            const newSlugInput = document.getElementById('newSlug');
+            const slug = newSlugInput.value.trim();
+
+            if (!slug) {
+                showToast('Please enter a slug', 'error');
+                return;
+            }
+
+            if (dcfNewsSlugs.includes(slug)) {
+                showToast('This slug is already added', 'error');
+                return;
+            }
+
+            if (dcfNewsSlugs.length >= 4) {
+                showToast('Maximum 4 slugs allowed for DCF News section', 'error');
+                return;
+            }
+
+            try {
+                // Verify the blog post exists
+                const { data: blogPost, error: postError } = await supabase
+                    .from('blog_posts')
+                    .select('id, title, slug, excerpt')
+                    .eq('slug', slug)
+                    .eq('status', 'published')
+                    .single();
+
+                if (postError || !blogPost) {
+                    showToast('Blog post not found or not published', 'error');
+                    return;
+                }
+
+                // Add slug to array
+                dcfNewsSlugs.push(slug);
+
+                // Save to database
+                await saveDCFNewsSlugs();
+
+                // Clear input and refresh display
+                newSlugInput.value = '';
+                displaySlugs();
+                await loadCardsPreview();
+
+                showToast('Slug added successfully', 'success');
+
+            } catch (error) {
+                console.error('Error adding slug:', error);
+                showToast('Error adding slug', 'error');
+            }
+        }
+
+        async function removeSlug(slug) {
+            if (!confirm('Remove this slug from DCF News section?')) {
+                return;
+            }
+
+            try {
+                // Remove from array
+                dcfNewsSlugs = dcfNewsSlugs.filter(s => s !== slug);
+
+                // Save to database
+                await saveDCFNewsSlugs();
+
+                // Refresh display
+                displaySlugs();
+                await loadCardsPreview();
+
+                showToast('Slug removed successfully', 'success');
+
+            } catch (error) {
+                console.error('Error removing slug:', error);
+                showToast('Error removing slug', 'error');
+            }
+        }
+
+        async function moveSlug(slug, direction) {
+            const currentIndex = dcfNewsSlugs.indexOf(slug);
+            if (currentIndex === -1) return;
+
+            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            if (newIndex < 0 || newIndex >= dcfNewsSlugs.length) return;
+
+            try {
+                // Swap positions
+                [dcfNewsSlugs[currentIndex], dcfNewsSlugs[newIndex]] = [dcfNewsSlugs[newIndex], dcfNewsSlugs[currentIndex]];
+
+                // Save to database
+                await saveDCFNewsSlugs();
+
+                // Refresh display
+                displaySlugs();
+                await loadCardsPreview();
+
+            } catch (error) {
+                console.error('Error moving slug:', error);
+                showToast('Error reordering slug', 'error');
+            }
+        }
+
+        async function saveDCFNewsSlugs() {
+            try {
+                const { error } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'dcf_news',
+                        slugs: dcfNewsSlugs,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+
+                if (error) throw error;
+
+            } catch (error) {
+                console.error('Error saving slugs:', error);
+                throw error;
+            }
+        }
+
+        function displaySlugs() {
+            const slugList = document.getElementById('slugList');
+
+            if (dcfNewsSlugs.length === 0) {
+                slugList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <h3>No slugs added yet</h3>
+                        <p>Add up to 4 blog post slugs to populate the DCF News section.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            slugList.innerHTML = dcfNewsSlugs.map((slug, index) => `
+                <div class="slug-item">
+                    <div class="slug-info">
+                        <div class="slug-text">${escapeHtml(slug)}</div>
+                        <div class="slug-order">Position ${index + 1} of ${dcfNewsSlugs.length}</div>
+                    </div>
+                    <div class="slug-actions">
+                        ${index > 0 ? `<button onclick="moveSlug('${escapeHtml(slug)}', 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
+                        ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug('${escapeHtml(slug)}', 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
+                        <button onclick="removeSlug('${escapeHtml(slug)}')" class="btn btn-danger btn-small" title="Remove">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadCardsPreview() {
+            const cardsPreview = document.getElementById('cardsPreview');
+            const previewGrid = document.getElementById('previewGrid');
+
+            if (dcfNewsSlugs.length === 0) {
+                cardsPreview.style.display = 'none';
+                return;
+            }
+
+            try {
+                // Load blog post data for each slug
+                const promises = dcfNewsSlugs.map(slug => 
+                    supabase
+                        .from('blog_posts')
+                        .select('title, slug, excerpt, featured_image, created_at')
+                        .eq('slug', slug)
+                        .single()
+                );
+
+                const results = await Promise.all(promises);
+                const blogPosts = results.map(result => result.data).filter(post => post);
+
+                if (blogPosts.length === 0) {
+                    cardsPreview.style.display = 'none';
+                    return;
+                }
+
+                previewGrid.innerHTML = blogPosts.map((post, index) => `
+                    <div class="preview-card">
+                        <h4>${escapeHtml(post.title)}</h4>
+                        <p><strong>Slug:</strong> ${escapeHtml(post.slug)}</p>
+                        <p><strong>Position:</strong> ${index + 1}</p>
+                        ${post.excerpt ? `<p><strong>Excerpt:</strong> ${escapeHtml(post.excerpt.substring(0, 100))}${post.excerpt.length > 100 ? '...' : ''}</p>` : ''}
+                        <p><strong>Created:</strong> ${new Date(post.created_at).toLocaleDateString()}</p>
+                    </div>
+                `).join('');
+
+                cardsPreview.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading cards preview:', error);
+                cardsPreview.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Toggle user dropdown menu
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-dropdown')) {
+                const dropdown = document.getElementById('userDropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('active');
+                }
+            }
+        });
+
+        // Handle enter key in slug input
+        document.getElementById('newSlug').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addSlug();
+            }
+        });
+    </script>
+</body>
+</html>
