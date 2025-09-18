@@ -1467,38 +1467,18 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[DEBUG] Initializing blog wizard...');
-            
-            // Wait for dcf-unified-system.js to initialize Supabase
-            supabase = window.dcfSupabase || window.supabase;
-            
-            if (!supabase) {
-                console.log('[DEBUG] Waiting for DCF system to initialize...');
-                // Wait for DCF system to initialize
-                await new Promise(resolve => {
-                    const checkInterval = setInterval(() => {
-                        if (window.dcfSupabase || window.supabase) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 100);
-                    
-                    // Timeout after 5 seconds
-                    setTimeout(() => {
-                        clearInterval(checkInterval);
-                        resolve();
-                    }, 5000);
-                });
-                
-                // Try again after waiting
+            // Simple wait for DCF system - don't interfere with auth
+            setTimeout(async () => {
+                // Get supabase from DCF system
                 supabase = window.dcfSupabase || window.supabase;
                 
                 if (!supabase) {
-                    console.error('Supabase client still not available after waiting');
-                    showToast('Waiting for authentication system. Please wait...', 'warning');
-                    // Don't return - continue with limited functionality
+                    console.warn('Supabase not immediately available, waiting...');
+                    // Give it more time
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    supabase = window.dcfSupabase || window.supabase;
                 }
-            }
+            }, 500); // Small delay to let DCF initialize first
             
             
             // Check for edit mode
