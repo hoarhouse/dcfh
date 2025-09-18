@@ -1467,32 +1467,81 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Simple wait for DCF system - don't interfere with auth
+            // Setup UI components that don't need Supabase first
+            setupPostTypeSelection();
+            setupEventListeners();
+            initializeEditor();
+            setupPeopleFieldsValidation();
+            
+            // Setup content continue button
+            setTimeout(() => {
+                const step5NextBtn = document.getElementById('step5Next');
+                if (step5NextBtn) {
+                    // Set up the click handler
+                    step5NextBtn.onclick = function(e) {
+                        e.preventDefault();
+                        
+                        // Check if we have content
+                        if (quillEditor) {
+                            const text = quillEditor.getText().trim();
+                            console.log('[DEBUG] Content continue clicked, content length:', text.length);
+                            
+                            if (text.length >= 10) {
+                                // We have content, proceed
+                                console.log('[DEBUG] Content valid, proceeding to next step');
+                                nextStep();
+                            } else {
+                                console.log('[DEBUG] Not enough content');
+                                showToast('Please add some content to your post (minimum 10 characters)', 'error');
+                            }
+                        } else {
+                            console.log('[DEBUG] Editor not initialized, trying to proceed anyway');
+                            nextStep();
+                        }
+                    };
+                    
+                    // Initially disable if no content
+                    if (quillEditor) {
+                        const text = quillEditor.getText().trim();
+                        step5NextBtn.disabled = text.length < 10;
+                    } else {
+                        step5NextBtn.disabled = true;
+                    }
+                    
+                    console.log('[DEBUG] Content continue button configured');
+                }
+            }, 1000);
+            
+            // Wait for DCF system to initialize Supabase
             setTimeout(async () => {
                 // Get supabase from DCF system
                 supabase = window.dcfSupabase || window.supabase;
                 
                 if (!supabase) {
-                    console.warn('Supabase not immediately available, waiting...');
+                    console.warn('Waiting for Supabase...');
                     // Give it more time
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     supabase = window.dcfSupabase || window.supabase;
                 }
-            }, 500); // Small delay to let DCF initialize first
-            
-            
-            // Check for edit mode
-            await checkEditMode();
-            
-            setupPostTypeSelection();
-            
-            // Try to load blogs but don't let it block initialization
-            try {
-                await loadBlogs();
-            } catch (error) {
-                console.error('Error loading blogs:', error);
-                // Continue with initialization even if blogs fail to load
-            }
+                
+                // Now that Supabase is ready, do the database operations
+                if (supabase) {
+                    // Check for edit mode
+                    await checkEditMode();
+                    
+                    // Try to load blogs
+                    try {
+                        await loadBlogs();
+                    } catch (error) {
+                        console.error('Error loading blogs:', error);
+                    }
+                    
+                    // Load existing post data if in edit mode
+                    if (isEditMode && editPostId) {
+                        await loadPostForEdit();
+                    }
+                }
+            }, 1000); // Wait a bit for DCF to initialize
             
             setupEventListeners();
             initializeEditor();
