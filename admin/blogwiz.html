@@ -1484,75 +1484,27 @@
             initializeEditor();
             setupPeopleFieldsValidation();
             
-            // Setup content continue button
-            setTimeout(() => {
-                const step5NextBtn = document.getElementById('step5Next');
-                if (step5NextBtn) {
-                    // Set up the click handler
-                    step5NextBtn.onclick = function(e) {
-                        e.preventDefault();
-                        
-                        // Check if we have content
-                        if (quillEditor) {
-                            const text = quillEditor.getText().trim();
-                            console.log('[DEBUG] Content continue clicked, content length:', text.length);
-                            
-                            if (text.length >= 10) {
-                                // We have content, proceed
-                                console.log('[DEBUG] Content valid, proceeding to next step');
-                                nextStep();
-                            } else {
-                                console.log('[DEBUG] Not enough content');
-                                showToast('Please add some content to your post (minimum 10 characters)', 'error');
-                            }
-                        } else {
-                            console.log('[DEBUG] Editor not initialized, trying to proceed anyway');
-                            nextStep();
-                        }
-                    };
-                    
-                    // Initially disable if no content
-                    if (quillEditor) {
-                        const text = quillEditor.getText().trim();
-                        step5NextBtn.disabled = text.length < 10;
-                    } else {
-                        step5NextBtn.disabled = true;
-                    }
-                    
-                    console.log('[DEBUG] Content continue button configured');
-                }
-            }, 1000);
-            
-            // Wait for DCF system to initialize Supabase
+            // Check for edit mode and load data after a delay
             setTimeout(async () => {
-                // Get supabase from DCF system
-                supabase = window.dcfSupabase || window.supabase;
-                
+                // Re-check for supabase
                 if (!supabase) {
-                    console.warn('Waiting for Supabase...');
-                    // Give it more time
-                    await new Promise(resolve => setTimeout(resolve, 2000));
                     supabase = window.dcfSupabase || window.supabase;
                 }
                 
-                // Now that Supabase is ready, do the database operations
                 if (supabase) {
-                    // Check for edit mode
                     await checkEditMode();
                     
-                    // Try to load blogs
                     try {
                         await loadBlogs();
                     } catch (error) {
                         console.error('Error loading blogs:', error);
                     }
                     
-                    // Load existing post data if in edit mode
                     if (isEditMode && editPostId) {
                         await loadPostForEdit();
                     }
                 }
-            }, 1000); // Wait a bit for DCF to initialize
+            }, 1000);
         });
 
         // Check if we're in edit mode
@@ -3058,21 +3010,8 @@
             }, 3000);
         }
 
-        // Toggle user dropdown menu
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('active');
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.user-dropdown')) {
-                const dropdown = document.getElementById('userDropdown');
-                if (dropdown) {
-                    dropdown.classList.remove('active');
-                }
-            }
-        });
+        // User menu will be handled by dcf-unified-system.js
+        // Remove local implementation to avoid conflicts
     </script>
 </body>
 </html>
