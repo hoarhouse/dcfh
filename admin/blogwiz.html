@@ -1468,19 +1468,6 @@
         // The supabase client is available as window.dcfSupabase from dcf-unified-system.js
         let supabase;
 
-        // Initialize supabase client when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get the Supabase client from dcf-unified-system.js
-            supabase = window.dcfSupabase || window.supabase;
-            
-            if (!supabase) {
-                console.error('Supabase client not found. Initializing...');
-                const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        });
-
         // Wizard state
         let currentStep = 1;
         let totalSteps = 5; // Will be 7 for people posts
@@ -1500,6 +1487,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize Supabase client first
+            supabase = window.dcfSupabase || window.supabase;
+            
+            if (!supabase) {
+                console.error('Supabase client not found. Initializing...');
+                const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            
             // Check for edit mode
             await checkEditMode();
             
@@ -1555,8 +1552,15 @@
         // Load existing post data for editing
         async function loadPostForEdit() {
             try {
+                // Check if supabase is initialized
+                if (!supabase) {
+                    throw new Error('Supabase client not initialized. Please refresh the page.');
+                }
+                
                 // Show loading state
                 showToast('Loading post data...', 'info');
+                
+                console.log('Attempting to load post with ID:', editPostId);
                 
                 // Query the blog_posts table
                 const { data: post, error } = await supabase
@@ -1565,16 +1569,19 @@
                     .eq('id', editPostId)
                     .single();
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase query error:', error);
+                    throw error;
+                }
                 
                 if (!post) {
-                    throw new Error('Post not found');
+                    throw new Error('Post not found with ID: ' + editPostId);
                 }
                 
                 // Store original data
                 originalPostData = post;
                 
-                console.log('Loaded post data:', post);
+                console.log('Successfully loaded post data:', post);
                 
                 // Pre-populate all fields based on post type
                 await populateFormWithPostData(post);
@@ -1583,11 +1590,19 @@
                 
             } catch (error) {
                 console.error('Error loading post:', error);
-                showToast('Failed to load post: ' + error.message, 'error');
+                const errorMessage = error.message || 'Unknown error occurred';
+                showToast('Post didn\'t load: ' + errorMessage, 'error');
+                
+                // Show more detailed error in console
+                console.error('Full error details:', {
+                    error: error,
+                    postId: editPostId,
+                    supabaseInitialized: !!supabase
+                });
                 
                 // Optionally redirect back to posts management
                 setTimeout(() => {
-                    if (confirm('Failed to load post. Return to posts management?')) {
+                    if (confirm('Post didn\'t load. Return to posts management?')) {
                         window.location.href = 'blogpostsmanage.html';
                     }
                 }, 2000);
