@@ -1469,28 +1469,34 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[DEBUG] Initializing blog wizard...');
             
-            // Initialize Supabase client first
+            // Wait for dcf-unified-system.js to initialize Supabase
             supabase = window.dcfSupabase || window.supabase;
             
             if (!supabase) {
-                console.error('Supabase client not found. Initializing...');
+                console.log('[DEBUG] Waiting for DCF system to initialize...');
+                // Wait for DCF system to initialize
+                await new Promise(resolve => {
+                    const checkInterval = setInterval(() => {
+                        if (window.dcfSupabase || window.supabase) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                    
+                    // Timeout after 5 seconds
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }, 5000);
+                });
                 
-                // Wait a moment for the script to load if needed
-                if (typeof window.supabase === 'undefined') {
-                    console.warn('Supabase library not loaded yet, waiting...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+                // Try again after waiting
+                supabase = window.dcfSupabase || window.supabase;
                 
-                const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-                
-                if (window.supabase && window.supabase.createClient) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    window.dcfSupabase = supabase; // Store for future use
-                } else {
-                    console.error('Supabase library still not available');
-                    showToast('Failed to initialize database connection. Please refresh the page.', 'error');
-                    return;
+                if (!supabase) {
+                    console.error('Supabase client still not available after waiting');
+                    showToast('Waiting for authentication system. Please wait...', 'warning');
+                    // Don't return - continue with limited functionality
                 }
             }
             
