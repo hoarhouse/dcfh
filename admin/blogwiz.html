@@ -1713,6 +1713,8 @@
         }
 
         function selectPostType(element) {
+            console.log('[DEBUG] Selecting post type:', element.dataset.type);
+            
             // Remove previous selection
             document.querySelectorAll('.post-type-card').forEach(card => 
                 card.classList.remove('selected'));
@@ -1721,8 +1723,11 @@
             element.classList.add('selected');
             selectedPostType = element.dataset.type;
             
+            console.log('[DEBUG] Post type selected:', selectedPostType);
+            
             // Update contextual language based on post type
             if (selectedPostType === 'people_post') {
+                console.log('[DEBUG] Configuring UI for people post');
                 // Update wizard header
                 document.getElementById('wizardTitle').textContent = 'Create New People Post';
                 document.getElementById('wizardSubtitle').textContent = 'Follow these simple steps to create a person profile';
@@ -2633,12 +2638,24 @@
                 
                 // Add people-specific fields if it's a people post
                 if (selectedPostType === 'people_post') {
+                    console.log('[DEBUG] Collecting people post data...');
+                    
                     postData.person_first_name = document.getElementById('personFirstName').value;
                     postData.person_last_name = document.getElementById('personLastName').value;
                     postData.person_photo_url = personPhoto ? personPhoto.url : null;
                     postData.person_links = JSON.stringify(collectPersonLinks());
                     postData.publication_location = selectedPublicationLocation; // Add publication location
+                    
+                    console.log('[DEBUG] People post data collected:', {
+                        firstName: postData.person_first_name,
+                        lastName: postData.person_last_name,
+                        photoUrl: postData.person_photo_url,
+                        links: postData.person_links,
+                        location: postData.publication_location
+                    });
                 }
+                
+                console.log('[DEBUG] Final post data to be saved:', postData);
 
                 // Insert or Update based on edit mode
                 let data, error;
@@ -2667,7 +2684,18 @@
                         .single());
                 }
 
-                if (error) throw error;
+                if (error) {
+                    console.error('[DEBUG] Database error:', error);
+                    console.error('[DEBUG] Error details:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
+                    throw error;
+                }
+
+                console.log('[DEBUG] Post saved successfully:', data);
 
                 // Show success with appropriate messaging
                 const postTypeText = selectedPostType === 'people_post' ? 'People Post' : 'Blog Post';
