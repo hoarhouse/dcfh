@@ -1421,6 +1421,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[DEBUG] Initializing blog wizard...');
+            
             // Initialize Supabase client first
             supabase = window.dcfSupabase || window.supabase;
             
@@ -1444,6 +1446,19 @@
                     showToast('Failed to initialize database connection. Please refresh the page.', 'error');
                     return;
                 }
+            }
+            
+            // Check storage buckets availability
+            console.log('[DEBUG] Checking storage buckets...');
+            try {
+                const { data: buckets, error } = await supabase.storage.listBuckets();
+                if (error) {
+                    console.error('[DEBUG] Error listing buckets:', error);
+                } else {
+                    console.log('[DEBUG] Available storage buckets:', buckets?.map(b => b.name));
+                }
+            } catch (err) {
+                console.error('[DEBUG] Failed to check storage buckets:', err);
             }
             
             // Check for edit mode
@@ -2318,7 +2333,16 @@
 
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast(error.message || 'Failed to upload media', 'error');
+                showToast(error.message || 'Failed to upload media. You can continue without an image.', 'warning');
+                
+                // Allow continuing without image
+                featuredMedia = null;
+                
+                // Still allow continuing
+                const step4NextBtn = document.getElementById('step4Next');
+                if (step4NextBtn) {
+                    step4NextBtn.disabled = false;
+                }
             }
         }
 
