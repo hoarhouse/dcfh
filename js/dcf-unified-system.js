@@ -55,8 +55,11 @@ async function initializeAuth() {
         
         // Get current session with timeout
         const sessionPromise = window.dcfSupabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        );
         
-        const { data: { session } } = await sessionPromise;
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
