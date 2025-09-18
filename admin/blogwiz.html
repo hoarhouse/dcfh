@@ -2226,32 +2226,63 @@
             }
 
             try {
+                // Ensure supabase is initialized
+                if (!supabase) {
+                    supabase = window.dcfSupabase || window.supabase;
+                    if (!supabase) {
+                        throw new Error('Supabase client not initialized. Please refresh the page.');
+                    }
+                }
+                
+                console.log('Uploading media file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                
                 // Upload to Supabase Storage
-                const fileName = `${Date.now()}-${file.name}`;
+                const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                console.log('Uploading with filename:', fileName);
+                
                 const { data, error } = await supabase.storage
                     .from('media')
-                    .upload(fileName, file);
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase storage error:', error);
+                    if (error.message?.includes('not found')) {
+                        throw new Error('Storage bucket "media" not found. Please check Supabase configuration.');
+                    } else if (error.message?.includes('policy')) {
+                        throw new Error('Storage policy error. Please check bucket permissions.');
+                    }
+                    throw error;
+                }
 
+                console.log('Upload successful, getting public URL...');
+                
                 // Get public URL
-                const { data: { publicUrl } } = supabase.storage
+                const { data: urlData } = supabase.storage
                     .from('media')
                     .getPublicUrl(fileName);
+                
+                if (!urlData || !urlData.publicUrl) {
+                    throw new Error('Failed to get public URL for uploaded file');
+                }
 
                 featuredMedia = {
-                    url: publicUrl,
+                    url: urlData.publicUrl,
                     type: file.type.startsWith('image/') ? 'image' : 'video',
                     filename: file.name
                 };
 
+                console.log('Featured media set:', featuredMedia);
+                
                 displayMedia();
                 updatePreview();
                 showToast('Media uploaded successfully!', 'success');
 
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast('Failed to upload media', 'error');
+                showToast(error.message || 'Failed to upload media', 'error');
             }
         }
 
