@@ -1429,6 +1429,39 @@
         let editPostId = null;
         let originalPostData = null;
 
+        // Helper function to update character count
+        function updateCharCount(input, recommendedLength) {
+            const charCount = input.value.length;
+            let charCountEl = input.parentElement.querySelector('.char-count');
+            
+            if (!charCountEl) {
+                charCountEl = document.createElement('small');
+                charCountEl.className = 'char-count';
+                charCountEl.style.cssText = 'display: block; margin-top: 5px; font-size: 0.8rem;';
+                input.parentElement.appendChild(charCountEl);
+            }
+            
+            const maxLength = input.maxLength && input.maxLength > 0 ? input.maxLength : null;
+            let text = `${charCount} characters`;
+            
+            if (maxLength) {
+                text = `${charCount}/${maxLength} characters`;
+                charCountEl.style.color = charCount > maxLength * 0.9 ? '#dc3545' : '#666';
+            } else if (recommendedLength) {
+                if (charCount < recommendedLength * 0.8) {
+                    charCountEl.style.color = '#ffc107'; // Yellow for too short
+                } else if (charCount > recommendedLength * 1.2) {
+                    charCountEl.style.color = '#ffc107'; // Yellow for too long
+                } else {
+                    charCountEl.style.color = '#28a745'; // Green for optimal
+                }
+            } else {
+                charCountEl.style.color = '#666';
+            }
+            
+            charCountEl.textContent = text;
+        }
+        
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[DEBUG] Initializing blog wizard...');
@@ -1922,6 +1955,9 @@
                 const title = this.value;
                 document.getElementById('step3Next').disabled = !title.trim();
                 
+                // Show character count
+                updateCharCount(this, 60); // 60 is recommended for SEO
+                
                 // Auto-generate slug
                 if (title) {
                     const slug = title.toLowerCase()
@@ -1939,7 +1975,10 @@
             document.getElementById('postSlug').addEventListener('input', updatePreview);
 
             // Excerpt input
-            document.getElementById('postExcerpt').addEventListener('input', updatePreview);
+            document.getElementById('postExcerpt').addEventListener('input', function() {
+                updateCharCount(this, 160); // 160 is recommended for SEO
+                updatePreview();
+            });
 
             // Media upload
             const mediaUpload = document.getElementById('mediaUpload');
@@ -2088,8 +2127,14 @@
             window.validatePersonNames = validatePersonNames;
             
             // Add event listeners
-            firstNameInput.addEventListener('input', validatePersonNames);
-            lastNameInput.addEventListener('input', validatePersonNames);
+            firstNameInput.addEventListener('input', function() {
+                updateCharCount(this, null); // Just show count with max
+                validatePersonNames();
+            });
+            lastNameInput.addEventListener('input', function() {
+                updateCharCount(this, null); // Just show count with max
+                validatePersonNames();
+            });
             
             // Also validate on blur to catch paste events
             firstNameInput.addEventListener('blur', validatePersonNames);
@@ -2104,6 +2149,9 @@
                 peoplePostTitle.addEventListener('input', function() {
                     const title = this.value.trim();
                     document.getElementById('step4PeopleNext').disabled = !title;
+                    
+                    // Show character count
+                    updateCharCount(this, 60); // 60 is recommended for SEO
                     
                     // Auto-generate slug
                     if (title) {
