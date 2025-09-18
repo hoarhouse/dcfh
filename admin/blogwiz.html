@@ -1478,6 +1478,40 @@
             initializeEditor();
             setupPeopleFieldsValidation();
             
+            // Add a fallback click handler for the content continue button
+            setTimeout(() => {
+                const step5NextBtn = document.getElementById('step5Next');
+                if (step5NextBtn) {
+                    // Remove any existing onclick to avoid conflicts
+                    step5NextBtn.removeAttribute('onclick');
+                    
+                    // Add our own click handler
+                    step5NextBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // Check if we have content
+                        if (quillEditor) {
+                            const text = quillEditor.getText().trim();
+                            console.log('[DEBUG] Continue clicked, content length:', text.length);
+                            
+                            if (text.length >= 10) {
+                                // We have content, proceed
+                                console.log('[DEBUG] Content valid, proceeding to next step');
+                                nextStep();
+                            } else {
+                                console.log('[DEBUG] Not enough content');
+                                showToast('Please add some content to your post', 'error');
+                            }
+                        } else {
+                            console.log('[DEBUG] Editor not initialized');
+                            nextStep(); // Try to proceed anyway
+                        }
+                    });
+                    
+                    console.log('[DEBUG] Added fallback handler to step5Next button');
+                }
+            }, 2000);
+            
             // Load existing post data if in edit mode
             if (isEditMode && editPostId) {
                 await loadPostForEdit();
@@ -1941,9 +1975,39 @@
 
             quillEditor.on('text-change', () => {
                 const text = quillEditor.getText().trim();
-                document.getElementById('step5Next').disabled = text.length < 10;
+                const step5NextBtn = document.getElementById('step5Next');
+                
+                console.log('[DEBUG] Content changed. Text length:', text.length);
+                
+                if (step5NextBtn) {
+                    const shouldDisable = text.length < 10;
+                    step5NextBtn.disabled = shouldDisable;
+                    console.log('[DEBUG] Step5Next button disabled:', shouldDisable);
+                }
+                
                 updatePreview();
             });
+            
+            // Also add a manual validation function that can be called
+            window.validateContentStep = function() {
+                const text = quillEditor.getText().trim();
+                const step5NextBtn = document.getElementById('step5Next');
+                
+                console.log('[DEBUG] Manual content validation. Text length:', text.length);
+                
+                if (step5NextBtn) {
+                    const shouldDisable = text.length < 10;
+                    step5NextBtn.disabled = shouldDisable;
+                    console.log('[DEBUG] Step5Next button manually set to disabled:', shouldDisable);
+                    
+                    // Force enable if there's substantial content
+                    if (text.length > 10) {
+                        step5NextBtn.disabled = false;
+                        step5NextBtn.style.opacity = '1';
+                        step5NextBtn.style.cursor = 'pointer';
+                    }
+                }
+            };
         }
 
         function setupPeopleFieldsValidation() {
@@ -2588,6 +2652,22 @@
             if ((selectedPostType === 'blog_post' && step === 5) || 
                 (selectedPostType === 'people_post' && step === 7)) {
                 updatePreview();
+                
+                // Validate content when step is shown
+                setTimeout(() => {
+                    if (window.validateContentStep) {
+                        console.log('[DEBUG] Validating content on step show');
+                        window.validateContentStep();
+                    } else if (quillEditor) {
+                        // Fallback validation
+                        const text = quillEditor.getText().trim();
+                        const step5NextBtn = document.getElementById('step5Next');
+                        if (step5NextBtn) {
+                            step5NextBtn.disabled = text.length < 10;
+                            console.log('[DEBUG] Content step shown, text length:', text.length, 'button disabled:', text.length < 10);
+                        }
+                    }
+                }, 100);
             }
         }
 
