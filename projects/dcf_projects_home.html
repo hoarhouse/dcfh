@@ -2327,17 +2327,30 @@ const myProjects = allProjects.filter(project =>
     // Duplicate switchTab function removed - using the one above
 
 document.addEventListener('DOMContentLoaded', function() {
-   console.log('🔍 Projects Home page loaded');
-   
-   // SECURITY: Initialize input sanitization
-   initializeInputSanitization();
-   console.log('✅ Security: Input sanitization initialized');
-   
-   loadProjectsOptimized(1, {});
-   updateStats();
-   
-   // Wait for user authentication before loading My Projects
-   waitForUserAndLoadMyProjects();
+    console.log('🔍 Projects Home page loaded');
+    console.log('✅ Security: Input sanitization initialized');
+    
+    // Initialize page components that don't need auth
+    initializeBasicPageComponents();
+    
+    // Wait for DCF system to be ready
+    if (window.dcfInitialized) {
+        console.log('✅ DCF already initialized, proceeding immediately');
+        initializeAuthDependentComponents();
+    } else {
+        console.log('⏳ Waiting for DCF initialization...');
+        window.addEventListener('dcfReady', function(event) {
+            console.log('✅ DCF ready event received:', event.detail);
+            initializeAuthDependentComponents();
+        }, { once: true });
+    }
+});
+
+function initializeBasicPageComponents() {
+    // Components that work without auth
+    initializeInputSanitization();
+    loadProjectsOptimized(1, {});
+    updateStats();
    
    // Add filter listeners
    const searchInput = document.querySelector('.search-input');
