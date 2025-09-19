@@ -3340,6 +3340,15 @@ window.closeAlert = closeAlert;
 let commentStates = {}; // Stores state for each content type/id combination
 let userCommentLikes = new Set();
 
+// Add cleanup for page unload
+window.addEventListener('beforeunload', function() {
+    // Clear comment states to prevent memory leaks
+    if (typeof commentStates !== 'undefined') commentStates = {};
+    if (typeof userCommentLikes !== 'undefined') userCommentLikes.clear();
+    userInteractions.clear();
+    cleanupCache();
+});
+
 // Universal comment initialization
 async function initComments(contentType, contentId, containerId = 'commentsList') {
     console.log(`🔄 Initializing ${contentType} comments for ID: ${contentId}`);
@@ -4097,16 +4106,36 @@ console.log('✅ Universal Comment System loaded - supports: project, resource, 
 // Supports all content types: 'project', 'resource', 'event', 'post', 'profile'
 // Tracks all interactions: 'like', 'view', 'share', 'bookmark', 'download'
 
-// Global state for user interactions
+// Global state for user interactions - with cleanup
 const userInteractions = {
     likes: new Set(),
     bookmarks: new Set(),
     shares: new Set(),
-    downloads: new Set()
+    downloads: new Set(),
+    // Add cleanup method
+    clear() {
+        this.likes.clear();
+        this.bookmarks.clear();
+        this.shares.clear();
+        this.downloads.clear();
+    }
 };
 
-// Cache for interaction counts
+// Cache for interaction counts - with size limit
 const interactionCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+
+// Cache cleanup helper
+function cleanupCache() {
+    if (interactionCache.size > MAX_CACHE_SIZE) {
+        const entries = Array.from(interactionCache.entries());
+        interactionCache.clear();
+        // Keep only most recent half
+        entries.slice(-500).forEach(([key, value]) => {
+            interactionCache.set(key, value);
+        });
+    }
+}
 
 /**
  * Track any user interaction with any content type
@@ -5481,5 +5510,15 @@ if (typeof document !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { DCFIconSystem, iconSystem: window.dcfIconSystem };
 }
+
+// Memory cleanup function for manual use
+window.dcfCleanupMemory = function() {
+    console.log('🧹 Cleaning up DCF memory...');
+    if (typeof commentStates !== 'undefined') commentStates = {};
+    if (typeof userCommentLikes !== 'undefined') userCommentLikes.clear();
+    userInteractions.clear();
+    interactionCache.clear();
+    console.log('✅ Memory cleanup complete');
+};
 
 console.log('✅ DCF Unified System (Auth + Icons) loaded successfully');
