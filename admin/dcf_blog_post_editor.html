@@ -1670,16 +1670,18 @@
             currentPostId = urlParams.get('post_id');
             currentBlogId = urlParams.get('blog_id');
             
-            // Load data
-            await loadBlogs();
-            
-            if (currentPostId) {
-                await loadPost(currentPostId);
-                document.getElementById('editorTitle').textContent = 'Edit Post';
-                document.getElementById('breadcrumbTitle').textContent = 'Edit Post';
-            } else if (currentBlogId) {
-                document.getElementById('postBlog').value = currentBlogId;
-            }
+            // Load data with delay to prevent race condition
+            setTimeout(async () => {
+                await loadBlogs();
+                
+                if (currentPostId) {
+                    await loadPost(currentPostId);
+                    document.getElementById('editorTitle').textContent = 'Edit Post';
+                    document.getElementById('breadcrumbTitle').textContent = 'Edit Post';
+                } else if (currentBlogId) {
+                    document.getElementById('postBlog').value = currentBlogId;
+                }
+            }, 2000); // 2 second delay allows auth to complete first
             
             // Set up auto-save
             setupAutoSave();
