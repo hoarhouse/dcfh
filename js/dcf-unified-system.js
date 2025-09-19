@@ -109,6 +109,9 @@ async function initializeAuth() {
                 console.log('✅ Username from DB:', window.dcfUser.profile.username);
                 console.log('✅ Name from DB:', window.dcfUser.profile.name);
                 
+                // Update the UI to reflect logged-in state
+                updateUserInterface();
+                
                 // Gentle session monitoring - LOGS ONLY, NO REDIRECTS
                 if (session?.expires_at) {
                     const expiryTime = new Date(session.expires_at * 1000);
