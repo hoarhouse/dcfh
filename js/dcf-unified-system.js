@@ -1149,7 +1149,7 @@ window.handleSearchKeypress = function(event) {
 // Function to reinitialize search icons after icon system is ready
 window.initializeSearchIcons = function() {
     const searchIcons = document.querySelectorAll('.nav-search-container [data-icon="search"]');
-    if (searchIcons.length > 0 && typeof window.iconSystem !== 'undefined' && window.iconSystem.getIcon) {
+    if (searchIcons.length > 0 && typeof window.getIcon !== 'undefined') {
         searchIcons.forEach(element => {
             const iconHTML = await window.getIcon('search', element.dataset.size || 'standard', 'Search');
             if (iconHTML) {
@@ -1174,7 +1174,7 @@ window.addSearchIconWhenReady = function() {
     }
     
     // Only add if icon system is ready
-    if (typeof window.iconSystem !== 'undefined' && window.iconSystem.isInitialized) {
+    if (typeof window.getIcon !== 'undefined') {
         addSearchToUserMenu();
     } else {
         // Check again in 100ms
@@ -1296,8 +1296,8 @@ function renderFooterIcons() {
         const size = element.getAttribute('data-size') || 'small';
         const label = element.getAttribute('aria-label') || iconName;
         
-        if (window.iconSystem && window.iconSystem.getIcon) {
-            const iconHTML = window.iconSystem.getIcon(iconName, size, label);
+        if (window.getIcon) {
+            const iconHTML = await window.getIcon(iconName, size, label);
             element.innerHTML = iconHTML;
         }
     });
