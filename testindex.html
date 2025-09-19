@@ -3637,5 +3637,210 @@
             });
         });
     </script>
+
+    <script>
+    // Initialize Supabase
+    const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Load DCF News cards on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadDCFNewsCards();
+    });
+
+    async function loadDCFNewsCards() {
+        const dcfNewsCards = document.getElementById('dcfNewsCards');
+        const loading = document.getElementById('dcfNewsLoading');
+
+        try {
+            // Get DCF News slugs from CMS
+            const { data: cmsData, error: cmsError } = await supabase
+                .from('cms_sections')
+                .select('slugs')
+                .eq('section_name', 'dcf_news')
+                .single();
+
+            if (cmsError) {
+                console.error('CMS error:', cmsError);
+                throw cmsError;
+            }
+
+            const slugs = cmsData?.slugs || [];
+
+            if (slugs.length === 0) {
+                showFallbackCards(dcfNewsCards);
+                return;
+            }
+
+            // Fetch blog posts for each slug
+            const promises = slugs.map(slug => 
+                supabase
+                    .from('blog_posts')
+                    .select('id, title, slug, excerpt, featured_image, created_at, published_at, blogs!inner(name, slug)')
+                    .eq('slug', slug)
+                    .eq('status', 'published')
+                    .single()
+            );
+
+            const results = await Promise.all(promises);
+            const blogPosts = results
+                .map(result => result.data)
+                .filter(post => post)
+                .slice(0, 4);
+
+            if (blogPosts.length === 0) {
+                showFallbackCards(dcfNewsCards);
+                return;
+            }
+
+            // Generate dynamic cards
+            dcfNewsCards.innerHTML = blogPosts.map((post, index) => 
+                generateCardHTML(post, index)
+            ).join('');
+
+            addCardClickHandlers();
+
+        } catch (error) {
+            console.error('Error loading DCF News:', error);
+            showErrorState(dcfNewsCards);
+        }
+    }
+
+    function generateCardHTML(post, index) {
+        const cardTypes = ['bold-type', 'pattern', 'image-strip', 'circle'];
+        const cardType = cardTypes[index % cardTypes.length];
+        const blogUrl = `/blog/post.html?blog=${post.blogs.slug}&post=${post.slug}`;
+        const publishDate = new Date(post.published_at || post.created_at).toLocaleDateString();
+        const excerpt = post.excerpt || 'Read more about this story...';
+        
+        switch (cardType) {
+            case 'bold-type':
+                return `
+                    <div class="story-card story-card-bold-type" data-url="${blogUrl}">
+                        <span class="category-tag">DCF NEWS</span>
+                        <h3 class="bold-title">${escapeHtml(post.title)}</h3>
+                        <p class="bold-excerpt">${escapeHtml(excerpt.substring(0, 120))}...</p>
+                        <div class="bold-footer">
+                            <span class="read-time">${publishDate}</span>
+                            <a href="${blogUrl}" class="bold-link">READ STORY</a>
+                        </div>
+                    </div>
+                `;
+            case 'pattern':
+                return `
+                    <div class="story-card story-card-pattern" data-url="${blogUrl}">
+                        <div class="pattern-overlay"></div>
+                        <div class="pattern-content">
+                            <span class="pattern-tag">FEATURED</span>
+                            <h3 class="pattern-title">${escapeHtml(post.title)}</h3>
+                            <p class="pattern-excerpt">${escapeHtml(excerpt.substring(0, 100))}...</p>
+                            <a href="${blogUrl}" class="pattern-link">Learn more</a>
+                        </div>
+                    </div>
+                `;
+            case 'image-strip':
+                const imageUrl = post.featured_image || 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=100&fit=crop';
+                return `
+                    <div class="story-card story-card-image-strip" data-url="${blogUrl}">
+                        <div class="image-strip" style="background-image: url('${imageUrl}')"></div>
+                        <div class="strip-content">
+                            <h3 class="strip-title">${escapeHtml(post.title)}</h3>
+                            <p class="strip-excerpt">${escapeHtml(excerpt.substring(0, 120))}...</p>
+                            <div class="strip-footer">
+                                <span class="strip-date">${publishDate}</span>
+                                <a href="${blogUrl}" class="strip-link">Read →</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            case 'circle':
+                const circleImage = post.featured_image || 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop';
+                return `
+                    <div class="story-card story-card-circle" data-url="${blogUrl}">
+                        <div class="circle-image-container">
+                            <img src="${circleImage}" alt="${escapeHtml(post.title)}" class="circle-image">
+                        </div>
+                        <div class="circle-content">
+                            <h3 class="circle-title">${escapeHtml(post.title)}</h3>
+                            <p class="circle-excerpt">${escapeHtml(excerpt.substring(0, 100))}...</p>
+                            <a href="${blogUrl}" class="circle-link">Read story</a>
+                        </div>
+                    </div>
+                `;
+        }
+    }
+
+    function showFallbackCards(container) {
+        container.innerHTML = `
+            <div class="story-card story-card-bold-type">
+                <span class="category-tag">DCF NEWS</span>
+                <h3 class="bold-title">AI Ethics Framework Launch</h3>
+                <p class="bold-excerpt">Our comprehensive approach to ethical AI development sets new industry standards...</p>
+                <div class="bold-footer">
+                    <span class="read-time">Latest News</span>
+                    <a href="#" class="bold-link">READ STORY</a>
+                </div>
+            </div>
+            <div class="story-card story-card-pattern">
+                <div class="pattern-overlay"></div>
+                <div class="pattern-content">
+                    <span class="pattern-tag">FEATURED</span>
+                    <h3 class="pattern-title">Vatican Partnership</h3>
+                    <p class="pattern-excerpt">Historic collaboration with Vatican on global AI governance framework...</p>
+                    <a href="#" class="pattern-link">Learn more</a>
+                </div>
+            </div>
+            <div class="story-card story-card-image-strip">
+                <div class="image-strip" style="background-image: url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=100&fit=crop')"></div>
+                <div class="strip-content">
+                    <h3 class="strip-title">Research Breakthrough</h3>
+                    <p class="strip-excerpt">Latest developments in AI safety and alignment research...</p>
+                    <div class="strip-footer">
+                        <span class="strip-date">2024 Initiative</span>
+                        <a href="#" class="strip-link">Discover →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="story-card story-card-circle">
+                <div class="circle-image-container">
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop" alt="News story" class="circle-image">
+                </div>
+                <div class="circle-content">
+                    <h3 class="circle-title">Global Impact Report</h3>
+                    <p class="circle-excerpt">How our initiatives are creating positive change worldwide...</p>
+                    <a href="#" class="circle-link">Read report</a>
+                </div>
+            </div>
+        `;
+    }
+
+    function showErrorState(container) {
+        container.innerHTML = `
+            <div class="dcf-news-error">
+                <p>Unable to load DCF News at this time.</p>
+                <button class="retry-btn" onclick="loadDCFNewsCards()">Try Again</button>
+            </div>
+        `;
+    }
+
+    function addCardClickHandlers() {
+        document.querySelectorAll('[data-url]').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.tagName.toLowerCase() === 'a') return;
+                const url = this.dataset.url;
+                if (url && url !== '#') {
+                    window.location.href = url;
+                }
+            });
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+    </script>
 </body>
 </html>
