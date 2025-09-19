@@ -54,12 +54,32 @@ async function initializeAuth() {
         console.log('🔐 Checking authentication...');
         
         // Get current session with timeout
-        const sessionPromise = window.dcfSupabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        );
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        let session = null;
+        try {
+            // Try immediate session check with shorter timeout
+            const immediateSessionResult = await Promise.race([
+                window.dcfSupabase.auth.getSession(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+            ]);
+            session = immediateSessionResult?.data?.session || null;
+            console.log('✅ Immediate session check:', session ? 'Found session' : 'No session');
+        } catch (timeoutError) {
+            console.log('⚠️ Session check timed out, trying auth state listener...');
+            
+            // Fallback: Use auth state listener which is more reliable
+            const authState = await new Promise((resolve) => {
+                const { data: { subscription } } = window.dcfSupabase.auth.onAuthStateChange((event, sessionData) => {
+                    console.log('🔄 Auth state event:', event, sessionData ? 'has session' : 'no session');
+                    subscription.unsubscribe();
+                    resolve(sessionData);
+                });
+                
+                // Force resolve after 1 second if no auth event
+                setTimeout(() => resolve(null), 1000);
+            });
+            
+            session = authState;
+        }
         
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
