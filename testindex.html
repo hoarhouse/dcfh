@@ -3662,31 +3662,38 @@
                 throw cmsError;
             }
 
-            const slugs = cmsData?.slugs || [];
+            const slugEntries = cmsData?.slugs || [];
             console.log('CMS Data loaded:', cmsData);
-            console.log('Slugs found:', slugs);
+            console.log('Slug entries with templates:', slugEntries);
 
-            if (slugs.length === 0) {
+            if (slugEntries.length === 0) {
                 showFallbackCards(dcfNewsCards);
                 return;
             }
 
             // Fetch blog posts for each slug
-            const promises = slugs.map(slug => 
+            const promises = slugEntries.map(entry => 
                 supabase
                     .from('blog_posts')
                     .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
-                    .eq('slug', slug)
+                    .eq('slug', entry.slug || entry)  // Handle both old and new format
                     .eq('status', 'published')
                     .single()
+                    .then(result => ({ 
+                        ...result, 
+                        chosenTemplate: entry.template || 'bold-type' 
+                    }))
             );
 
             const results = await Promise.all(promises);
             console.log('Blog post query results:', results);
             
             const blogPosts = results
-                .map(result => result.data)
-                .filter(post => post)
+                .map(result => ({ 
+                    ...result.data, 
+                    chosenTemplate: result.chosenTemplate 
+                }))
+                .filter(post => post && post.id)  // Ensure valid post data
                 .slice(0, 4);
             console.log('Filtered blog posts:', blogPosts);
             console.log('Number of valid posts:', blogPosts.length);
@@ -3698,7 +3705,7 @@
             }
             // Generate dynamic cards
             dcfNewsCards.innerHTML = blogPosts.map((post, index) => 
-                generateCardHTML(post, index)
+                generateCardHTML(post, index, post.chosenTemplate)
             ).join('');
 
             addCardClickHandlers();
@@ -3709,9 +3716,8 @@
         }
     }
 
-    function generateCardHTML(post, index) {
-        const cardTypes = ['bold-type', 'pattern', 'image-strip', 'circle'];
-        const cardType = cardTypes[index % cardTypes.length];
+    function generateCardHTML(post, index, chosenTemplate) {
+        const cardType = chosenTemplate || 'bold-type';  // Use chosen template instead of rotation
         const blogUrl = `/dcfh/blog/post.html?blog=${post.blogs?.slug || 'unknown'}&post=${post.slug}`;
         const publishDate = new Date(post.published_at || post.created_at).toLocaleDateString();
         const excerpt = post.excerpt || 'Read more about this story...';
