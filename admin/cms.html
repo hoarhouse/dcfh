@@ -773,7 +773,6 @@
         }
     </style>
     <link rel="stylesheet" href="../css/dcf-card-templates.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/dcf-unified-system.js"></script>
 </head>
 <body>
@@ -955,22 +954,25 @@
     </main>
 
     <script>
-        // Wait for dcf-unified-system.js to initialize Supabase
+        // Use the unified Supabase client from dcf-unified-system.js
         let supabase;
         let dcfNewsSlugs = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Get the Supabase client from dcf-unified-system.js
-            supabase = window.dcfSupabase || window.supabase;
-            
-            if (!supabase) {
-                console.error('Supabase client not found. Initializing...');
-                const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Wait for unified system to be ready
+            if (!window.dcfSupabase) {
+                await new Promise(resolve => {
+                    const checkInterval = setInterval(() => {
+                        if (window.dcfSupabase) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                });
             }
             
+            supabase = window.dcfSupabase;
             await loadDCFNewsSlugs();
         });
 
