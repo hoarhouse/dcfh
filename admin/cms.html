@@ -1010,6 +1010,84 @@
             }
         }
 
+        async function editSlugTemplate(index) {
+            const slugObj = dcfNewsSlugs[index];
+            const currentTemplate = slugObj.template || 'bold-type';
+            
+            // Create modal with template selector
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%;">
+                    <h3 style="margin-bottom: 1rem;">Edit Template for: ${slugObj.slug || slugObj}</h3>
+                    <div class="template-selector" id="editTemplateSelector">
+                        <div class="template-option ${currentTemplate === 'bold-type' ? 'selected' : ''}" data-template="bold-type">
+                            <div class="template-preview template-preview-1"></div>
+                            <span class="template-name">Bold Type</span>
+                        </div>
+                        <div class="template-option ${currentTemplate === 'pattern' ? 'selected' : ''}" data-template="pattern">
+                            <div class="template-preview template-preview-6"></div>
+                            <span class="template-name">Pattern</span>
+                        </div>
+                        <div class="template-option ${currentTemplate === 'image-strip' ? 'selected' : ''}" data-template="image-strip">
+                            <div class="template-preview template-preview-7"></div>
+                            <span class="template-name">Image Strip</span>
+                        </div>
+                        <div class="template-option ${currentTemplate === 'circle' ? 'selected' : ''}" data-template="circle">
+                            <div class="template-preview template-preview-8"></div>
+                            <span class="template-name">Circle</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" class="btn btn-secondary">Cancel</button>
+                        <button onclick="saveTemplateEdit(${index})" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click handlers to template options
+            modal.querySelectorAll('.template-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    modal.querySelectorAll('.template-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        }
+
+        async function saveTemplateEdit(index) {
+            const modal = document.querySelector('[style*="position: fixed"]');
+            const selectedTemplate = modal.querySelector('.template-option.selected')?.dataset.template;
+            
+            if (!selectedTemplate) {
+                showToast('Please select a template', 'error');
+                return;
+            }
+
+            try {
+                // Update the template
+                dcfNewsSlugs[index].template = selectedTemplate;
+
+                // Save to database
+                await saveDCFNewsSlugs();
+
+                // Refresh display
+                displaySlugs();
+                await loadCardsPreview();
+
+                // Close modal
+                modal.remove();
+
+                showToast('Template updated successfully', 'success');
+
+            } catch (error) {
+                console.error('Error updating template:', error);
+                showToast('Error updating template', 'error');
+            }
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text || '';
