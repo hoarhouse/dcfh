@@ -1150,7 +1150,7 @@ window.handleSearchKeypress = function(event) {
 window.initializeSearchIcons = function() {
     const searchIcons = document.querySelectorAll('.nav-search-container [data-icon="search"]');
     if (searchIcons.length > 0 && typeof window.getIcon !== 'undefined') {
-        searchIcons.forEach(element => {
+        searchIcons.forEach(async element => {
             const iconHTML = await window.getIcon('search', element.dataset.size || 'standard', 'Search');
             if (iconHTML) {
                 element.innerHTML = iconHTML;
@@ -1291,7 +1291,7 @@ function renderFooterIcons() {
     if (!footer) return;
     
     const footerIcons = footer.querySelectorAll('[data-icon]');
-    footerIcons.forEach(element => {
+    footerIcons.forEach(async element => {
         const iconName = element.getAttribute('data-icon');
         const size = element.getAttribute('data-size') || 'small';
         const label = element.getAttribute('aria-label') || iconName;
