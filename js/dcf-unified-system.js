@@ -1090,7 +1090,7 @@ function addSearchToUserMenu() {
     
     // Initialize icons immediately since we've already verified icon system is ready
     const searchIcons = searchContainer.querySelectorAll('[data-icon="search"]');
-    searchIcons.forEach(element => {
+    searchIcons.forEach(async element => {
         const iconHTML = await window.getIcon('search', element.dataset.size || 'standard', 'Search');
         if (iconHTML) {
             element.innerHTML = iconHTML;
