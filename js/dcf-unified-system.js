@@ -851,6 +851,10 @@ function populateAdminMenu() {
         {
             href: 'blogpostsmanage.html',
             title: 'Manage Posts'
+        },
+        {
+            href: 'cms.html',
+            title: 'CMS'
         }
     ];
     
