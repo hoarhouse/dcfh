@@ -2783,6 +2783,21 @@ function setupAuthStateListener() {
     
     window.dcfSupabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 AUTH STATE LISTENER - Event:', event);
+        console.log('🔍 Session exists:', !!session);
+        console.log('🔍 Session user:', session?.user?.email);
+        console.log('🔍 Current browser:', navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other');
+        
+        // CRITICAL: Don't logout on TOKEN_REFRESHED
+        if (event === 'TOKEN_REFRESHED') {
+            console.log('✅ Token refreshed - maintaining session');
+            return; // DON'T PROCESS AS LOGOUT
+        }
+        
+        // CRITICAL: Don't logout on INITIAL_SESSION
+        if (event === 'INITIAL_SESSION' && session) {
+            console.log('✅ Initial session detected - user already logged in');
+            return; // Session is valid, don't process further
+        }
         
         if (event === 'SIGNED_IN' && session?.user) {
             console.log('✅ AUTH STATE LISTENER - Processing SIGNED_IN event');
