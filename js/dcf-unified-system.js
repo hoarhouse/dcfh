@@ -55,31 +55,25 @@ async function initializeAuth() {
         
         // Get current session with timeout
         let session = null;
-        try {
-            // Try immediate session check with shorter timeout
-            const immediateSessionResult = await Promise.race([
-                window.dcfSupabase.auth.getSession(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
-            ]);
-            session = immediateSessionResult?.data?.session || null;
-            console.log('✅ Immediate session check:', session ? 'Found session' : 'No session');
-        } catch (timeoutError) {
-            console.log('⚠️ Session check timed out, trying auth state listener...');
+
+        // Use auth state listener instead of broken getSession()
+        session = await new Promise((resolve) => {
+            // Force refresh auth state
+            window.dcfSupabase.auth._recoverAndRefresh();
             
-            // Fallback: Use auth state listener which is more reliable
-            const authState = await new Promise((resolve) => {
-                const { data: { subscription } } = window.dcfSupabase.auth.onAuthStateChange((event, sessionData) => {
-                    console.log('🔄 Auth state event:', event, sessionData ? 'has session' : 'no session');
-                    subscription.unsubscribe();
-                    resolve(sessionData);
-                });
-                
-                // Force resolve after 1 second if no auth event
-                setTimeout(() => resolve(null), 1000);
+            // Listen for auth state change
+            const { data: { subscription } } = window.dcfSupabase.auth.onAuthStateChange((event, sessionData) => {
+                console.log('✅ Auth state detected:', event, sessionData ? 'has session' : 'no session');
+                subscription.unsubscribe();
+                resolve(sessionData);
             });
             
-            session = authState;
-        }
+            // Timeout fallback
+            setTimeout(() => {
+                subscription.unsubscribe();
+                resolve(null);
+            }, 3000);
+        });
         
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
@@ -4714,9 +4708,7 @@ console.log('✅ Universal Analytics System loaded - tracks all interactions for
 // =============================================================================
 // Handle missing tables gracefully - REMOVED SINCE TABLES EXIST
 // Comments table is called 'post_comments' not 'comments'
-// Make dcfSupabase available as authSupabase and masterSupabase for existing code
-window.authSupabase = window.dcfSupabase;
-window.masterSupabase = window.dcfSupabase;
+// Removed aliases that were causing "Multiple GoTrueClient instances" warning
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM loaded, starting DCF initialization...');
     
