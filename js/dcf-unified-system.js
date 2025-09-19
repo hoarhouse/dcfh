@@ -105,11 +105,15 @@ async function initializeAuth() {
                     session: session
                 };
                 
+                // Debug logging to verify user object is properly set
+                console.log('DEBUG - window.dcfUser after setting:', window.dcfUser);
+                console.log('DEBUG - isLoggedIn value:', window.dcfUser.isLoggedIn);
+                
                 console.log('✅ User profile loaded:', window.dcfUser.profile);
                 console.log('✅ Username from DB:', window.dcfUser.profile.username);
                 console.log('✅ Name from DB:', window.dcfUser.profile.name);
                 
-                // Update the UI to reflect logged-in state
+                // Update the UI to reflect logged-in state - happens AFTER user object is fully set
                 updateUserInterface();
                 
                 // Gentle session monitoring - LOGS ONLY, NO REDIRECTS
