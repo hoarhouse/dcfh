@@ -14,8 +14,9 @@ const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
 
 // SINGLE CLIENT - PREVENT MULTIPLE INSTANCES
-if (!window.dcfSupabase) {
+if (!window.dcfSupabase || !window.dcfSupabase.supabaseUrl) {
     if (typeof window !== 'undefined' && window.supabase) {
+        console.log('Creating new Supabase client');
         window.dcfSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
