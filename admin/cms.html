@@ -365,14 +365,14 @@
         .template-selector {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 1rem;
         }
 
         .template-option {
             border: 2px solid #e5e5e5;
             border-radius: 8px;
-            padding: 12px;
+            padding: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
@@ -389,7 +389,7 @@
 
         .template-preview {
             width: 100%;
-            height: 60px;
+            height: 90px;
             border-radius: 6px;
             margin-bottom: 8px;
         }
@@ -431,6 +431,13 @@
             font-size: 11px;
             font-weight: 600;
             color: #333;
+        }
+
+        .slug-template {
+            font-size: 0.75rem;
+            color: #888;
+            font-weight: 500;
+            margin-top: 2px;
         }
 
         .slug-item {
@@ -868,7 +875,7 @@
 
             try {
                 // Remove from array
-                dcfNewsSlugs = dcfNewsSlugs.filter(s => s !== slug);
+                dcfNewsSlugs = dcfNewsSlugs.filter(s => (s.slug || s) !== (slug.slug || slug));
 
                 // Save to database
                 await saveDCFNewsSlugs();
@@ -886,7 +893,7 @@
         }
 
         async function moveSlug(slug, direction) {
-            const currentIndex = dcfNewsSlugs.indexOf(slug);
+            const currentIndex = dcfNewsSlugs.findIndex(s => (s.slug || s) === (slug.slug || slug));
             if (currentIndex === -1) return;
 
             const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -946,13 +953,14 @@
             slugList.innerHTML = dcfNewsSlugs.map((slug, index) => `
                 <div class="slug-item">
                     <div class="slug-info">
-                        <div class="slug-text">${escapeHtml(slug)}</div>
+                        <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
                         <div class="slug-order">Position ${index + 1} of ${dcfNewsSlugs.length}</div>
+                        <div class="slug-template">Template: ${slug.template || 'bold-type'}</div>
                     </div>
                     <div class="slug-actions">
-                        ${index > 0 ? `<button onclick="moveSlug('${escapeHtml(slug)}', 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
-                        ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug('${escapeHtml(slug)}', 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
-                        <button onclick="removeSlug('${escapeHtml(slug)}')" class="btn btn-danger btn-small" title="Remove">×</button>
+                        ${index > 0 ? `<button onclick="moveSlug('${escapeHtml(slug.slug || slug)}', 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
+                        ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug('${escapeHtml(slug.slug || slug)}', 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
+                        <button onclick="removeSlug('${escapeHtml(slug.slug || slug)}')" class="btn btn-danger btn-small" title="Remove">×</button>
                     </div>
                 </div>
             `).join('');
