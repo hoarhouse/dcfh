@@ -2852,8 +2852,18 @@ function setupAuthStateListener() {
             updateUserInterface();
         } else if (event === 'SIGNED_OUT') {
             console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event');
-            window.dcfUser = { isLoggedIn: false, profile: null, session: null };
-            showLoggedOutState();
+            console.log('🔍 LOGOUT REASON - Event:', event, 'Session:', !!session);
+            console.log('🔍 Stack trace:', new Error().stack);
+            
+            // Only actually log out if this is a real logout
+            if (!session) {
+                window.dcfUser = { isLoggedIn: false, profile: null, session: null };
+                showLoggedOutState();
+            } else {
+                console.warn('⚠️ SIGNED_OUT event but session still exists - ignoring');
+            }
+        } else {
+            console.log('🔍 Unhandled auth event:', event, 'Session:', !!session);
         }
     });
 }
