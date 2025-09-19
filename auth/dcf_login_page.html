@@ -820,17 +820,33 @@
                 let loginSuccess = false;
                 let userData = null;
                 
-                // Try Supabase Auth with timeout
-                const authPromise = supabase.auth.signInWithPassword({
+                // Set up auth state listener before attempting login
+                const authSuccess = new Promise((resolve, reject) => {
+                    const { data: { subscription } } = window.dcfSupabase.auth.onAuthStateChange((event, session) => {
+                        if (event === 'SIGNED_IN' && session) {
+                            subscription.unsubscribe();
+                            resolve({ data: { user: session.user, session: session }, error: null });
+                        } else if (event === 'SIGN_IN_ERROR') {
+                            subscription.unsubscribe();
+                            reject(new Error('Sign in failed'));
+                        }
+                    });
+                    
+                    // Set timeout as backup
+                    setTimeout(() => {
+                        subscription.unsubscribe();
+                        reject(new Error('Login request timeout'));
+                    }, 15000);
+                });
+
+                // Start the login process
+                window.dcfSupabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
 
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Login request timeout')), 10000)
-                );
-
-                const { data, error } = await Promise.race([authPromise, timeoutPromise]);
+                // Wait for auth state change
+                const { data, error } = await authSuccess;
                 
                 if (error) {
                     throw new Error(error.message);
