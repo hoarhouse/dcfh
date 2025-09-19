@@ -1844,7 +1844,7 @@ function initializeFooter() {
     document.body.insertAdjacentHTML('beforeend', footerHTML);
     
     // Render icons in footer if icon system is ready
-    if (window.iconSystem && window.iconSystem.isInitialized) {
+    if (window.getIcon) {
         renderFooterIcons();
         // Also initialize search icons
         if (window.initializeSearchIcons) {
@@ -1853,7 +1853,7 @@ function initializeFooter() {
     } else {
         // Wait for icon system to be ready
         const checkIconSystem = setInterval(() => {
-            if (window.iconSystem && window.iconSystem.isInitialized) {
+            if (window.getIcon) {
                 clearInterval(checkIconSystem);
                 renderFooterIcons();
                 // Also initialize search icons
