@@ -868,14 +868,15 @@
             }
         }
 
-        async function removeSlug(slug) {
-            if (!confirm('Remove this slug from DCF News section?')) {
+        async function removeSlug(index) {
+            const slugObj = dcfNewsSlugs[index];
+            if (!confirm(`Remove "${slugObj.slug || slugObj}" from DCF News section?`)) {
                 return;
             }
 
             try {
                 // Remove from array
-                dcfNewsSlugs = dcfNewsSlugs.filter(s => (s.slug || s) !== (slug.slug || slug));
+                dcfNewsSlugs.splice(index, 1);
 
                 // Save to database
                 await saveDCFNewsSlugs();
@@ -892,16 +893,13 @@
             }
         }
 
-        async function moveSlug(slug, direction) {
-            const currentIndex = dcfNewsSlugs.findIndex(s => (s.slug || s) === (slug.slug || slug));
-            if (currentIndex === -1) return;
-
-            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        async function moveSlug(index, direction) {
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
             if (newIndex < 0 || newIndex >= dcfNewsSlugs.length) return;
 
             try {
                 // Swap positions
-                [dcfNewsSlugs[currentIndex], dcfNewsSlugs[newIndex]] = [dcfNewsSlugs[newIndex], dcfNewsSlugs[currentIndex]];
+                [dcfNewsSlugs[index], dcfNewsSlugs[newIndex]] = [dcfNewsSlugs[newIndex], dcfNewsSlugs[index]];
 
                 // Save to database
                 await saveDCFNewsSlugs();
