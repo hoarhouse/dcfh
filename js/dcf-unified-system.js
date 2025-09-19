@@ -2913,6 +2913,18 @@ async function initializeDCF() {
         
         console.log(`✅ DCF initialization complete. User logged in: ${isLoggedIn}`);
         
+        // CRITICAL: Signal that DCF is fully initialized
+        window.dcfInitialized = true;
+        window.dcfUser = window.dcfUser || { isLoggedIn: false, profile: null, session: null };
+        
+        // Dispatch ready event for pages to listen to
+        window.dispatchEvent(new CustomEvent('dcfReady', { 
+            detail: { 
+                isLoggedIn: isLoggedIn,
+                user: window.dcfUser 
+            }
+        }));
+        
         return isLoggedIn;
         
     } catch (error) {
