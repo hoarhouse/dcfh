@@ -79,12 +79,17 @@ async function initializeAuth() {
         if (session?.user) {
             console.log('✅ User session found:', session.user.email);
             
-            // Get profile data - query by email since that's your setup
-            const profilePromise = window.dcfSupabase
-                .from('user_profiles')
-                .select('first_name, last_name, username, email, avatar_url')
-                .eq('email', session.user.email)
-                .single();
+            // Get profile data with timeout protection
+            const profilePromise = Promise.race([
+                window.dcfSupabase
+                    .from('user_profiles')
+                    .select('first_name, last_name, username, email, avatar_url')
+                    .eq('email', session.user.email)
+                    .single(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Profile query timeout')), 5000)
+                )
+            ]);
                 
             try {
                 const { data: profile } = await profilePromise;
