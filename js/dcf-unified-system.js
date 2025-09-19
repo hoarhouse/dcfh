@@ -966,7 +966,7 @@ function updateLogoText() {
 // =============================================================================
 function addSearchToUserMenu() {
     // Check if icon system is ready first
-    if (typeof window.iconSystem === 'undefined' || !window.iconSystem.isInitialized) {
+    if (typeof window.getIcon === 'undefined') {
         // Retry after icon system loads
         setTimeout(addSearchToUserMenu, 100);
         return;
