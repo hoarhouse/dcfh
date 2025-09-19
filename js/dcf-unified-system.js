@@ -4769,7 +4769,80 @@ if (document.readyState !== 'loading') {
 }
 
 // =============================================================================
-// 22. DCF ICON SYSTEM - INTEGRATED WITH UNIFIED AUTH
+// SIMPLE ICON SYSTEM - DATABASE LOOKUP ONLY
+// =============================================================================
+
+// Simple icon lookup - no caching, no complex initialization
+async function getIcon(iconName, size = 'standard', ariaLabel = '') {
+    try {
+        if (!window.dcfSupabase) {
+            return createFallbackIcon(iconName, size, ariaLabel);
+        }
+
+        const sizeColumn = size === 'small' ? 'svg_small' : 
+                          size === 'large' ? 'svg_large' : 'svg_standard';
+
+        const { data, error } = await window.dcfSupabase
+            .from('icons')
+            .select(sizeColumn)
+            .eq('icon_set_id', 4)
+            .eq('icon_name', iconName)
+            .single();
+
+        if (error || !data || !data[sizeColumn]) {
+            return createFallbackIcon(iconName, size, ariaLabel);
+        }
+
+        return createIconHTML(data[sizeColumn], iconName, size, ariaLabel);
+
+    } catch (error) {
+        console.warn(`Icon lookup failed for ${iconName}:`, error.message);
+        return createFallbackIcon(iconName, size, ariaLabel);
+    }
+}
+
+// Create proper icon HTML wrapper
+function createIconHTML(svgContent, iconName, size, ariaLabel) {
+    const label = ariaLabel || iconName;
+    const sizeClass = `icon-${size}`;
+    
+    return `<span class="dcf-icon ${sizeClass}" 
+                  data-icon="${iconName}" 
+                  role="img" 
+                  aria-label="${label}">
+                ${svgContent}
+            </span>`;
+}
+
+// Simple fallback for missing icons
+function createFallbackIcon(iconName, size, ariaLabel) {
+    const fallbacks = {
+        search: '🔍', user: '👤', menu: '☰', bell: '🔔', heart: '♥',
+        edit: '✏️', delete: '🗑️', close: '✕', settings: '⚙️', home: '🏠',
+        calendar: '📅', message: '💬', mail: '📧', check: '✓', star: '⭐',
+        peace: '☮️', education: '📚', health: '⚕️', research: '🔬',
+        success: '✅', warning: '⚠️', error: '❌', info: 'ℹ️'
+    };
+    
+    const icon = fallbacks[iconName] || '●';
+    const label = ariaLabel || iconName;
+    const width = size === 'small' ? '16' : size === 'large' ? '32' : '24';
+    
+    return `<span class="dcf-icon icon-${size}" 
+                  data-icon="${iconName}" 
+                  role="img" 
+                  aria-label="${label}"
+                  style="display: inline-flex; align-items: center; justify-content: center; 
+                         width: ${width}px; height: ${width}px; font-size: ${Math.floor(width * 0.8)}px;">
+                ${icon}
+            </span>`;
+}
+
+// Global export
+window.getIcon = getIcon;
+
+console.log('✅ Simple Icon System loaded - database lookup with emoji fallbacks');
+
 // =============================================================================
 
 /**
