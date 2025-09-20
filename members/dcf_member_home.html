@@ -2131,44 +2131,27 @@
         const postCommentStates = {};
 
         // Initialize when auth is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('🚀 Profile page loading...');
             
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
             console.log('✅ Security: Input sanitization initialized');
             
-            // Wait for getCurrentUser to be available and return a user
-            const checkAuth = setInterval(() => {
-                if (window.getCurrentUser) {
-                    const currentUser = window.getCurrentUser();
-                    if (currentUser) {
-                        clearInterval(checkAuth);
-                        initProfile();
-                    }
-                    // If no user after 2 seconds, then show login
-                    else {
-                        setTimeout(() => {
-                            if (!window.getCurrentUser()) {
-                                clearInterval(checkAuth);
-                                showLoginPrompt();
-                            }
-                        }, 2000);
-                    }
+            // Initialize authentication
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
+                    // Initialize page functionality
+                    initProfile();
+                } else {
+                    // Redirect to login page
+                    window.location.href = '../auth/dcf_login_page.html';
                 }
-            }, 100);
-            
-            // Timeout after 10 seconds but don't redirect
-            setTimeout(() => {
-                clearInterval(checkAuth);
-                if (!window.dcfUser) {
-                    console.log('Auth system timeout - proceeding with fallback');
-                    showLoginPrompt();
-                }
-            }, 10000);
-            
-            // Auth state listener temporarily disabled due to infinite refresh loop
-            // TODO: Fix auth state handling logic
+            } else {
+                console.error('Authentication system not available');
+                showLoginPrompt();
+            }
         });
 
         function showUploadError(message) {
