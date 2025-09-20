@@ -79,20 +79,9 @@ async function initializeDCFSystems() {
             window.dcfUI.initialize();
         }
         
-        // Step 4: Initialize authentication (optional)
-        if (window.dcfAuth && typeof window.dcfAuth.initializeAuth === 'function') {
-            console.log('🔐 Initializing authentication...');
-            try {
-                await window.dcfAuth.initializeAuth();
-                DCF_SYSTEM_STATE.auth.loaded = true;
-                console.log('✅ Authentication initialized');
-            } catch (authError) {
-                console.warn('⚠️ Authentication failed, continuing without auth:', authError.message);
-                DCF_SYSTEM_STATE.auth.error = authError.message;
-            }
-        } else {
-            console.log('ℹ️ Authentication system not available');
-        }
+        // Authentication will initialize on-demand when pages need it
+        DCF_SYSTEM_STATE.auth.loaded = true;
+        console.log('✅ Authentication system ready for on-demand use');
         
         // Step 5: Mark as fully initialized
         DCF_SYSTEM_STATE.initialized = true;
