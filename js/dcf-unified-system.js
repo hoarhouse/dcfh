@@ -60,7 +60,7 @@ function updateUserInterface() {
 function showLoggedOutState() {
     console.log('👤 Showing logged-out UI state');
     
-    const userSection = document.querySelector('.user-section');
+    const userSection = document.querySelector('.user-menu');
     if (!userSection) {
         console.log('❌ User section not found');
         return;
@@ -107,7 +107,7 @@ function handleDocumentClick(event) {
 function addNavigationItems() {
     console.log('📍 Adding navigation items...');
     
-    const navContainer = document.querySelector('.nav-links');
+    const navContainer = document.querySelector('.nav-menu');
     if (!navContainer) {
         console.log('❌ Navigation container not found');
         return;
@@ -217,7 +217,7 @@ function getCorrectBasePath() {
 function populateTopNavigation() {
     console.log('🧭 Populating top navigation...');
     
-    const navContainer = document.querySelector('.nav-links');
+    const navContainer = document.querySelector('.nav-menu');
     if (!navContainer) {
         console.log('Navigation container not found');
         return;
@@ -356,16 +356,25 @@ window.showBlogManagement = function(event) {
 function updateLogoText() {
     console.log('🏷️ Updating logo text...');
     
-    const logoText = document.querySelector('.logo-text');
-    if (logoText) {
-        logoText.textContent = 'DCF Hungary';
+    const logo = document.querySelector('.logo');
+    if (logo) {
+        // Preserve the logo icon div and update text
+        const logoIcon = logo.querySelector('.logo-icon');
+        if (logoIcon) {
+            logo.innerHTML = '';
+            logo.appendChild(logoIcon);
+            logo.appendChild(document.createTextNode(' DCF Hungary'));
+        } else {
+            // If no icon, just set the text
+            logo.textContent = 'DCF Hungary';
+        }
     }
 }
 
 function addSearchToUserMenu() {
     console.log('🔍 Adding search functionality...');
     
-    const userSection = document.querySelector('.user-section');
+    const userSection = document.querySelector('.user-menu');
     if (!userSection) {
         console.log('User section not found for search');
         return;
