@@ -25,21 +25,35 @@ const SITE_CONFIG = {
 // =============================================================================
 
 /**
- * Initialize Supabase client
- * Creates the client that gets used throughout the application
+ * Initialize Supabase client with proper error handling
  */
 function initializeSupabaseClient() {
     console.log('🔧 Initializing Supabase client...');
+    console.log('🔍 Checking for Supabase library:', typeof window.supabase);
     
     if (typeof window.supabase === 'undefined') {
         console.error('❌ Supabase library not loaded');
         return null;
     }
     
+    if (typeof window.supabase.createClient !== 'function') {
+        console.error('❌ Supabase.createClient is not a function');
+        return null;
+    }
+    
     try {
+        console.log('🔧 Creating client with URL:', SUPABASE_URL);
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Verify the client has required methods
+        if (!client || typeof client.from !== 'function') {
+            console.error('❌ Created client is invalid - missing from() method');
+            return null;
+        }
+        
         window.dcfSupabase = client;
-        console.log('✅ Supabase client created and assigned to window.dcfSupabase');
+        console.log('✅ Supabase client created successfully');
+        console.log('🔍 Client methods available:', Object.getOwnPropertyNames(client));
         return client;
     } catch (error) {
         console.error('❌ Failed to create Supabase client:', error);
@@ -47,18 +61,12 @@ function initializeSupabaseClient() {
     }
 }
 
-// Auto-initialize when Supabase library is available
-function waitForSupabaseAndInit() {
-    if (typeof window.supabase !== 'undefined') {
-        initializeSupabaseClient();
-    } else {
-        console.log('⏳ Waiting for Supabase library...');
-        setTimeout(waitForSupabaseAndInit, 100);
-    }
+// Initialize immediately when this script loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSupabaseClient);
+} else {
+    initializeSupabaseClient();
 }
-
-// Start the initialization process immediately
-waitForSupabaseAndInit();
 
 // =============================================================================
 // 3. PATH DETECTION UTILITIES
