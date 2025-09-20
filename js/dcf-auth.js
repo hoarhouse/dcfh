@@ -448,12 +448,42 @@ function addNotificationBellCSS() {
 
 function toggleNotificationDropdown(event) {
     if (event) event.stopPropagation();
-    console.log('🔔 Notification bell clicked - notifications coming soon');
     
-    // Placeholder for future notification functionality
-    if (window.showAlert) {
-        window.showAlert('Notification system coming soon!', 'info');
+    // Create notification dropdown if it doesn't exist
+    let dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) {
+        createNotificationDropdown();
+        dropdown = document.getElementById('notificationDropdown');
     }
+    
+    // Toggle dropdown visibility
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'block';
+        // Close user dropdown if open
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown) userDropdown.classList.remove('active');
+    }
+}
+
+function createNotificationDropdown() {
+    const notificationBell = document.querySelector('.notification-bell');
+    if (!notificationBell) return;
+    
+    const dropdownHTML = `
+        <div id="notificationDropdown" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 300px; z-index: 1000;">
+            <div style="padding: 1rem; border-bottom: 1px solid #f0f0f0;">
+                <h3 style="margin: 0; font-size: 1rem;">Notifications</h3>
+            </div>
+            <div style="padding: 2rem; text-align: center; color: #666;">
+                🔔 No new notifications
+            </div>
+        </div>
+    `;
+    
+    notificationBell.style.position = 'relative';
+    notificationBell.insertAdjacentHTML('beforeend', dropdownHTML);
 }
 
 // =============================================================================
