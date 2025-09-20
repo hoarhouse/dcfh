@@ -1391,18 +1391,25 @@
         let currentUser = null;
 
         // Initialize page functionality
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('🔍 Members Directory page loaded');
             
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
             console.log('✅ Security: Input sanitization initialized');
             
-            // EMERGENCY - NO REDIRECTS ALLOWED
-            console.log('🚨 Page loading - redirects disabled');
+            // Initialize authentication if needed
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (!isLoggedIn) {
+                    console.log('⚠️ User not authenticated, redirecting to login');
+                    window.location.href = '../auth/dcf_login_page.html';
+                    return;
+                }
+            }
 
-            // Use fallback user data
-            currentUser = window.getCurrentUser() || getCurrentUser() || null;
+            // Get current user
+            currentUser = window.getCurrentUser();
 
             if (currentUser) {
                 console.log('✅ Page loading with user:', currentUser.username);
@@ -2435,9 +2442,14 @@ const { data: user } = await window.masterSupabase
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    // Wait for DCF system to be ready before initializing icons
+    if (window.dcfInit && window.dcfInit.isReady()) {
         setTimeout(waitForIconSystem, 500);
-    });
+    } else {
+        window.addEventListener('dcfReady', function() {
+            setTimeout(waitForIconSystem, 500);
+        });
+    }
     </script>
 </body>
 </html>
