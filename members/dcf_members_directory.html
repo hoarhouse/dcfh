@@ -1809,7 +1809,7 @@
                 const currentUserName = currentUser?.name || currentUser?.username || 'User';
 
                 // Get recipient email and username
-                const { data: recipientData } = await window.masterSupabase
+                const { data: recipientData } = await window.dcfSupabase
                     .from('user_profiles')
                     .select('email, username, first_name, last_name')
                     .eq('id', targetUserId)
@@ -1818,7 +1818,7 @@
                 // Create notification for recipient
                 if (recipientData) {
                     try {
-                        const notificationResult = await window.masterSupabase
+                        const notificationResult = await window.dcfSupabase
                             .from('notifications')
                             .insert([{
                                 recipient_email: recipientData.email,
@@ -1869,7 +1869,7 @@
         async function getCurrentUserId() {
             try {
                 const currentUserEmail = window.getCurrentUser()?.email;
-const { data: user } = await window.masterSupabase
+const { data: user } = await window.dcfSupabase
                     .from('user_profiles')
                     .select('id')
                     .eq('email', currentUserEmail)
@@ -1890,22 +1890,13 @@ const { data: user } = await window.masterSupabase
                 document.getElementById('loadingSpinner').style.display = 'flex';
                 document.getElementById('membersList').style.display = 'none';
 
-                // Initialize Supabase if needed
-                if (!window.masterSupabase) {
-                    console.log('Initializing Supabase...');
-                    if (window.initializeSupabase) {
-                        window.initializeSupabase();
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    } else {
-                        console.error('initializeSupabase function not found');
-                        throw new Error('Supabase initialization failed');
+                // Check if Supabase client is available
+                if (!window.dcfSupabase) {
+                    console.log('Waiting for Supabase client...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    if (!window.dcfSupabase) {
+                        throw new Error('Supabase client not available');
                     }
-                }
-
-                // Check if Supabase is working
-                if (!window.masterSupabase) {
-                    console.error('masterSupabase not available after initialization');
-                    throw new Error('Supabase connection failed');
                 }
 
                 console.log('Supabase connected, fetching users...');
@@ -1918,7 +1909,7 @@ const { data: user } = await window.masterSupabase
                 await loadUserConnections();
                 
                 // Fetch users from database with pagination (25 per page)
-                let query = window.masterSupabase
+                let query = window.dcfSupabase
                     .from('user_profiles')
                     .select('id, username, first_name, last_name, title, job_title, organization, location, bio, expertise, skills_offered, avatar_url')
                     .order('created_at', { ascending: false })
