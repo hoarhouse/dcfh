@@ -23,33 +23,14 @@ let dcfUser = {
 
 function initializeSupabaseClient() {
     try {
-        // Check if Supabase library is available
-        if (typeof window.supabase === 'undefined') {
-            console.warn('⚠️ Supabase library not loaded - authentication disabled');
+        // Use the existing client from dcf-core.js
+        if (!window.dcfSupabase) {
+            console.error('❌ No Supabase client available from dcf-core');
             return false;
         }
         
-        // Use credentials from dcf-core.js
-        if (!window.dcfCore) {
-            console.warn('⚠️ dcf-core.js not loaded - using fallback credentials');
-            return false;
-        }
-        
-        dcfSupabase = window.supabase.createClient(
-            window.dcfCore.SUPABASE_URL,
-            window.dcfCore.SUPABASE_ANON_KEY,
-            {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: true,
-                    flowType: 'pkce',
-                    storage: window.localStorage
-                }
-            }
-        );
-        
-        console.log('✅ Supabase client initialized');
+        dcfSupabase = window.dcfSupabase;
+        console.log('✅ Using existing Supabase client from dcf-core');
         return true;
         
     } catch (error) {
