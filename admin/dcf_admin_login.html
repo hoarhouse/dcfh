@@ -462,7 +462,7 @@
                     }, 100);
                 });
             }
-            supabase = window.dcfSupabase;
+            supabase = window.dcfSupabase ? window.dcfSupabase() : null;
         }
         
         // Initialize on load
@@ -628,6 +628,11 @@
                 // Hash password (in production, this should be done server-side)
                 const hashedPassword = await hashPassword(password);
                 
+                // Check if Supabase is available
+                if (!supabase) {
+                    throw new Error('Authentication system not initialized');
+                }
+
                 // Authenticate admin
                 const { data: adminUser, error: authError } = await supabase
                     .from('admin_users')
@@ -643,6 +648,12 @@
                 
                 // Create session
                 const sessionToken = generateSessionToken();
+                
+                // Check if Supabase is available
+                if (!supabase) {
+                    throw new Error('Authentication system not initialized');
+                }
+                
                 const { data: session, error: sessionError } = await supabase
                     .from('admin_sessions')
                     .insert({
@@ -658,6 +669,11 @@
                 if (sessionError) throw sessionError;
                 
                 // Log activity
+                // Check if Supabase is available
+                if (!supabase) {
+                    throw new Error('Authentication system not initialized');
+                }
+                
                 await supabase
                     .from('admin_activity_log')
                     .insert({
