@@ -1,544 +1,551 @@
-// ===================================================================
-// DCF HUNGARY - UI SYSTEM
-// Navigation and UI components using dcf-core.js
-// ===================================================================
-
 // =============================================================================
-// NAVIGATION SYSTEM
+// DCF UI SYSTEM - Navigation, Modals, Footer
+// Uses dcf-core.js utilities
+// Works independently of authentication system
 // =============================================================================
 
-/**
- * Populates the main navigation menu
- * Uses window.getCorrectBasePath from dcf-core.js
- */
+console.log('🎨 DCF UI System Loading...');
+
+// =============================================================================
+// 1. NAVIGATION SYSTEM
+// =============================================================================
+
 function populateTopNavigation() {
-    console.log('🧭 Populating top navigation...');
+    console.log('🧭 Populating DCF navigation...');
     
-    const navContainer = document.querySelector('.nav-menu');
-    if (!navContainer) {
-        console.log('Navigation container not found');
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) {
+        console.log('❌ Navigation container (.nav-menu) not found');
         return;
     }
-
-    const basePath = window.getCorrectBasePath ? window.getCorrectBasePath() : '';
     
-    // Navigation structure for logged-out state
-    const navigationStructure = [
-        {
-            label: 'Home',
-            href: `${basePath}index.html`,
-            type: 'link'
-        },
-        {
-            label: 'About',
-            type: 'dropdown',
-            items: [
-                { label: 'Our Story', href: `${basePath}about.html` },
-                { label: 'Mission', href: `${basePath}mission.html` },
-                { label: 'Values', href: `${basePath}values.html` },
-                { label: 'Team', href: `${basePath}team.html` },
-                { label: 'Why Hungary?', href: `${basePath}hungary.html` }
+    // Clear existing navigation
+    navMenu.innerHTML = '';
+    
+    const basePath = window.getCorrectBasePath();
+    
+    // DCF HUNGARY NAVIGATION STRUCTURE (logged out state)
+    const navItems = [
+        { 
+            href: basePath + 'initiatives/initiatives_home.html', 
+            text: 'Initiatives',
+            dropdown: true,
+            submenu: [
+                { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace Initiative' },
+                { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education Initiative' },
+                { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health Initiative' },
+                { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research Initiative' }
             ]
         },
-        {
-            label: 'Programs',
-            type: 'dropdown',
-            items: [
-                { label: 'All Programs', href: `${basePath}programs.html` },
-                { label: 'Accelerator', href: `${basePath}accelerator.html` },
-                { label: 'Fellowships', href: `${basePath}fellowships.html` },
-                { label: 'Bootcamps', href: `${basePath}bootcamps.html` },
-                { label: 'Workshops', href: `${basePath}workshops.html` },
-                { label: 'Mentorship', href: `${basePath}mentorship.html` }
+        { href: basePath + 'blog/index.html', text: 'Blog' },
+        { href: basePath + 'people/index.html', text: 'People' },
+        { 
+            href: basePath + 'public/dcf_about.html', 
+            text: 'About',
+            dropdown: true,
+            submenu: [
+                { href: basePath + 'public/dcf_about.html', text: 'About DCF' },
+                { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report' },
+                { href: basePath + 'public/dcf_contact.html', text: 'Contact' }
             ]
         },
-        {
-            label: 'Resources',
-            type: 'dropdown',
-            items: [
-                { label: 'All Resources', href: `${basePath}resources.html` },
-                { label: 'Tools & Templates', href: `${basePath}tools.html` },
-                { label: 'Guides', href: `${basePath}guides.html` },
-                { label: 'Funding Database', href: `${basePath}funding.html` },
-                { label: 'Blog', href: `${basePath}blog.html` },
-                { label: 'Newsletter', href: `${basePath}newsletter.html` }
-            ]
-        },
-        {
-            label: 'Community',
-            type: 'dropdown',
-            items: [
-                { label: 'Projects', href: `${basePath}projects.html` },
-                { label: 'Events', href: `${basePath}events.html` },
-                { label: 'Members', href: `${basePath}members.html` },
-                { label: 'Success Stories', href: `${basePath}success-stories.html` },
-                { label: 'Partners', href: `${basePath}partners.html` }
-            ]
-        },
-        {
-            label: 'Innovation',
-            type: 'dropdown',
-            items: [
-                { label: 'AI/ML Solutions', href: `${basePath}ai-ml.html` },
-                { label: 'GreenTech', href: `${basePath}greentech.html` },
-                { label: 'HealthTech', href: `${basePath}healthtech.html` },
-                { label: 'Blockchain', href: `${basePath}blockchain.html` },
-                { label: 'Smart Cities', href: `${basePath}smart-cities.html` }
+        { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
+        { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
+        { 
+            href: basePath + 'news/dcf_news.html', 
+            text: 'News',
+            dropdown: true,
+            submenu: [
+                { href: basePath + 'news/dcf_news.html', text: 'Latest News' },
+                { href: basePath + 'public/dcf_events_public.html', text: 'Events' }
             ]
         }
     ];
+    
+    navItems.forEach(item => {
+        const li = document.createElement('li');
+        
+        if (item.dropdown && item.submenu) {
+            // Create dropdown structure
+            li.className = 'nav-dropdown';
+            li.style.position = 'relative';
+            
+            const a = document.createElement('a');
+            a.href = item.href;
+            a.textContent = item.text;
+            a.className = 'dropdown-toggle';
+            
+            // Add dropdown arrow
+            const arrow = document.createElement('span');
+            arrow.textContent = ' ▼';
+            arrow.style.fontSize = '0.7em';
+            arrow.style.marginLeft = '3px';
+            a.appendChild(arrow);
+            
+            li.appendChild(a);
+            
+            // Create submenu
+            const submenu = document.createElement('ul');
+            submenu.className = 'nav-submenu';
+            submenu.style.cssText = `
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: white;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                min-width: 180px;
+                z-index: 1000;
+                padding: 0.5rem 0;
+                margin-top: 0.5rem;
+                list-style: none;
+            `;
+            
+            item.submenu.forEach(subItem => {
+                const subLi = document.createElement('li');
+                subLi.style.margin = '0';
+                
+                const subA = document.createElement('a');
+                subA.href = subItem.href;
+                subA.textContent = subItem.text;
+                subA.style.cssText = `
+                    display: block;
+                    padding: 0.5rem 1rem;
+                    color: #666;
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    font-size: 0.9rem;
+                `;
+                
+                // Add hover effect
+                subA.addEventListener('mouseenter', () => {
+                    subA.style.backgroundColor = '#f8f9fa';
+                    subA.style.color = '#333';
+                });
+                subA.addEventListener('mouseleave', () => {
+                    subA.style.backgroundColor = 'transparent';
+                    subA.style.color = '#666';
+                });
+                
+                subLi.appendChild(subA);
+                submenu.appendChild(subLi);
+            });
+            
+            li.appendChild(submenu);
+            
+            // Handle dropdown hover
+            let hoverTimeout;
+            
+            li.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                submenu.style.display = 'block';
+            });
+            
+            li.addEventListener('mouseleave', () => {
+                hoverTimeout = setTimeout(() => {
+                    submenu.style.display = 'none';
+                }, 100);
+            });
+            
+        } else {
+            // Regular menu item
+            const a = document.createElement('a');
+            a.href = item.href;
+            a.textContent = item.text;
+            li.appendChild(a);
+        }
+        
+        navMenu.appendChild(li);
+    });
+    
+    console.log('✅ DCF navigation populated with', navItems.length, 'items');
+}
 
-    // Clear existing content
-    navContainer.innerHTML = '';
+// =============================================================================
+// 2. USER INTERFACE MANAGEMENT
+// =============================================================================
 
-    // Build navigation HTML
-    navigationStructure.forEach(navItem => {
-        if (navItem.type === 'link') {
-            const link = document.createElement('a');
-            link.href = navItem.href;
-            link.className = 'nav-item';
-            link.textContent = navItem.label;
-            navContainer.appendChild(link);
-        } else if (navItem.type === 'dropdown') {
-            const dropdown = document.createElement('div');
-            dropdown.className = 'nav-item dropdown-trigger';
-            
-            const label = document.createElement('span');
-            label.textContent = navItem.label;
-            dropdown.appendChild(label);
-            
-            const menu = document.createElement('div');
-            menu.className = 'dropdown-menu';
-            menu.style.display = 'none';
-            menu.style.opacity = '0';
-            
-            navItem.items.forEach(item => {
-                const link = document.createElement('a');
-                link.href = item.href;
-                link.textContent = item.label;
-                menu.appendChild(link);
-            });
-            
-            dropdown.appendChild(menu);
-            navContainer.appendChild(dropdown);
-            
-            // Add hover functionality
-            let timeout;
-            dropdown.addEventListener('mouseenter', () => {
-                clearTimeout(timeout);
-                menu.style.display = 'block';
-                setTimeout(() => menu.style.opacity = '1', 10);
-            });
-            
-            dropdown.addEventListener('mouseleave', () => {
-                timeout = setTimeout(() => {
-                    menu.style.opacity = '0';
-                    setTimeout(() => menu.style.display = 'none', 200);
-                }, 200);
-            });
+function updateUserInterface() {
+    console.log('🎨 Updating UI (logged out state)...');
+    
+    showLoggedOutState();
+    updateLogoText();
+    populateTopNavigation();
+    initializeFooter();
+    
+    console.log('✅ UI updated for logged-out state');
+}
+
+function showLoggedOutState() {
+    console.log('👤 Showing logged-out UI state');
+    
+    const userMenu = document.querySelector('.user-menu');
+    if (!userMenu) {
+        console.log('❌ User menu container not found');
+        return;
+    }
+    
+    const basePath = window.getCorrectBasePath();
+    
+    userMenu.innerHTML = `
+        <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
+        <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
+    `;
+}
+
+function updateLogoText() {
+    console.log('🏷️ Updating logo text...');
+    
+    // Update any navigation logo text
+    const logoElements = document.querySelectorAll('.logo, .logo-text, .brand-name, .site-title');
+    logoElements.forEach(element => {
+        if (element.textContent && element.textContent.includes('Domus Communis Foundation')) {
+            element.textContent = element.textContent.replace('Domus Communis Foundation', 'DCF');
         }
     });
 }
 
 // =============================================================================
-// USER INTERFACE MANAGEMENT
+// 3. MODAL SYSTEM
 // =============================================================================
 
-/**
- * Updates the main user interface to show logged-out state
- */
-function updateUserInterface() {
-    console.log('🎨 Updating UI (logged out state)...');
-    
-    // Show logged out state
-    showLoggedOutState();
-    
-    // Populate navigation
-    populateTopNavigation();
-    
-    // Update logo if exists
-    updateLogoText();
-    
-    // Initialize footer
-    initializeFooter();
-    
-    // Add alert CSS if needed
-    addAlertCSS();
-}
-
-/**
- * Shows the logged-out state in the user menu
- */
-function showLoggedOutState() {
-    console.log('👤 Showing logged-out UI state');
-    
-    const userSection = document.querySelector('.user-menu');
-    if (!userSection) {
-        console.log('❌ User section not found');
-        return;
-    }
-
-    // Clear and rebuild for logged-out state
-    userSection.innerHTML = `
-        <a href="register.html" class="btn-primary">Sign Up</a>
-        <a href="login.html" class="btn-ghost">Log In</a>
-    `;
-    
-    userSection.classList.remove('logged-in');
-}
-
-/**
- * Updates the logo text
- */
-function updateLogoText() {
-    console.log('🏷️ Updating logo text...');
-    
-    const logo = document.querySelector('.logo');
-    if (logo) {
-        // Preserve the logo icon div and update text
-        const logoIcon = logo.querySelector('.logo-icon');
-        if (logoIcon) {
-            logo.innerHTML = '';
-            logo.appendChild(logoIcon);
-            logo.appendChild(document.createTextNode(' DCF Hungary'));
-        } else {
-            // If no icon, just set the text
-            const currentHref = logo.getAttribute('href');
-            logo.textContent = 'DCF Hungary';
-            if (currentHref) {
-                logo.setAttribute('href', currentHref);
-            }
-        }
-    }
-}
-
-/**
- * Initializes the footer
- */
-function initializeFooter() {
-    console.log('🦶 Initializing footer...');
-    
-    const footer = document.querySelector('footer');
-    if (!footer) {
-        console.log('Footer not found');
-        return;
-    }
-
-    // Add basic footer content if empty
-    if (!footer.innerHTML.trim()) {
-        footer.innerHTML = `
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>DCF Hungary</h3>
-                    <p>Building tomorrow's digital community today.</p>
+function showAlert(message, type = 'info', title = null) {
+    return new Promise((resolve) => {
+        removeExistingAlert();
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'dcf-alert';
+        alertDiv.setAttribute('data-type', type);
+        
+        const iconMap = {
+            'info': '💡',
+            'success': '✅', 
+            'warning': '⚠️',
+            'error': '❌',
+            'question': '❓'
+        };
+        
+        const titleMap = {
+            'info': 'Information',
+            'success': 'Success',
+            'warning': 'Warning', 
+            'error': 'Error',
+            'question': 'Confirm'
+        };
+        
+        alertDiv.innerHTML = `
+            <div class="dcf-alert-overlay" onclick="closeAlert()"></div>
+            <div class="dcf-alert-content">
+                <div class="dcf-alert-header">
+                    <span class="dcf-alert-icon">${iconMap[type]}</span>
+                    <h3 class="dcf-alert-title">${title || titleMap[type]}</h3>
                 </div>
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <a href="about.html">About Us</a>
-                    <a href="projects.html">Projects</a>
-                    <a href="blog.html">Blog</a>
-                    <a href="contact.html">Contact</a>
-                </div>
-                <div class="footer-section">
-                    <h4>Connect</h4>
-                    <a href="newsletter.html">Newsletter</a>
-                    <a href="events.html">Events</a>
-                    <a href="community.html">Community</a>
-                </div>
-                <div class="footer-bottom">
-                    <p>&copy; 2025 DCF Hungary. All rights reserved.</p>
+                <div class="dcf-alert-message">${message}</div>
+                <div class="dcf-alert-actions">
+                    <button class="dcf-alert-btn dcf-alert-btn-primary" onclick="closeAlert(true)">OK</button>
                 </div>
             </div>
         `;
-    }
+        
+        addAlertCSS();
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.classList.add('active'), 10);
+        
+        window.currentAlertResolve = resolve;
+    });
 }
 
-// =============================================================================
-// ALERT/MODAL SYSTEM
-// =============================================================================
-
-/**
- * Shows an alert modal
- * @param {string} message - The message to display
- * @param {string} type - Alert type (info, success, warning, error)
- * @param {string|null} title - Optional title
- */
-function showAlert(message, type = 'info', title = null) {
-    removeExistingAlert();
-    
-    const alertHTML = `
-        <div class="dcf-alert-overlay">
-            <div class="dcf-alert dcf-alert-${type}">
-                ${title ? `<div class="dcf-alert-title">${title}</div>` : ''}
-                <div class="dcf-alert-message">${message}</div>
-                <button class="dcf-alert-button" onclick="closeAlert()">OK</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', alertHTML);
-}
-
-/**
- * Shows a confirmation modal
- * @param {string} message - The message to display
- * @param {string} title - Modal title
- * @returns {Promise<boolean>} Promise that resolves to true/false
- */
 function showConfirm(message, title = 'Confirm') {
     return new Promise((resolve) => {
         removeExistingAlert();
         
-        const confirmHTML = `
-            <div class="dcf-alert-overlay">
-                <div class="dcf-alert dcf-alert-confirm">
-                    <div class="dcf-alert-title">${title}</div>
-                    <div class="dcf-alert-message">${message}</div>
-                    <div class="dcf-alert-buttons">
-                        <button class="dcf-alert-button dcf-alert-cancel" onclick="closeAlert(false)">Cancel</button>
-                        <button class="dcf-alert-button dcf-alert-confirm-btn" onclick="closeAlert(true)">Confirm</button>
-                    </div>
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'dcf-alert';
+        alertDiv.setAttribute('data-type', 'question');
+        
+        alertDiv.innerHTML = `
+            <div class="dcf-alert-overlay" onclick="closeAlert(false)"></div>
+            <div class="dcf-alert-content">
+                <div class="dcf-alert-header">
+                    <span class="dcf-alert-icon">❓</span>
+                    <h3 class="dcf-alert-title">${title}</h3>
+                </div>
+                <div class="dcf-alert-message">${message}</div>
+                <div class="dcf-alert-actions">
+                    <button class="dcf-alert-btn dcf-alert-btn-secondary" onclick="closeAlert(false)">Cancel</button>
+                    <button class="dcf-alert-btn dcf-alert-btn-primary" onclick="closeAlert(true)">Confirm</button>
                 </div>
             </div>
         `;
         
-        document.body.insertAdjacentHTML('beforeend', confirmHTML);
-        window.alertResolve = resolve;
+        addAlertCSS();
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.classList.add('active'), 10);
+        
+        window.currentAlertResolve = resolve;
     });
 }
 
-/**
- * Shows a prompt modal for user input
- * @param {string} message - The message to display
- * @param {string} defaultValue - Default input value
- * @param {string} title - Modal title
- * @returns {Promise<string|null>} Promise that resolves to the input value or null
- */
 function showPrompt(message, defaultValue = '', title = 'Input Required') {
     return new Promise((resolve) => {
         removeExistingAlert();
         
-        const promptHTML = `
-            <div class="dcf-alert-overlay">
-                <div class="dcf-alert dcf-alert-prompt">
-                    <div class="dcf-alert-title">${title}</div>
-                    <div class="dcf-alert-message">${message}</div>
-                    <input type="text" class="dcf-alert-input" id="dcfPromptInput" value="${defaultValue}" />
-                    <div class="dcf-alert-buttons">
-                        <button class="dcf-alert-button dcf-alert-cancel" onclick="closeAlert(null)">Cancel</button>
-                        <button class="dcf-alert-button dcf-alert-confirm-btn" onclick="closeAlertWithInput()">OK</button>
-                    </div>
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'dcf-alert';
+        alertDiv.setAttribute('data-type', 'question');
+        
+        alertDiv.innerHTML = `
+            <div class="dcf-alert-overlay" onclick="closeAlert(null)"></div>
+            <div class="dcf-alert-content">
+                <div class="dcf-alert-header">
+                    <span class="dcf-alert-icon">✏️</span>
+                    <h3 class="dcf-alert-title">${title}</h3>
+                </div>
+                <div class="dcf-alert-message">${message}</div>
+                <div class="dcf-alert-input">
+                    <input type="text" class="dcf-prompt-input" value="${defaultValue}" placeholder="Enter text..." />
+                </div>
+                <div class="dcf-alert-actions">
+                    <button class="dcf-alert-btn dcf-alert-btn-secondary" onclick="closeAlert(null)">Cancel</button>
+                    <button class="dcf-alert-btn dcf-alert-btn-primary" onclick="closeAlertWithInput()">OK</button>
                 </div>
             </div>
         `;
         
-        document.body.insertAdjacentHTML('beforeend', promptHTML);
-        document.getElementById('dcfPromptInput').focus();
-        
-        // Add enter key support
-        document.getElementById('dcfPromptInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                closeAlertWithInput();
+        addAlertCSS();
+        document.body.appendChild(alertDiv);
+        setTimeout(() => {
+            alertDiv.classList.add('active');
+            const input = alertDiv.querySelector('.dcf-prompt-input');
+            if (input) {
+                input.focus();
+                input.select();
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') closeAlertWithInput();
+                    if (e.key === 'Escape') closeAlert(null);
+                });
             }
-        });
+        }, 10);
         
-        window.alertResolve = resolve;
+        window.currentAlertResolve = resolve;
     });
 }
 
-/**
- * Closes the alert modal
- * @param {*} result - Result to return to the promise
- */
 function closeAlert(result = false) {
-    const overlay = document.querySelector('.dcf-alert-overlay');
-    if (overlay) {
-        overlay.remove();
+    const alert = document.querySelector('.dcf-alert');
+    if (alert) {
+        alert.classList.remove('active');
+        setTimeout(() => {
+            if (alert.parentNode) alert.parentNode.removeChild(alert);
+        }, 300);
     }
     
-    if (window.alertResolve) {
-        window.alertResolve(result);
-        delete window.alertResolve;
+    if (window.currentAlertResolve) {
+        window.currentAlertResolve(result);
+        window.currentAlertResolve = null;
     }
 }
 
-/**
- * Closes the alert modal with input value
- */
 function closeAlertWithInput() {
-    const input = document.getElementById('dcfPromptInput');
-    closeAlert(input ? input.value : '');
+    const input = document.querySelector('.dcf-prompt-input');
+    const value = input ? input.value : null;
+    closeAlert(value);
 }
 
-/**
- * Removes any existing alert overlay
- */
 function removeExistingAlert() {
-    const existing = document.querySelector('.dcf-alert-overlay');
-    if (existing) existing.remove();
+    const existingAlert = document.querySelector('.dcf-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
 }
 
-/**
- * Adds CSS for alert modals
- */
 function addAlertCSS() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .dcf-alert-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            animation: fadeIn 0.2s;
-        }
-        
-        .dcf-alert {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            max-width: 450px;
-            width: 90%;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            animation: slideIn 0.3s;
-        }
-        
-        .dcf-alert-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #1f2937;
-        }
-        
-        .dcf-alert-message {
-            margin-bottom: 20px;
-            line-height: 1.6;
-            color: #4b5563;
-        }
-        
-        .dcf-alert-button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        
-        .dcf-alert-button:hover {
-            background: #2563eb;
-        }
-        
-        .dcf-alert-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-        
-        .dcf-alert-cancel {
-            background: #6b7280;
-        }
-        
-        .dcf-alert-cancel:hover {
-            background: #4b5563;
-        }
-        
-        .dcf-alert-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-        
-        .dcf-alert-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from {
+    if (!document.querySelector('#dcf-alert-css')) {
+        const style = document.createElement('style');
+        style.id = 'dcf-alert-css';
+        style.textContent = `
+            .dcf-alert {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 opacity: 0;
-                transform: translateY(-20px);
+                visibility: hidden;
+                transition: all 0.3s ease;
             }
-            to {
+            
+            .dcf-alert.active {
                 opacity: 1;
-                transform: translateY(0);
+                visibility: visible;
             }
-        }
-    `;
-    
-    if (!document.querySelector('style[data-dcf-alerts]')) {
-        style.setAttribute('data-dcf-alerts', 'true');
+            
+            .dcf-alert-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                cursor: pointer;
+            }
+            
+            .dcf-alert-content {
+                background: white;
+                border-radius: 12px;
+                padding: 0;
+                max-width: 450px;
+                width: 90%;
+                position: relative;
+                z-index: 1;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                transform: scale(0.9);
+                transition: transform 0.3s ease;
+                overflow: hidden;
+            }
+            
+            .dcf-alert.active .dcf-alert-content {
+                transform: scale(1);
+            }
+            
+            .dcf-alert-header {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1.5rem 1.5rem 1rem 1.5rem;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            
+            .dcf-alert-icon {
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+            
+            .dcf-alert-title {
+                margin: 0;
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333;
+            }
+            
+            .dcf-alert-message {
+                padding: 1.5rem;
+                color: #666;
+                line-height: 1.6;
+                font-size: 0.95rem;
+            }
+            
+            .dcf-alert-input {
+                padding: 0 1.5rem;
+            }
+            
+            .dcf-prompt-input {
+                width: 100%;
+                padding: 0.75rem;
+                border: 2px solid #e5e5e5;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                transition: border-color 0.3s ease;
+                outline: none;
+            }
+            
+            .dcf-prompt-input:focus {
+                border-color: #000;
+            }
+            
+            .dcf-alert-actions {
+                padding: 1rem 1.5rem 1.5rem 1.5rem;
+                display: flex;
+                gap: 0.75rem;
+                justify-content: flex-end;
+                background: #fafafa;
+            }
+            
+            .dcf-alert-btn {
+                padding: 0.6rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                min-width: 80px;
+            }
+            
+            .dcf-alert-btn-primary {
+                background: #000;
+                color: white;
+            }
+            
+            .dcf-alert-btn-primary:hover {
+                background: #333;
+                transform: translateY(-1px);
+            }
+            
+            .dcf-alert-btn-secondary {
+                background: transparent;
+                color: #666;
+                border: 2px solid #e5e5e5;
+            }
+            
+            .dcf-alert-btn-secondary:hover {
+                color: #333;
+                border-color: #333;
+                transform: translateY(-1px);
+            }
+        `;
         document.head.appendChild(style);
     }
 }
 
 // =============================================================================
-// INITIALIZATION
+// 4. FOOTER SYSTEM
 // =============================================================================
 
-/**
- * Initialize DCF UI on DOM ready
- */
-function initializeDCFUI() {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', updateUserInterface);
-    } else {
-        updateUserInterface();
+function initializeFooter() {
+    console.log('🦶 Initializing footer...');
+    
+    const footer = document.querySelector('footer, .site-footer');
+    if (!footer) {
+        console.log('Footer not found (normal for admin pages)');
+        return;
     }
+    
+    // Basic footer functionality can be added here
+    console.log('✅ Footer initialized');
 }
 
 // =============================================================================
-// EXPORTS
+// 5. MAIN UI OBJECT
 // =============================================================================
 
-// Export to window object
-window.dcfUI = {
-    // Navigation
-    populateTopNavigation,
+const dcfUI = {
+    initialize() {
+        console.log('🚀 Initializing DCF UI System...');
+        updateUserInterface();
+        console.log('✅ DCF UI System initialized');
+    },
     
-    // UI State
-    updateUserInterface,
-    showLoggedOutState,
-    updateLogoText,
-    initializeFooter,
-    
-    // Modals
+    // Export functions for external use
     showAlert,
     showConfirm,
     showPrompt,
-    closeAlert,
-    
-    // Initialize
-    initialize: initializeDCFUI
+    populateTopNavigation,
+    updateUserInterface,
+    showLoggedOutState
 };
 
-// Also export individual functions for backward compatibility
-window.populateTopNavigation = populateTopNavigation;
-window.updateUserInterface = updateUserInterface;
-window.showLoggedOutState = showLoggedOutState;
-window.updateLogoText = updateLogoText;
-window.initializeFooter = initializeFooter;
+// Export to window for global access
+window.dcfUI = dcfUI;
 window.showAlert = showAlert;
 window.showConfirm = showConfirm;
 window.showPrompt = showPrompt;
 window.closeAlert = closeAlert;
-window.closeAlertWithInput = closeAlertWithInput;
 
 console.log('✅ DCF UI system loaded');
