@@ -22,21 +22,16 @@ let dcfUser = {
 // =============================================================================
 
 function initializeSupabaseClient() {
-    try {
-        // Use the existing client from dcf-core.js
-        if (!window.dcfSupabase) {
-            console.error('❌ No Supabase client available from dcf-core');
-            return false;
-        }
-        
-        dcfSupabase = window.dcfSupabase;
-        console.log('✅ Using existing Supabase client from dcf-core');
-        return true;
-        
-    } catch (error) {
-        console.warn('⚠️ Supabase client initialization failed:', error.message);
-        return false;
+    console.log('🔧 Getting Supabase client from dcf-core...');
+    
+    if (!window.dcfSupabase) {
+        console.error('❌ No Supabase client available from dcf-core');
+        return null;
     }
+    
+    dcfSupabase = window.dcfSupabase;
+    console.log('✅ Using existing Supabase client from dcf-core');
+    return window.dcfSupabase;
 }
 
 // =============================================================================
