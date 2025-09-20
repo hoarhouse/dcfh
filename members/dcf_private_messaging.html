@@ -1579,8 +1579,8 @@
         let connectedUsers = []; // Will be loaded from database
         let messageSubscription = null; // For real-time updates
 
-        // Initialize messaging with unified auth
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize messaging when DCF system is ready
+        window.addEventListener('dcfReady', async function() {
             console.log('🔍 Private Messaging page loaded');
             
             // SECURITY: Initialize input sanitization
@@ -1591,62 +1591,39 @@
             updateCharCount('messageSubject', 200);
             updateCharCount('newMessageText', 5000);
             
-            await initializeMessagingWithAuth();
+            // Initialize authentication
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
+                    await initializeMessagingWithAuth();
+                } else {
+                    console.error('❌ User not authenticated');
+                    showError('Please log in to access messages');
+                    setTimeout(() => {
+                        window.location.href = '../auth/dcf_login_page.html';
+                    }, 2000);
+                }
+            } else {
+                console.error('Authentication system not available');
+                window.location.href = '../auth/dcf_login_page.html';
+            }
         });
 
         async function initializeMessagingWithAuth() {
             try {
-                // Use unified auth client exclusively
+                // Use unified auth client
                 supabase = window.dcfSupabase;
                 
                 if (!supabase) {
-                    console.log('⚠️ Database connection not available - waiting...');
-                    // Wait for Supabase to be ready
-                    let attempts = 0;
-                    while (!window.dcfSupabase && attempts < 20) {
-                        await new Promise(resolve => setTimeout(resolve, 150));
-                        attempts++;
-                    }
-                    supabase = window.dcfSupabase;
-                    
-                    if (!supabase) {
-                        console.error('❌ Database connection failed after waiting');
-                        showError('Database connection not available. Please refresh the page.');
-                        return;
-                    }
-                }
-
-                // Wait for unified auth system to be ready first
-                let authAttempts = 0;
-                const maxAttempts = 20; // 20 attempts
-                const waitInterval = 150; // 150ms per attempt (3 seconds total)
-                
-                console.log('🔄 Waiting for unified auth system to initialize...');
-                
-                // First, wait for the auth system itself to be ready
-                while (!window.getCurrentUser && authAttempts < maxAttempts) {
-                    console.log(`⏳ Auth system not ready yet (attempt ${authAttempts + 1}/${maxAttempts})`);
-                    await new Promise(resolve => setTimeout(resolve, waitInterval));
-                    authAttempts++;
-                }
-                
-                if (!window.getCurrentUser) {
-                    console.error('❌ Auth system failed to initialize after 3 seconds');
-                    showError('Authentication system not available. Please refresh the page.');
+                    console.error('❌ Database connection not available');
+                    showError('Database connection not available. Please refresh the page.');
                     return;
                 }
+
+                // Get authenticated user
+                const authUser = window.getCurrentUser();
                 
-                console.log('✅ Auth system ready, checking user session...');
-                
-                // Now check for user authentication with additional attempts
-                let authUser = null;
-                let userCheckAttempts = 0;
-                
-                while (userCheckAttempts < maxAttempts) {
-                    authUser = window.getCurrentUser();
-                    console.log(`🔍 User check attempt ${userCheckAttempts + 1}/${maxAttempts}: user =`, authUser);
-                    
-                    if (authUser && authUser.id) {
+                if (authUser && authUser.id) {
                         console.log(`✅ User authenticated after ${userCheckAttempts + 1} attempts (${(userCheckAttempts + 1) * waitInterval}ms)`);
                         currentUser = authUser;
                         break;
