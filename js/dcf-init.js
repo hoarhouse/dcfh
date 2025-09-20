@@ -79,9 +79,19 @@ async function initializeDCFSystems() {
             window.dcfUI.initialize();
         }
         
-        // Authentication will initialize on-demand when pages need it
+        // Initialize authentication to check for existing sessions
+        console.log('🔐 Initializing authentication...');
+        if (window.initializeAuth) {
+            try {
+                await window.initializeAuth();
+                console.log('✅ Authentication initialized successfully');
+            } catch (error) {
+                console.error('❌ Authentication initialization failed:', error);
+            }
+        } else {
+            console.error('❌ initializeAuth function not available');
+        }
         DCF_SYSTEM_STATE.auth.loaded = true;
-        console.log('✅ Authentication system ready for on-demand use');
         
         // Step 5: Mark as fully initialized
         DCF_SYSTEM_STATE.initialized = true;
