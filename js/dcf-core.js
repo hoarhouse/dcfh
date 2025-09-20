@@ -21,7 +21,47 @@ const SITE_CONFIG = {
 };
 
 // =============================================================================
-// 2. PATH DETECTION UTILITIES
+// 2. SUPABASE CLIENT INITIALIZATION
+// =============================================================================
+
+/**
+ * Initialize Supabase client
+ * Creates the client that gets used throughout the application
+ */
+function initializeSupabaseClient() {
+    console.log('🔧 Initializing Supabase client...');
+    
+    if (typeof window.supabase === 'undefined') {
+        console.error('❌ Supabase library not loaded');
+        return null;
+    }
+    
+    try {
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.dcfSupabase = client;
+        console.log('✅ Supabase client created and assigned to window.dcfSupabase');
+        return client;
+    } catch (error) {
+        console.error('❌ Failed to create Supabase client:', error);
+        return null;
+    }
+}
+
+// Auto-initialize when Supabase library is available
+function waitForSupabaseAndInit() {
+    if (typeof window.supabase !== 'undefined') {
+        initializeSupabaseClient();
+    } else {
+        console.log('⏳ Waiting for Supabase library...');
+        setTimeout(waitForSupabaseAndInit, 100);
+    }
+}
+
+// Start the initialization process immediately
+waitForSupabaseAndInit();
+
+// =============================================================================
+// 3. PATH DETECTION UTILITIES
 // =============================================================================
 
 /**
@@ -288,6 +328,9 @@ const dcfCore = {
     SUPABASE_ANON_KEY,
     SITE_CONFIG,
     
+    // Supabase
+    initializeSupabaseClient,
+    
     // Path utilities
     getCorrectBasePath,
     
@@ -312,6 +355,7 @@ const dcfCore = {
 window.dcfCore = dcfCore;
 
 // Also export individual functions for backward compatibility
+window.initializeSupabaseClient = initializeSupabaseClient;
 window.getCorrectBasePath = getCorrectBasePath;
 window.generateInitials = generateInitials;
 window.escapeHtml = escapeHtml;
