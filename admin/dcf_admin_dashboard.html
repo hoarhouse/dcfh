@@ -3846,49 +3846,22 @@
             // Handle URL hash for navigation
             window.addEventListener('hashchange', handleHashChange);
             
-            // Skip admin auth - just initialize directly
+            // Wait for DCF auth system to complete
             setTimeout(async () => {
-                console.log('Admin dashboard initializing without admin auth checks');
-                initializeAdminInterface();
+                console.log('Admin dashboard waiting for auth completion...');
                 
-                // Check initial hash
-                handleHashChange();
-                
-                // Force avatar display fix - LET UNIFIED SYSTEM HANDLE DROPDOWN
-                setTimeout(() => {
-                    const userAvatar = document.getElementById('userAvatar');
-                    if (userAvatar) {
-                        // Update avatar image only - onclick is in HTML
-                        userAvatar.style.cursor = 'pointer';
-                        
-                        if (window.dcfUser && window.dcfUser.profile) {
-                            if (window.dcfUser.profile.avatar_url) {
-                                userAvatar.style.backgroundImage = `url(${window.dcfUser.profile.avatar_url})`;
-                                userAvatar.style.backgroundSize = 'cover';
-                                userAvatar.style.backgroundPosition = 'center';
-                                userAvatar.textContent = '';
-                            } else if (window.dcfUser.profile.email) {
-                                const initials = window.dcfUser.profile.email.substring(0, 2).toUpperCase();
-                                userAvatar.textContent = initials;
-                                userAvatar.style.backgroundImage = '';
-                            }
-                        }
-                        
-                        // Force call to unified system's interface update
-                        if (typeof window.updateUserInterface === 'function') {
-                            window.updateUserInterface();
-                        } else if (window.dcfUser && window.dcfUser.isLoggedIn) {
-                            // Fallback: manually trigger auth system interface update
-                            console.log('Manually triggering interface update');
-                            setTimeout(() => {
-                                if (typeof window.updateUserInterface === 'function') {
-                                    window.updateUserInterface();
-                                }
-                            }, 1000);
-                        }
-                    }
-                }, 500);
-            }, 3000); // Increased delay for auth initialization
+                // Check if user is logged in
+                if (window.dcfUser && window.dcfUser.isLoggedIn) {
+                    console.log('User authenticated, initializing admin interface');
+                    initializeAdminInterface();
+                    
+                    // Check initial hash
+                    handleHashChange();
+                } else {
+                    console.log('User not authenticated, redirecting to login');
+                    window.location.href = '../auth/dcf_login_page.html';
+                }
+            }, 2000); // Increased delay to let DCF system fully initialize
         });
         
         // Handle hash changes for navigation
