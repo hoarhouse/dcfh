@@ -1992,14 +1992,28 @@
         // Comment display state per post
         const postCommentStates = {};
 
-        // Initialize when auth is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize when DCF system is ready
+        document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Profile page loading...');
             
             // SECURITY: Initialize input sanitization
             initializeProfileSanitization();
             console.log('✅ Security: Input sanitization active');
             
+            // Use proper DCF event-based initialization
+            if (window.dcfInit && window.dcfInit.isReady()) {
+                console.log('✅ DCF already ready');
+                checkAuthAndInit();
+            } else {
+                console.log('⏳ Waiting for DCF ready event...');
+                window.addEventListener('dcfReady', function() {
+                    console.log('✅ DCF ready event received');
+                    checkAuthAndInit();
+                });
+            }
+        });
+        
+        function checkAuthAndInit() {
             // Wait for getCurrentUser to be available and return a user
             const checkAuth = setInterval(() => {
                 if (window.getCurrentUser) {
@@ -2020,7 +2034,6 @@
                 }
             }, 100);
             
-            // Timeout after 10 seconds but don't redirect
             setTimeout(() => {
                 clearInterval(checkAuth);
                 if (!window.dcfUser) {
@@ -2031,7 +2044,7 @@
             
             // Auth state listener temporarily disabled due to infinite refresh loop
             // TODO: Fix auth state handling logic
-        });
+        }
 
         function showUploadError(message) {
             const statusDiv = document.getElementById('postUploadStatus');
