@@ -3261,16 +3261,26 @@
     </script>
 
     <script>
-    const supabase = window.dcfSupabase;
-
     // Load DCF News cards on page load
     document.addEventListener('DOMContentLoaded', async () => {
-        await loadDCFNewsCards();
+        // Wait a bit for DCF system to initialize
+        setTimeout(async () => {
+            await loadDCFNewsCards();
+        }, 2000);
     });
 
     async function loadDCFNewsCards() {
         const dcfNewsCards = document.getElementById('dcfNewsCards');
         const loading = document.getElementById('dcfNewsLoading');
+
+        // Get Supabase client when function runs, not at script load
+        const supabase = window.dcfSupabase;
+        
+        if (!supabase || typeof supabase.from !== 'function') {
+            console.error('Supabase client not available');
+            showFallbackCards(dcfNewsCards);
+            return;
+        }
 
         try {
             // Get DCF News slugs from CMS
