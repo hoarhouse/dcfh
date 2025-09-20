@@ -2783,87 +2783,15 @@ function setupAuthStateListener() {
     
     window.dcfSupabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 AUTH STATE LISTENER - Event:', event);
-        console.log('🔍 Session exists:', !!session);
-        console.log('🔍 Session user:', session?.user?.email);
-        console.log('🔍 Current browser:', navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other');
-        
-        // CRITICAL: Don't logout on TOKEN_REFRESHED
-        if (event === 'TOKEN_REFRESHED') {
-            console.log('✅ Token refreshed - maintaining session');
-            return; // DON'T PROCESS AS LOGOUT
-        }
-        
-        // CRITICAL: Don't logout on INITIAL_SESSION
-        if (event === 'INITIAL_SESSION' && session) {
-            console.log('✅ Initial session detected - user already logged in');
-            return; // Session is valid, don't process further
-        }
         
         if (event === 'SIGNED_IN' && session?.user) {
             console.log('✅ AUTH STATE LISTENER - Processing SIGNED_IN event');
-            
-            // Copy EXACT pattern from working member profile page
-            try {
-                const { data: profile, error } = await window.dcfSupabase
-                    .from('user_profiles')
-                    .select('first_name,last_name,role,location,organization,avatar_url,username,bio,cover_image_url')
-                    .eq('id', session.user.id)  // ✅ Use ID like working page
-                    .single();
-                
-                if (profile) {
-                    console.log('✅ Profile loaded:', profile.username);
-                    
-                    // Set profile data EXACTLY like initializeAuth does
-                    window.dcfUser = {
-                        isLoggedIn: true,
-                        profile: {
-                            id: session.user.id,
-                            email: session.user.email,
-                            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User',
-                            first_name: profile.first_name || null,
-                            last_name: profile.last_name || null,
-                            username: profile.username || 'unknown',  // ✅ Gets @username
-                            avatar_url: profile.avatar_url || null,
-                            role: profile.role || null,
-                            location: profile.location || null,
-                            organization: profile.organization || null,
-                            bio: profile.bio || null
-                        },
-                        session: session
-                    };
-                } else {
-                    // Fallback if no profile found
-                    window.dcfUser = {
-                        isLoggedIn: true,
-                        profile: session.user,
-                        session: session
-                    };
-                }
-            } catch (error) {
-                console.error('Profile load error:', error);
-                // Fallback on error
-                window.dcfUser = {
-                    isLoggedIn: true,
-                    profile: session.user,
-                    session: session
-                };
-            }
-            
+            await initializeAuth();
             updateUserInterface();
         } else if (event === 'SIGNED_OUT') {
             console.log('🚨 AUTH STATE LISTENER - Processing SIGNED_OUT event');
-            console.log('🔍 LOGOUT REASON - Event:', event, 'Session:', !!session);
-            console.log('🔍 Stack trace:', new Error().stack);
-            
-            // Only actually log out if this is a real logout
-            if (!session) {
-                window.dcfUser = { isLoggedIn: false, profile: null, session: null };
-                showLoggedOutState();
-            } else {
-                console.warn('⚠️ SIGNED_OUT event but session still exists - ignoring');
-            }
-        } else {
-            console.log('🔍 Unhandled auth event:', event, 'Session:', !!session);
+            window.dcfUser = { isLoggedIn: false, profile: null, session: null };
+            showLoggedOutState();
         }
     });
 }
