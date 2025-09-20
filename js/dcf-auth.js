@@ -607,7 +607,7 @@ window.handleLogout = handleLogout;
 window.toggleUserMenu = toggleUserMenu;
 window.toggleNotificationDropdown = toggleNotificationDropdown;
 
-// Initialize auth state listener
-setupAuthStateListener();
+// Export for manual initialization
+window.initializeAuth = initializeAuth;
 
-console.log('✅ DCF Authentication System loaded');
+console.log('✅ DCF Authentication System loaded (manual initialization required)');
