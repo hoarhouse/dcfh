@@ -571,47 +571,30 @@
                 return;
             }
 
-            // Initialize with proper DCF pattern
-            initializePage();
+            // Wait for DCF system using the correct event
+            if (window.dcfInit && window.dcfInit.isReady()) {
+                console.log('✅ DCF already ready');
+                initializeBlogPage();
+            } else {
+                console.log('⏳ Waiting for DCF ready event...');
+                window.addEventListener('dcfReady', function() {
+                    console.log('✅ DCF ready event received');
+                    initializeBlogPage();
+                });
+            }
         });
 
-        async function initializePage() {
-            console.log('🔧 Initializing blog page...');
+        function initializeBlogPage() {
+            supabase = window.dcfSupabase;
             
-            // Wait for DCF initialization event
-            if (window.dcfInitialized) {
-                console.log('✅ DCF already initialized');
-                setupSupabaseAndLoad();
-            } else {
-                console.log('⏳ Waiting for DCF initialization...');
-                document.addEventListener('dcfInitialized', function() {
-                    console.log('✅ DCF initialization event received');
-                    setupSupabaseAndLoad();
-                });
-                
-                // Fallback timeout
-                setTimeout(() => {
-                    if (!supabase) {
-                        console.log('🔄 Fallback: Attempting direct initialization');
-                        setupSupabaseAndLoad();
-                    }
-                }, 5000);
-            }
-        }
-
-        function setupSupabaseAndLoad() {
-            // Try multiple ways to get Supabase client
-            supabase = window.dcfSupabase || window.supabase || null;
-            
-            if (!supabase) {
-                console.error('❌ No Supabase client available');
+            if (!supabase || typeof supabase.from !== 'function') {
+                console.error('❌ Supabase client not available or invalid');
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('error').style.display = 'block';
-                document.getElementById('error').innerHTML = '<p>Database connection failed. Please refresh the page.</p>';
                 return;
             }
             
-            console.log('✅ Supabase client ready, loading blog posts...');
+            console.log('✅ Starting blog load...');
             loadBlogAndPosts();
         }
 
