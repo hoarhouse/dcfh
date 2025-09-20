@@ -553,38 +553,67 @@
     </main>
 
     <script>
-        // Wait for DCF modular system to initialize Supabase
+        // Wait for DCF modular system to initialize
         let supabase;
-
         let currentBlogSlug = '';
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Wait for DCF modular system to initialize
-            setTimeout(function() {
-                // Wait for DCF system to fully initialize
-                if (!window.dcfSupabase || typeof window.dcfSupabase.from !== 'function') {
-                    console.log('Waiting for DCF system initialization...');
-                    setTimeout(arguments.callee, 1000); // Retry in 1 second
-                    return;
-                }
-                
-                supabase = window.dcfSupabase;
-                console.log('✅ Supabase client initialized successfully');
-                
-                // Get blog slug from URL parameter
-                const urlParams = new URLSearchParams(window.location.search);
-                currentBlogSlug = urlParams.get('blog');
-                
-                if (!currentBlogSlug) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('error').style.display = 'block';
-                    document.getElementById('error').innerHTML = '<p>No blog specified. <a href="index.html">Return to blog directory</a></p>';
-                    return;
-                }
+            console.log('🔍 Blog category page initializing...');
+            
+            // Get blog slug from URL parameter first
+            const urlParams = new URLSearchParams(window.location.search);
+            currentBlogSlug = urlParams.get('blog');
+            
+            if (!currentBlogSlug) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = '<p>No blog specified. <a href="index.html">Return to blog directory</a></p>';
+                return;
+            }
 
-                loadBlogAndPosts();
-            }, 1000); // Start checking after 1 second
+            // Initialize with proper DCF pattern
+            initializePage();
         });
+
+        async function initializePage() {
+            console.log('🔧 Initializing blog page...');
+            
+            // Wait for DCF initialization event
+            if (window.dcfInitialized) {
+                console.log('✅ DCF already initialized');
+                setupSupabaseAndLoad();
+            } else {
+                console.log('⏳ Waiting for DCF initialization...');
+                document.addEventListener('dcfInitialized', function() {
+                    console.log('✅ DCF initialization event received');
+                    setupSupabaseAndLoad();
+                });
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    if (!supabase) {
+                        console.log('🔄 Fallback: Attempting direct initialization');
+                        setupSupabaseAndLoad();
+                    }
+                }, 5000);
+            }
+        }
+
+        function setupSupabaseAndLoad() {
+            // Try multiple ways to get Supabase client
+            supabase = window.dcfSupabase || window.supabase || null;
+            
+            if (!supabase) {
+                console.error('❌ No Supabase client available');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = '<p>Database connection failed. Please refresh the page.</p>';
+                return;
+            }
+            
+            console.log('✅ Supabase client ready, loading blog posts...');
+            loadBlogAndPosts();
+        }
 
         async function loadBlogAndPosts() {
             const loading = document.getElementById('loading');
