@@ -328,30 +328,65 @@ function updateUserMenu() {
     if (!userMenu || !dcfUser.profile) return;
     
     const initials = window.generateInitials(dcfUser.profile.username || dcfUser.profile.name);
+    const basePath = window.getCorrectBasePath();
+    
+    // Create avatar HTML with profile picture support
+    const avatarHTML = dcfUser.profile.avatar_url 
+        ? `<div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar" style="background-image: url('${dcfUser.profile.avatar_url}'); background-size: cover; background-position: center;"></div>`
+        : `<div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">${initials}</div>`;
+    
+    // Create dropdown avatar HTML with profile picture support  
+    const dropdownAvatarHTML = dcfUser.profile.avatar_url
+        ? `<div class="dropdown-avatar" style="background-image: url('${dcfUser.profile.avatar_url}'); background-size: cover; background-position: center;"></div>`
+        : `<div class="dropdown-avatar">${initials}</div>`;
     
     userMenu.innerHTML = `
+        <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
+            <span class="notification-icon">🔔</span>
+            <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+        </div>
         <div class="user-dropdown">
-            <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">${initials}</div>
+            ${avatarHTML}
             <div class="dropdown-menu" id="userDropdown">
                 <div class="dropdown-header">
-                    <div class="dropdown-avatar">${initials}</div>
+                    ${dropdownAvatarHTML}
                     <div class="dropdown-info">
                         <div class="dropdown-name">@${dcfUser.profile.username}</div>
                         <div class="dropdown-email">${dcfUser.profile.email}</div>
                     </div>
                 </div>
                 <div class="dropdown-divider"></div>
-                <a href="${window.getCorrectBasePath()}members/dcf_member_profile.html" class="dropdown-item">
+                <a href="${basePath}members/dcf_member_profile.html" class="dropdown-item">
                     <span class="dropdown-icon">👤</span>
                     My Profile
                 </a>
-                <a href="${window.getCorrectBasePath()}members/dcf_my_connections.html" class="dropdown-item">
+                <a href="${basePath}members/dcf_my_connections.html" class="dropdown-item">
                     <span class="dropdown-icon">👥</span>
                     My Connections
                 </a>
-                <a href="${window.getCorrectBasePath()}projects/dcf_projects.html" class="dropdown-item">
+                <a href="${basePath}members/dcf_private_messaging.html" class="dropdown-item">
+                    <span class="dropdown-icon">✉️</span>
+                    Messages
+                </a>
+                <a href="${basePath}projects/dcf_projects.html" class="dropdown-item">
                     <span class="dropdown-icon">📁</span>
                     My Projects
+                </a>
+                <a href="${basePath}events/dcf_events_calendar.html" class="dropdown-item">
+                    <span class="dropdown-icon">📅</span>
+                    My Events
+                </a>
+                <a href="${basePath}members/dcf_personal_analytics.html" class="dropdown-item">
+                    <span class="dropdown-icon">📊</span>
+                    My Stats
+                </a>
+                <a href="${basePath}members/dcf_edit_profile.html" class="dropdown-item">
+                    <span class="dropdown-icon">⚙️</span>
+                    Settings
+                </a>
+                <a href="${basePath}public/dcf_contact.html" class="dropdown-item">
+                    <span class="dropdown-icon">💬</span>
+                    Help & Support
                 </a>
                 <div class="dropdown-divider"></div>
                 <button onclick="handleLogout()" class="dropdown-item logout-btn">
@@ -361,10 +396,68 @@ function updateUserMenu() {
             </div>
         </div>
     `;
+    
+    // Add notification bell CSS
+    addNotificationBellCSS();
 }
 
 // =============================================================================
-// 5. USER MENU FUNCTIONALITY
+// 6. NOTIFICATION SYSTEM
+// =============================================================================
+
+function addNotificationBellCSS() {
+    if (document.querySelector('#notificationBellCSS')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'notificationBellCSS';
+    style.textContent = `
+        .notification-bell { 
+            position: relative; 
+            cursor: pointer; 
+            padding: 0.5rem; 
+            border-radius: 50%; 
+            transition: background-color 0.3s ease; 
+            margin-right: 1rem; 
+        }
+        .notification-bell:hover { 
+            background-color: #f0f0f0; 
+        }
+        .notification-icon { 
+            font-size: 1.2rem; 
+            display: block; 
+        }
+        .notification-badge { 
+            position: absolute; 
+            top: -2px; 
+            right: -2px; 
+            background: #dc3545; 
+            color: white; 
+            border-radius: 50%; 
+            width: 20px; 
+            height: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 0.7rem; 
+            font-weight: 600; 
+            border: 2px solid white; 
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function toggleNotificationDropdown(event) {
+    if (event) event.stopPropagation();
+    console.log('🔔 Notification bell clicked - notifications coming soon');
+    
+    // Placeholder for future notification functionality
+    if (window.showAlert) {
+        window.showAlert('Notification system coming soon!', 'info');
+    }
+}
+
+// =============================================================================
+// 7. USER MENU FUNCTIONALITY
 // =============================================================================
 
 let isDropdownOpen = false;
@@ -410,7 +503,7 @@ function handleDocumentClick(event) {
 }
 
 // =============================================================================
-// 6. AUTHENTICATION ACTIONS
+// 8. AUTHENTICATION ACTIONS
 // =============================================================================
 
 async function handleLogout() {
@@ -444,7 +537,7 @@ async function handleLogout() {
 }
 
 // =============================================================================
-// 7. AUTH STATE LISTENER
+// 9. AUTH STATE LISTENER
 // =============================================================================
 
 function setupAuthStateListener() {
@@ -464,7 +557,7 @@ function setupAuthStateListener() {
 }
 
 // =============================================================================
-// 8. PUBLIC API
+// 10. PUBLIC API
 // =============================================================================
 
 function getCurrentUser() {
@@ -484,7 +577,7 @@ function getSupabaseClient() {
 }
 
 // =============================================================================
-// 9. EXPORTS
+// 11. EXPORTS
 // =============================================================================
 
 const dcfAuth = {
@@ -506,6 +599,7 @@ window.getCurrentUser = getCurrentUser;
 window.isUserLoggedIn = isUserLoggedIn;
 window.handleLogout = handleLogout;
 window.toggleUserMenu = toggleUserMenu;
+window.toggleNotificationDropdown = toggleNotificationDropdown;
 
 // Initialize auth state listener
 setupAuthStateListener();
