@@ -561,13 +561,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Wait for DCF modular system to initialize
             setTimeout(function() {
-                supabase = window.dcfSupabase;
-                if (!supabase) {
-                    console.error('Supabase client not initialized');
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('error').style.display = 'block';
+                // Wait for DCF system to fully initialize
+                if (!window.dcfSupabase || typeof window.dcfSupabase.from !== 'function') {
+                    console.log('Waiting for DCF system initialization...');
+                    setTimeout(arguments.callee, 1000); // Retry in 1 second
                     return;
                 }
+                
+                supabase = window.dcfSupabase;
+                console.log('✅ Supabase client initialized successfully');
                 
                 // Get blog slug from URL parameter
                 const urlParams = new URLSearchParams(window.location.search);
@@ -581,7 +583,7 @@
                 }
 
                 loadBlogAndPosts();
-            }, 4000); // Extended wait for complex page initialization
+            }, 1000); // Start checking after 1 second
         });
 
         async function loadBlogAndPosts() {
