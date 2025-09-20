@@ -847,14 +847,6 @@ function populateAdminMenu() {
             title: 'Dashboard'
         },
         {
-            href: 'icon-management.html',
-            title: 'Icon Management'
-        },
-        {
-            href: 'icons.html',
-            title: 'Icon Library'
-        },
-        {
             href: 'alerts.html',
             title: 'System Alerts'
         },
