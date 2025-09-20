@@ -214,16 +214,54 @@ function initializePageSpecificFeatures() {
 }
 
 function initializeAdminFeatures() {
-    // Admin-specific functionality
-    if (window.populateAdminMenu && typeof window.populateAdminMenu === 'function') {
-        window.populateAdminMenu();
-    }
+    populateAdminMenu();
     
     // Check admin authentication
     if (window.isUserLoggedIn && !window.isUserLoggedIn()) {
         console.log('⚠️ Admin page accessed without authentication');
-        // Could redirect to login, but respecting current non-blocking approach
     }
+}
+
+function populateAdminMenu() {
+    const adminMenu = document.getElementById('dcfAdminMenu');
+    if (!adminMenu) {
+        return; // Not an admin page
+    }
+    
+    console.log('🛠️ Populating admin menu bar');
+    
+    const adminMenuItems = [
+        { href: 'dcf_admin_dashboard.html', title: 'Dashboard' },
+        { href: 'alerts.html', title: 'System Alerts' },
+        { href: 'blogmanage.html', title: 'Manage Blogs' },
+        { href: 'createblogwiz.html', title: 'Create Blog' },
+        { href: 'blogwiz.html', title: 'Create Post' },
+        { href: 'blogpostsmanage.html', title: 'Manage Posts' },
+        { href: 'cms.html', title: 'CMS' }
+    ];
+    
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    const adminMenuHTML = `
+        <div class="dcf-admin-menu-container">
+            <ul class="dcf-admin-menu-items">
+                ${adminMenuItems.map(item => {
+                    const isActive = currentPage === item.href;
+                    return `
+                        <li class="dcf-admin-menu-item">
+                            <a href="${item.href}" 
+                               class="dcf-admin-menu-link ${isActive ? 'active' : ''}">
+                                <span class="dcf-admin-menu-text">${item.title}</span>
+                            </a>
+                        </li>
+                    `;
+                }).join('')}
+            </ul>
+        </div>
+    `;
+    
+    adminMenu.innerHTML = adminMenuHTML;
+    adminMenu.classList.add('active');
 }
 
 function initializeMemberFeatures() {
