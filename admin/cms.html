@@ -963,17 +963,12 @@
         let dcfNewsSlugs = [];
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Wait for unified system to be ready
-            if (!window.dcfSupabase) {
-                await new Promise(resolve => {
-                    const checkInterval = setInterval(() => {
-                        if (window.dcfSupabase) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 100);
-                });
+        document.addEventListener('dcfReady', async () => {
+            // Initialize authentication and check admin role
+            await initializeAuth();
+            if (!window.getCurrentUser() || window.getCurrentUser().role !== 'admin') {
+                window.location.href = 'dcf_admin_login.html';
+                return;
             }
             
             supabase = window.dcfSupabase;
@@ -986,12 +981,12 @@
 
         async function loadDCFNewsSlugs() {
             // Wait for auth system to initialize
-            if (!window.dcfSupabase || typeof window.dcfSupabase !== 'function' || !window.dcfSupabase()) {
+            if (!window.dcfSupabase) {
                 console.log('Supabase not ready yet, skipping CMS load');
                 return;
             }
 
-            const supabase = window.dcfSupabase();
+            const supabase = window.dcfSupabase;
 
             try {
                 // Check if cms_sections table exists and has dcf_news data
@@ -1185,12 +1180,12 @@
 
         async function loadCardsPreview() {
             // Wait for auth system to initialize
-            if (!window.dcfSupabase || typeof window.dcfSupabase !== 'function' || !window.dcfSupabase()) {
+            if (!window.dcfSupabase) {
                 console.log('Supabase not ready yet, skipping cards preview');
                 return;
             }
 
-            const supabase = window.dcfSupabase();
+            const supabase = window.dcfSupabase;
 
             const cardsPreview = document.getElementById('cardsPreview');
             const previewGrid = document.getElementById('previewGrid');
