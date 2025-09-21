@@ -725,7 +725,7 @@
 </head>
 <body>
     <header class="header">
-        <!-- Navigation will be populated by dcf-unified-system.js -->
+        <!-- Navigation populated by dcf-ui.js -->
     </header>
 
     <main class="admin-container">
@@ -862,7 +862,10 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-unified-system.js"></script>
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-init.js"></script>
     <script>
         // Global variables
         let currentMediaId = null;
@@ -871,7 +874,13 @@
         let currentTags = [];
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('dcfReady', async function() {
+            // Initialize authentication and check admin role
+            await initializeAuth();
+            if (!window.getCurrentUser() || window.getCurrentUser().role !== 'admin') {
+                window.location.href = 'dcf_admin_login.html';
+                return;
+            }
             // Get media ID from URL
             const urlParams = new URLSearchParams(window.location.search);
             currentMediaId = urlParams.get('media_id');
