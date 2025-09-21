@@ -809,18 +809,8 @@
     </main>
 
     <script>
-        // Initialize Supabase properly
-        if (!window.masterSupabase) {
-            if (window.supabase) {
-                window.masterSupabase = window.supabase.createClient(
-                    'https://atzommnkkwzgbktuzjti.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-                );
-            } else {
-                console.error('Supabase not loaded');
-            }
-        }
-        const supabase = window.masterSupabase;
+        // Use global dcfSupabase from dcf-core.js
+        const supabase = window.dcfSupabase;
 
         // Global variables
         let notifications = [];
@@ -829,7 +819,7 @@
 
         // Update user info from auth system
         function updateCurrentUser() {
-            const authUser = window.getCurrentUser ? window.getCurrentUser() : null;
+            const authUser = window.getCurrentUser();
             if (authUser) {
                 currentUser = authUser;
                 currentUser.name = authUser?.name || authUser?.username || 'DCF Member';
@@ -840,33 +830,32 @@
         }
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('🔐 Notifications page: Checking authentication...');
             
-            // Wait for unified auth to initialize (it loads user data)
-            // Give dcf-unified-auth.js time to initialize
-            let authCheckAttempts = 0;
-            const maxAttempts = 10;
-            
-            const checkAuth = setInterval(() => {
-                authCheckAttempts++;
-                
-                // Try to get current user
-                if (updateCurrentUser()) {
-                    clearInterval(checkAuth);
-                    console.log('✅ User authenticated, loading notifications...');
-                    
-                    // Now load notifications
-                    loadPageNotifications();
-                    setupFilterListeners();
-                    subscribeToNotifications();
-                    setInterval(loadPageNotifications, 30000);
-                } else if (authCheckAttempts >= maxAttempts) {
-                    clearInterval(checkAuth);
-                    console.log('❌ Authentication timeout, redirecting to login');
+            // Initialize authentication
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (!isLoggedIn) {
+                    console.error('User not authenticated');
                     window.location.href = '../auth/dcf_login_page.html';
+                    return;
                 }
-            }, 500); // Check every 500ms, up to 5 seconds total
+            }
+            
+            // Update current user
+            if (updateCurrentUser()) {
+                console.log('✅ User authenticated, loading notifications...');
+                
+                // Now load notifications
+                loadPageNotifications();
+                setupFilterListeners();
+                subscribeToNotifications();
+                setInterval(loadPageNotifications, 30000);
+            } else {
+                console.log('❌ No user found, redirecting to login');
+                window.location.href = '../auth/dcf_login_page.html';
+            }
         });
 
         async function loadPageNotifications() {
@@ -1391,9 +1380,13 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    if (window.dcfInit && window.dcfInit.isReady()) {
         setTimeout(waitForIconSystem, 500);
-    });
+    } else {
+        window.addEventListener('dcfReady', function() {
+            setTimeout(waitForIconSystem, 500);
+        });
+    }
     </script>
 </body>
 </html>
