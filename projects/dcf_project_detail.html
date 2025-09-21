@@ -2823,7 +2823,11 @@
         }
         
         // Initialize like status when page loads (removed duplicate view tracking)
-        document.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('dcfReady', async () => {
+            // Initialize authentication
+            if (window.initializeAuth) {
+                await window.initializeAuth();
+            }
             // Initialize input sanitization
             initializeInputSanitization();
             
@@ -4191,8 +4195,8 @@
         window.saveCoverImage = saveCoverImage;
         window.debugEditCoverButton = debugEditCoverButton;
         
-        // Initialize page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize page when DCF is ready
+        window.addEventListener('dcfReady', function() {
             console.log('📄 DOM Content Loaded - Starting initialization');
             
             // Add 2-second delay to allow authentication to complete
@@ -4574,7 +4578,7 @@
         }
         
         // Add this to the page initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('dcfReady', function() {
             // Apply saved position after a short delay to ensure project data is loaded
             setTimeout(applySavedCoverPosition, 500);
         });
@@ -4584,10 +4588,7 @@
         // Global variables for posts
         let selectedPostFiles = [];
 
-        // Get current user helper
-        function getCurrentUser() {
-            return window.dcfUser?.isLoggedIn ? window.dcfUser.profile : null;
-        }
+        // Get current user helper - removed (use window.getCurrentUser instead)
 
         // Show notification
         function showNotification(message, type = 'success') {
@@ -4655,7 +4656,7 @@
         // Update comment form avatars to match post creation avatar logic
         function updateCommentFormAvatars() {
             // Get current user (same as post creation)
-            let currentUser = getCurrentUser();
+            let currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser && window.dcfUser && window.dcfUser.isLoggedIn) {
                 currentUser = window.dcfUser.profile;
             }
@@ -4711,7 +4712,7 @@
             const textarea = document.getElementById('postTextarea');
             
             // Try to get current user
-            let currentUser = getCurrentUser();
+            let currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
             // Fallback to dcfUser if getCurrentUser returns null
             if (!currentUser && window.dcfUser && window.dcfUser.isLoggedIn) {
@@ -4829,7 +4830,7 @@
             const rawContent = textarea.value.trim();
             const content = sanitizeInput(rawContent, 5000);
             const projectId = new URLSearchParams(window.location.search).get('id');
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
             if (!currentUser) {
                 showNotification('Please log in to create posts', 'warning');
@@ -4966,7 +4967,7 @@
         function createPostHTML(post) {
             const timeAgo = formatTimeAgo(post.created_at);
             const authorName = post.author_name || `@${post.username}`;
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
             // Generate avatar HTML - use cached avatar data
             let avatarHTML = '';
@@ -5229,7 +5230,7 @@
 
         // Upload post media
         async function uploadPostMedia(files) {
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser) throw new Error('User not authenticated');
             
             const supabase = window.dcfSupabase;
@@ -5617,7 +5618,7 @@
 
         // Toggle like
         async function toggleLike(postId) {
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser) {
                 showAlert('Please log in to like posts', 'warning');
                 return;
@@ -5835,7 +5836,7 @@
                 return;
             }
             
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             if (!currentUser) {
                 showNotification('Please log in to post comments', 'warning');
                 return;
@@ -5968,7 +5969,7 @@
             // Separate main comments and replies
             let mainComments = comments.filter(c => !c.parent_comment_id);
             const replies = comments.filter(c => c.parent_comment_id);
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
             
             // Apply sorting to main comments based on sortType
             if (sortType === 'newest') {
@@ -6721,7 +6722,7 @@ function waitForIconSystem() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('dcfReady', function() {
     setTimeout(waitForIconSystem, 500);
 });
 </script>
