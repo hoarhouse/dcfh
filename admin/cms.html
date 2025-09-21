@@ -963,30 +963,52 @@
         let dcfNewsSlugs = [];
 
         // Initialize
-        document.addEventListener('dcfReady', async () => {
-            // Initialize authentication and check admin role
-            await initializeAuth();
-            if (!window.getCurrentUser() || window.getCurrentUser().role !== 'admin') {
-                window.location.href = 'dcf_admin_login.html';
-                return;
-            }
-            
-            supabase = window.dcfSupabase;
-            
-            // Delay admin queries to prevent race condition with auth
-            setTimeout(async () => {
+        window.addEventListener('dcfReady', async function() {
+            // Initialize authentication
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (!isLoggedIn) {
+                    console.error('Not authenticated - redirecting to login');
+                    window.location.href = 'dcf_admin_login.html';
+                    return;
+                }
+                
+                // Check admin role
+                const currentUser = window.getCurrentUser();
+                if (!currentUser || currentUser.role !== 'admin') {
+                    console.error('User is not an admin - access denied');
+                    window.location.href = 'dcf_admin_login.html';
+                    return;
+                }
+                
+                // Set Supabase reference
+                supabase = window.dcfSupabase;
+                
+                // Load CMS data immediately - auth is confirmed
                 await loadDCFNewsSlugs();
-            }, 2000); // 2 second delay allows auth to complete first
+            } else {
+                console.error('Authentication system not available');
+                window.location.href = 'dcf_admin_login.html';
+            }
         });
 
         async function loadDCFNewsSlugs() {
-            // Wait for auth system to initialize
+            // Verify Supabase is available
             if (!window.dcfSupabase) {
-                console.log('Supabase not ready yet, skipping CMS load');
+                console.error('ERROR: Supabase client not available');
                 return;
             }
 
+            // Verify user is authenticated
+            const currentUser = window.getCurrentUser();
+            if (!currentUser) {
+                console.error('ERROR: User not authenticated - cannot load CMS data');
+                return;
+            }
+            console.log('Authenticated as:', currentUser.email, 'Role:', currentUser.role);
+
             const supabase = window.dcfSupabase;
+            console.log('Loading DCF News slugs from database...');
 
             try {
                 // Check if cms_sections table exists and has dcf_news data
@@ -1003,10 +1025,14 @@
                     return;
                 }
 
+                console.log('CMS sections data retrieved:', data);
+                
                 if (data && data.slugs) {
                     dcfNewsSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    console.log(`Loaded ${dcfNewsSlugs.length} slugs:`, dcfNewsSlugs);
                 } else {
                     dcfNewsSlugs = [];
+                    console.log('No slugs found in database');
                 }
 
                 displaySlugs();
@@ -1470,7 +1496,7 @@
         });
 
         // Template selection functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('dcfReady', function() {
             const templateOptions = document.querySelectorAll('.template-option-full');
             const selectedTemplateInput = document.getElementById('selectedTemplate');
             
