@@ -1413,7 +1413,7 @@
 
     <script>
         // Wait for dcf modular system to initialize Supabase
-        // The supabase client is available as window.dcfSupabase() from dcf-auth.js
+        // The supabase client is available as window.dcfSupabase from dcf-auth.js
         let supabase;
 
         // Wizard state
@@ -1467,9 +1467,16 @@
         }
         
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('dcfReady', async () => {
+            // Initialize authentication and check admin role
+            await initializeAuth();
+            if (!window.getCurrentUser() || window.getCurrentUser().role !== 'admin') {
+                window.location.href = 'dcf_admin_login.html';
+                return;
+            }
+            
             // Get the Supabase client from dcf modular system
-            supabase = window.dcfSupabase ? window.dcfSupabase() : null;
+            supabase = window.dcfSupabase;
             if (!supabase) {
                 console.error('Supabase not initialized');
                 return;
@@ -1483,11 +1490,6 @@
             
             // Check for edit mode and load data after a delay
             setTimeout(async () => {
-                // Re-check for supabase
-                if (!supabase) {
-                    supabase = window.dcfSupabase ? window.dcfSupabase() : null;
-                }
-                
                 if (supabase) {
                     await checkEditMode();
                     
