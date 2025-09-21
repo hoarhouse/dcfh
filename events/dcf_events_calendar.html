@@ -627,7 +627,11 @@
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-unified-system.js"></script>
+    <!-- DCF Modular System -->
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-init.js"></script>
 </head>
 
 <body>
@@ -638,7 +642,7 @@
                 Domus Communis Foundation
             </a>
             <ul class="nav-menu" id="navMenu">
-                <!-- Will be populated by master JS -->
+                <!-- Will be populated by dcf-ui.js -->
             </ul>
             <div class="user-menu">
                 <div class="user-dropdown">
@@ -1229,36 +1233,24 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔍 DIAGNOSTIC: DOMContentLoaded event fired');
+        window.addEventListener('dcfReady', async function() {
+            console.log('🔍 DIAGNOSTIC: dcfReady event fired');
             console.log('🔍 Events Calendar page loaded');
             
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
             console.log('✅ Security: Input sanitization initialized');
             
-            // Give unified auth system time to initialize before checking user state
-            setTimeout(() => {
-                // Verify unified auth system is available
-                if (typeof window.getCurrentUser === 'function') {
+            // Initialize authentication (optional for events page - can view without login)
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
                     const currentUser = window.getCurrentUser();
-                    
-                    if (currentUser) {
-                        console.log('✅ Authenticated user loaded:', currentUser.username);
-                    } else {
-                        console.log('ℹ️ No user session detected - loading in public mode');
-                    }
+                    console.log('✅ Authenticated user loaded:', currentUser.username);
                 } else {
-                    console.log('⚠️ Unified auth system not yet available, retrying...');
-                    // Retry once more if auth system isn't ready
-                    setTimeout(() => {
-                        const currentUser = window.getCurrentUser?.();
-                        if (currentUser) {
-                            console.log('✅ Authenticated user loaded (delayed):', currentUser.username);
-                        }
-                    }, 200);
+                    console.log('ℹ️ No user session detected - loading in public mode');
                 }
-            }, 100); // Small delay for auth initialization
+            }
             
             // Check URL parameters for view type
             const urlParams = new URLSearchParams(window.location.search);
@@ -1866,9 +1858,14 @@ ${registerButtonHtml}
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    // Wait for DCF system to be ready before initializing icons
+    if (window.dcfInit && window.dcfInit.isReady()) {
         setTimeout(waitForIconSystem, 500);
-    });
+    } else {
+        window.addEventListener('dcfReady', function() {
+            setTimeout(waitForIconSystem, 500);
+        });
+    }
     </script>
 </body>
 </html>
