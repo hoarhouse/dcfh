@@ -860,10 +860,13 @@
             
             supabase = window.dcfSupabase;
             if (!supabase) {
-                console.error('Supabase not initialized');
-                return;
+                console.error('Supabase not initialized - UI will still function');
+                // Don't return - allow UI to function even without Supabase
             }
             
+            console.log('[DEBUG] dcfReady event fired, setting up UI components...');
+            
+            // Setup UI components (these should work even without Supabase)
             setupEventListeners();
         });
 
@@ -971,6 +974,19 @@
             document.getElementById('step3').classList.remove('active');
             document.getElementById('loadingStep').classList.add('active');
 
+            // Try to get supabase if not already set
+            if (!supabase) {
+                supabase = window.dcfSupabase || window.supabase;
+            }
+            
+            if (!supabase) {
+                console.error('Cannot create blog - Supabase not available');
+                showToast('Database connection not available. Please refresh the page.', 'error');
+                document.getElementById('loadingStep').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+                return;
+            }
+
             try {
                 // Get current user
                 const { data: { user } } = await supabase.auth.getUser();
@@ -1057,6 +1073,17 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
+        
+        // Fallback initialization if dcfReady doesn't fire
+        setTimeout(() => {
+            const nameInput = document.getElementById('blogName');
+            if (nameInput && !nameInput.hasAttribute('data-initialized')) {
+                console.log('[DEBUG] Fallback initialization - dcfReady may not have fired');
+                setupEventListeners();
+                // Mark as initialized
+                nameInput.setAttribute('data-initialized', 'true');
+            }
+        }, 2000);
 
     </script>
 </body>
