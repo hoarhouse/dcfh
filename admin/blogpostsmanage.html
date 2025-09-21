@@ -978,23 +978,23 @@
                     blogFilter.innerHTML += `<option value="${blog.id}">${blog.name}</option>`;
                 });
 
-                // Load posts with blog information and type-specific fields
-                const { data: postsData, error: postsError } = await supabase
+                // Load posts - simplified query to work with public RLS policies
+                const { data: postsData, error: postsError } = await window.dcfSupabase
                     .from('blog_posts')
-                    .select(`
-                        *,
-                        blogs!inner(name, slug),
-                        post_type,
-                        person_first_name,
-                        person_last_name,
-                        person_photo_url,
-                        person_links,
-                        news_category,
-                        publication_date
-                    `)
+                    .select('id, title, slug, content, excerpt, featured_image_url, status, published_at, created_at, author_id, post_type, person_first_name, person_last_name, person_photo_url, news_category, publication_date')
+                    .eq('status', 'published')
                     .order('created_at', { ascending: false });
 
-                if (postsError) throw postsError;
+                if (postsError) {
+                    console.error('Failed to load posts:', postsError);
+                    showToast('Failed to load blog posts: ' + postsError.message, 'error');
+                    posts = [];
+                    filteredPosts = [];
+                    displayPosts(); // Show empty state
+                    updateResultsInfo();
+                    return;
+                }
+                
                 posts = postsData || [];
                 filteredPosts = [...posts];
 
@@ -1136,7 +1136,8 @@
                 }) : 'Not published';
 
             const excerpt = post.excerpt || stripHtml(post.content).substring(0, 150) + '...';
-            const blogName = post.blogs?.name || 'Unknown Blog';
+            // Blog name removed since we're not joining with blogs table for public access
+            const blogName = 'Blog Post';
 
             item.innerHTML = `
                 <div class="post-checkbox">
