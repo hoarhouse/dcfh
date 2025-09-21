@@ -1586,39 +1586,24 @@
             }
         }
 
-        // Wait for auth to be ready before initializing
-        async function waitForAuth() {
-            // Try multiple times to get auth
-            for (let i = 0; i < 10; i++) {
-                // First check Supabase session
-                const { data: { session }, error } = await window.dcfSupabase.auth.getSession();
-                
-                if (session && !error) {
-                    return session.user;
-                }
-                
-                // Check if dcfUser is available from unified auth
-                if (window.dcfUser && window.dcfUser.isLoggedIn) {
-                    return window.dcfUser.profile;
-                }
-                
-                // Wait a bit before trying again
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
-            return null;
-        }
-
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('Initializing edit profile page...');
             
             // Show loading while checking auth
             showLoading(true);
             
-            // Wait for auth to be ready
+            // Initialize authentication
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
+                    currentUser = window.getCurrentUser();
+                } else {
+                    currentUser = null;
+                }
+            }
+            
             try {
-                currentUser = await waitForAuth();
                 
                 if (!currentUser) {
                     console.log('No authenticated user found');
@@ -2540,9 +2525,8 @@
     </script>
     
     <script>
-    // Wait for both DOM and the correct icon set to load
-    document.addEventListener('DOMContentLoaded', function() {
-        function initializeIconsWhenReady() {
+    // Wait for DCF system to be ready
+    function initializeIconsWhenReady() {
             // Wait for icon system AND correct icon set
             if (window.iconSystem && 
                 typeof window.iconSystem.getIcon === 'function' &&
@@ -2563,9 +2547,14 @@
             }
         }
         
-        // Wait longer initially to let the unified system fully load
-        setTimeout(initializeIconsWhenReady, 2000);
-    });
+        // Start checking when DCF system is ready
+        if (window.dcfInit && window.dcfInit.isReady()) {
+            setTimeout(initializeIconsWhenReady, 500);
+        } else {
+            window.addEventListener('dcfReady', function() {
+                setTimeout(initializeIconsWhenReady, 500);
+            });
+        }
     </script>
     
 </body>
