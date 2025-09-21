@@ -957,6 +957,8 @@
                 <div class="step-dot" data-step="2"></div>
                 <div class="step-dot" data-step="3"></div>
                 <div class="step-dot" data-step="4"></div>
+                <div class="step-dot" data-step="5"></div>
+                <div class="step-dot" data-step="6"></div>
             </div>
         </div>
 
@@ -1052,6 +1054,62 @@
             
             <div class="btn-group">
                 <button class="btn btn-secondary" id="step4Prev">← Back</button>
+                <button class="btn btn-primary" id="step4Next" disabled>
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 5: Preview -->
+        <div class="wizard-step" id="step5">
+            <h2 class="step-title">Preview Your Post</h2>
+            <p class="step-description">Review how your post will look before publishing</p>
+            
+            <div class="preview-container">
+                <div class="preview-header">
+                    <h1 class="preview-title" id="previewTitle">Your Post Title</h1>
+                    <div class="preview-meta">
+                        <span id="previewBlog">Blog Name</span>
+                        <span id="previewDate">Today</span>
+                    </div>
+                </div>
+                
+                <div class="preview-media" id="previewMedia" style="display: none;">
+                    <!-- Featured image will be inserted here -->
+                </div>
+                
+                <div class="preview-content" id="previewContent">
+                    Your post content will appear here...
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="step5Prev">← Back</button>
+                <button class="btn btn-primary" id="step5Next">
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 6: Publishing Options -->
+        <div class="wizard-step" id="step6">
+            <h2 class="step-title">How do you want to publish?</h2>
+            <p class="step-description">Choose when and how your post goes live</p>
+            
+            <div class="publishing-options">
+                <div class="publish-option" data-option="draft">
+                    <div class="option-title">💾 Save as Draft</div>
+                    <div class="option-description">Save your work and publish later</div>
+                </div>
+                
+                <div class="publish-option selected" data-option="publish">
+                    <div class="option-title">🚀 Publish Now</div>
+                    <div class="option-description">Make your post live immediately</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="step6Prev">← Back</button>
                 <button class="btn btn-success" id="publishBtn">
                     🚀 Publish Now
                 </button>
@@ -1086,7 +1144,7 @@
 
     <script>
         var currentStep = 1;
-        var totalSteps = 4;
+        var totalSteps = 6;
         var selectedBlog = null;
         var featuredMedia = null;
         var quillEditor = null;
@@ -1136,6 +1194,10 @@
             document.getElementById('step3Prev').addEventListener('click', prevStep);
             document.getElementById('step3Next').addEventListener('click', nextStep);
             document.getElementById('step4Prev').addEventListener('click', prevStep);
+            document.getElementById('step4Next').addEventListener('click', nextStep);
+            document.getElementById('step5Prev').addEventListener('click', prevStep);
+            document.getElementById('step5Next').addEventListener('click', nextStep);
+            document.getElementById('step6Prev').addEventListener('click', prevStep);
             document.getElementById('publishBtn').addEventListener('click', publishPost);
 
             document.getElementById('postTitle').addEventListener('input', validateStep3);
@@ -1150,6 +1212,12 @@
 
             document.getElementById('changeMediaBtn').addEventListener('click', changeMedia);
             document.getElementById('removeMediaBtn').addEventListener('click', removeMedia);
+
+            document.querySelectorAll('.publish-option').forEach(function(option) {
+                option.addEventListener('click', function() {
+                    selectPublishOption(option);
+                });
+            });
 
             document.getElementById('viewPostBtn').addEventListener('click', viewPost);
             document.getElementById('createAnotherBtn').addEventListener('click', createAnother);
@@ -1196,7 +1264,67 @@
                 validateContentStep();
             }
             
+            if (step === 5) {
+                updatePreview();
+            }
+            
             updateProgress();
+        }
+
+        function selectPublishOption(option) {
+            document.querySelectorAll('.publish-option').forEach(function(opt) {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+
+            var optionType = option.dataset.option;
+            var publishBtn = document.getElementById('publishBtn');
+
+            if (optionType === 'draft') {
+                publishBtn.innerHTML = '💾 Save Draft';
+            } else {
+                publishBtn.innerHTML = '🚀 Publish Now';
+            }
+        }
+
+        function updatePreview() {
+            var title = document.getElementById('postTitle').value || 'Your Post Title';
+            var excerpt = document.getElementById('postExcerpt').value;
+            var content = quillEditor ? quillEditor.root.innerHTML : 'Your post content will appear here...';
+            
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewBlog').textContent = selectedBlog ? selectedBlog.name : 'Selected Blog';
+            document.getElementById('previewDate').textContent = new Date().toLocaleDateString();
+            
+            var previewMedia = document.getElementById('previewMedia');
+            if (featuredMedia && featuredMedia.url) {
+                previewMedia.style.display = 'block';
+                var img = document.createElement('img');
+                img.src = featuredMedia.url;
+                img.alt = 'Featured image';
+                previewMedia.innerHTML = '';
+                previewMedia.appendChild(img);
+            } else {
+                previewMedia.style.display = 'none';
+            }
+            
+            var previewContent = '';
+            if (excerpt) {
+                var excerptDiv = document.createElement('div');
+                excerptDiv.style.cssText = 'font-style: italic; color: #666; margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;';
+                excerptDiv.textContent = excerpt;
+                previewContent = excerptDiv.outerHTML;
+            }
+            previewContent += content;
+            
+            document.getElementById('previewContent').innerHTML = previewContent;
+        }
+
+        function validateContentStep() {
+            if (!quillEditor) return;
+            var text = quillEditor.getText().trim();
+            var isValid = text.length > 10;
+            document.getElementById('step4Next').disabled = !isValid;
         }
 
         function loadBlogs() {
@@ -1332,13 +1460,16 @@
         }
 
         function publishPost() {
-            document.getElementById('step4').classList.remove('active');
+            document.getElementById('step6').classList.remove('active');
             document.getElementById('loadingStep').classList.add('active');
+
+            var selectedOption = document.querySelector('.publish-option.selected');
+            var publishType = selectedOption.dataset.option;
 
             var postData = {
                 post_type: 'blog_post',
-                status: 'published',
-                published_at: new Date().toISOString(),
+                status: publishType === 'draft' ? 'draft' : 'published',
+                published_at: publishType === 'publish' ? new Date().toISOString() : null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 view_count: 0,
@@ -1352,7 +1483,7 @@
             if (!selectedBlog) {
                 showToast('Blog selection is required', 'error');
                 document.getElementById('loadingStep').classList.remove('active');
-                document.getElementById('step4').classList.add('active');
+                document.getElementById('step6').classList.add('active');
                 return;
             }
 
@@ -1389,15 +1520,16 @@
                 if (selectedBlog && selectedBlog.slug) {
                     postUrl = baseUrl + '/dcfh/blog/post.html?blog=' + selectedBlog.slug + '&post=' + data.slug;
                 } else {
-                    throw new Error('Blog information missing');
+                    throw new Error('Blog information missing - cannot generate post URL');
                 }
 
                 showSuccess(postUrl, data);
             }).catch(function(error) {
                 console.error('Publish error:', error);
-                showToast('Failed to publish: ' + error.message, 'error');
+                var errorMessage = error.message || 'Failed to publish post';
+                showToast('Failed to publish: ' + errorMessage, 'error');
                 document.getElementById('loadingStep').classList.remove('active');
-                document.getElementById('step4').classList.add('active');
+                document.getElementById('step6').classList.add('active');
             });
         }
 
