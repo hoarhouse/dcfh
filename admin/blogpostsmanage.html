@@ -1272,24 +1272,47 @@
         }
 
         async function deletePost(postId) {
+            console.log('[Delete] Attempting to delete post:', postId);
+            
             if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+                console.log('[Delete] User cancelled deletion');
                 return;
             }
 
             try {
-                const { error } = await window.dcfSupabase
+                // First, verify the post exists and get its details for logging
+                const { data: postData, error: fetchError } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('id, title, slug')
+                    .eq('id', postId)
+                    .single();
+                
+                if (fetchError) {
+                    console.error('[Delete] Failed to fetch post details:', fetchError);
+                    throw fetchError;
+                }
+                
+                console.log('[Delete] Post data to delete:', postData);
+                
+                // Now delete the post
+                const { error: deleteError } = await window.dcfSupabase
                     .from('blog_posts')
                     .delete()
                     .eq('id', postId);
 
-                if (error) throw error;
+                if (deleteError) {
+                    console.error('[Delete] Delete operation failed:', deleteError);
+                    throw deleteError;
+                }
 
+                console.log('[Delete] Post deleted successfully:', postId);
                 showToast('Post deleted successfully', 'success');
                 loadData(); // Reload to reflect changes
 
             } catch (error) {
-                console.error('Error deleting post:', error);
-                showToast('Failed to delete post', 'error');
+                console.error('[Delete] Error during delete operation:', error);
+                const errorMessage = error.message || 'Failed to delete post';
+                showToast(`Delete failed: ${errorMessage}`, 'error');
             }
         }
 
