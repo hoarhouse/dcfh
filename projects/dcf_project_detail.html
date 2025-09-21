@@ -2067,6 +2067,58 @@
     </div>
 
     <script>
+        // Universal Analytics System - using correct database schema
+        window.trackInteraction = async function(contentType, contentId, interactionType, metadata = {}) {
+            try {
+                if (!window.dcfSupabase) return;
+                
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) return;
+                
+                // Use universal_analytics table for general interactions
+                const { error } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .insert({
+                        content_type: contentType,
+                        content_id: contentId,
+                        interaction_type: interactionType,
+                        user_id: currentUser.id,
+                        user_email: currentUser.email,
+                        interaction_subtype: metadata.subtype || null
+                    });
+                    
+                if (error) throw error;
+                console.log('📊 Interaction tracked:', interactionType);
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        };
+
+        window.hasUserInteracted = async function(resourceId, actionType = null) {
+            try {
+                if (!window.dcfSupabase) return false;
+                
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) return false;
+                
+                // Use resource_analytics table for resource-specific checks
+                let query = window.dcfSupabase
+                    .from('resource_analytics')
+                    .select('id')
+                    .eq('resource_id', resourceId)
+                    .eq('user_email', currentUser.email);
+                    
+                if (actionType) {
+                    query = query.eq('action_type', actionType);
+                }
+                
+                const { data } = await query.single();
+                return data !== null;
+            } catch (error) {
+                return false;
+            }
+        };
+
         // Comprehensive sanitization function
         function sanitizeInput(input, maxLength = 1000) {
             if (!input) return '';
