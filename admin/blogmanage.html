@@ -911,7 +911,7 @@
 
     <script>
         // Wait for dcf modular system to initialize Supabase
-        // The supabase client is available as window.dcfSupabase() from dcf-auth.js
+        // The supabase client is available as window.dcfSupabase from dcf-auth.js
         let supabase;
 
         // State
@@ -919,19 +919,15 @@
         let currentEditingBlog = null;
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Use Supabase client from dcf modular system
-            if (!window.dcfSupabase) {
-                await new Promise(resolve => {
-                    const checkInterval = setInterval(() => {
-                        if (window.dcfSupabase) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 100);
-                });
+        document.addEventListener('dcfReady', async () => {
+            // Initialize authentication and check admin role
+            await initializeAuth();
+            if (!window.getCurrentUser() || window.getCurrentUser().role !== 'admin') {
+                window.location.href = 'dcf_admin_login.html';
+                return;
             }
-            supabase = window.dcfSupabase ? window.dcfSupabase() : null;
+            
+            supabase = window.dcfSupabase;
             if (!supabase) {
                 console.error('Supabase not initialized');
                 return;
