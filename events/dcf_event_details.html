@@ -2403,10 +2403,7 @@
             if (!window.dcfSupabase) {
                 console.error('❌ Supabase client not available - stopping load');
                 console.log('Attempting to initialize Supabase...');
-                if (window.initializeSupabase) {
-                    window.initializeSupabase();
-                    console.log('Supabase initialized, retrying...');
-                }
+                // Supabase initialization handled by dcf-auth.js
                 return;
             }
 
@@ -3245,7 +3242,7 @@
                 retryCount++;
                 console.log(`Retry ${retryCount}: Checking for user data...`);
                 
-                const user = getCurrentUser() || window.dcfUser?.profile;
+                const user = window.getCurrentUser();
                 if (user) {
                     console.log('✅ User data found, updating display');
                     updatePostCreationUserDisplay();
@@ -3331,7 +3328,7 @@
             
             // Method 1: Check every 500ms for auth to be ready
             const authCheckInterval = setInterval(() => {
-                if (window.dcfUser && window.dcfUser.isLoggedIn) {
+                if (window.getCurrentUser()) {
                     console.log('✅ Auth detected as complete, re-checking ownership');
                     clearInterval(authCheckInterval);
                     
@@ -3425,8 +3422,13 @@
         }
         
         // Initialize like status when page loads (removed duplicate view tracking)
-        document.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('dcfReady', async () => {
             console.log('🔍 Event Details page loaded');
+            
+            // Initialize authentication
+            if (window.initializeAuth) {
+                await window.initializeAuth();
+            }
             
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
@@ -4811,21 +4813,21 @@
         window.saveCoverImage = saveCoverImage;
         window.debugEditCoverButton = debugEditCoverButton;
         
-        // Initialize page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize page when DCF is ready
+        window.addEventListener('dcfReady', function() {
             console.log('🔍 ========== PAGE INITIALIZATION DEBUG ==========');
-            console.log('📄 DOM Content Loaded at:', new Date().toISOString());
+            console.log('📄 DCF Ready at:', new Date().toISOString());
+            
+            // Initialize authentication
+            if (window.initializeAuth) {
+                window.initializeAuth();
+            }
             console.log('Current URL:', window.location.href);
             console.log('Window.dcfSupabase available?', !!window.dcfSupabase);
             console.log('Window.initializeSupabase available?', !!window.initializeSupabase);
             console.log('Window.dcfUser available?', !!window.dcfUser);
             
-            // Check if unified auth is loaded
-            if (!window.dcfSupabase && window.initializeSupabase) {
-                console.log('🔧 Initializing Supabase client...');
-                window.initializeSupabase();
-                console.log('Supabase initialized, dcfSupabase now available?', !!window.dcfSupabase);
-            }
+            // Supabase initialization handled by dcf-auth.js
             
             // Load the project first
             console.log('🚀 Calling initializePage()...');
@@ -5204,7 +5206,12 @@
         }
         
         // Add this to the page initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('dcfReady', function() {
+            // Initialize authentication
+            if (window.initializeAuth) {
+                window.initializeAuth();
+            }
+            
             // Apply saved position after a short delay to ensure project data is loaded
             setTimeout(applySavedCoverPosition, 500);
         });
@@ -7376,7 +7383,12 @@
        }
    }
 
-   document.addEventListener('DOMContentLoaded', function() {
+   window.addEventListener('dcfReady', function() {
+       // Initialize authentication
+       if (window.initializeAuth) {
+           window.initializeAuth();
+       }
+       
        setTimeout(waitForIconSystem, 500);
    });
    </script>
