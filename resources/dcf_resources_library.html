@@ -1597,17 +1597,25 @@
         }
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('🔍 Resources Library page loaded');
             
             // SECURITY: Initialize input sanitization
             initializeInputSanitization();
             console.log('✅ Security: Input sanitization initialized');
             
+            // Initialize authentication (optional for resources - public viewing allowed)
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
+                    console.log('✅ User authenticated');
+                } else {
+                    console.log('ℹ️ Viewing in public mode');
+                }
+            }
+            
             // Initialize Sacred Minimalist icons
             waitForIconSystem();
-            
-            // Auth system handled by unified auth - no manual initialization needed
             
             await loadResources();
             await loadStats();
@@ -2502,9 +2510,14 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(waitForIconSystem, 4000); // Extended wait for complex page initialization
-    });
+    // Wait for DCF system to be ready before initializing icons
+    if (window.dcfInit && window.dcfInit.isReady()) {
+        setTimeout(waitForIconSystem, 1000);
+    } else {
+        window.addEventListener('dcfReady', function() {
+            setTimeout(waitForIconSystem, 1000);
+        });
+    }
     </script>
 </body>
 </html>
