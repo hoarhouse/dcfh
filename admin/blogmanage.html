@@ -919,23 +919,41 @@
         let currentEditingBlog = null;
 
         // Initialize
-        document.addEventListener('dcfReady', async () => {
+        window.addEventListener('dcfReady', async () => {
             // Skip authentication for admin area - allow unrestricted access
             
             supabase = window.dcfSupabase;
             if (!supabase) {
-                console.error('Supabase not initialized');
-                return;
+                console.error('Supabase not initialized - some features may not work');
+                // Don't return - allow UI to function even without Supabase
             }
             
-            // Delay admin queries to prevent race condition with auth
-            setTimeout(async () => {
-                await loadBlogs();
-            }, 3000); // Increased delay
+            console.log('[DEBUG] dcfReady event fired, loading blogs...');
+            
+            // Load blogs immediately without unnecessary delay
+            await loadBlogs();
         });
 
         async function loadBlogs() {
             try {
+                // Try to get supabase if not already set
+                if (!supabase) {
+                    supabase = window.dcfSupabase || window.supabase;
+                }
+                
+                if (!supabase) {
+                    console.error('Cannot load blogs - Supabase not available');
+                    showToast('Database connection not available', 'error');
+                    // Show demo blogs for testing
+                    blogs = [
+                        { id: 'demo-1', name: 'Main Blog', slug: 'main-blog', status: 'active', description: 'The main blog for our website' },
+                        { id: 'demo-2', name: 'News Blog', slug: 'news-blog', status: 'active', description: 'Latest news and updates' }
+                    ];
+                    displayBlogs();
+                    updateResultsInfo();
+                    return;
+                }
+                
                 const { data: blogsData, error } = await supabase
                     .from('blogs')
                     .select('*')
