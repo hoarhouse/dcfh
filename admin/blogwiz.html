@@ -1482,6 +1482,178 @@
             
             console.log('[DEBUG] dcfReady event fired, setting up UI components...');
             
+            // Define navigation functions first (before they're referenced)
+            function nextStep() {
+                console.log('[DEBUG] nextStep called. Current step:', currentStep, 'Total steps:', totalSteps, 'Post type:', selectedPostType);
+                
+                // Check if we're on Step 1 and ensure a post type is selected
+                if (currentStep === 1) {
+                    if (!selectedPostType) {
+                        console.error('[DEBUG] No post type selected on Step 1');
+                        showToast('Please select a post type to continue', 'error');
+                        return;
+                    }
+                }
+                
+                // Validate Step 2 based on post type
+                if (currentStep === 2) {
+                    if (selectedPostType === 'people_post') {
+                        // Check if publication location is selected for people posts
+                        if (!selectedPublicationLocation) {
+                            showToast('Please select where this People Post should appear', 'error');
+                            return;
+                        }
+                    } else {
+                        // Check if blog is selected for regular posts
+                        if (!selectedBlog) {
+                            showToast('Please select a blog', 'error');
+                            return;
+                        }
+                    }
+                }
+                
+                // Navigate to next step based on post type
+                if (currentStep < totalSteps) {
+                    console.log('[DEBUG] Moving to step', currentStep + 1);
+                    showStep(currentStep + 1);
+                } else {
+                    console.log('[DEBUG] Already at last step or beyond:', currentStep, '>=', totalSteps);
+                }
+            }
+            
+            function prevStep() {
+                if (currentStep > 1) {
+                    showStep(currentStep - 1);
+                }
+            }
+            
+            async function showStep(step) {
+                // Map step numbers to actual step IDs based on post type
+                const getStepId = (stepNum) => {
+                    if (selectedPostType === 'blog_post') {
+                        // Blog post workflow (6 actual steps)
+                        const blogStepMap = {
+                            1: 'step1',     // Post type
+                            2: 'step2',     // Blog selection
+                            3: 'step3',     // Title & Slug
+                            4: 'step4',     // Featured Media
+                            5: 'step5',     // Content
+                            6: 'step6'      // Publishing
+                        };
+                        return blogStepMap[stepNum];
+                    } else if (selectedPostType === 'people_post') {
+                        // People post workflow (8 actual steps, shown as 7 visual dots)
+                        const peopleStepMap = {
+                            1: 'step1',         // Post type
+                            2: 'step2',         // Publication location
+                            3: 'step3People',   // Person Information (First/Last Name)
+                            4: 'step4People',   // Profile Title & Slug
+                            5: 'step5People',   // Additional Person Info (Photo/Links)
+                            6: 'step4',         // Featured Media
+                            7: 'step5',         // Content
+                            8: 'step6'          // Publishing
+                        };
+                        return peopleStepMap[stepNum];
+                    }
+                    return `step${stepNum}`;
+                };
+                
+                // Hide all steps first
+                document.querySelectorAll('.wizard-step').forEach(step => {
+                    step.classList.remove('active');
+                    if (step.id === 'step3People' || step.id === 'step4People' || step.id === 'step5People') {
+                        step.style.display = 'none';
+                    }
+                });
+                
+                // Update current step and show the new one
+                currentStep = step;
+                const newStepId = getStepId(currentStep);
+                const newElement = document.getElementById(newStepId);
+                if (newElement) {
+                    // Show the step
+                    if (newStepId === 'step3People' || newStepId === 'step4People' || newStepId === 'step5People') {
+                        newElement.style.display = 'block';
+                    }
+                    newElement.classList.add('active');
+                    
+                    // Handle Step 2 - Show appropriate content based on post type
+                    if (currentStep === 2) {
+                        if (selectedPostType === 'people_post') {
+                            // Show people post publication options
+                            document.getElementById('blogGrid').style.display = 'none';
+                            document.getElementById('peoplePostOptions').style.display = 'grid';
+                        } else if (selectedPostType === 'blog_post') {
+                            // Show blog selection for regular posts
+                            document.getElementById('blogGrid').style.display = 'grid';
+                            document.getElementById('peoplePostOptions').style.display = 'none';
+                            // Load blogs if not already loaded
+                            await loadBlogs();
+                        } else {
+                            // No post type selected yet - this shouldn't happen
+                            console.error('Error: Navigated to step 2 without selecting a post type');
+                            showToast('Please select a post type first', 'error');
+                            showStep(1);
+                            return;
+                        }
+                    }
+                }
+                
+                // Handle special visibility for people-only steps
+                if (newStepId === 'step3People' || newStepId === 'step4People' || newStepId === 'step5People') {
+                    newElement.style.display = 'block';
+                    
+                    // Re-setup validation when showing step3People
+                    if (newStepId === 'step3People') {
+                        setTimeout(() => {
+                            console.log('Step3People is now visible, running validation...');
+                            
+                            // Use the global validation function if available
+                            if (window.validatePersonNames) {
+                                window.validatePersonNames();
+                            } else {
+                                // Fallback validation if global function not available
+                                const firstNameInput = document.getElementById('personFirstName');
+                                const lastNameInput = document.getElementById('personLastName');
+                                const step3NextBtn = document.getElementById('step3PeopleNext');
+                                
+                                if (firstNameInput && lastNameInput && step3NextBtn) {
+                                    const firstName = firstNameInput.value.trim();
+                                    const lastName = lastNameInput.value.trim();
+                                    step3NextBtn.disabled = !(firstName && lastName);
+                                    console.log('Step3People shown - validation state:', { firstName, lastName, disabled: step3NextBtn.disabled });
+                                }
+                            }
+                        }, 50);
+                    }
+                }
+                
+                // Update progress
+                updateProgress();
+                
+                // Update preview when reaching content step
+                if ((selectedPostType === 'blog_post' && step === 5) || 
+                    (selectedPostType === 'people_post' && step === 7)) {
+                    updatePreview();
+                    
+                    // Validate content when step is shown
+                    setTimeout(() => {
+                        if (window.validateContentStep) {
+                            console.log('[DEBUG] Validating content on step show');
+                            window.validateContentStep();
+                        } else if (quillEditor) {
+                            // Fallback validation
+                            const text = quillEditor.getText().trim();
+                            const step5NextBtn = document.getElementById('step5Next');
+                            if (step5NextBtn) {
+                                step5NextBtn.disabled = text.length < 10;
+                                console.log('[DEBUG] Content step shown, text length:', text.length, 'button disabled:', text.length < 10);
+                            }
+                        }
+                    }, 100);
+                }
+            }
+            
             // Setup UI components (these should work even without Supabase)
             setupPostTypeSelection();
             setupEventListeners();
@@ -2707,51 +2879,9 @@
             }
         }
 
-        function nextStep() {
-            console.log('[DEBUG] nextStep called. Current step:', currentStep, 'Total steps:', totalSteps, 'Post type:', selectedPostType);
-            
-            // Check if we're on Step 1 and ensure a post type is selected
-            if (currentStep === 1) {
-                if (!selectedPostType) {
-                    console.error('[DEBUG] No post type selected on Step 1');
-                    showToast('Please select a post type to continue', 'error');
-                    return;
-                }
-            }
-            
-            // Validate Step 2 based on post type
-            if (currentStep === 2) {
-                if (selectedPostType === 'people_post') {
-                    // Check if publication location is selected for people posts
-                    if (!selectedPublicationLocation) {
-                        showToast('Please select where this People Post should appear', 'error');
-                        return;
-                    }
-                } else {
-                    // Check if blog is selected for regular posts
-                    if (!selectedBlog) {
-                        showToast('Please select a blog', 'error');
-                        return;
-                    }
-                }
-            }
-            
-            // Navigate to next step based on post type
-            if (currentStep < totalSteps) {
-                console.log('[DEBUG] Moving to step', currentStep + 1);
-                showStep(currentStep + 1);
-            } else {
-                console.log('[DEBUG] Already at last step or beyond:', currentStep, '>=', totalSteps);
-            }
-        }
-
-        function prevStep() {
-            if (currentStep > 1) {
-                showStep(currentStep - 1);
-            }
-        }
-
-        async function showStep(step) {
+        // These functions have been moved earlier in the code
+        
+        async function showStepOld(step) {
             // Map step numbers to actual step IDs based on post type
             const getStepId = (stepNum) => {
                 if (selectedPostType === 'blog_post') {
