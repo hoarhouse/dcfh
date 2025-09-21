@@ -1831,9 +1831,40 @@
                 return;
             }
             
+            // Skip if blogs already loaded
+            const existingCards = document.querySelectorAll('.blog-card');
+            if (existingCards.length > 0) {
+                console.log('[DEBUG] Blogs already loaded, skipping');
+                return;
+            }
+            
             // Check if supabase is available
             if (!supabase) {
-                console.warn('Supabase not available for loading blogs');
+                supabase = window.dcfSupabase || window.supabase;
+            }
+            
+            if (!supabase) {
+                console.warn('Supabase not available for loading blogs - using demo data');
+                // Create demo blogs for testing
+                const demoBlogs = [
+                    { id: 'demo-1', name: 'Main Blog', slug: 'main-blog', description: 'The main blog' },
+                    { id: 'demo-2', name: 'News Blog', slug: 'news-blog', description: 'News and updates' }
+                ];
+                
+                const blogGrid = document.getElementById('blogGrid');
+                blogGrid.innerHTML = '';
+                
+                demoBlogs.forEach(blog => {
+                    const blogCard = document.createElement('div');
+                    blogCard.className = 'blog-card';
+                    blogCard.dataset.blogId = blog.id;
+                    blogCard.innerHTML = `
+                        <h3>${blog.name}</h3>
+                        <p>${blog.description || 'No description'}</p>
+                    `;
+                    blogCard.onclick = () => selectBlog(blog, blogCard);
+                    blogGrid.appendChild(blogCard);
+                });
                 return;
             }
             
