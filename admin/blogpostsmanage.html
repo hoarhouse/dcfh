@@ -1279,6 +1279,15 @@
             }
 
             try {
+                // Verify user is authenticated
+                const { data: { user }, error: authError } = await window.dcfSupabase.auth.getUser();
+                if (authError || !user) {
+                    console.error('[Delete] Authentication check failed:', authError);
+                    showToast('Authentication required for delete operation. Please log in.', 'error');
+                    return;
+                }
+                console.log('[Delete] Authenticated user:', user.email);
+
                 // First, verify the post exists and get its details for logging
                 const { data: postData, error: fetchError } = await window.dcfSupabase
                     .from('blog_posts')
@@ -1293,30 +1302,42 @@
                 
                 console.log('[Delete] Post data to delete:', postData);
                 
-                // Now delete the post
-                const { error: deleteError } = await window.dcfSupabase
+                // Now delete the post with row count verification
+                const { data: deletedData, error: deleteError, count } = await window.dcfSupabase
                     .from('blog_posts')
                     .delete()
-                    .eq('id', postId);
+                    .eq('id', postId)
+                    .select()
+                    .single();
 
                 if (deleteError) {
                     console.error('[Delete] Delete operation failed:', deleteError);
                     throw deleteError;
                 }
+                
+                // Verify actual deletion occurred
+                if (!deletedData) {
+                    console.error('[Delete] No rows affected - likely RLS policy blocking deletion');
+                    console.log('[Delete] Attempted to delete post ID:', postId);
+                    console.log('[Delete] User:', user.email);
+                    showToast('Delete failed: Insufficient permissions or post not found. You may not have permission to delete this post.', 'error');
+                    return;
+                }
 
                 console.log('[Delete] Post deleted successfully:', postId);
+                console.log('[Delete] Deleted data:', deletedData);
                 console.log('[Delete] Refreshing posts list...');
                 
-                // Show success message immediately
+                // Only update UI after confirmed deletion
                 showToast('Post deleted successfully', 'success');
                 
-                // Immediately remove from local array for instant UI update
+                // Remove from local array for instant UI update
                 posts = posts.filter(p => p.id !== postId);
                 filteredPosts = filteredPosts.filter(p => p.id !== postId);
                 displayPosts();
                 updateResultsInfo();
                 
-                // Then reload from database to ensure consistency
+                // Reload from database to ensure consistency
                 setTimeout(() => {
                     loadData();
                 }, 500);
