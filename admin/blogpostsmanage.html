@@ -1279,14 +1279,22 @@
             }
 
             try {
-                // Verify user is authenticated
+                // Verify user is authenticated and is admin
                 const { data: { user }, error: authError } = await window.dcfSupabase.auth.getUser();
                 if (authError || !user) {
                     console.error('[Delete] Authentication check failed:', authError);
                     showToast('Authentication required for delete operation. Please log in.', 'error');
                     return;
                 }
-                console.log('[Delete] Authenticated user:', user.email);
+                
+                // Check if user is admin (only this email can delete)
+                if (user.email !== 'previewcapital@gmail.com') {
+                    showToast('Only administrators can delete posts', 'error');
+                    console.log('[Delete] Access denied for user:', user.email);
+                    return;
+                }
+                
+                console.log('[Delete] Admin user verified:', user.email);
 
                 // First, verify the post exists and get its details for logging
                 const { data: postData, error: fetchError } = await window.dcfSupabase
