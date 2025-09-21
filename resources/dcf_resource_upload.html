@@ -1103,26 +1103,25 @@
     <script src="../js/dcf-auth.js"></script>
     <script src="../js/dcf-init.js"></script>
     <script>
-    // EMERGENCY - NO REDIRECTS ALLOWED
-    document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize authentication when DCF system is ready
+    window.addEventListener('dcfReady', async function() {
         console.log('🚨 Page loading - auth initialization');
 
-        // Initialize reliable auth pattern
-        if (!window.dcfSupabase) {
-            window.initializeSupabase();
-            await new Promise(resolve => setTimeout(resolve, 200));
+        // Initialize authentication
+        if (window.initializeAuth) {
+            const isLoggedIn = await window.initializeAuth();
+            if (isLoggedIn) {
+                const currentUser = window.getCurrentUser();
+                console.log('✅ Page loading with authenticated user:', currentUser.username || currentUser.email);
+            } else {
+                console.log('⚠️ No authenticated user - redirecting to login');
+                window.location.href = '../auth/dcf_login_page.html';
+                return;
+            }
+        } else {
+            console.error('Authentication system not available');
+            window.location.href = '../auth/dcf_login_page.html';
         }
-        
-        // Get current user from auth system - no fallbacks
-        const currentUser = window.getCurrentUser();
-        
-        if (!currentUser) {
-            console.log('⚠️ No authenticated user - redirecting to login');
-            // Could redirect to login page here if needed
-            return;
-        }
-
-        console.log('✅ Page loading with authenticated user:', currentUser.username || currentUser.email);
     });
     </script>
 </head>
@@ -2643,7 +2642,7 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('dcfReady', function() {
             console.log('🔍 Resource Upload page loaded');
             
             // SECURITY: Initialize input sanitization
@@ -2684,9 +2683,14 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(waitForIconSystem, 4000); // Extended wait for complex page initialization
-    });
+    // Wait for DCF system to be ready before initializing icons
+    if (window.dcfInit && window.dcfInit.isReady()) {
+        setTimeout(waitForIconSystem, 1000);
+    } else {
+        window.addEventListener('dcfReady', function() {
+            setTimeout(waitForIconSystem, 1000);
+        });
+    }
     </script>
 </body>
 </html>

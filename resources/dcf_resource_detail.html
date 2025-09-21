@@ -21,35 +21,8 @@
         let allComments = [];
         let popularComments = [];
 
-        // Wait for auth to be ready with safe patterns
-        async function waitForAuth() {
-            let attempts = 0;
-            const maxAttempts = 10; // Reduced timeout for better UX
-            
-            while (attempts < maxAttempts) {
-                if (typeof window.getCurrentUser === 'function') {
-                    const user = window.getCurrentUser();
-                    
-                    if (user && user.id) {
-                        // User is authenticated
-                        return user;
-                    } else if (attempts > 3) {
-                        // After a few attempts, allow public viewing
-                        // This prevents infinite waiting if user is not logged in
-                        return null;
-                    }
-                }
-                
-                attempts++;
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            // Auth system didn't load in time, proceed with public viewing
-            return null;
-        }
-
         // Initialize page
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('dcfReady', async function() {
             console.log('🚀 Initializing resource detail page');
             
             // Initialize input sanitization
@@ -67,15 +40,16 @@
             
             console.log('📋 Resource ID:', resourceId);
 
-            // Wait for auth system and Supabase client to be ready
-            currentUser = await waitForAuth();
-            
-            // Wait for Supabase client to be available
-            let attempts = 0;
-            while (!window.dcfSupabase && attempts < 20) {
-                console.log('⏳ Waiting for Supabase client...');
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
+            // Initialize authentication (optional for resource viewing)
+            if (window.initializeAuth) {
+                const isLoggedIn = await window.initializeAuth();
+                if (isLoggedIn) {
+                    currentUser = window.getCurrentUser();
+                    console.log('✅ User authenticated');
+                } else {
+                    currentUser = null;
+                    console.log('ℹ️ Viewing in public mode');
+                }
             }
             
             // Use the global Supabase client
@@ -848,14 +822,15 @@
             const canEdit = canEditCommentSync(comment, activeUser);
             
             // Avatar logic for main comments
+            const currentUserData = window.getCurrentUser();
             console.log('DEBUG Avatar:', {
-                currentUserEmail: window.dcfUser?.profile?.email,
+                currentUserEmail: currentUserData?.email,
                 commentAuthorEmail: comment.author_email,
-                avatarUrl: window.dcfUser?.profile?.avatar_url,
-                isMatch: window.dcfUser?.profile?.email === comment.author_email
+                avatarUrl: currentUserData?.avatar_url,
+                isMatch: currentUserData?.email === comment.author_email
             });
-            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
-            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const isCurrentUserComment = currentUserData?.email === comment.author_email;
+            const currentUserAvatar = currentUserData?.avatar_url;
             const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
                 `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
                 authorInitials;
@@ -867,7 +842,7 @@
                 const canEditReply = canEditCommentSync(reply, activeUser);
                 
                 // Avatar logic for replies
-                const isCurrentUserReply = window.dcfUser?.profile?.email === reply.author_email;
+                const isCurrentUserReply = currentUserData?.email === reply.author_email;
                 const replyAvatarContent = isCurrentUserReply && currentUserAvatar ?
                     `<img src="${currentUserAvatar}" alt="${reply.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
                     replyInitials;
@@ -968,8 +943,9 @@
             const canEdit = canEditCommentSync(comment, activeUser);
             
             // Avatar logic for main comments
-            const isCurrentUserComment = window.dcfUser?.profile?.email === comment.author_email;
-            const currentUserAvatar = window.dcfUser?.profile?.avatar_url;
+            const currentUserData = window.getCurrentUser();
+            const isCurrentUserComment = currentUserData?.email === comment.author_email;
+            const currentUserAvatar = currentUserData?.avatar_url;
             const commentAvatarContent = isCurrentUserComment && currentUserAvatar ?
                 `<img src="${currentUserAvatar}" alt="${comment.author_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
                 authorInitials;
