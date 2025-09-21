@@ -1738,11 +1738,20 @@
             console.log('[DEBUG] Setting up post type selection. Found', cards.length, 'cards');
             
             cards.forEach(card => {
+                // Check if listener already added to prevent duplicates
+                if (card.hasAttribute('data-listener-added')) {
+                    console.log('[DEBUG] Click listener already exists for card:', card.dataset.type);
+                    return;
+                }
+                
                 console.log('[DEBUG] Adding click listener to card:', card.dataset.type);
                 card.addEventListener('click', function() {
                     console.log('[DEBUG] Post type card clicked:', this.dataset.type);
                     selectPostType(this);
                 });
+                
+                // Mark that listener has been added
+                card.setAttribute('data-listener-added', 'true');
             });
         }
 
@@ -1928,8 +1937,16 @@
         }
 
         function setupEventListeners() {
+            // Check if already initialized to prevent duplicate listeners
+            const titleInput = document.getElementById('postTitle');
+            if (titleInput && titleInput.hasAttribute('data-listener-added')) {
+                console.log('[DEBUG] Event listeners already set up, skipping');
+                return;
+            }
+            
             // Title input
-            document.getElementById('postTitle').addEventListener('input', function() {
+            if (titleInput) {
+                titleInput.addEventListener('input', function() {
                 const title = this.value;
                 document.getElementById('step3Next').disabled = !title.trim();
                 
@@ -1988,6 +2005,11 @@
             document.querySelectorAll('.publish-option').forEach(option => {
                 option.onclick = () => selectPublishOption(option);
             });
+            
+            // Mark as initialized
+            if (titleInput) {
+                titleInput.setAttribute('data-listener-added', 'true');
+            }
         }
 
         function initializeEditor() {
@@ -2093,6 +2115,12 @@
             const lastNameInput = document.getElementById('personLastName');
             const step3NextBtn = document.getElementById('step3PeopleNext');
             
+            // Check if already initialized
+            if (firstNameInput && firstNameInput.hasAttribute('data-listener-added')) {
+                console.log('[DEBUG] People fields validation already set up, skipping');
+                return;
+            }
+            
             if (!firstNameInput || !lastNameInput) {
                 console.error('Person name input fields not found');
                 return;
@@ -2144,6 +2172,9 @@
             // Also validate on blur to catch paste events
             firstNameInput.addEventListener('blur', validatePersonNames);
             lastNameInput.addEventListener('blur', validatePersonNames);
+            
+            // Mark as initialized
+            firstNameInput.setAttribute('data-listener-added', 'true');
             
             // Initial validation
             validatePersonNames();
@@ -3069,11 +3100,15 @@
         
         // Fallback initialization if dcfReady doesn't fire
         setTimeout(() => {
-            if (!document.querySelector('.post-type-card.selected')) {
+            // Check if initialization already happened
+            const firstCard = document.querySelector('.post-type-card');
+            if (firstCard && !firstCard.hasAttribute('data-listener-added')) {
                 console.log('[DEBUG] Fallback initialization - dcfReady may not have fired');
                 setupPostTypeSelection();
                 setupEventListeners();
                 initializeEditor();
+            } else {
+                console.log('[DEBUG] Initialization already completed, skipping fallback');
             }
         }, 2000);
     </script>
