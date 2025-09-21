@@ -1473,11 +1473,13 @@
             // Get the Supabase client from dcf modular system
             supabase = window.dcfSupabase;
             if (!supabase) {
-                console.error('Supabase not initialized');
-                return;
+                console.error('Supabase not initialized - some features may not work');
+                // Don't return - allow UI to function even without Supabase
             }
             
-            // Setup UI components
+            console.log('[DEBUG] dcfReady event fired, setting up UI components...');
+            
+            // Setup UI components (these should work even without Supabase)
             setupPostTypeSelection();
             setupEventListeners();
             initializeEditor();
@@ -1732,14 +1734,21 @@
         }
 
         function setupPostTypeSelection() {
-            document.querySelectorAll('.post-type-card').forEach(card => {
+            const cards = document.querySelectorAll('.post-type-card');
+            console.log('[DEBUG] Setting up post type selection. Found', cards.length, 'cards');
+            
+            cards.forEach(card => {
+                console.log('[DEBUG] Adding click listener to card:', card.dataset.type);
                 card.addEventListener('click', function() {
+                    console.log('[DEBUG] Post type card clicked:', this.dataset.type);
                     selectPostType(this);
                 });
             });
         }
 
         function selectPostType(element) {
+            console.log('[DEBUG] selectPostType called with element:', element, 'type:', element.dataset.type);
+            
             // Remove previous selection
             document.querySelectorAll('.post-type-card').forEach(card => 
                 card.classList.remove('selected'));
@@ -1747,6 +1756,7 @@
             // Select current
             element.classList.add('selected');
             selectedPostType = element.dataset.type;
+            console.log('[DEBUG] selectedPostType set to:', selectedPostType);
             
             // Update contextual language based on post type
             if (selectedPostType === 'people_post') {
