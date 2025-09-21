@@ -2573,6 +2573,15 @@
         function nextStep() {
             console.log('[DEBUG] nextStep called. Current step:', currentStep, 'Total steps:', totalSteps, 'Post type:', selectedPostType);
             
+            // Check if we're on Step 1 and ensure a post type is selected
+            if (currentStep === 1) {
+                if (!selectedPostType) {
+                    console.error('[DEBUG] No post type selected on Step 1');
+                    showToast('Please select a post type to continue', 'error');
+                    return;
+                }
+            }
+            
             // Validate Step 2 based on post type
             if (currentStep === 2) {
                 if (selectedPostType === 'people_post') {
@@ -2605,7 +2614,7 @@
             }
         }
 
-        function showStep(step) {
+        async function showStep(step) {
             // Map step numbers to actual step IDs based on post type
             const getStepId = (stepNum) => {
                 if (selectedPostType === 'blog_post') {
@@ -2661,10 +2670,18 @@
                         // Show people post publication options
                         document.getElementById('blogGrid').style.display = 'none';
                         document.getElementById('peoplePostOptions').style.display = 'grid';
-                    } else {
+                    } else if (selectedPostType === 'blog_post') {
                         // Show blog selection for regular posts
                         document.getElementById('blogGrid').style.display = 'grid';
                         document.getElementById('peoplePostOptions').style.display = 'none';
+                        // Load blogs if not already loaded
+                        await loadBlogs();
+                    } else {
+                        // No post type selected yet - this shouldn't happen
+                        console.error('Error: Navigated to step 2 without selecting a post type');
+                        showToast('Please select a post type first', 'error');
+                        showStep(1);
+                        return;
                     }
                 }
             }
