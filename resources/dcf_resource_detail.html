@@ -6,6 +6,21 @@
     <script src="../js/dcf-init.js"></script>
     
     <script>
+        // Fallback analytics functions if not available
+        if (!window.trackInteraction) {
+            window.trackInteraction = function() {
+                console.log('Analytics tracking disabled');
+                return Promise.resolve();
+            };
+        }
+        
+        if (!window.hasUserInteracted) {
+            window.hasUserInteracted = function() {
+                console.log('Analytics interaction check disabled');
+                return Promise.resolve(false);
+            };
+        }
+
         // Use global Supabase client from dcf-core.js
         let supabase = null;
 
@@ -120,10 +135,14 @@
                 console.log('✅ Resource loaded:', resource.title);
                 
                 // Record view using Universal Analytics System
-                await window.trackInteraction('resource', resourceId, 'view', {
-                    title: resource.title,
-                    category: resource.category
-                });
+                if (window.trackInteraction) {
+                    await window.trackInteraction('resource', resourceId, 'view', {
+                        title: resource.title,
+                        category: resource.category
+                    });
+                } else {
+                    console.log('Analytics not available - view not tracked');
+                }
                 await incrementViewCount();
 
                 // Update UI
@@ -2024,15 +2043,27 @@
 
             try {
                 // Check if user has liked this resource using Universal Analytics System
-                const hasLiked = await window.hasUserInteracted('resource', resourceId, 'like');
-                const hasBookmarked = await window.hasUserInteracted('resource', resourceId, 'bookmark');
+                let hasLiked = false;
+                let hasBookmarked = false;
+                
+                if (window.hasUserInteracted) {
+                    hasLiked = await window.hasUserInteracted('resource', resourceId, 'like');
+                    hasBookmarked = await window.hasUserInteracted('resource', resourceId, 'bookmark');
+                } else {
+                    console.log('Analytics not available - defaulting to no interaction');
+                }
                 
                 // Update UI
                 updateInteractionButtons(hasLiked, hasBookmarked);
                 
                 // Get interaction counts
-                const likeCount = await window.getInteractionCount('resource', resourceId, 'like');
-                const bookmarkCount = await window.getInteractionCount('resource', resourceId, 'bookmark');
+                let likeCount = 0;
+                let bookmarkCount = 0;
+                
+                if (window.getInteractionCount) {
+                    likeCount = await window.getInteractionCount('resource', resourceId, 'like');
+                    bookmarkCount = await window.getInteractionCount('resource', resourceId, 'bookmark');
+                }
                 
                 // Update count displays if elements exist
                 const likeCountEl = document.getElementById('likeCount');
@@ -2070,10 +2101,14 @@
 
             try {
                 // Record download using Universal Analytics System
-                await window.trackInteraction('resource', resourceId, 'download', {
-                    title: currentResource.title,
-                    filename: currentResource.file_url
-                });
+                if (window.trackInteraction) {
+                    await window.trackInteraction('resource', resourceId, 'download', {
+                        title: currentResource.title,
+                        filename: currentResource.file_url
+                    });
+                } else {
+                    console.log('Analytics not available - download not tracked');
+                }
 
                 // Increment download count
                 await incrementDownloadCount();
@@ -2196,7 +2231,11 @@
             const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
             
             // Track email share using Universal Analytics System
-            window.trackInteraction('resource', resourceId, 'share', { method: 'email' });
+            if (window.trackInteraction) {
+                window.trackInteraction('resource', resourceId, 'share', { method: 'email' });
+            } else {
+                console.log('Analytics not available - email share not tracked');
+            }
             
             try {
                 window.open(mailtoLink);
@@ -2222,7 +2261,11 @@
             const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`;
             
             // Track Twitter share using Universal Analytics System
-            window.trackInteraction('resource', resourceId, 'share', { method: 'twitter' });
+            if (window.trackInteraction) {
+                window.trackInteraction('resource', resourceId, 'share', { method: 'twitter' });
+            } else {
+                console.log('Analytics not available - twitter share not tracked');
+            }
             
             try {
                 window.open(twitterUrl, '_blank', 'width=600,height=400,scrollbars=yes,resizable=yes');
@@ -2248,7 +2291,11 @@
             const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}&summary=${summary}`;
             
             // Track LinkedIn share using Universal Analytics System
-            window.trackInteraction('resource', resourceId, 'share', { method: 'linkedin' });
+            if (window.trackInteraction) {
+                window.trackInteraction('resource', resourceId, 'share', { method: 'linkedin' });
+            } else {
+                console.log('Analytics not available - linkedin share not tracked');
+            }
             
             try {
                 window.open(linkedinUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
@@ -2279,9 +2326,13 @@
         async function incrementShareCount() {
             try {
                 // Track share in universal analytics - don't update resources table
-                await window.trackInteraction('resource', resourceId, 'share', {
-                    title: currentResource?.title
-                });
+                if (window.trackInteraction) {
+                    await window.trackInteraction('resource', resourceId, 'share', {
+                        title: currentResource?.title
+                    });
+                } else {
+                    console.log('Analytics not available - share not tracked');
+                }
                 
                 // Get updated count from universal analytics
                 const { count } = await supabase
@@ -2332,9 +2383,13 @@
         async function incrementViewCount() {
             try {
                 // Track view in universal analytics - don't update resources table
-                await window.trackInteraction('resource', resourceId, 'view', {
-                    title: currentResource?.title
-                });
+                if (window.trackInteraction) {
+                    await window.trackInteraction('resource', resourceId, 'view', {
+                        title: currentResource?.title
+                    });
+                } else {
+                    console.log('Analytics not available - view not tracked');
+                }
                 
                 // Get updated count from universal analytics
                 const { count } = await supabase
