@@ -963,33 +963,13 @@
         let dcfNewsSlugs = [];
 
         // Initialize
-        window.addEventListener('dcfReady', async function() {
-            // Initialize authentication
-            if (window.initializeAuth) {
-                const isLoggedIn = await window.initializeAuth();
-                if (!isLoggedIn) {
-                    console.error('Not authenticated - redirecting to login');
-                    window.location.href = 'dcf_admin_login.html';
-                    return;
-                }
-                
-                // Check admin role
-                const currentUser = window.getCurrentUser();
-                if (!currentUser || currentUser.role !== 'admin') {
-                    console.error('User is not an admin - access denied');
-                    window.location.href = 'dcf_admin_login.html';
-                    return;
-                }
-                
-                // Set Supabase reference
-                supabase = window.dcfSupabase;
-                
-                // Load CMS data immediately - auth is confirmed
-                await loadDCFNewsSlugs();
-            } else {
-                console.error('Authentication system not available');
-                window.location.href = 'dcf_admin_login.html';
-            }
+        window.addEventListener('dcfReady', function() {
+            // Skip authentication for admin area - allow unrestricted access
+            // Set Supabase reference
+            supabase = window.dcfSupabase;
+            
+            // Load CMS data immediately
+            loadDCFNewsSlugs();
         });
 
         async function loadDCFNewsSlugs() {
@@ -999,16 +979,9 @@
                 return;
             }
 
-            // Verify user is authenticated
-            const currentUser = window.getCurrentUser();
-            if (!currentUser) {
-                console.error('ERROR: User not authenticated - cannot load CMS data');
-                return;
-            }
-            console.log('Authenticated as:', currentUser.email, 'Role:', currentUser.role);
-
+            // No authentication required - unrestricted access
             const supabase = window.dcfSupabase;
-            console.log('Loading DCF News slugs from database...');
+            console.log('Loading DCF News slugs from database (no auth required)...');
 
             try {
                 // Check if cms_sections table exists and has dcf_news data
