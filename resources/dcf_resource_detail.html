@@ -6,20 +6,74 @@
     <script src="../js/dcf-init.js"></script>
     
     <script>
-        // Fallback analytics functions if not available
-        if (!window.trackInteraction) {
-            window.trackInteraction = function() {
-                console.log('Analytics tracking disabled');
-                return Promise.resolve();
-            };
-        }
-        
-        if (!window.hasUserInteracted) {
-            window.hasUserInteracted = function() {
-                console.log('Analytics interaction check disabled');
-                return Promise.resolve(false);
-            };
-        }
+        // Universal Analytics System - using correct database schema
+        window.trackInteraction = async function(contentType, contentId, interactionType, metadata = {}) {
+            try {
+                if (!window.dcfSupabase) return;
+                
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) return;
+                
+                // Use universal_analytics table for general interactions
+                const { error } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .insert({
+                        content_type: contentType,
+                        content_id: contentId,
+                        interaction_type: interactionType,
+                        user_id: currentUser.id,
+                        user_email: currentUser.email,
+                        interaction_subtype: metadata.subtype || null
+                    });
+                    
+                if (error) throw error;
+                console.log('📊 Interaction tracked:', interactionType);
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        };
+
+        window.hasUserInteracted = async function(contentType, contentId, interactionType) {
+            try {
+                if (!window.dcfSupabase) return false;
+                
+                const currentUser = window.getCurrentUser();
+                if (!currentUser) return false;
+                
+                // Use universal_analytics table for checking interactions
+                const { data } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .select('id')
+                    .eq('content_type', contentType)
+                    .eq('content_id', contentId)
+                    .eq('interaction_type', interactionType)
+                    .eq('user_email', currentUser.email)
+                    .single();
+                    
+                return data !== null;
+            } catch (error) {
+                return false;
+            }
+        };
+
+        window.getInteractionCount = async function(contentType, contentId, interactionType) {
+            try {
+                if (!window.dcfSupabase) return 0;
+                
+                const { data, error } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .select('id')
+                    .eq('content_type', contentType)
+                    .eq('content_id', contentId)
+                    .eq('interaction_type', interactionType);
+                    
+                if (error) throw error;
+                return data ? data.length : 0;
+            } catch (error) {
+                console.error('Analytics count error:', error);
+                return 0;
+            }
+        };
 
         // Use global Supabase client from dcf-core.js
         let supabase = null;
