@@ -171,12 +171,16 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/icon-system.js"></script>
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-init.js"></script>
 </head>
 
 <body>
     <header class="header">
         <nav class="nav-container">
+            <!-- Navigation populated by dcf-ui.js -->
             <a href="../index.html" class="logo">
                 <div class="logo-icon"></div>
                 Domus Communis Foundation
@@ -235,11 +239,6 @@
     </main>
 
     <script>
-        // Initialize Supabase
-const supabase = window.masterSupabase || window.supabase.createClient(
-            'https://atzommnkkwzgbktuzjti.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks'
-        );
 
         async function confirmEmail() {
             try {
@@ -255,7 +254,7 @@ const supabase = window.masterSupabase || window.supabase.createClient(
                 }
 
                 // Verify the email confirmation token
-                const { data, error } = await supabase.auth.verifyOtp({
+                const { data, error } = await window.dcfSupabase.auth.verifyOtp({
                     token_hash: tokenHash,
                     type: 'email'
                 });
@@ -318,41 +317,13 @@ const supabase = window.masterSupabase || window.supabase.createClient(
             document.getElementById('alreadyConfirmedState').style.display = 'block';
         }
 
-        // Start confirmation process when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        // Start confirmation process when DCF system is ready
+        document.addEventListener('dcfReady', function() {
             // Add a small delay to show the loading state
             setTimeout(confirmEmail, 1000);
         });
 
-        // Wait for icon system to initialize
-        function waitForIconSystem() {
-            if (typeof iconSystem !== 'undefined' && iconSystem.isInitialized) {
-                const cacheSize = Object.keys(iconSystem.iconCache || {}).length;
-                if (cacheSize > 0 || iconSystem.currentIconSet === 'emoji') {
-                    initializePageIcons();
-                } else {
-                    setTimeout(waitForIconSystem, 100);
-                }
-            } else {
-                setTimeout(waitForIconSystem, 100);
-            }
-        }
-
-        function initializePageIcons() {
-            document.querySelectorAll('[data-icon]').forEach(element => {
-                const iconName = element.getAttribute('data-icon');
-                const size = element.getAttribute('data-size') || 'standard';
-                const label = element.getAttribute('data-label') || iconName;
-                
-                if (iconSystem && iconSystem.getIcon) {
-                    element.innerHTML = iconSystem.getIcon(iconName, size);
-                    element.setAttribute('aria-label', label);
-                }
-            });
-        }
-
-        // Start waiting for icon system
-        waitForIconSystem();
+        // Icons will be initialized automatically by dcf-ui.js
     </script>
 </body>
 </html>
