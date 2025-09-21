@@ -1045,17 +1045,27 @@
             }
 
             try {
-                // Verify the blog post exists
-                const { data: blogPost, error: postError } = await supabase
+                // Verify the blog post exists - query only published posts accessible via public RLS
+                const { data: blogPost, error: postError } = await window.dcfSupabase
                     .from('blog_posts')
-                    .select('id, title, slug, excerpt')
+                    .select('title, slug, status, published_at')
                     .eq('slug', slug)
                     .eq('status', 'published')
+                    .lte('published_at', new Date().toISOString())
                     .single();
 
-                if (postError || !blogPost) {
-                    showToast('Blog post not found or not published', 'error');
+                // Handle RLS and authentication-related errors
+                if (postError && postError.code === 'PGRST116') {
+                    // No matching published post found, but slug might still be valid (draft/scheduled)
+                    console.warn('Post not found or not published yet:', slug);
+                    showToast('Warning: Post not found or not yet published. Adding anyway.', 'warning');
+                    // Allow adding anyway for draft/scheduled posts
+                } else if (postError) {
+                    console.error('Database error:', postError);
+                    showToast('Database error: ' + postError.message, 'error');
                     return;
+                } else if (blogPost) {
+                    console.log('Found published post:', blogPost.title);
                 }
 
                 // Add slug to array
@@ -1196,17 +1206,37 @@
             }
 
             try {
-                // Load blog post data for each slug
+                // Load blog post data for each slug - use public RLS-friendly query
                 const promises = dcfNewsSlugs.map(slugItem => 
-                    supabase
+                    window.dcfSupabase
                         .from('blog_posts')
-                        .select('title, slug, excerpt, featured_image, created_at')
+                        .select('title, slug, excerpt, featured_image, created_at, status, published_at')
                         .eq('slug', slugItem.slug || slugItem)
+                        .eq('status', 'published')
+                        .lte('published_at', new Date().toISOString())
                         .single()
                 );
 
-                const results = await Promise.all(promises);
-                const blogPosts = results.map(result => result.data).filter(post => post);
+                // Handle results with proper error checking for RLS
+                const results = await Promise.allSettled(promises);
+                const blogPosts = results.map((result, index) => {
+                    if (result.status === 'fulfilled' && result.value.data) {
+                        return result.value.data;
+                    } else if (result.status === 'fulfilled' && result.value.error?.code === 'PGRST116') {
+                        console.warn(`Post not found or not published: ${dcfNewsSlugs[index].slug || dcfNewsSlugs[index]}`);
+                        // Return placeholder data for unpublished posts
+                        return {
+                            title: `[Unpublished] ${dcfNewsSlugs[index].slug || dcfNewsSlugs[index]}`,
+                            slug: dcfNewsSlugs[index].slug || dcfNewsSlugs[index],
+                            excerpt: 'This post is not yet published or accessible.',
+                            featured_image: null,
+                            created_at: new Date().toISOString()
+                        };
+                    } else {
+                        console.error('Error loading post:', result.reason || result.value?.error);
+                        return null;
+                    }
+                }).filter(post => post);
 
                 if (blogPosts.length === 0) {
                     cardsPreview.style.display = 'none';
