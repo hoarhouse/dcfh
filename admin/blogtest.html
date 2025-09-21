@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Blog Post - DCF Hungary</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #dc3545;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Admin Menu */
+        .dcf-admin-menu {
+            background: #000;
+            color: white;
+            border-bottom: 1px solid #333;
+            display: block;
+        }
+
+        .dcf-admin-menu-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+        }
+
+        .dcf-admin-menu-items {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-item {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1.5rem;
+            height: 100%;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            border-right: 1px solid #333;
+        }
+
+        .dcf-admin-menu-link:hover {
+            background: #222;
+        }
+
+        .dcf-admin-menu-link.active {
+            background: #333;
+        }
+
+        /* Main Content */
+        .wizard-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .wizard-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .wizard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .wizard-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            height: 6px;
+            border-radius: 3px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #333, #555);
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 25%;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dee2e6;
+            transition: background 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: #333;
+        }
+
+        .step-dot.completed {
+            background: #28a745;
+        }
+
+        /* Step Content */
+        .wizard-step {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            padding: 3rem;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .step-description {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Post Type Selection */
+        .post-type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .post-type-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .post-type-card:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-type-card.selected {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .post-type-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-type-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .post-type-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-input.large {
+            font-size: 1.3rem;
+            padding: 1.25rem;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        /* Media Upload */
+        .media-upload-area {
+            border: 3px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 3rem;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .media-upload-area:hover {
+            border-color: #333;
+            background: white;
+        }
+
+        .media-upload-area.drag-over {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .media-preview {
+            display: none;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .media-preview img,
+        .media-preview video {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .media-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .media-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .media-btn:hover {
+            background: white;
+        }
+
+        /* Editor */
+        .editor-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            min-height: 400px;
+            text-align: left;
+        }
+
+        .ql-toolbar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .ql-container {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .ql-editor {
+            min-height: 350px;
+        }
+
+        /* People-specific fields */
+        .people-fields-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Publishing Options */
+        .publishing-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .publish-option {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .publish-option:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+        }
+
+        .publish-option.selected {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+
+        .option-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .option-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            border-color: #333;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Success */
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+
+        .post-url {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast.warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        .toast.warning .toast-icon {
+            color: #ffc107;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .wizard-container {
+                padding: 1rem;
+            }
+
+            .wizard-step {
+                padding: 2rem 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .people-fields-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation Hungary
+            </a>
+            <ul class="nav-menu">
+                <li><a href="../dcf_member_home.html">Home</a></li>
+                <li><a href="../dcf_members_directory.html">Members</a></li>
+                <li><a href="../dcf_projects_home.html">Projects</a></li>
+                <li><a href="../dcf_events_calendar.html">Events</a></li>
+                <li><a href="../dcf_resources_library.html">Resources</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="dcf-admin-menu">
+        <div class="dcf-admin-menu-container">
+            <ul class="dcf-admin-menu-items">
+                <li class="dcf-admin-menu-item">
+                    <a href="dcf_admin_dashboard.html" class="dcf-admin-menu-link">
+                        <span class="dcf-admin-menu-icon">📊</span>
+                        <span class="dcf-admin-menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="dcf-admin-menu-item">
+                    <a href="blogwiz.html" class="dcf-admin-menu-link active">
+                        <span class="dcf-admin-menu-icon">✍️</span>
+                        <span class="dcf-admin-menu-text">Create Post</span>
+                    </a>
+                </li>
+                <li class="dcf-admin-menu-item">
+                    <a href="blogpostsmanage.html" class="dcf-admin-menu-link">
+                        <span class="dcf-admin-menu-icon">📝</span>
+                        <span class="dcf-admin-menu-text">Manage Posts</span>
+                    </a>
+                </li>
+                <li class="dcf-admin-menu-item">
+                    <a href="blogsmanage.html" class="dcf-admin-menu-link">
+                        <span class="dcf-admin-menu-icon">📚</span>
+                        <span class="dcf-admin-menu-text">Manage Blogs</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h1 class="wizard-title">Create New Blog Post</h1>
+            <p class="wizard-subtitle">Follow these simple steps to publish your post</p>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="step-indicator" id="stepIndicator">
+                <div class="step-dot active" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+                <div class="step-dot" data-step="3"></div>
+                <div class="step-dot" data-step="4"></div>
+            </div>
+        </div>
+
+        <!-- Step 1: Post Type Selection -->
+        <div class="wizard-step active" id="step1">
+            <h2 class="step-title">What type of post?</h2>
+            <p class="step-description">Choose the type of content you want to create</p>
+            
+            <div class="post-type-grid">
+                <div class="post-type-card" data-type="blog_post">
+                    <div class="post-type-icon">📝</div>
+                    <div class="post-type-name">Blog Post</div>
+                    <div class="post-type-description">Traditional blog article with text and media</div>
+                </div>
+                
+                <div class="post-type-card" data-type="people_post">
+                    <div class="post-type-icon">👤</div>
+                    <div class="post-type-name">People Post</div>
+                    <div class="post-type-description">Feature a person with profile information</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" id="step1Next" disabled>
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Basic Information -->
+        <div class="wizard-step" id="step2">
+            <h2 class="step-title" id="step2Title">Basic Information</h2>
+            <p class="step-description" id="step2Description">Enter the basic details for your post</p>
+            
+            <!-- Regular post fields -->
+            <div id="regularFields">
+                <div class="form-group">
+                    <label class="form-label">Post Title <span class="required">*</span></label>
+                    <input type="text" id="postTitle" class="form-input large" placeholder="Enter your post title..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Excerpt</label>
+                    <textarea id="postExcerpt" class="form-textarea" placeholder="Brief description that appears in previews..."></textarea>
+                </div>
+            </div>
+            
+            <!-- People post fields -->
+            <div id="peopleFields" style="display: none;">
+                <div class="people-fields-grid">
+                    <div class="form-group">
+                        <label class="form-label">First Name <span class="required">*</span></label>
+                        <input type="text" id="personFirstName" class="form-input" placeholder="John" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Name <span class="required">*</span></label>
+                        <input type="text" id="personLastName" class="form-input" placeholder="Doe" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Profile Title <span class="required">*</span></label>
+                    <input type="text" id="peoplePostTitle" class="form-input large" placeholder="Enter profile title..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Bio/Description</label>
+                    <textarea id="peopleExcerpt" class="form-textarea" placeholder="Brief bio or description of this person..."></textarea>
+                </div>
+            </div>
+            
+            <!-- Featured Image Upload -->
+            <div class="form-group">
+                <label class="form-label">Featured Image (Optional)</label>
+                <div class="media-upload-area" id="mediaUpload">
+                    <input type="file" id="mediaInput" accept="image/*" style="display: none;">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-hint">Optional - Images (Max 10MB)</div>
+                </div>
+                
+                <div class="media-preview" id="mediaPreview">
+                    <div class="media-controls">
+                        <button class="media-btn" id="changeMediaBtn">Change</button>
+                        <button class="media-btn" id="removeMediaBtn">Remove</button>
+                    </div>
+                    <div id="mediaContent"></div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="step2Prev">← Back</button>
+                <button class="btn btn-primary" id="step2Next" disabled>
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Content -->
+        <div class="wizard-step" id="step3">
+            <h2 class="step-title">Write your content</h2>
+            <p class="step-description">Share your thoughts, insights, and ideas</p>
+            
+            <div class="form-group">
+                <label class="form-label">Content <span class="required">*</span></label>
+                <div class="editor-container">
+                    <div id="editor"></div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="step3Prev">← Back</button>
+                <button class="btn btn-primary" id="step3Next" disabled>
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Publishing Options -->
+        <div class="wizard-step" id="step4">
+            <h2 class="step-title">How do you want to publish?</h2>
+            <p class="step-description">Choose when and how your post goes live</p>
+            
+            <div class="publishing-options">
+                <div class="publish-option" data-option="draft">
+                    <div class="option-title">💾 Save as Draft</div>
+                    <div class="option-description">Save your work and publish later</div>
+                </div>
+                
+                <div class="publish-option selected" data-option="publish">
+                    <div class="option-title">🚀 Publish Now</div>
+                    <div class="option-description">Make your post live immediately</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="step4Prev">← Back</button>
+                <button class="btn btn-success" id="publishBtn">
+                    🚀 Publish Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Step -->
+        <div class="wizard-step" id="loadingStep">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Creating your post...</h3>
+            </div>
+        </div>
+
+        <!-- Success Step -->
+        <div class="wizard-step" id="successStep">
+            <div class="success-icon">✅</div>
+            <h2 class="step-title">Post Published Successfully!</h2>
+            <p class="step-description">Your post is now live and available for readers</p>
+            
+            <div class="post-url" id="postUrl">
+                <!-- URL will be inserted here -->
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="viewPostBtn">👁️ View Post</button>
+                <button class="btn btn-secondary" id="createAnotherBtn">➕ Create Another</button>
+                <button class="btn btn-primary" id="backToDashboardBtn">📊 Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentStep = 1;
+        let totalSteps = 4;
+        let selectedPostType = null;
+        let featuredMedia = null;
+        let quillEditor = null;
+        let supabase = null;
+
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://atzommnkkwzgbktuzjti.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks';
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Supabase
+            if (window.supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase initialized');
+            } else {
+                console.warn('Supabase library not loaded');
+            }
+
+            // Initialize components
+            initializeEditor();
+            setupEventListeners();
+            updateProgress();
+        });
+
+        // Initialize Quill editor
+        function initializeEditor() {
+            quillEditor = new Quill('#editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['blockquote', 'link'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Write your content here...'
+            });
+
+            // Listen for content changes
+            quillEditor.on('text-change', function() {
+                validateContentStep();
+            });
+        }
+
+        // Setup all event listeners
+        function setupEventListeners() {
+            // Post type selection
+            document.querySelectorAll('.post-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectPostType(this.dataset.type);
+                });
+            });
+
+            // Navigation buttons
+            document.getElementById('step1Next').addEventListener('click', () => nextStep());
+            document.getElementById('step2Prev').addEventListener('click', () => prevStep());
+            document.getElementById('step2Next').addEventListener('click', () => nextStep());
+            document.getElementById('step3Prev').addEventListener('click', () => prevStep());
+            document.getElementById('step3Next').addEventListener('click', () => nextStep());
+            document.getElementById('step4Prev').addEventListener('click', () => prevStep());
+            document.getElementById('publishBtn').addEventListener('click', publishPost);
+
+            // Form validation
+            document.getElementById('postTitle').addEventListener('input', validateStep2);
+            document.getElementById('personFirstName').addEventListener('input', validateStep2);
+            document.getElementById('personLastName').addEventListener('input', validateStep2);
+            document.getElementById('peoplePostTitle').addEventListener('input', validateStep2);
+
+            // Media upload
+            const mediaUpload = document.getElementById('mediaUpload');
+            const mediaInput = document.getElementById('mediaInput');
+            
+            mediaUpload.addEventListener('click', () => mediaInput.click());
+            mediaInput.addEventListener('change', handleMediaUpload);
+            
+            // Drag and drop
+            mediaUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                mediaUpload.classList.add('drag-over');
+            });
+            
+            mediaUpload.addEventListener('dragleave', () => {
+                mediaUpload.classList.remove('drag-over');
+            });
+            
+            mediaUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                mediaUpload.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleMediaUpload({ target: { files } });
+                }
+            });
+
+            // Media controls
+            document.getElementById('changeMediaBtn').addEventListener('click', changeMedia);
+            document.getElementById('removeMediaBtn').addEventListener('click', removeMedia);
+
+            // Publishing options
+            document.querySelectorAll('.publish-option').forEach(option => {
+                option.addEventListener('click', () => selectPublishOption(option));
+            });
+
+            // Success buttons
+            document.getElementById('viewPostBtn').addEventListener('click', viewPost);
+            document.getElementById('createAnotherBtn').addEventListener('click', createAnother);
+            document.getElementById('backToDashboardBtn').addEventListener('click', backToDashboard);
+        }
+
+        // Post type selection
+        function selectPostType(type) {
+            // Remove previous selection
+            document.querySelectorAll('.post-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Select current
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            selectedPostType = type;
+            
+            // Update UI based on type
+            if (type === 'people_post') {
+                document.getElementById('step2Title').textContent = 'Person Information';
+                document.getElementById('step2Description').textContent = 'Enter the details for this person profile';
+            } else {
+                document.getElementById('step2Title').textContent = 'Basic Information';
+                document.getElementById('step2Description').textContent = 'Enter the basic details for your post';
+            }
+            
+            // Enable next button
+            document.getElementById('step1Next').disabled = false;
+        }
+
+        // Navigation functions
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                showStep(currentStep + 1);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.wizard-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Show target step
+            currentStep = step;
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // Update step 2 fields based on post type
+            if (step === 2) {
+                if (selectedPostType === 'people_post') {
+                    document.getElementById('regularFields').style.display = 'none';
+                    document.getElementById('peopleFields').style.display = 'block';
+                } else {
+                    document.getElementById('regularFields').style.display = 'block';
+                    document.getElementById('peopleFields').style.display = 'none';
+                }
+                validateStep2();
+            }
+            
+            // Validate content step when shown
+            if (step === 3) {
+                validateContentStep();
+            }
+            
+            updateProgress();
+        }
+
+        // Validation functions
+        function validateStep2() {
+            let isValid = false;
+            
+            if (selectedPostType === 'people_post') {
+                const firstName = document.getElementById('personFirstName').value.trim();
+                const lastName = document.getElementById('personLastName').value.trim();
+                const title = document.getElementById('peoplePostTitle').value.trim();
+                isValid = firstName && lastName && title;
+            } else {
+                const title = document.getElementById('postTitle').value.trim();
+                isValid = title.length > 0;
+            }
+            
+            document.getElementById('step2Next').disabled = !isValid;
+        }
+
+        function validateContentStep() {
+            if (!quillEditor) return;
+            
+            const text = quillEditor.getText().trim();
+            const isValid = text.length > 10;
+            
+            document.getElementById('step3Next').disabled = !isValid;
+        }
+
+        // Media handling
+        async function handleMediaUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                showToast('File too large. Maximum size is 10MB.', 'error');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Invalid file type. Please upload an image.', 'error');
+                return;
+            }
+
+            try {
+                showToast('Uploading image...', 'warning');
+                
+                // Create a simple URL for preview (we'll upload to Supabase during publish)
+                const url = URL.createObjectURL(file);
+                
+                featuredMedia = {
+                    file: file,
+                    url: url,
+                    type: 'image'
+                };
+
+                displayMedia();
+                showToast('Image uploaded successfully!', 'success');
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Failed to upload image', 'error');
+            }
+        }
+
+        function displayMedia() {
+            const uploadArea = document.getElementById('mediaUpload');
+            const preview = document.getElementById('mediaPreview');
+            const content = document.getElementById('mediaContent');
+
+            uploadArea.style.display = 'none';
+            preview.style.display = 'block';
+            content.innerHTML = `<img src="${featuredMedia.url}" alt="Featured image">`;
+        }
+
+        function changeMedia() {
+            document.getElementById('mediaInput').click();
+        }
+
+        function removeMedia() {
+            if (featuredMedia && featuredMedia.url) {
+                URL.revokeObjectURL(featuredMedia.url);
+            }
+            featuredMedia = null;
+            document.getElementById('mediaUpload').style.display = 'block';
+            document.getElementById('mediaPreview').style.display = 'none';
+            document.getElementById('mediaInput').value = '';
+        }
+
+        // Publishing options
+        function selectPublishOption(option) {
+            document.querySelectorAll('.publish-option').forEach(opt => 
+                opt.classList.remove('selected'));
+            option.classList.add('selected');
+
+            const optionType = option.dataset.option;
+            const publishBtn = document.getElementById('publishBtn');
+
+            if (optionType === 'draft') {
+                publishBtn.innerHTML = '💾 Save Draft';
+            } else {
+                publishBtn.innerHTML = '🚀 Publish Now';
+            }
+        }
+
+        // Publishing
+        async function publishPost() {
+            // Show loading
+            document.getElementById('step4').classList.remove('active');
+            document.getElementById('loadingStep').classList.add('active');
+
+            try {
+                // Get selected publish option
+                const selectedOption = document.querySelector('.publish-option.selected');
+                const publishType = selectedOption.dataset.option;
+
+                // Prepare post data
+                let postData = {
+                    post_type: selectedPostType,
+                    status: publishType === 'draft' ? 'draft' : 'published',
+                    published_at: publishType === 'publish' ? new Date().toISOString() : null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    view_count: 0
+                };
+
+                // Get content
+                const content = quillEditor.root.innerHTML;
+                postData.content = content;
+
+                // Set fields based on post type
+                if (selectedPostType === 'people_post') {
+                    postData.title = document.getElementById('peoplePostTitle').value.trim();
+                    postData.person_first_name = document.getElementById('personFirstName').value.trim();
+                    postData.person_last_name = document.getElementById('personLastName').value.trim();
+                    postData.excerpt = document.getElementById('peopleExcerpt').value.trim() || null;
+                    postData.publication_location = 'front_page'; // Default for people posts
+                } else {
+                    postData.title = document.getElementById('postTitle').value.trim();
+                    postData.excerpt = document.getElementById('postExcerpt').value.trim() || null;
+                    postData.blog_id = null; // We'll handle blog association later
+                }
+
+                // Generate slug from title
+                postData.slug = generateSlug(postData.title);
+
+                // Handle featured media upload if exists
+                if (featuredMedia && featuredMedia.file && supabase) {
+                    try {
+                        const fileName = `${Date.now()}-${featuredMedia.file.name}`;
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('media')
+                            .upload(fileName, featuredMedia.file);
+
+                        if (!uploadError) {
+                            const { data: urlData } = supabase.storage
+                                .from('media')
+                                .getPublicUrl(fileName);
+                            
+                            postData.featured_image_url = urlData.publicUrl;
+                        }
+                    } catch (uploadError) {
+                        console.warn('Media upload failed:', uploadError);
+                        // Continue without image
+                    }
+                }
+
+                // Save to database
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('blog_posts')
+                        .insert([postData])
+                        .select()
+                        .single();
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    // Generate post URL
+                    const baseUrl = window.location.origin;
+                    let postUrl;
+                    
+                    if (selectedPostType === 'people_post') {
+                        postUrl = `${baseUrl}/dcfh/people/profile.html?person=${data.slug}`;
+                    } else {
+                        postUrl = `${baseUrl}/dcfh/blog/post.html?post=${data.slug}`;
+                    }
+
+                    // Show success
+                    showSuccess(postUrl, data);
+                } else {
+                    // Fallback for when Supabase is not available
+                    const postUrl = `${window.location.origin}/dcfh/blog/post.html?post=${postData.slug}`;
+                    showSuccess(postUrl, postData);
+                }
+
+            } catch (error) {
+                console.error('Publish error:', error);
+                showToast('Failed to publish post: ' + error.message, 'error');
+                
+                // Go back to step 4
+                document.getElementById('loadingStep').classList.remove('active');
+                document.getElementById('step4').classList.add('active');
+            }
+        }
+
+        // Success handling
+        function showSuccess(postUrl, postData) {
+            document.getElementById('loadingStep').classList.remove('active');
+            document.getElementById('successStep').classList.add('active');
+            document.getElementById('postUrl').textContent = postUrl;
+            
+            // Store for buttons
+            window.newPostData = { ...postData, postUrl };
+        }
+
+        // Success button handlers
+        function viewPost() {
+            if (window.newPostData) {
+                window.open(window.newPostData.postUrl, '_blank');
+            }
+        }
+
+        function createAnother() {
+            window.location.reload();
+        }
+
+        function backToDashboard() {
+            window.location.href = 'dcf_admin_dashboard.html';
+        }
+
+        // Utility functions
+        function generateSlug(title) {
+            return title.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            
+            // Update step dots
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index + 1 < currentStep) {
+                    dot.classList.add('completed');
+                } else if (index + 1 === currentStep) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
