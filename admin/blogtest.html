@@ -898,7 +898,8 @@
     </style>
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
-    <!-- DCF Modular System - handles Supabase initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- DCF Modular System -->
     <script src="../js/dcf-core.js"></script>
     <script src="../js/dcf-ui.js"></script>
     <script src="../js/dcf-auth.js"></script>
@@ -1142,25 +1143,33 @@
     </div>
 
     <script>
+        // Wait for dcf modular system to initialize Supabase
+        // The supabase client is available as window.dcfSupabase from dcf-auth.js
+        let supabase;
+
+        // Initialize supabase client when DOM is ready
+        document.addEventListener('dcfReady', async () => {
+            // Skip authentication for admin area - allow unrestricted access
+            
+            supabase = window.dcfSupabase;
+            if (!supabase) {
+                console.error('Supabase not initialized - UI will still function');
+                // Don't return - allow UI to function even without Supabase
+            }
+            
+            console.log('[DEBUG] dcfReady event fired, setting up UI components...');
+            
+            // Setup UI components (these should work even without Supabase)
+            initializeEditor();
+            setupEventListeners();
+            updateProgress();
+        });
+
         var currentStep = 1;
         var totalSteps = 6;
         var selectedBlog = null;
         var featuredMedia = null;
         var quillEditor = null;
-        var supabase = null;
-
-        window.addEventListener('dcfReady', function() {
-            console.log('DCF system ready, initializing blog wizard...');
-            supabase = window.dcfSupabase;
-            if (supabase) {
-                console.log('Supabase client obtained from DCF system');
-            } else {
-                console.warn('Supabase not available from DCF system');
-            }
-            initializeEditor();
-            setupEventListeners();
-            updateProgress();
-        });
 
         function initializeEditor() {
             quillEditor = new Quill('#editor', {
@@ -1612,6 +1621,20 @@
                 }, 300);
             }, 3000);
         }
+        
+        // Fallback initialization if dcfReady doesn't fire
+        setTimeout(function() {
+            var titleInput = document.getElementById('postTitle');
+            if (titleInput && !titleInput.hasAttribute('data-initialized')) {
+                console.log('[DEBUG] Fallback initialization - dcfReady may not have fired');
+                initializeEditor();
+                setupEventListeners();
+                updateProgress();
+                // Mark as initialized
+                titleInput.setAttribute('data-initialized', 'true');
+            }
+        }, 2000);
+
     </script>
 </body>
 </html>
