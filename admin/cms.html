@@ -1840,83 +1840,10 @@
         }
 
         async function loadCardsPreview() {
-            // Wait for auth system to initialize
-            if (!window.dcfSupabase) {
-                console.log('Supabase not ready yet, skipping cards preview');
-                return;
-            }
-
-            const supabase = window.dcfSupabase;
-
-            const cardsPreview = document.getElementById('cardsPreview');
-            const previewGrid = document.getElementById('previewGrid');
-
-            if (dcfNewsSlugs.length === 0) {
-                cardsPreview.style.display = 'none';
-                return;
-            }
-
-            try {
-                // Load blog post data for each slug - use public RLS-friendly query
-                const promises = dcfNewsSlugs.map(slugItem => 
-                    window.dcfSupabase
-                        .from('blog_posts')
-                        .select('title, slug, excerpt, featured_image_url, created_at, status, published_at')
-                        .eq('slug', slugItem.slug || slugItem)
-                        .eq('status', 'published')
-                        .lte('published_at', new Date().toISOString())
-                        .single()
-                );
-
-                // Handle results with proper error checking for RLS
-                const results = await Promise.allSettled(promises);
-                const blogPosts = results.map((result, index) => {
-                    if (result.status === 'fulfilled' && result.value.data) {
-                        return result.value.data;
-                    } else if (result.status === 'fulfilled' && result.value.error?.code === 'PGRST116') {
-                        console.warn(`Post not found or not published: ${dcfNewsSlugs[index].slug || dcfNewsSlugs[index]}`);
-                        // Return placeholder data for unpublished posts
-                        return {
-                            title: `[Unpublished] ${dcfNewsSlugs[index].slug || dcfNewsSlugs[index]}`,
-                            slug: dcfNewsSlugs[index].slug || dcfNewsSlugs[index],
-                            excerpt: 'This post is not yet published or accessible.',
-                            featured_image_url: null,
-                            created_at: new Date().toISOString()
-                        };
-                    } else {
-                        console.error('Error loading post:', result.reason || result.value?.error);
-                        return null;
-                    }
-                }).filter(post => post);
-
-                if (blogPosts.length === 0) {
-                    cardsPreview.style.display = 'none';
-                    return;
-                }
-
-                previewGrid.innerHTML = '';
-                previewGrid.style.display = 'grid';
-                previewGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
-                previewGrid.style.gap = '1rem';
-
-                blogPosts.forEach((post, index) => {
-                    const slugEntry = dcfNewsSlugs[index];
-                    const template = slugEntry?.template || 'bold-type';
-                    const fullCardHTML = generateFullCardPreview(post, template);
-                    
-                    const cardContainer = document.createElement('div');
-                    cardContainer.innerHTML = fullCardHTML;
-                    cardContainer.style.transform = 'scale(0.8)';
-                    cardContainer.style.transformOrigin = 'top left';
-                    previewGrid.appendChild(cardContainer);
-                });
-
-                cardsPreview.style.display = 'block';
-
-            } catch (error) {
-                console.error('Error loading cards preview:', error);
-                cardsPreview.style.display = 'none';
-            }
+            // This function is now deprecated - preview loading is handled by loadPreviewImages()
+            // Keeping empty function to avoid breaking existing calls
+            console.log('loadCardsPreview called - using new loadPreviewImages instead');
+            await loadPreviewImages();
         }
 
         async function editSlugTemplate(index) {
