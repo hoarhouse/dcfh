@@ -1354,16 +1354,26 @@
                 `;
                 return;
             }
+            
+            const getTemplateName = (template) => {
+                const templateMap = {
+                    'profile-card-1': 'Full Face',
+                    'profile-card-2': 'Portrait Split',
+                    'profile-card-6': 'Face Close-up',
+                    'profile-card-10': 'B&W Close-up'
+                };
+                return templateMap[template] || 'Profile Card 1';
+            };
 
             slugList.innerHTML = changeMakersSlugs.map((slug, index) => `
                 <div class="slug-item">
                     <div class="slug-info">
                         <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
                         <div class="slug-order">Position ${index + 1} of ${changeMakersSlugs.length}</div>
-                        <div class="slug-template">Template: ${slug.template || 'full-bg'}</div>
+                        <div class="slug-template" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2px 8px; border-radius: 4px; display: inline-block; font-size: 12px;">Template: ${getTemplateName(slug.template || 'profile-card-1')}</div>
                     </div>
                     <div class="slug-actions">
-                        <button onclick="editCMSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
+                        <button onclick="editSlugTemplate(${index}, true)" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
                         ${index > 0 ? `<button onclick="moveCMSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
                         ${index < changeMakersSlugs.length - 1 ? `<button onclick="moveCMSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
                         <button onclick="removeCMSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
@@ -1452,50 +1462,102 @@
             }
         }
 
-        async function editSlugTemplate(index) {
-            const slugObj = dcfNewsSlugs[index];
-            const currentTemplate = slugObj.template || 'bold-type';
+        async function editSlugTemplate(index, isChangeMakers = false) {
+            const slugObj = isChangeMakers ? changeMakersSlugs[index] : dcfNewsSlugs[index];
+            const currentTemplate = slugObj.template || (isChangeMakers ? 'profile-card-1' : 'bold-type');
+            const sectionTitle = isChangeMakers ? 'Change Makers' : 'DCF News';
             
             // Create modal with template selector
             const modal = document.createElement('div');
             modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
             
+            let templateOptions = '';
+            
+            if (isChangeMakers) {
+                // Change Makers profile card templates
+                templateOptions = `
+                    <div class="template-option ${currentTemplate === 'profile-card-1' ? 'selected' : ''}" data-template="profile-card-1" style="height: 240px;">
+                        <div style="width: 100%; height: 200px; background: white; border-radius: 8px; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); padding: 12px;">
+                                <h4 style="color: white; font-size: 14px; margin: 0;">Profile Card 1</h4>
+                            </div>
+                        </div>
+                        <span class="template-name">Full Face Background</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'profile-card-2' ? 'selected' : ''}" data-template="profile-card-2" style="height: 240px;">
+                        <div style="width: 100%; height: 200px; background: white; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="height: 66%; overflow: hidden;">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                            <div style="height: 34%; padding: 8px; background: white;">
+                                <h4 style="font-size: 14px; margin: 0;">Profile Card 2</h4>
+                            </div>
+                        </div>
+                        <span class="template-name">Portrait + Text</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'profile-card-6' ? 'selected' : ''}" data-template="profile-card-6" style="height: 240px;">
+                        <div style="width: 100%; height: 200px; background: white; border-radius: 8px; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.5);">
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%); padding: 12px;">
+                                <h4 style="color: white; font-size: 14px; margin: 0;">Profile Card 6</h4>
+                            </div>
+                        </div>
+                        <span class="template-name">Face Close-up</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'profile-card-10' ? 'selected' : ''}" data-template="profile-card-10" style="height: 240px;">
+                        <div style="width: 100%; height: 200px; background: white; border-radius: 8px; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.8); filter: grayscale(100%);">
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 100%); padding: 12px;">
+                                <h4 style="color: white; font-size: 14px; margin: 0;">Profile Card 10</h4>
+                            </div>
+                        </div>
+                        <span class="template-name">B&W Close-up</span>
+                    </div>
+                `;
+            } else {
+                // DCF News templates
+                templateOptions = `
+                    <div class="template-option ${currentTemplate === 'bold-type' ? 'selected' : ''}" data-template="bold-type">
+                        <div class="template-preview template-preview-1"></div>
+                        <span class="template-name">Bold Type</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'pattern' ? 'selected' : ''}" data-template="pattern">
+                        <div class="template-preview template-preview-6"></div>
+                        <span class="template-name">Pattern</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'image-strip' ? 'selected' : ''}" data-template="image-strip">
+                        <div class="template-preview template-preview-7"></div>
+                        <span class="template-name">Image Strip</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'circle' ? 'selected' : ''}" data-template="circle">
+                        <div class="template-preview template-preview-8"></div>
+                        <span class="template-name">Circle</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'full-bg' ? 'selected' : ''}" data-template="full-bg">
+                        <div class="template-preview template-preview-9"></div>
+                        <span class="template-name">Full Background</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'split-large' ? 'selected' : ''}" data-template="split-large">
+                        <div class="template-preview template-preview-10"></div>
+                        <span class="template-name">Split Large</span>
+                    </div>
+                    <div class="template-option ${currentTemplate === 'magazine' ? 'selected' : ''}" data-template="magazine">
+                        <div class="template-preview template-preview-11"></div>
+                        <span class="template-name">Magazine</span>
+                    </div>
+                `;
+            }
+            
             modal.innerHTML = `
                 <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 800px; width: 95%;">
-                    <h3 style="margin-bottom: 1rem;">Edit Template for: ${slugObj.slug || slugObj}</h3>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 1rem;" id="editTemplateSelector">
-                        <div class="template-option ${currentTemplate === 'bold-type' ? 'selected' : ''}" data-template="bold-type">
-                            <div class="template-preview template-preview-1"></div>
-                            <span class="template-name">Bold Type</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'pattern' ? 'selected' : ''}" data-template="pattern">
-                            <div class="template-preview template-preview-6"></div>
-                            <span class="template-name">Pattern</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'image-strip' ? 'selected' : ''}" data-template="image-strip">
-                            <div class="template-preview template-preview-7"></div>
-                            <span class="template-name">Image Strip</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'circle' ? 'selected' : ''}" data-template="circle">
-                            <div class="template-preview template-preview-8"></div>
-                            <span class="template-name">Circle</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'full-bg' ? 'selected' : ''}" data-template="full-bg">
-                            <div class="template-preview template-preview-9"></div>
-                            <span class="template-name">Full Background</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'split-large' ? 'selected' : ''}" data-template="split-large">
-                            <div class="template-preview template-preview-10"></div>
-                            <span class="template-name">Split Large</span>
-                        </div>
-                        <div class="template-option ${currentTemplate === 'magazine' ? 'selected' : ''}" data-template="magazine">
-                            <div class="template-preview template-preview-11"></div>
-                            <span class="template-name">Magazine</span>
-                        </div>
+                    <h3 style="margin-bottom: 1rem;">Edit ${sectionTitle} Template for: ${slugObj.slug || slugObj}</h3>
+                    <div style="display: grid; grid-template-columns: repeat(${isChangeMakers ? '2' : '4'}, 1fr); gap: 16px; margin-bottom: 1rem;" id="editTemplateSelector">
+                        ${templateOptions}
                     </div>
                     <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
                         <button onclick="this.closest('[style*=fixed]').remove()" class="btn btn-secondary">Cancel</button>
-                        <button onclick="saveTemplateEdit(${index})" class="btn btn-primary">Save Changes</button>
+                        <button onclick="saveTemplateEdit(${index}, ${isChangeMakers})" class="btn btn-primary">Save Changes</button>
                     </div>
                 </div>
             `;
@@ -1511,7 +1573,7 @@
             });
         }
 
-        async function saveTemplateEdit(index) {
+        async function saveTemplateEdit(index, isChangeMakers = false) {
             const modal = document.querySelector('[style*="position: fixed"]');
             const selectedTemplate = modal.querySelector('.template-option.selected')?.dataset.template;
             
@@ -1521,15 +1583,23 @@
             }
 
             try {
-                // Update the template
-                dcfNewsSlugs[index].template = selectedTemplate;
-
-                // Save to database
-                await saveDCFNewsSlugs();
-
-                // Refresh display
-                displaySlugs();
-                await loadCardsPreview();
+                if (isChangeMakers) {
+                    // Update Change Makers template
+                    changeMakersSlugs[index].template = selectedTemplate;
+                    // Save to database
+                    await saveChangeMakersSlugs();
+                    // Refresh display
+                    displayChangeMakersSlugs();
+                    await loadChangeMakersPreview();
+                } else {
+                    // Update DCF News template
+                    dcfNewsSlugs[index].template = selectedTemplate;
+                    // Save to database
+                    await saveDCFNewsSlugs();
+                    // Refresh display
+                    displaySlugs();
+                    await loadCardsPreview();
+                }
 
                 // Close modal
                 modal.remove();
@@ -1858,9 +1928,6 @@
             saveChangeMakersSlugs();
         }
 
-        function editCMSlugTemplate(index) {
-            editSlugTemplate(index, true); // Reuse existing function with CM flag
-        }
 
         // Event handlers
         document.getElementById('addCMSlugButton').addEventListener('click', addCMSlug);
