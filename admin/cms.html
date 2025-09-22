@@ -1807,6 +1807,52 @@
             loadPreviewImages();
         }
 
+        async function loadPreviewImages() {
+            // Load previews for individual cards in the slug list
+            if (!window.dcfSupabase) {
+                console.log('Supabase not ready yet, skipping preview images');
+                return;
+            }
+
+            const supabase = window.dcfSupabase;
+
+            for (let index = 0; index < dcfNewsSlugs.length; index++) {
+                const slugItem = dcfNewsSlugs[index];
+                const previewElement = document.getElementById(`preview-${index}`);
+                
+                if (!previewElement) continue;
+
+                try {
+                    const slug = slugItem.slug || slugItem;
+                    const { data: post, error } = await supabase
+                        .from('blog_posts')
+                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                        .eq('slug', slug)
+                        .eq('status', 'published')
+                        .single();
+
+                    if (post && !error) {
+                        const template = slugItem.template || 'bold-type';
+                        const cardHtml = generateFullCardPreview(post, template);
+                        previewElement.innerHTML = cardHtml;
+                    } else {
+                        previewElement.innerHTML = `
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; padding: 1rem;">
+                                <small>Preview unavailable</small>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error loading preview:', error);
+                    previewElement.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                            Error
+                        </div>
+                    `;
+                }
+            }
+        }
+
         async function loadCardsPreview() {
             // Wait for auth system to initialize
             if (!window.dcfSupabase) {
@@ -2364,21 +2410,36 @@
                 return;
             }
 
+            // Generate combined cards with slug info + preview
             slugList.innerHTML = changeMakersSlugs.map((slug, index) => `
-                <div class="slug-item">
-                    <div class="slug-info">
+                <div class="combined-slug-card">
+                    <!-- Preview Image Section -->
+                    <div class="card-preview-image">
+                        <div id="cm-preview-${index}" class="mini-card-preview">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                                Loading preview...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slug Info Section -->
+                    <div class="slug-info-section">
                         <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
                         <div class="slug-order">Position ${index + 1} of ${changeMakersSlugs.length}</div>
-                        <div class="slug-template">Template: ${slug.template || 'bold-type'}</div>
-                    </div>
-                    <div class="slug-actions">
-                        <button onclick="editCMSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
-                        ${index > 0 ? `<button onclick="moveCMSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
-                        ${index < changeMakersSlugs.length - 1 ? `<button onclick="moveCMSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
-                        <button onclick="removeCMSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
+                        <div class="slug-template">Template: ${slug.template || 'profile-card-1'}</div>
+                        
+                        <div class="slug-actions">
+                            <button onclick="editCMSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
+                            ${index > 0 ? `<button onclick="moveCMSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
+                            ${index < changeMakersSlugs.length - 1 ? `<button onclick="moveCMSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
+                            <button onclick="removeCMSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+            
+            // Load preview images after cards are created
+            loadCMPreviewImages();
         }
 
         async function loadCMCardsPreview() {
