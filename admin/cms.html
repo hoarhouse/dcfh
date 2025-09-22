@@ -584,6 +584,68 @@
             border-color: #333;
         }
 
+        /* Combined Slug/Preview Card Styles */
+        .combined-slug-card {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            max-width: 280px;
+            width: 100%;
+        }
+
+        .combined-slug-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .card-preview-image {
+            height: 200px;
+            background: #f8f9fa;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mini-card-preview {
+            transform: scale(0.45);
+            transform-origin: top center;
+            height: 100%;
+            width: 222%;
+            margin-left: -61%;
+        }
+
+        .slug-info-section {
+            padding: 1rem;
+            background: white;
+        }
+
+        .slug-text {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .slug-order {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .slug-template {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 1rem;
+        }
+
+        .slug-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
         .slug-info {
             flex: 1;
             min-width: 0;
@@ -1713,21 +1775,36 @@
                 return;
             }
 
+            // Generate combined cards with slug info + preview
             slugList.innerHTML = dcfNewsSlugs.map((slug, index) => `
-                <div class="slug-item">
-                    <div class="slug-info">
+                <div class="combined-slug-card">
+                    <!-- Preview Image Section -->
+                    <div class="card-preview-image">
+                        <div id="preview-${index}" class="mini-card-preview">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                                Loading preview...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slug Info Section -->
+                    <div class="slug-info-section">
                         <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
                         <div class="slug-order">Position ${index + 1} of ${dcfNewsSlugs.length}</div>
                         <div class="slug-template">Template: ${slug.template || 'bold-type'}</div>
-                    </div>
-                    <div class="slug-actions">
-                        <button onclick="editSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
-                        ${index > 0 ? `<button onclick="moveSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
-                        ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
-                        <button onclick="removeSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
+                        
+                        <div class="slug-actions">
+                            <button onclick="editSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
+                            ${index > 0 ? `<button onclick="moveSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
+                            ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
+                            <button onclick="removeSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+            
+            // Load preview images after cards are created
+            loadPreviewImages();
         }
 
         async function loadCardsPreview() {
