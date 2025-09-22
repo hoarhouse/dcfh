@@ -2346,50 +2346,118 @@
             loadCMPreviewImages();
         }
 
+        function generateMiniCardPreview(post, template) {
+            const title = post.title || 'Sample Name';
+            const excerpt = post.excerpt || 'Change maker profile';
+            const imageUrl = post.featured_image_url || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop';
+            
+            switch (template) {
+                case 'profile-card-1':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="profile-card profile-card-full">
+                                <img src="${imageUrl}" alt="${escapeHtml(title)}" class="profile-full-image">
+                                <div class="profile-overlay-gradient">
+                                    <div class="profile-content">
+                                        <h3 class="profile-name">${escapeHtml(title)}</h3>
+                                        <p class="profile-subtitle">${escapeHtml(excerpt)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'profile-card-2':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="profile-card profile-card-split">
+                                <div class="profile-image-section">
+                                    <img src="${imageUrl}" alt="${escapeHtml(title)}">
+                                </div>
+                                <div class="profile-text-section">
+                                    <h3>${escapeHtml(title)}</h3>
+                                    <p>${escapeHtml(excerpt)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'profile-card-6':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="profile-card profile-card-overlayed">
+                                <img src="${imageUrl}" alt="${escapeHtml(title)}" class="profile-bg-image">
+                                <div class="profile-dark-overlay">
+                                    <h3 class="profile-overlay-name">${escapeHtml(title)}</h3>
+                                    <p class="profile-overlay-excerpt">${escapeHtml(excerpt)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'profile-card-10':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="profile-card profile-card-minimal">
+                                <img src="${imageUrl}" alt="${escapeHtml(title)}" class="profile-circle-image">
+                                <h3 class="profile-minimal-name">${escapeHtml(title)}</h3>
+                                <p class="profile-minimal-bio">${escapeHtml(excerpt)}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                default:
+                    return `
+                        <div style="background: #f0f0f0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
+                            Template: ${template}
+                        </div>
+                    `;
+            }
+        }
+
         async function loadCMPreviewImages() {
-            // Load previews for individual Change Makers cards
+            if (!changeMakersSlugs.length) return;
+            
             if (!window.dcfSupabase) {
                 console.log('Supabase not ready yet, skipping Change Makers preview images');
                 return;
             }
-
+            
             const supabase = window.dcfSupabase;
+            
+            // Load blog post data for all previews at once
+            const promises = changeMakersSlugs.map(slugItem => 
+                supabase
+                    .from('blog_posts')
+                    .select('title, slug, excerpt, featured_image_url, created_at')
+                    .eq('slug', slugItem.slug || slugItem)
+                    .eq('status', 'published')
+                    .single()
+            );
 
-            for (let index = 0; index < changeMakersSlugs.length; index++) {
-                const slugItem = changeMakersSlugs[index];
-                const previewElement = document.getElementById(`cm-preview-${index}`);
+            const results = await Promise.allSettled(promises);
+            
+            // Generate preview for each card
+            results.forEach((result, index) => {
+                const previewContainer = document.getElementById(`cm-preview-${index}`);
+                if (!previewContainer) return;
                 
-                if (!previewElement) continue;
-
-                try {
-                    const slug = slugItem.slug || slugItem;
-                    const { data: post, error } = await supabase
-                        .from('blog_posts')
-                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
-                        .eq('slug', slug)
-                        .eq('status', 'published')
-                        .single();
-
-                    if (post && !error) {
-                        const template = slugItem.template || 'profile-card-1';
-                        const cardHtml = generateFullCardPreview(post, template);
-                        previewElement.innerHTML = cardHtml;
-                    } else {
-                        previewElement.innerHTML = `
-                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; padding: 1rem;">
-                                <small>Preview unavailable</small>
-                            </div>
-                        `;
-                    }
-                } catch (error) {
-                    console.error('Error loading Change Makers preview:', error);
-                    previewElement.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
-                            Error
-                        </div>
-                    `;
+                let post;
+                if (result.status === 'fulfilled' && result.value.data) {
+                    post = result.value.data;
+                } else {
+                    // Fallback for unpublished or missing posts
+                    post = {
+                        title: changeMakersSlugs[index].slug || 'Unpublished',
+                        excerpt: 'Preview not available',
+                        featured_image_url: null
+                    };
                 }
-            }
+                
+                const template = changeMakersSlugs[index].template || 'profile-card-1';
+                const previewHTML = generateMiniCardPreview(post, template);
+                previewContainer.innerHTML = previewHTML;
+            });
         }
 
         async function loadCMCardsPreview() {
