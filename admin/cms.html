@@ -1103,6 +1103,26 @@
                     supabase = window.dcfSupabase;
                     await loadDCFNewsSlugs();
                     await loadChangeMakersSlugs();
+                } else if (!supabase) {
+                    // Try direct initialization if dcf modules aren't loading
+                    console.log('Emergency initialization - loading Supabase directly');
+                    if (typeof window.dcfSupabase !== 'undefined') {
+                        supabase = window.dcfSupabase;
+                    } else {
+                        // Initialize Supabase directly as last resort
+                        const { createClient } = window.supabase || {};
+                        if (createClient) {
+                            supabase = createClient(
+                                'https://nkfzwpqsqxlpzqxehubk.supabase.co',
+                                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rZnp3cHFzcXhscHpxeGVodWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI4MDM3MDEsImV4cCI6MjA0ODM3OTcwMX0.MXGQCPnVMcGaRi8H8vFpXB5vVr_4Eyt-pXqmi2hesu0'
+                            );
+                        }
+                    }
+                    if (supabase) {
+                        console.log('Emergency Supabase client created');
+                        await loadDCFNewsSlugs();
+                        await loadChangeMakersSlugs();
+                    }
                 }
             }, 2000);
         });
@@ -1143,8 +1163,24 @@
                 console.log('DCF News data retrieved:', data);
                 
                 if (data && data.slugs) {
-                    dcfNewsSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    // Handle both array and JSON string formats
+                    if (typeof data.slugs === 'string') {
+                        try {
+                            dcfNewsSlugs = JSON.parse(data.slugs);
+                        } catch (e) {
+                            dcfNewsSlugs = [];
+                            console.error('Failed to parse DCF News slugs:', e);
+                        }
+                    } else {
+                        dcfNewsSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    }
                     console.log(`Loaded ${dcfNewsSlugs.length} DCF News slugs:`, dcfNewsSlugs);
+                } else if (!error || error.code === 'PGRST116') {
+                    // No data found, create default entries
+                    dcfNewsSlugs = [];
+                    console.log('No DCF News data found, creating defaults...');
+                    // Create default data
+                    await createDefaultDCFNewsData();
                 } else {
                     dcfNewsSlugs = [];
                     console.log('No DCF News slugs found in database');

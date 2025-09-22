@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test CMS Data</title>
+    <script src="js/dcf-core.js"></script>
+    <script src="js/dcf-ui.js"></script>
+    <script src="js/dcf-auth.js"></script>
+    <script src="js/dcf-init.js"></script>
+</head>
+<body>
+    <h1>Testing CMS Data</h1>
+    <div id="output"></div>
+    
+    <script>
+        window.addEventListener('dcfReady', async function() {
+            const output = document.getElementById('output');
+            const supabase = window.dcfSupabase;
+            
+            if (!supabase) {
+                output.innerHTML = '<p style="color:red">Supabase not initialized!</p>';
+                return;
+            }
+            
+            output.innerHTML = '<p>Checking cms_sections table...</p>';
+            
+            // Query for DCF News
+            const { data: dcfData, error: dcfError } = await supabase
+                .from('cms_sections')
+                .select('*')
+                .eq('section_name', 'dcf_news')
+                .single();
+                
+            console.log('DCF News data:', dcfData);
+            console.log('DCF News error:', dcfError);
+            
+            // Query for Change Makers
+            const { data: cmData, error: cmError } = await supabase
+                .from('cms_sections')
+                .select('*')
+                .eq('section_name', 'change_makers')
+                .single();
+                
+            console.log('Change Makers data:', cmData);
+            console.log('Change Makers error:', cmError);
+            
+            // If no data exists, create default entries
+            if (!dcfData || dcfError?.code === 'PGRST116') {
+                console.log('Creating default DCF News entry...');
+                const { data: insertData, error: insertError } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'dcf_news',
+                        slugs: [
+                            { slug: 'ai-ethics-guidelines', template: 'bold-type' },
+                            { slug: 'machine-learning-democracy', template: 'pattern' },
+                            { slug: 'neural-networks-explained', template: 'image-strip' },
+                            { slug: 'future-of-computing', template: 'circle' }
+                        ],
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+                console.log('Insert result:', { insertData, insertError });
+            }
+            
+            if (!cmData || cmError?.code === 'PGRST116') {
+                console.log('Creating default Change Makers entry...');
+                const { data: insertData, error: insertError } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'change_makers',
+                        slugs: [
+                            { slug: 'stuart-russell', template: 'profile-card-1' },
+                            { slug: 'yejin-choi', template: 'profile-card-2' },
+                            { slug: 'fei-fei-li', template: 'profile-card-6' },
+                            { slug: 'demis-hassabis', template: 'profile-card-10' }
+                        ],
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+                console.log('Insert result:', { insertData, insertError });
+            }
+            
+            // Query again to verify
+            const { data: allData, error: allError } = await supabase
+                .from('cms_sections')
+                .select('*');
+                
+            console.log('All cms_sections data:', allData);
+            
+            output.innerHTML += `
+                <h2>Results:</h2>
+                <pre>${JSON.stringify(allData, null, 2)}</pre>
+                <p>Check browser console for detailed logs.</p>
+            `;
+        });
+    </script>
+</body>
+</html>
