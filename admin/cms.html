@@ -1108,44 +1108,53 @@
         });
 
         async function loadDCFNewsSlugs() {
+            console.log('>>> loadDCFNewsSlugs() started');
+            
             // Verify Supabase is available
             if (!window.dcfSupabase) {
-                console.error('ERROR: Supabase client not available');
+                console.error('ERROR: Supabase client not available in loadDCFNewsSlugs');
                 return;
             }
 
             // No authentication required - unrestricted access
             const supabase = window.dcfSupabase;
-            console.log('Loading DCF News slugs from database (no auth required)...');
+            console.log('Loading DCF News slugs from database...');
+            console.log('Supabase client in loadDCFNewsSlugs:', supabase);
 
             try {
                 // Query cms_sections table - no authentication required
                 // Note: Table must have RLS disabled or allow anonymous access
+                console.log('Querying cms_sections table for dcf_news...');
                 const { data, error } = await supabase
                     .from('cms_sections')
                     .select('*')
                     .eq('section_name', 'dcf_news')
                     .single();
 
+                console.log('DCF News query result:', { data, error });
+
                 if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-                    console.error('Error loading CMS sections:', error);
+                    console.error('Error loading DCF News sections:', error);
                     // Create table if it doesn't exist
                     await createCMSTable();
                     return;
                 }
 
-                console.log('CMS sections data retrieved:', data);
+                console.log('DCF News data retrieved:', data);
                 
                 if (data && data.slugs) {
                     dcfNewsSlugs = Array.isArray(data.slugs) ? data.slugs : [];
-                    console.log(`Loaded ${dcfNewsSlugs.length} slugs:`, dcfNewsSlugs);
+                    console.log(`Loaded ${dcfNewsSlugs.length} DCF News slugs:`, dcfNewsSlugs);
                 } else {
                     dcfNewsSlugs = [];
-                    console.log('No slugs found in database');
+                    console.log('No DCF News slugs found in database');
                 }
 
+                console.log('Calling displaySlugs()...');
                 displaySlugs();
+                console.log('Calling loadCardsPreview()...');
                 await loadCardsPreview();
+                console.log('>>> loadDCFNewsSlugs() completed');
 
             } catch (error) {
                 console.error('Error loading DCF news slugs:', error);
@@ -1155,23 +1164,29 @@
         }
 
         async function loadChangeMakersSlugs() {
+            console.log('>>> loadChangeMakersSlugs() started');
+            
             // Verify Supabase is available
             if (!window.dcfSupabase) {
-                console.error('ERROR: Supabase client not available');
+                console.error('ERROR: Supabase client not available in loadChangeMakersSlugs');
                 return;
             }
 
             // No authentication required - unrestricted access
             const supabase = window.dcfSupabase;
-            console.log('Loading Change Makers slugs from database (no auth required)...');
+            console.log('Loading Change Makers slugs from database...');
+            console.log('Supabase client in loadChangeMakersSlugs:', supabase);
 
             try {
                 // Query cms_sections table - no authentication required
+                console.log('Querying cms_sections table for change_makers...');
                 const { data, error } = await supabase
                     .from('cms_sections')
                     .select('*')
                     .eq('section_name', 'change_makers')
                     .single();
+
+                console.log('Change Makers query result:', { data, error });
 
                 if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
                     console.error('Error loading Change Makers sections:', error);
@@ -1188,8 +1203,11 @@
                     console.log('No Change Makers slugs found in database');
                 }
 
+                console.log('Calling displayChangeMakersSlugs()...');
                 displayChangeMakersSlugs();
+                console.log('Calling loadChangeMakersPreview()...');
                 await loadChangeMakersPreview();
+                console.log('>>> loadChangeMakersSlugs() completed');
 
             } catch (error) {
                 console.error('Error loading Change Makers slugs:', error);
@@ -1337,7 +1355,16 @@
         }
 
         function displaySlugs() {
+            console.log('>>> displaySlugs() called');
+            console.log('Current dcfNewsSlugs:', dcfNewsSlugs);
+            
             const slugList = document.getElementById('slugList');
+            console.log('slugList element:', slugList);
+            
+            if (!slugList) {
+                console.error('ERROR: slugList element not found in DOM');
+                return;
+            }
 
             if (dcfNewsSlugs.length === 0) {
                 slugList.innerHTML = `
