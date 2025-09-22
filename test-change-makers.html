@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Change Makers CMS</title>
+    <script src="js/dcf-core.js"></script>
+    <script src="js/dcf-ui.js"></script>
+    <script src="js/dcf-auth.js"></script>
+    <script src="js/dcf-init.js"></script>
+</head>
+<body>
+    <h1>Testing Change Makers CMS Integration</h1>
+    <div id="output"></div>
+    
+    <script>
+        window.addEventListener('dcfReady', async function() {
+            const output = document.getElementById('output');
+            const supabase = window.dcfSupabase;
+            
+            if (!supabase) {
+                output.innerHTML = '<p style="color:red">Supabase not initialized!</p>';
+                return;
+            }
+            
+            output.innerHTML = '<p>Testing Change Makers CMS section...</p>';
+            
+            // First, set up test data in the database
+            console.log('Setting up test Change Makers data...');
+            const testData = {
+                section_name: 'change_makers',
+                slugs: [
+                    { slug: 'stuart-russell', template: 'profile-card-1' },
+                    { slug: 'yejin-choi', template: 'profile-card-2' },
+                    { slug: 'fei-fei-li', template: 'profile-card-6' },
+                    { slug: 'demis-hassabis', template: 'profile-card-10' }
+                ],
+                updated_at: new Date().toISOString()
+            };
+            
+            const { data: upsertData, error: upsertError } = await supabase
+                .from('cms_sections')
+                .upsert(testData, {
+                    onConflict: 'section_name'
+                });
+                
+            if (upsertError) {
+                console.error('Error upserting test data:', upsertError);
+                output.innerHTML += `<p style="color:red">Error setting up test data: ${upsertError.message}</p>`;
+            } else {
+                console.log('Test data upserted successfully:', upsertData);
+                output.innerHTML += '<p style="color:green">✓ Test data inserted</p>';
+            }
+            
+            // Now query it back
+            const { data: queryData, error: queryError } = await supabase
+                .from('cms_sections')
+                .select('*')
+                .eq('section_name', 'change_makers')
+                .single();
+                
+            if (queryError) {
+                console.error('Error querying data:', queryError);
+                output.innerHTML += `<p style="color:red">Error querying data: ${queryError.message}</p>`;
+            } else {
+                console.log('Successfully retrieved Change Makers data:', queryData);
+                output.innerHTML += '<p style="color:green">✓ Data retrieved successfully</p>';
+                output.innerHTML += '<h3>Change Makers CMS Data:</h3>';
+                output.innerHTML += '<pre>' + JSON.stringify(queryData, null, 2) + '</pre>';
+                
+                // Verify all slugs
+                if (queryData.slugs && Array.isArray(queryData.slugs)) {
+                    output.innerHTML += '<h3>Configured Slugs:</h3>';
+                    output.innerHTML += '<ul>';
+                    queryData.slugs.forEach((entry, index) => {
+                        output.innerHTML += `<li>Slug ${index + 1}: <strong>${entry.slug}</strong> - Template: ${entry.template}</li>`;
+                    });
+                    output.innerHTML += '</ul>';
+                    output.innerHTML += `<p style="color:green">✓ Total slugs configured: ${queryData.slugs.length}</p>`;
+                }
+            }
+            
+            // Also check DCF News for comparison
+            const { data: dcfData, error: dcfError } = await supabase
+                .from('cms_sections')
+                .select('*')
+                .eq('section_name', 'dcf_news')
+                .single();
+                
+            if (!dcfError && dcfData) {
+                output.innerHTML += '<h3>DCF News CMS Data (for comparison):</h3>';
+                output.innerHTML += '<pre>' + JSON.stringify(dcfData, null, 2) + '</pre>';
+            }
+            
+            output.innerHTML += '<hr>';
+            output.innerHTML += '<p><strong>Test Complete!</strong> Check the console for detailed logs.</p>';
+            output.innerHTML += '<p><a href="admin/cms.html">Go to CMS Admin</a> to verify the Change Makers section appears and functions correctly.</p>';
+        });
+    </script>
+</body>
+</html>
