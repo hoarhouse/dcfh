@@ -584,7 +584,53 @@
             border-color: #333;
         }
 
-        /* Combined Slug/Preview Card Styles */
+        /* Separated Preview/Edit Container Styles */
+        .preview-edit-container {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            max-width: 280px;
+            width: 100%;
+        }
+
+        .preview-edit-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .card-preview-section {
+            height: 320px; /* Match testindex.html card height */
+            background: #f8f9fa;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .full-card-preview {
+            /* NO scaling - show actual size like testindex.html */
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .edit-controls-section {
+            padding: 1rem;
+            border-top: 1px solid #f0f0f0;
+            background: #f8f9fa;
+        }
+
+        .slug-info {
+            margin-bottom: 0.75rem;
+        }
+
+        .slug-meta {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        /* Keep for Change Makers section until updated */
         .combined-slug-card {
             background: white;
             border: 1px solid #e5e5e5;
@@ -1758,24 +1804,24 @@
                 return;
             }
 
-            // Generate combined cards with slug info + preview
+            // Generate separated preview and control sections
             slugList.innerHTML = dcfNewsSlugs.map((slug, index) => `
-                <div class="combined-slug-card">
-                    <!-- Preview Image Section -->
-                    <div class="card-preview-image">
-                        <div id="preview-${index}" class="mini-card-preview">
+                <div class="preview-edit-container">
+                    <!-- FULL-SIZE PREVIEW SECTION -->
+                    <div class="card-preview-section">
+                        <div id="preview-${index}" class="full-card-preview">
                             <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
                                 Loading preview...
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Slug Info Section -->
-                    <div class="slug-info-section">
-                        <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
-                        <div class="slug-order">Position ${index + 1} of ${dcfNewsSlugs.length}</div>
-                        <div class="slug-template">Template: ${slug.template || 'bold-type'}</div>
-                        
+                    <!-- EDIT CONTROLS SECTION -->
+                    <div class="edit-controls-section">
+                        <div class="slug-info">
+                            <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
+                            <div class="slug-meta">Position ${index + 1} of ${dcfNewsSlugs.length} • Template: ${slug.template || 'bold-type'}</div>
+                        </div>
                         <div class="slug-actions">
                             <button onclick="editSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
                             ${index > 0 ? `<button onclick="moveSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
@@ -1789,6 +1835,83 @@
             // Load preview images after cards are created
             // Add small delay to ensure DOM is ready
             setTimeout(() => loadPreviewImages(), 100);
+        }
+
+        function generateFullSizeNewsPreview(post, template) {
+            // EXACT copy of testindex.html generateCardHTML function - NO SCALING
+            const cardType = template || 'bold-type';
+            const publishDate = new Date(post.published_at || post.created_at).toLocaleDateString();
+            const excerpt = post.excerpt || 'Read more about this story...';
+            const title = post.title || 'Sample Title';
+            
+            switch (cardType) {
+                case 'bold-type':
+                    return `
+                        <div class="story-card story-card-bold-type">
+                            <span class="category-tag">DCF NEWS</span>
+                            <h3 class="bold-title">${escapeHtml(title)}</h3>
+                            <p class="bold-excerpt">${escapeHtml(excerpt.substring(0, 120))}...</p>
+                            <div class="bold-footer">
+                                <span class="read-time">${publishDate}</span>
+                                <a href="#" class="bold-link">READ STORY</a>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'pattern':
+                    return `
+                        <div class="story-card story-card-pattern">
+                            <div class="pattern-overlay"></div>
+                            <div class="pattern-content">
+                                <span class="pattern-tag">FEATURED</span>
+                                <h3 class="pattern-title">${escapeHtml(title)}</h3>
+                                <p class="pattern-excerpt">${escapeHtml(excerpt.substring(0, 100))}...</p>
+                                <a href="#" class="pattern-link">Learn more</a>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'image-strip':
+                    const imageUrl = post.featured_image_url || 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=100&fit=crop';
+                    return `
+                        <div class="story-card story-card-image-strip">
+                            <div class="image-strip" style="background-image: url('${imageUrl}')"></div>
+                            <div class="strip-content">
+                                <h3 class="strip-title">${escapeHtml(title)}</h3>
+                                <p class="strip-excerpt">${escapeHtml(excerpt.substring(0, 120))}...</p>
+                                <div class="strip-footer">
+                                    <span class="strip-date">${publishDate}</span>
+                                    <a href="#" class="strip-link">Read →</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'magazine':
+                    const magazineImage = post.featured_image_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=250&fit=crop';
+                    return `
+                        <div class="story-card story-card-magazine">
+                            <div class="magazine-header">
+                                <img src="${magazineImage}" alt="${escapeHtml(title)}" class="magazine-image">
+                            </div>
+                            <div class="magazine-content">
+                                <h3 class="magazine-title">${escapeHtml(title)}</h3>
+                                <p class="magazine-excerpt">${escapeHtml(excerpt.substring(0, 100))}...</p>
+                                <div class="magazine-footer">
+                                    <span class="magazine-date">${publishDate}</span>
+                                    <a href="#" class="magazine-link">Continue Reading</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                default:
+                    return `
+                        <div style="background: #f0f0f0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
+                            Template: ${cardType}
+                        </div>
+                    `;
+            }
         }
 
         function generateMiniNewsPreview(post, template) {
@@ -1878,7 +2001,7 @@
         }
 
         async function loadPreviewImages() {
-            // Load previews for individual cards in the slug list
+            // Load full-size previews for DCF News cards
             if (!window.dcfSupabase) {
                 console.log('Supabase not ready yet, skipping preview images');
                 return;
@@ -1903,7 +2026,8 @@
 
                     if (post && !error) {
                         const template = slugItem.template || 'bold-type';
-                        const cardHtml = generateMiniNewsPreview(post, template);
+                        // Use full-size preview for separated layout
+                        const cardHtml = generateFullSizeNewsPreview(post, template);
                         previewElement.innerHTML = cardHtml;
                     } else {
                         previewElement.innerHTML = `
