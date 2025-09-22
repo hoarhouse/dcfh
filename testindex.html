@@ -3468,6 +3468,219 @@
         return div.innerHTML;
     }
 
+    // Load Change Makers cards from CMS configuration
+    async function loadChangeMakersCards() {
+        const changeMakersGrid = document.getElementById('changeMakersGrid');
+        
+        // Get Supabase client when function runs
+        const supabase = window.dcfSupabase;
+        
+        if (!supabase || typeof supabase.from !== 'function') {
+            console.error('Supabase client not available for Change Makers');
+            showFallbackChangeMakers(changeMakersGrid);
+            return;
+        }
+
+        try {
+            // Get Change Makers slugs from CMS
+            const { data: cmsData, error: cmsError } = await supabase
+                .from('cms_sections')
+                .select('slugs')
+                .eq('section_name', 'change_makers')
+                .single();
+
+            if (cmsError) {
+                console.error('Change Makers CMS error:', cmsError);
+                throw cmsError;
+            }
+
+            const slugEntries = cmsData?.slugs || [];
+            console.log('=== Change Makers CMS Data ===');
+            console.log('Slug entries:', slugEntries);
+
+            if (slugEntries.length === 0) {
+                console.log('No Change Makers slugs found, showing fallback');
+                showFallbackChangeMakers(changeMakersGrid);
+                return;
+            }
+
+            // Extract slugs and create template map
+            const slugsToFetch = slugEntries.map(entry => entry.slug || entry);
+            const templateMap = {};
+            slugEntries.forEach(entry => {
+                const slug = entry.slug || entry;
+                templateMap[slug] = entry.template || 'profile-card-1';
+            });
+
+            // Fetch all Change Makers blog posts
+            const { data: blogPosts, error: postsError } = await supabase
+                .from('blog_posts')
+                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                .in('slug', slugsToFetch)
+                .eq('status', 'published')
+                .order('published_at', { ascending: false })
+                .limit(4);
+
+            if (postsError) {
+                console.error('Change Makers posts query error:', postsError);
+                throw postsError;
+            }
+
+            // Add template information to each post
+            const changeMakersWithTemplates = (blogPosts || [])
+                .map(post => ({
+                    ...post,
+                    chosenTemplate: templateMap[post.slug] || 'profile-card-1'
+                }))
+                .slice(0, 4);
+
+            if (changeMakersWithTemplates.length === 0) {
+                showFallbackChangeMakers(changeMakersGrid);
+                return;
+            }
+
+            // Generate Change Makers profile cards
+            changeMakersGrid.innerHTML = changeMakersWithTemplates.map((post, index) => 
+                generateProfileCardHTML(post, index, post.chosenTemplate)
+            ).join('');
+
+        } catch (error) {
+            console.error('Error loading Change Makers:', error);
+            showFallbackChangeMakers(changeMakersGrid);
+        }
+    }
+
+    // Generate profile card HTML based on template type
+    function generateProfileCardHTML(post, index, template) {
+        const title = escapeHtml(post.title || 'Change Maker');
+        const excerpt = escapeHtml(post.excerpt || 'Making a difference in the world');
+        const imageUrl = post.featured_image_url || `https://images.unsplash.com/photo-${1500000000000 + index}?w=400&h=500&fit=crop`;
+        const postUrl = post.blogs?.slug ? `/blog/${post.blogs.slug}/${post.slug}` : '#';
+
+        // Map template names to profile card variations
+        const templateVariations = {
+            'profile-card-1': 'profile-card-full',
+            'profile-card-2': 'profile-card-split', 
+            'profile-card-3': 'profile-card-half-bw',
+            'profile-card-4': 'profile-card-circular',
+            'profile-card-5': 'profile-card-side',
+            'profile-card-6': 'profile-card-full',
+            'profile-card-7': 'profile-card-split',
+            'profile-card-8': 'profile-card-half-bw',
+            'profile-card-9': 'profile-card-circular',
+            'profile-card-10': 'profile-card-side'
+        };
+
+        const cardClass = templateVariations[template] || 'profile-card-full';
+
+        // Generate HTML based on card class
+        switch(cardClass) {
+            case 'profile-card-full':
+                return `
+                    <div class="profile-card ${cardClass}" data-url="${postUrl}" style="cursor: pointer;">
+                        <img src="${imageUrl}" alt="${title}" class="profile-full-image">
+                        <div class="profile-overlay-gradient">
+                            <div class="profile-content">
+                                <h3 class="profile-name">${title}</h3>
+                                <p class="profile-subtitle">${excerpt}</p>
+                                <div class="profile-actions">
+                                    <button class="profile-icon-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="profile-icon-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+            case 'profile-card-split':
+                return `
+                    <div class="profile-card ${cardClass}" data-url="${postUrl}" style="cursor: pointer;">
+                        <div class="profile-image-section">
+                            <img src="${imageUrl}" alt="${title}">
+                        </div>
+                        <div class="profile-text-section">
+                            <h3 class="profile-name">${title}</h3>
+                            <p class="profile-subtitle">${excerpt}</p>
+                            <div class="profile-actions">
+                                <button class="profile-icon-btn-dark">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </button>
+                                <button class="profile-icon-btn-dark">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+
+            case 'profile-card-half-bw':
+                return `
+                    <div class="profile-card ${cardClass}" data-url="${postUrl}" style="cursor: pointer;">
+                        <img src="${imageUrl}" alt="${title}" class="profile-half-image" style="filter: grayscale(100%);">
+                        <div class="profile-half-content">
+                            <h3 class="profile-name">${title}</h3>
+                            <p class="profile-subtitle">${excerpt}</p>
+                        </div>
+                    </div>`;
+
+            case 'profile-card-circular':
+                return `
+                    <div class="profile-card ${cardClass}" data-url="${postUrl}" style="cursor: pointer;">
+                        <div class="profile-circular-frame">
+                            <img src="${imageUrl}" alt="${title}">
+                        </div>
+                        <div class="profile-circular-content">
+                            <h3 class="profile-name">${title}</h3>
+                            <p class="profile-subtitle">${excerpt}</p>
+                            <div class="profile-actions">
+                                <button class="profile-icon-btn-circle">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                </button>
+                                <button class="profile-icon-btn-circle">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+
+            default:
+                return generateProfileCardHTML(post, index, 'profile-card-1');
+        }
+    }
+
+    // Show fallback Change Makers if data cannot be loaded
+    function showFallbackChangeMakers(container) {
+        const fallbackProfiles = [
+            { name: 'Maria Rodriguez', subtitle: 'Transforming healthcare through AI innovation', template: 'profile-card-full' },
+            { name: 'James Chen', subtitle: 'Building ethical technology for communities', template: 'profile-card-split' },
+            { name: 'Sarah Johnson', subtitle: 'Leading educational reform initiatives globally', template: 'profile-card-half-bw' },
+            { name: 'David Kim', subtitle: 'Advancing quantum computing research', template: 'profile-card-circular' }
+        ];
+
+        container.innerHTML = fallbackProfiles.map((profile, index) => 
+            generateProfileCardHTML({
+                title: profile.name,
+                excerpt: profile.subtitle,
+                featured_image_url: `https://images.unsplash.com/photo-${1500000000000 + index}?w=400&h=500&fit=crop`
+            }, index, profile.template)
+        ).join('');
+    }
+
     // Add navigation to initiative cards
     document.addEventListener('DOMContentLoaded', function() {
         // Define initiative links mapping
