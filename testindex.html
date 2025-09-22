@@ -3263,10 +3263,8 @@
     <script>
     // Load DCF News cards on page load
     document.addEventListener('DOMContentLoaded', async () => {
-        // Wait a bit for DCF system to initialize
-        setTimeout(async () => {
-            await loadDCFNewsCards();
-        }, 2000);
+        // Load news immediately without delay
+        loadDCFNewsCards();
     });
 
     async function loadDCFNewsCards() {
@@ -3283,7 +3281,7 @@
         }
 
         try {
-            // Get DCF News slugs from CMS
+            // Get DCF News slugs from CMS first to get template preferences
             const { data: cmsData, error: cmsError } = await supabase
                 .from('cms_sections')
                 .select('slugs')
@@ -3304,40 +3302,48 @@
                 return;
             }
 
-            // Fetch blog posts for each slug
-            const promises = slugEntries.map(entry => 
-                supabase
-                    .from('blog_posts')
-                    .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
-                    .eq('slug', entry.slug || entry)  // Handle both old and new format
-                    .eq('status', 'published')
-                    .single()
-                    .then(result => ({ 
-                        ...result, 
-                        chosenTemplate: entry.template || 'bold-type' 
-                    }))
-            );
-
-            const results = await Promise.all(promises);
-            console.log('Blog post query results:', results);
+            // Extract just the slugs for the query
+            const slugsToFetch = slugEntries.map(entry => entry.slug || entry);
             
-            const blogPosts = results
-                .map(result => ({ 
-                    ...result.data, 
-                    chosenTemplate: result.chosenTemplate 
-                }))
-                .filter(post => post && post.id)  // Ensure valid post data
-                .slice(0, 4);
-            console.log('Filtered blog posts:', blogPosts);
-            console.log('Number of valid posts:', blogPosts.length);
+            // Create a template map for quick lookup
+            const templateMap = {};
+            slugEntries.forEach(entry => {
+                const slug = entry.slug || entry;
+                templateMap[slug] = entry.template || 'bold-type';
+            });
 
-            console.log('About to check blogPosts.length:', blogPosts.length);
-            if (blogPosts.length === 0) {
+            // Fetch all blog posts in a SINGLE optimized query
+            const { data: blogPosts, error: postsError } = await supabase
+                .from('blog_posts')
+                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                .in('slug', slugsToFetch)
+                .eq('status', 'published')
+                .order('published_at', { ascending: false })
+                .limit(4);
+
+            if (postsError) {
+                console.error('Posts error:', postsError);
+                throw postsError;
+            }
+
+            console.log('Blog posts loaded in single query:', blogPosts);
+            
+            // Add template information to each post
+            const blogPostsWithTemplates = (blogPosts || [])
+                .map(post => ({
+                    ...post,
+                    chosenTemplate: templateMap[post.slug] || 'bold-type'
+                }))
+                .slice(0, 4);
+            console.log('Filtered blog posts:', blogPostsWithTemplates);
+            console.log('Number of valid posts:', blogPostsWithTemplates.length);
+
+            if (blogPostsWithTemplates.length === 0) {
                 showFallbackCards(dcfNewsCards);
                 return;
             }
             // Generate dynamic cards
-            dcfNewsCards.innerHTML = blogPosts.map((post, index) => 
+            dcfNewsCards.innerHTML = blogPostsWithTemplates.map((post, index) => 
                 generateCardHTML(post, index, post.chosenTemplate)
             ).join('');
 
