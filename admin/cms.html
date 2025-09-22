@@ -1062,14 +1062,49 @@
         let changeMakersSlugs = [];
 
         // Initialize
-        window.addEventListener('dcfReady', function() {
+        window.addEventListener('dcfReady', async function() {
+            console.log('=== CMS INITIALIZATION START ===');
+            console.log('dcfReady event fired');
+            console.log('window.dcfSupabase available:', !!window.dcfSupabase);
+            
             // Skip authentication for admin area - allow unrestricted access
             // Set Supabase reference
             supabase = window.dcfSupabase;
             
+            if (!supabase) {
+                console.error('CRITICAL ERROR: Supabase client not initialized');
+                return;
+            }
+            
+            // Test database connection
+            try {
+                const { data: testConnection, error: testError } = await supabase
+                    .from('cms_sections')
+                    .select('count');
+                console.log('Database connection test:', { testConnection, testError });
+            } catch (e) {
+                console.error('Database connection failed:', e);
+            }
+            
             // Load CMS data immediately
-            loadDCFNewsSlugs();
-            loadChangeMakersSlugs();
+            console.log('Starting to load CMS data...');
+            await loadDCFNewsSlugs();
+            await loadChangeMakersSlugs();
+            console.log('=== CMS INITIALIZATION COMPLETE ===');
+        });
+        
+        // Also add DOMContentLoaded as fallback
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            // If dcfReady hasn't fired after 2 seconds, try loading anyway
+            setTimeout(async () => {
+                if (!supabase && window.dcfSupabase) {
+                    console.log('Fallback initialization triggered');
+                    supabase = window.dcfSupabase;
+                    await loadDCFNewsSlugs();
+                    await loadChangeMakersSlugs();
+                }
+            }, 2000);
         });
 
         async function loadDCFNewsSlugs() {
