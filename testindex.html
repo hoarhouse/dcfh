@@ -3294,16 +3294,26 @@
             }
 
             const slugEntries = cmsData?.slugs || [];
-            console.log('CMS Data loaded:', cmsData);
-            console.log('Slug entries with templates:', slugEntries);
+            console.log('=== 🔍 DCF NEWS DIAGNOSTIC START ===');
+            console.log('1️⃣ CMS Data loaded:', cmsData);
+            console.log('2️⃣ Slug entries with templates:', slugEntries);
+            console.log('3️⃣ Number of slugs in CMS:', slugEntries.length);
+            
+            // Log each individual slug
+            slugEntries.forEach((entry, i) => {
+                const slug = entry.slug || entry;
+                console.log(`   Slug ${i + 1}: "${slug}" | Template: ${entry.template || 'default'}`);
+            });
 
             if (slugEntries.length === 0) {
+                console.log('❌ No slugs found, showing fallback cards');
                 showFallbackCards(dcfNewsCards);
                 return;
             }
 
             // Extract just the slugs for the query
             const slugsToFetch = slugEntries.map(entry => entry.slug || entry);
+            console.log('4️⃣ Slugs to fetch from blog_posts:', slugsToFetch);
             
             // Create a template map for quick lookup
             const templateMap = {};
@@ -3313,6 +3323,7 @@
             });
 
             // Fetch all blog posts in a SINGLE optimized query
+            console.log('5️⃣ Executing database query with .in() filter for slugs...');
             const { data: blogPosts, error: postsError } = await supabase
                 .from('blog_posts')
                 .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
@@ -3322,11 +3333,20 @@
                 .limit(4);
 
             if (postsError) {
-                console.error('Posts error:', postsError);
+                console.error('❌ Posts query error:', postsError);
                 throw postsError;
             }
 
-            console.log('Blog posts loaded in single query:', blogPosts);
+            console.log('6️⃣ Blog posts returned from query:', blogPosts);
+            console.log('7️⃣ Number of posts returned:', blogPosts?.length || 0);
+            
+            // Log which slugs were found and which are missing
+            const returnedSlugs = (blogPosts || []).map(p => p.slug);
+            const missingSlugs = slugsToFetch.filter(slug => !returnedSlugs.includes(slug));
+            if (missingSlugs.length > 0) {
+                console.log('⚠️ MISSING POSTS for slugs:', missingSlugs);
+                console.log('   These slugs have no matching published posts in blog_posts table');
+            }
             
             // Add template information to each post
             const blogPostsWithTemplates = (blogPosts || [])
@@ -3335,8 +3355,9 @@
                     chosenTemplate: templateMap[post.slug] || 'bold-type'
                 }))
                 .slice(0, 4);
-            console.log('Filtered blog posts:', blogPostsWithTemplates);
-            console.log('Number of valid posts:', blogPostsWithTemplates.length);
+            console.log('8️⃣ Final posts with templates:', blogPostsWithTemplates);
+            console.log('9️⃣ FINAL COUNT TO RENDER:', blogPostsWithTemplates.length);
+            console.log('=== 🔍 DCF NEWS DIAGNOSTIC END ===');
 
             if (blogPostsWithTemplates.length === 0) {
                 showFallbackCards(dcfNewsCards);
