@@ -1043,6 +1043,7 @@
         // Use Supabase client configuration from dcf-core.js
         let supabase;
         let dcfNewsSlugs = [];
+        let changeMakersSlugs = [];
 
         // Initialize
         window.addEventListener('dcfReady', function() {
@@ -1052,6 +1053,7 @@
             
             // Load CMS data immediately
             loadDCFNewsSlugs();
+            loadChangeMakersSlugs();
         });
 
         async function loadDCFNewsSlugs() {
@@ -1098,6 +1100,50 @@
                 console.error('Error loading DCF news slugs:', error);
                 dcfNewsSlugs = [];
                 displaySlugs();
+            }
+        }
+
+        async function loadChangeMakersSlugs() {
+            // Verify Supabase is available
+            if (!window.dcfSupabase) {
+                console.error('ERROR: Supabase client not available');
+                return;
+            }
+
+            // No authentication required - unrestricted access
+            const supabase = window.dcfSupabase;
+            console.log('Loading Change Makers slugs from database (no auth required)...');
+
+            try {
+                // Query cms_sections table - no authentication required
+                const { data, error } = await supabase
+                    .from('cms_sections')
+                    .select('*')
+                    .eq('section_name', 'change_makers')
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+                    console.error('Error loading Change Makers sections:', error);
+                    return;
+                }
+
+                console.log('Change Makers data retrieved:', data);
+                
+                if (data && data.slugs) {
+                    changeMakersSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    console.log(`Loaded ${changeMakersSlugs.length} Change Makers slugs:`, changeMakersSlugs);
+                } else {
+                    changeMakersSlugs = [];
+                    console.log('No Change Makers slugs found in database');
+                }
+
+                displayChangeMakersSlugs();
+                await loadChangeMakersPreview();
+
+            } catch (error) {
+                console.error('Error loading Change Makers slugs:', error);
+                changeMakersSlugs = [];
+                displayChangeMakersSlugs();
             }
         }
 
@@ -1265,6 +1311,37 @@
                         ${index > 0 ? `<button onclick="moveSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
                         ${index < dcfNewsSlugs.length - 1 ? `<button onclick="moveSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
                         <button onclick="removeSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayChangeMakersSlugs() {
+            const slugList = document.getElementById('cmSlugList');
+
+            if (changeMakersSlugs.length === 0) {
+                slugList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🌟</div>
+                        <h3>No Change Makers added yet</h3>
+                        <p>Add up to 4 Change Makers blog posts to populate the section.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            slugList.innerHTML = changeMakersSlugs.map((slug, index) => `
+                <div class="slug-item">
+                    <div class="slug-info">
+                        <div class="slug-text">${escapeHtml(slug.slug || slug)}</div>
+                        <div class="slug-order">Position ${index + 1} of ${changeMakersSlugs.length}</div>
+                        <div class="slug-template">Template: ${slug.template || 'full-bg'}</div>
+                    </div>
+                    <div class="slug-actions">
+                        <button onclick="editCMSlugTemplate(${index})" class="btn btn-primary btn-small" title="Edit Template">✏️</button>
+                        ${index > 0 ? `<button onclick="moveCMSlug(${index}, 'up')" class="btn btn-secondary btn-small" title="Move up">↑</button>` : ''}
+                        ${index < changeMakersSlugs.length - 1 ? `<button onclick="moveCMSlug(${index}, 'down')" class="btn btn-secondary btn-small" title="Move down">↓</button>` : ''}
+                        <button onclick="removeCMSlug(${index})" class="btn btn-danger btn-small" title="Remove">×</button>
                     </div>
                 </div>
             `).join('');
