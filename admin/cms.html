@@ -1789,6 +1789,71 @@
             loadPreviewImages();
         }
 
+        function generateMiniNewsPreview(post, template) {
+            const title = post.title || 'Sample Title';
+            const excerpt = post.excerpt || 'Read more about this story...';
+            const imageUrl = post.featured_image_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=250&fit=crop';
+            const publishDate = new Date(post.created_at).toLocaleDateString();
+            
+            switch (template) {
+                case 'bold-type':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="story-card story-card-bold-type">
+                                <span class="category-tag">DCF NEWS</span>
+                                <h3 class="bold-title">${escapeHtml(title)}</h3>
+                                <p class="bold-excerpt">${escapeHtml(excerpt.substring(0, 120))}...</p>
+                                <div class="bold-footer">
+                                    <span class="read-time">${publishDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                case 'pattern':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="story-card story-card-pattern">
+                                <div class="pattern-overlay"></div>
+                                <div class="pattern-content">
+                                    <span class="pattern-tag">FEATURED</span>
+                                    <h3 class="pattern-title">${escapeHtml(title)}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                case 'image-strip':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="story-card story-card-image-strip">
+                                <div class="strip-image" style="background-image: url('${imageUrl}');"></div>
+                                <div class="strip-content">
+                                    <h3>${escapeHtml(title)}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                case 'magazine':
+                    return `
+                        <div style="transform: scale(0.35); transform-origin: top left; width: 285%; height: 285%;">
+                            <div class="story-card story-card-magazine">
+                                <div class="magazine-header">
+                                    <img src="${imageUrl}" alt="${escapeHtml(title)}" class="magazine-image">
+                                </div>
+                                <div class="magazine-content">
+                                    <h3 class="magazine-title">${escapeHtml(title)}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                default:
+                    return `
+                        <div style="background: #f0f0f0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">
+                            Template: ${template}
+                        </div>
+                    `;
+            }
+        }
+
         async function loadPreviewImages() {
             // Load previews for individual cards in the slug list
             if (!window.dcfSupabase) {
@@ -1815,7 +1880,7 @@
 
                     if (post && !error) {
                         const template = slugItem.template || 'bold-type';
-                        const cardHtml = generateFullCardPreview(post, template);
+                        const cardHtml = generateMiniNewsPreview(post, template);
                         previewElement.innerHTML = cardHtml;
                     } else {
                         previewElement.innerHTML = `
