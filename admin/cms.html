@@ -1232,8 +1232,24 @@
                 console.log('Change Makers data retrieved:', data);
                 
                 if (data && data.slugs) {
-                    changeMakersSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    // Handle both array and JSON string formats
+                    if (typeof data.slugs === 'string') {
+                        try {
+                            changeMakersSlugs = JSON.parse(data.slugs);
+                        } catch (e) {
+                            changeMakersSlugs = [];
+                            console.error('Failed to parse Change Makers slugs:', e);
+                        }
+                    } else {
+                        changeMakersSlugs = Array.isArray(data.slugs) ? data.slugs : [];
+                    }
                     console.log(`Loaded ${changeMakersSlugs.length} Change Makers slugs:`, changeMakersSlugs);
+                } else if (!error || error.code === 'PGRST116') {
+                    // No data found, create default entries
+                    changeMakersSlugs = [];
+                    console.log('No Change Makers data found, creating defaults...');
+                    // Create default data
+                    await createDefaultChangeMakersData();
                 } else {
                     changeMakersSlugs = [];
                     console.log('No Change Makers slugs found in database');
