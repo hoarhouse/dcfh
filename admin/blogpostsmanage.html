@@ -965,11 +965,9 @@
                 return;
             }
             
-            // Delay admin queries to prevent race condition with auth
-            setTimeout(async () => {
-                await loadData();
-                setupEventListeners();
-            }, 2000); // 2 second delay allows auth to complete first
+            // Initialize immediately without delay
+            loadData();
+            setupEventListeners();
         });
 
         async function loadData() {
@@ -981,15 +979,16 @@
                 blogFilter.innerHTML = '<option value="">Blog filter unavailable</option>';
                 blogFilter.disabled = true;
 
-                // Load posts - simplified query to work with public RLS policies
+                // Load posts - optimized query with pagination
                 const { data: postsData, error: postsError } = await window.dcfSupabase
                     .from('blog_posts')
                     .select(`
-                        id, title, slug, content, excerpt, featured_image_url, status, 
+                        id, title, slug, excerpt, featured_image_url, status, 
                         published_at, created_at, updated_at, author_id,
                         blogs!inner(slug, name)
                     `)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(50);
 
                 if (postsError) {
                     console.error('Failed to load posts:', postsError);
