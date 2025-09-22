@@ -2442,6 +2442,52 @@
             loadCMPreviewImages();
         }
 
+        async function loadCMPreviewImages() {
+            // Load previews for individual Change Makers cards
+            if (!window.dcfSupabase) {
+                console.log('Supabase not ready yet, skipping Change Makers preview images');
+                return;
+            }
+
+            const supabase = window.dcfSupabase;
+
+            for (let index = 0; index < changeMakersSlugs.length; index++) {
+                const slugItem = changeMakersSlugs[index];
+                const previewElement = document.getElementById(`cm-preview-${index}`);
+                
+                if (!previewElement) continue;
+
+                try {
+                    const slug = slugItem.slug || slugItem;
+                    const { data: post, error } = await supabase
+                        .from('blog_posts')
+                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                        .eq('slug', slug)
+                        .eq('status', 'published')
+                        .single();
+
+                    if (post && !error) {
+                        const template = slugItem.template || 'profile-card-1';
+                        const cardHtml = generateFullCardPreview(post, template);
+                        previewElement.innerHTML = cardHtml;
+                    } else {
+                        previewElement.innerHTML = `
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; padding: 1rem;">
+                                <small>Preview unavailable</small>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error loading Change Makers preview:', error);
+                    previewElement.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                            Error
+                        </div>
+                    `;
+                }
+            }
+        }
+
         async function loadCMCardsPreview() {
             // Wait for auth system to initialize
             if (!window.dcfSupabase) {
