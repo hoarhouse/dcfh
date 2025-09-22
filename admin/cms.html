@@ -1273,6 +1273,66 @@
             // we'll assume the table exists or create it manually
             showToast('CMS table needs to be created. Please contact admin.', 'error');
         }
+        
+        async function createDefaultDCFNewsData() {
+            console.log('Creating default DCF News data...');
+            const defaultData = [
+                { slug: 'ai-ethics-guidelines', template: 'bold-type' },
+                { slug: 'machine-learning-democracy', template: 'pattern' },
+                { slug: 'neural-networks-explained', template: 'image-strip' },
+                { slug: 'future-of-computing', template: 'circle' }
+            ];
+            
+            try {
+                const { error } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'dcf_news',
+                        slugs: defaultData,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+                    
+                if (!error) {
+                    dcfNewsSlugs = defaultData;
+                    displaySlugs();
+                    await loadCardsPreview();
+                }
+            } catch (e) {
+                console.error('Failed to create default DCF News data:', e);
+            }
+        }
+        
+        async function createDefaultChangeMakersData() {
+            console.log('Creating default Change Makers data...');
+            const defaultData = [
+                { slug: 'stuart-russell', template: 'profile-card-1' },
+                { slug: 'yejin-choi', template: 'profile-card-2' },
+                { slug: 'fei-fei-li', template: 'profile-card-6' },
+                { slug: 'demis-hassabis', template: 'profile-card-10' }
+            ];
+            
+            try {
+                const { error } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'change_makers',
+                        slugs: defaultData,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+                    
+                if (!error) {
+                    changeMakersSlugs = defaultData;
+                    displayChangeMakersSlugs();
+                    await loadChangeMakersPreview();
+                }
+            } catch (e) {
+                console.error('Failed to create default Change Makers data:', e);
+            }
+        }
 
         async function addSlug() {
             const newSlugInput = document.getElementById('newSlug');
@@ -2074,6 +2134,20 @@
                 cmTemplateOptions[0].classList.add('selected');
             }
         });
+        
+        // Immediate initialization attempt
+        (async function initializeImmediately() {
+            console.log('=== IMMEDIATE INITIALIZATION ATTEMPT ===');
+            // Wait a bit for scripts to load
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (window.dcfSupabase && !supabase) {
+                console.log('Found dcfSupabase, initializing immediately');
+                supabase = window.dcfSupabase;
+                await loadDCFNewsSlugs();
+                await loadChangeMakersSlugs();
+            }
+        })();
     </script>
     <script>
 // dcf-init.js handles everything automatically
