@@ -1651,10 +1651,168 @@
         }
 
 
-        // Handle enter key in slug input
+        // Add Change Makers preview function
+        async function loadChangeMakersPreview() {
+            if (!window.dcfSupabase) {
+                console.log('Supabase not ready yet, skipping Change Makers preview');
+                return;
+            }
+
+            const supabase = window.dcfSupabase;
+            const cardsPreview = document.getElementById('cmCardsPreview');
+            const previewGrid = document.getElementById('cmPreviewGrid');
+
+            if (changeMakersSlugs.length === 0) {
+                cardsPreview.style.display = 'none';
+                return;
+            }
+
+            try {
+                const promises = changeMakersSlugs.map(slugItem => 
+                    window.dcfSupabase
+                        .from('blog_posts')
+                        .select('title, slug, excerpt, featured_image_url, created_at, status, published_at')
+                        .eq('slug', slugItem.slug || slugItem)
+                        .eq('status', 'published')
+                        .lte('published_at', new Date().toISOString())
+                        .single()
+                );
+
+                const results = await Promise.allSettled(promises);
+                const blogPosts = results.map((result, index) => {
+                    if (result.status === 'fulfilled' && result.value.data) {
+                        return result.value.data;
+                    } else {
+                        return {
+                            title: `[Unpublished] ${changeMakersSlugs[index].slug || changeMakersSlugs[index]}`,
+                            slug: changeMakersSlugs[index].slug || changeMakersSlugs[index],
+                            excerpt: 'This post is not yet published or accessible.',
+                            featured_image_url: null,
+                            created_at: new Date().toISOString()
+                        };
+                    }
+                }).filter(post => post);
+
+                cardsPreview.style.display = blogPosts.length > 0 ? 'block' : 'none';
+                
+                previewGrid.innerHTML = blogPosts.map((post, index) => {
+                    const template = changeMakersSlugs[index].template || 'full-bg';
+                    return generateFullCardPreview(post, template);
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading Change Makers preview:', error);
+                cardsPreview.style.display = 'none';
+            }
+        }
+
+        // Save Change Makers function
+        async function saveChangeMakersSlugs() {
+            try {
+                const { error } = await supabase
+                    .from('cms_sections')
+                    .upsert({
+                        section_name: 'change_makers',
+                        slugs: changeMakersSlugs,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'section_name'
+                    });
+
+                if (error) throw error;
+
+            } catch (error) {
+                console.error('Error saving Change Makers slugs:', error);
+                throw error;
+            }
+        }
+
+        // Change Makers management functions
+        function addCMSlug() {
+            const input = document.getElementById('cmNewSlug');
+            const slug = input.value.trim();
+
+            if (!slug) {
+                showToast('Please enter a slug', 'error');
+                return;
+            }
+
+            if (changeMakersSlugs.length >= 4) {
+                showToast('Maximum 4 slugs allowed for Change Makers section', 'error');
+                return;
+            }
+
+            const selectedTemplate = document.querySelector('#cmTemplateSelector .template-option-full.selected')?.dataset.template || 'full-bg';
+
+            changeMakersSlugs.push({
+                slug: slug,
+                template: selectedTemplate
+            });
+
+            input.value = '';
+            displayChangeMakersSlugs();
+            loadChangeMakersPreview();
+            saveChangeMakersSlugs();
+            showToast('Change Maker added successfully', 'success');
+        }
+
+        function removeCMSlug(index) {
+            const slugObj = changeMakersSlugs[index];
+            if (!confirm(`Remove "${slugObj.slug || slugObj}" from Change Makers section?`)) {
+                return;
+            }
+
+            changeMakersSlugs.splice(index, 1);
+            displayChangeMakersSlugs();
+            loadChangeMakersPreview();
+            saveChangeMakersSlugs();
+            showToast('Change Maker removed', 'info');
+        }
+
+        function moveCMSlug(index, direction) {
+            if (direction === 'up' && index > 0) {
+                [changeMakersSlugs[index], changeMakersSlugs[index - 1]] = 
+                [changeMakersSlugs[index - 1], changeMakersSlugs[index]];
+            } else if (direction === 'down' && index < changeMakersSlugs.length - 1) {
+                [changeMakersSlugs[index], changeMakersSlugs[index + 1]] = 
+                [changeMakersSlugs[index + 1], changeMakersSlugs[index]];
+            }
+
+            displayChangeMakersSlugs();
+            loadChangeMakersPreview();
+            saveChangeMakersSlugs();
+        }
+
+        function editCMSlugTemplate(index) {
+            editSlugTemplate(index, true); // Reuse existing function with CM flag
+        }
+
+        // Event handlers
+        document.getElementById('addCMSlugButton').addEventListener('click', addCMSlug);
+        
+        document.getElementById('saveCMChangesButton').addEventListener('click', async function() {
+            try {
+                await saveChangeMakersSlugs();
+                showToast('Change Makers configuration saved successfully!', 'success');
+                const status = document.getElementById('cmSaveStatus');
+                status.textContent = 'Saved successfully!';
+                status.style.display = 'block';
+                setTimeout(() => status.style.display = 'none', 3000);
+            } catch (error) {
+                showToast('Error saving configuration', 'error');
+            }
+        });
+
+        // Handle enter key in slug inputs
         document.getElementById('newSlug').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addSlug();
+            }
+        });
+
+        document.getElementById('cmNewSlug').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCMSlug();
             }
         });
 
