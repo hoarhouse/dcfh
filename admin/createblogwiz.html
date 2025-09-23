@@ -982,6 +982,73 @@
             });
         }
 
+        async function ensureUniqueBlogSlug(baseSlug) {
+            if (!baseSlug) return 'blog-' + Date.now();
+            
+            // Initialize supabase if not already set
+            const supabase = window.dcfSupabase || window.supabase;
+            
+            if (!supabase) {
+                console.warn('Supabase not available, using timestamp');
+                return baseSlug + '-' + Date.now();
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('blogs')
+                    .select('slug')
+                    .eq('slug', baseSlug)
+                    .single();
+                
+                if (error && error.code === 'PGRST116') {
+                    return baseSlug; // Unique
+                }
+                
+                if (error) {
+                    console.warn('Slug uniqueness check failed:', error);
+                    return baseSlug + '-' + Date.now();
+                }
+                
+                // Slug exists, try with numbers
+                let counter = 1;
+                while (counter <= 100) {
+                    const uniqueSlug = `${baseSlug}-${counter}`;
+                    
+                    const { data: checkData, error: checkError } = await supabase
+                        .from('blogs')
+                        .select('slug')
+                        .eq('slug', uniqueSlug)
+                        .single();
+                    
+                    if (checkError && checkError.code === 'PGRST116') {
+                        return uniqueSlug;
+                    }
+                    
+                    counter++;
+                }
+                
+                return baseSlug + '-' + Date.now();
+                
+            } catch (error) {
+                console.warn('Error checking blog slug uniqueness:', error);
+                return baseSlug + '-' + Date.now();
+            }
+        }
+
+        async function generateBlogSlugFromName(name) {
+            if (!name || typeof name !== 'string') return '';
+            
+            const baseSlug = name.toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')  // FIX: Use dashes not underscores
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .substring(0, 80);
+            
+            return await ensureUniqueBlogSlug(baseSlug);
+        }
+
         async function createBlog() {
             // Show loading
             document.getElementById('step3').classList.remove('active');
