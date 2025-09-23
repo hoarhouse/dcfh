@@ -1252,8 +1252,47 @@
             document.getElementById('step1Next').disabled = false;
         }
 
-        function nextStep() {
+        async function nextStep() {
             if (currentStep < totalSteps) {
+                // Generate slug when going to Step 6
+                if (currentStep === 5) {
+                    const postTitle = document.getElementById('postTitle').value.trim();
+                    const selectedBlog = document.getElementById('blogSelect').selectedOptions[0];
+                    const blogId = selectedBlog ? selectedBlog.value : null;
+                    const blogSlug = selectedBlog ? selectedBlog.dataset.slug : 'blog';
+                    
+                    if (postTitle && blogId) {
+                        try {
+                            // Show loading state
+                            const nextBtn = document.querySelector('.wizard-step.active .btn-primary');
+                            if (nextBtn) {
+                                const originalText = nextBtn.textContent;
+                                nextBtn.textContent = 'Generating URL...';
+                                nextBtn.disabled = true;
+                                
+                                const postSlug = await generatePostSlugFromTitle(postTitle, blogId);
+                                document.getElementById('postSlug').value = postSlug;
+                                if (document.getElementById('postSlugPreview')) {
+                                    document.getElementById('postSlugPreview').textContent = postSlug;
+                                }
+                                if (document.getElementById('blogSlugPreview')) {
+                                    document.getElementById('blogSlugPreview').textContent = blogSlug;
+                                }
+                                
+                                // Store slug for submission
+                                window.generatedPostSlug = postSlug;
+                                
+                                // Restore button
+                                nextBtn.textContent = originalText;
+                                nextBtn.disabled = false;
+                            }
+                        } catch (error) {
+                            console.error('Error generating post slug:', error);
+                            showToast('Error generating URL slug', 'error');
+                            return; // Don't proceed to next step
+                        }
+                    }
+                }
                 showStep(currentStep + 1);
             }
         }
@@ -1491,7 +1530,7 @@
                 excerpt: document.getElementById('postExcerpt').value.trim() || null,
                 content: quillEditor.root.innerHTML,
                 blog_id: selectedBlog ? selectedBlog.id : null,
-                slug: generateSlug(document.getElementById('postTitle').value.trim())
+                slug: window.generatedPostSlug || 'post-' + Date.now()
             };
 
             if (!selectedBlog) {
@@ -1568,12 +1607,72 @@
             window.location.href = 'dcf_admin_dashboard.html';
         }
 
-        function generateSlug(title) {
-            return title.toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, '')
+        async function ensureUniquePostSlug(baseSlug, blogId) {
+            if (!baseSlug) return 'post-' + Date.now();
+            
+            const supabase = window.dcfSupabase || window.supabase;
+            
+            if (!supabase) {
+                console.warn('Supabase not available, using timestamp');
+                return baseSlug + '-' + Date.now();
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('blog_posts')
+                    .select('slug')
+                    .eq('slug', baseSlug)
+                    .eq('blog_id', blogId)
+                    .single();
+                
+                if (error && error.code === 'PGRST116') {
+                    return baseSlug; // Unique within this blog
+                }
+                
+                if (error) {
+                    console.warn('Post slug uniqueness check failed:', error);
+                    return baseSlug + '-' + Date.now();
+                }
+                
+                // Slug exists in this blog, try with numbers
+                let counter = 1;
+                while (counter <= 100) {
+                    const uniqueSlug = `${baseSlug}-${counter}`;
+                    
+                    const { data: checkData, error: checkError } = await supabase
+                        .from('blog_posts')
+                        .select('slug')
+                        .eq('slug', uniqueSlug)
+                        .eq('blog_id', blogId)
+                        .single();
+                    
+                    if (checkError && checkError.code === 'PGRST116') {
+                        return uniqueSlug;
+                    }
+                    
+                    counter++;
+                }
+                
+                return baseSlug + '-' + Date.now();
+                
+            } catch (error) {
+                console.warn('Error checking post slug uniqueness:', error);
+                return baseSlug + '-' + Date.now();
+            }
+        }
+
+        async function generatePostSlugFromTitle(title, blogId) {
+            if (!title || typeof title !== 'string') return '';
+            
+            const baseSlug = title.toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-')
-                .trim();
+                .replace(/^-+|-+$/g, '')
+                .substring(0, 80);
+            
+            return await ensureUniquePostSlug(baseSlug, blogId);
         }
 
         function updateProgress() {
