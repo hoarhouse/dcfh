@@ -743,6 +743,9 @@
             transform: translateX(0);
         }
     </style>
+    
+    <!-- Supabase CDN - Must load first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Navigation Header -->
@@ -959,7 +962,7 @@
         let citationFormat = 'apa';
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        function initializePage() {
             const urlParams = new URLSearchParams(window.location.search);
             const resourceId = urlParams.get('id');
             
@@ -969,36 +972,75 @@
             } else {
                 showError('No resource specified');
             }
+        }
+        
+        // Wait for DCF system to be ready
+        if (window.addEventListener) {
+            window.addEventListener('dcfReady', initializePage);
+        }
+        
+        // Fallback if dcfReady doesn't fire
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (!currentResource) {
+                    console.log('Initializing without dcfReady event');
+                    initializePage();
+                }
+            }, 2000);
         });
 
         // Load resource data
         async function loadResource(resourceId) {
             try {
-                // Simulate API call - replace with actual Supabase query
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Mock data - replace with actual database fetch
-                currentResource = {
-                    id: resourceId,
-                    title: "Ethical AI Framework for Human-Centered Technology Development",
-                    type: "Research Paper",
-                    author_name: "Dr. Antal Kuthy",
-                    author_title: "Senior AI Researcher, DCF Hungary",
-                    author_bio: "Leading technologist and AI researcher with extensive experience in developing human-centered AI systems and ethical technology frameworks.",
-                    institution: "DCF Hungary & Budapest University of Technology",
-                    published_at: "2024-11-15",
-                    description: "This comprehensive framework presents a groundbreaking approach to integrating Catholic Social Teaching principles with cutting-edge AI development methodologies. Drawing from extensive research across 15 countries and collaboration with leading tech companies, this resource provides practical guidelines for ensuring AI systems serve human dignity and the common good. The framework includes detailed implementation strategies, assessment tools, and case studies from successful deployments in healthcare, education, and social services sectors.",
-                    file_format: "PDF",
-                    file_size: 2516582, // bytes
-                    page_count: 42,
-                    download_count: 1247,
-                    citation_count: 89,
-                    rating_average: 4.8,
-                    excerpt: "A comprehensive guide to building AI systems that prioritize human values, dignity, and the common good.",
-                    tags: ["AI Ethics", "Human-Centered Design", "Catholic Social Teaching", "Technology Governance"],
-                    featured_image_url: null,
-                    file_url: "/resources/files/ethical-ai-framework.pdf"
-                };
+                // Check if Supabase is available
+                if (window.dcfSupabase) {
+                    // Fetch from database
+                    const { data: resource, error } = await window.dcfSupabase
+                        .from('resources')
+                        .select('*')
+                        .eq('id', resourceId)
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    if (resource) {
+                        currentResource = resource;
+                        
+                        // Add default values for missing fields
+                        currentResource.author_title = currentResource.author_title || 'Senior Researcher';
+                        currentResource.author_bio = currentResource.author_bio || 'Expert contributor to DCF Hungary\'s research initiatives.';
+                        currentResource.institution = currentResource.institution || 'DCF Hungary';
+                        currentResource.file_format = currentResource.file_format || 'PDF';
+                        currentResource.page_count = currentResource.page_count || 0;
+                        currentResource.citation_count = currentResource.citation_count || 0;
+                        currentResource.rating_average = currentResource.rating_average || 0;
+                    } else {
+                        throw new Error('Resource not found');
+                    }
+                } else {
+                    // Fallback to mock data if Supabase not available
+                    console.log('Using mock data - Supabase not available');
+                    currentResource = {
+                        id: resourceId,
+                        title: "Ethical AI Framework for Human-Centered Technology Development",
+                        type: "research",
+                        author_name: "Dr. Antal Kuthy",
+                        author_title: "Senior AI Researcher, DCF Hungary",
+                        author_bio: "Leading technologist and AI researcher with extensive experience in developing human-centered AI systems and ethical technology frameworks.",
+                        institution: "DCF Hungary & Budapest University of Technology",
+                        published_at: "2024-11-15",
+                        description: "This comprehensive framework presents a groundbreaking approach to integrating Catholic Social Teaching principles with cutting-edge AI development methodologies.",
+                        file_format: "PDF",
+                        file_size: 2516582,
+                        page_count: 42,
+                        download_count: 1247,
+                        citation_count: 89,
+                        rating_average: 4.8,
+                        excerpt: "A comprehensive guide to building AI systems that prioritize human values, dignity, and the common good.",
+                        featured_image_url: null,
+                        file_url: "/resources/files/ethical-ai-framework.pdf"
+                    };
+                }
                 
                 // Populate page with data
                 populateResourceData();
