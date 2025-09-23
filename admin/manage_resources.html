@@ -1161,37 +1161,37 @@
             }
         }
 
-        async function changeResourceStatus(postId, newStatus) {
+        async function changeResourceStatus(resourceId, newStatus) {
             try {
                 const updateData = { 
                     status: newStatus,
                     updated_at: new Date().toISOString()
                 };
                 
-                if (newStatus === 'published' && !posts.find(p => p.id === postId).published_at) {
+                if (newStatus === 'published' && !resources.find(r => r.id === resourceId).published_at) {
                     updateData.published_at = new Date().toISOString();
                 }
 
                 const { error } = await window.dcfSupabase
                     .from('resources')
                     .update(updateData)
-                    .eq('id', postId);
+                    .eq('id', resourceId);
 
                 if (error) throw error;
 
-                showToast(`Post ${newStatus === 'published' ? 'published' : 'unpublished'} successfully`, 'success');
+                showToast(`Resource ${newStatus === 'approved' ? 'approved' : newStatus} successfully`, 'success');
                 loadData(); // Reload to reflect changes
 
             } catch (error) {
                 console.error('Error updating post status:', error);
-                showToast('Failed to update post status', 'error');
+                showToast('Failed to update resource status', 'error');
             }
         }
 
-        async function deleteResource(postId) {
-            console.log('[Delete] Attempting to delete post:', postId);
+        async function deleteResource(resourceId) {
+            console.log('[Delete] Attempting to delete resource:', resourceId);
             
-            if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
                 console.log('[Delete] User cancelled deletion');
                 return;
             }
@@ -1218,7 +1218,7 @@
                 const { data: postData, error: fetchError } = await window.dcfSupabase
                     .from('resources')
                     .select('id, title, slug')
-                    .eq('id', postId)
+                    .eq('id', resourceId)
                     .single();
                 
                 if (fetchError) {
@@ -1232,7 +1232,7 @@
                 const { data: deletedData, error: deleteError, count } = await window.dcfSupabase
                     .from('resources')
                     .delete()
-                    .eq('id', postId)
+                    .eq('id', resourceId)
                     .select('id');
 
                 if (deleteError) {
@@ -1256,7 +1256,7 @@
                 console.log('[Delete] Refreshing posts list...');
                 
                 // Only update UI after confirmed deletion
-                showToast('Post deleted successfully', 'success');
+                showToast('Resource deleted successfully', 'success');
                 
                 // Remove from local array for instant UI update
                 resources = resources.filter(r => r.id !== resourceId);
@@ -1284,30 +1284,22 @@
                 const duplicatedResource = {
                     ...originalResource,
                     id: undefined, // Remove ID to create new
-                    title: `${originalPost.title} (Copy)`,
-                    slug: `${originalPost.slug}-copy-${Date.now()}`,
+                    title: `${originalResource.title} (Copy)`,
+                    slug: `${originalResource.slug}-copy-${Date.now()}`,
                     status: 'draft',
                     published_at: null,
                     view_count: 0,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                    // Preserve post type and type-specific fields
-                    post_type: originalPost.post_type,
-                    person_first_name: originalPost.person_first_name,
-                    person_last_name: originalPost.person_last_name,
-                    person_photo_url: originalPost.person_photo_url,
-                    person_links: originalPost.person_links,
-                    news_category: originalPost.news_category,
-                    publication_date: originalPost.publication_date
                 };
 
                 const { error } = await window.dcfSupabase
                     .from('resources')
-                    .insert([duplicatedPost]);
+                    .insert([duplicatedResource]);
 
                 if (error) throw error;
 
-                showToast('Post duplicated successfully', 'success');
+                showToast('Resource duplicated successfully', 'success');
                 loadData(); // Reload to show new post
 
             } catch (error) {
