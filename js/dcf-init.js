@@ -236,6 +236,7 @@ function populateAdminMenu() {
         { href: 'createblogwiz.html', title: 'Create Blog' },
         { href: 'blogwiz.html', title: 'Create Post' },
         { href: 'blogpostsmanage.html', title: 'Manage Posts' },
+        { href: 'manage_resources.html', title: '📚 Manage Resources' },
         { href: 'cms.html', title: 'CMS' }
     ];
     
