@@ -977,18 +977,39 @@
 
         // Initialize Supabase directly if not available from dcf-core
         async function ensureSupabase() {
-            if (!window.dcfSupabase && window.supabase) {
-                console.log('Initializing Supabase directly');
-                const supabaseUrl = 'https://rywccyyjxhmpvqzbtkfw.supabase.co';
-                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5d2NjeXlqeGhtcHZxemJ0a2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA0ODM0MjcsImV4cCI6MjA0NjA1OTQyN30.0s2pEqmUguTiM2cGmCXOTz_K6SDKDTLLjVMxssJW5Rs';
-                
-                try {
-                    window.dcfSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                    console.log('✅ Supabase client created directly');
-                } catch (error) {
-                    console.error('Failed to create Supabase client:', error);
+            // Debug the current state
+            console.log('Supabase client check:', {
+                exists: !!window.dcfSupabase,
+                hasFrom: !!window.dcfSupabase?.from,
+                type: typeof window.dcfSupabase,
+                isFunction: typeof window.dcfSupabase === 'function',
+                keys: window.dcfSupabase ? Object.keys(window.dcfSupabase) : []
+            });
+            
+            // If dcfSupabase is a function (from dcf-auth.js), we need to recreate it
+            if (!window.dcfSupabase || typeof window.dcfSupabase === 'function' || !window.dcfSupabase.from) {
+                if (window.supabase && window.supabase.createClient) {
+                    console.log('Creating Supabase client directly');
+                    const supabaseUrl = 'https://rywccyyjxhmpvqzbtkfw.supabase.co';
+                    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5d2NjeXlqeGhtcHZxemJ0a2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA0ODM0MjcsImV4cCI6MjA0NjA1OTQyN30.0s2pEqmUguTiM2cGmCXOTz_K6SDKDTLLjVMxssJW5Rs';
+                    
+                    try {
+                        const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+                        if (client && client.from) {
+                            window.dcfSupabase = client;
+                            console.log('✅ Supabase client created successfully');
+                            console.log('Available methods:', Object.getOwnPropertyNames(client));
+                        } else {
+                            console.error('Created client is invalid');
+                        }
+                    } catch (error) {
+                        console.error('Failed to create Supabase client:', error);
+                    }
+                } else {
+                    console.error('Supabase library not loaded');
                 }
             }
+            
             return window.dcfSupabase;
         }
         
