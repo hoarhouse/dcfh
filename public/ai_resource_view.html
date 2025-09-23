@@ -950,10 +950,24 @@
     <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
-    <!-- Scripts -->
+    <!-- Scripts - Load core first, then auth with error handling -->
     <script src="../js/dcf-core.js"></script>
     <script src="../js/dcf-ui.js"></script>
-    <script src="../js/dcf-auth.js"></script>
+    <script>
+        // Wrap auth initialization to prevent blocking
+        (function() {
+            try {
+                var script = document.createElement('script');
+                script.src = '../js/dcf-auth.js';
+                script.onerror = function() {
+                    console.log('Auth script failed to load, continuing without auth');
+                };
+                document.head.appendChild(script);
+            } catch (e) {
+                console.log('Auth initialization skipped:', e);
+            }
+        })();
+    </script>
     <script src="../js/dcf-init.js"></script>
     
     <script>
@@ -961,8 +975,28 @@
         let currentResource = null;
         let citationFormat = 'apa';
 
+        // Initialize Supabase directly if not available from dcf-core
+        async function ensureSupabase() {
+            if (!window.dcfSupabase && window.supabase) {
+                console.log('Initializing Supabase directly');
+                const supabaseUrl = 'https://rywccyyjxhmpvqzbtkfw.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5d2NjeXlqeGhtcHZxemJ0a2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA0ODM0MjcsImV4cCI6MjA0NjA1OTQyN30.0s2pEqmUguTiM2cGmCXOTz_K6SDKDTLLjVMxssJW5Rs';
+                
+                try {
+                    window.dcfSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                    console.log('✅ Supabase client created directly');
+                } catch (error) {
+                    console.error('Failed to create Supabase client:', error);
+                }
+            }
+            return window.dcfSupabase;
+        }
+        
         // Initialize on page load
-        function initializePage() {
+        async function initializePage() {
+            // Ensure Supabase is available
+            await ensureSupabase();
+            
             const urlParams = new URLSearchParams(window.location.search);
             const resourceId = urlParams.get('id');
             
@@ -970,23 +1004,15 @@
                 loadResource(resourceId);
                 loadRelatedResources(resourceId);
             } else {
-                showError('No resource specified');
+                // If no ID specified, load the first available resource
+                loadFirstResource();
             }
         }
         
-        // Wait for DCF system to be ready
-        if (window.addEventListener) {
-            window.addEventListener('dcfReady', initializePage);
-        }
-        
-        // Fallback if dcfReady doesn't fire
+        // Load immediately when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                if (!currentResource) {
-                    console.log('Initializing without dcfReady event');
-                    initializePage();
-                }
-            }, 2000);
+            // Try to initialize immediately
+            setTimeout(initializePage, 500);
         });
 
         // Load resource data
