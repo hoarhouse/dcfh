@@ -1344,12 +1344,24 @@
             return 'unknown';
         }
         
+        // Check if document can be previewed directly
+        function canPreviewDocument(resource) {
+            if (!resource || !resource.file_url) return false;
+            
+            const fileType = detectFileType(resource);
+            const supportedTypes = ['pdf', 'image', 'text', 'markdown', 'video', 'audio'];
+            
+            return supportedTypes.includes(fileType);
+        }
+        
         // Main preview renderer
         function renderResourcePreview() {
             const previewContent = document.getElementById('previewContent');
             const fileType = detectFileType(currentResource);
             
             console.log('Rendering preview for file type:', fileType);
+            console.log('File URL:', currentResource.file_url);
+            console.log('Featured Image URL:', currentResource.featured_image_url);
             
             // Show loading state
             previewContent.innerHTML = `
@@ -1359,28 +1371,34 @@
                 </div>
             `;
             
-            // Route to appropriate preview renderer
-            switch(fileType) {
-                case 'pdf':
-                    renderPDFPreview(previewContent);
-                    break;
-                case 'image':
-                    renderImagePreview(previewContent);
-                    break;
-                case 'text':
-                    renderTextPreview(previewContent);
-                    break;
-                case 'markdown':
-                    renderMarkdownPreview(previewContent);
-                    break;
-                case 'video':
-                    renderVideoPreview(previewContent);
-                    break;
-                case 'audio':
-                    renderAudioPreview(previewContent);
-                    break;
-                default:
-                    renderFallbackPreview(previewContent);
+            // Priority 1: Try to preview the actual document if we have a file_url
+            if (currentResource.file_url) {
+                switch(fileType) {
+                    case 'pdf':
+                        renderPDFPreview(previewContent);
+                        break;
+                    case 'image':
+                        renderImagePreview(previewContent);
+                        break;
+                    case 'text':
+                        renderTextPreview(previewContent);
+                        break;
+                    case 'markdown':
+                        renderMarkdownPreview(previewContent);
+                        break;
+                    case 'video':
+                        renderVideoPreview(previewContent);
+                        break;
+                    case 'audio':
+                        renderAudioPreview(previewContent);
+                        break;
+                    default:
+                        // Priority 2: For unsupported formats, use featured image if available
+                        renderFallbackPreview(previewContent);
+                }
+            } else {
+                // Priority 2/3: No file_url, fallback to featured image or placeholder
+                renderFallbackPreview(previewContent);
             }
         }
         
