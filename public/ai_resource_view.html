@@ -998,13 +998,13 @@
             await ensureSupabase();
             
             const urlParams = new URLSearchParams(window.location.search);
-            const resourceId = urlParams.get('id');
+            const resourceSlug = urlParams.get('slug');
             
-            if (resourceId) {
-                loadResource(resourceId);
-                loadRelatedResources(resourceId);
+            if (resourceSlug) {
+                loadResource(resourceSlug);
+                loadRelatedResources(resourceSlug);
             } else {
-                // If no ID specified, load the first available resource
+                // If no slug specified, load the first available resource
                 loadFirstResource();
             }
         }
@@ -1023,13 +1023,13 @@
                 if (window.dcfSupabase) {
                     const { data: resources, error } = await window.dcfSupabase
                         .from('resources')
-                        .select('id')
+                        .select('slug')
                         .eq('status', 'approved')
                         .order('created_at', { ascending: false })
                         .limit(1);
                     
                     if (!error && resources && resources.length > 0) {
-                        loadResource(resources[0].id);
+                        loadResource(resources[0].slug);
                     } else {
                         showError('No resources available');
                     }
@@ -1043,19 +1043,19 @@
         }
         
         // Load resource data
-        async function loadResource(resourceId) {
+        async function loadResource(resourceSlug) {
             try {
                 await ensureSupabase();
                 
                 // Check if Supabase is available
                 if (window.dcfSupabase) {
-                    console.log('Loading resource:', resourceId);
+                    console.log('Loading resource by slug:', resourceSlug);
                     
-                    // Fetch from database
+                    // Fetch from database by slug
                     const { data: resource, error } = await window.dcfSupabase
                         .from('resources')
                         .select('*')
-                        .eq('id', resourceId)
+                        .eq('slug', resourceSlug)
                         .single();
                     
                     if (error) {
@@ -1154,7 +1154,7 @@
         }
 
         // Load related resources
-        async function loadRelatedResources(resourceId) {
+        async function loadRelatedResources(resourceSlug) {
             try {
                 let relatedResources = [];
                 
@@ -1162,9 +1162,9 @@
                 if (window.dcfSupabase && currentResource) {
                     const { data, error } = await window.dcfSupabase
                         .from('resources')
-                        .select('id, title, type, author_name, download_count, rating_average')
+                        .select('slug, title, type, author_name, download_count, rating_average')
                         .eq('status', 'approved')
-                        .neq('id', resourceId)
+                        .neq('slug', resourceSlug)
                         .limit(3)
                         .order('created_at', { ascending: false });
                     
@@ -1182,7 +1182,7 @@
                     const downloads = resource.download_count || 0;
                     
                     return `
-                        <div class="related-card" onclick="viewResource('${resource.id}')">
+                        <div class="related-card" onclick="viewResource('${resource.slug}')">
                             <div class="related-type">${displayType}</div>
                             <h3 class="related-title">${resource.title}</h3>
                             <div class="related-author">By ${resource.author_name || 'DCF Hungary'}</div>
@@ -1323,8 +1323,8 @@
         }
 
         // View another resource
-        function viewResource(resourceId) {
-            window.location.href = `?id=${resourceId}`;
+        function viewResource(resourceSlug) {
+            window.location.href = `?slug=${resourceSlug}`;
         }
 
         // Show toast notification
