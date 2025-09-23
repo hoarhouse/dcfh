@@ -3405,8 +3405,8 @@
                 showToast('Resource added successfully', 'success');
 
             } catch (error) {
-                console.error('Error adding blog post:', error);
-                showToast('Error adding blog post', 'error');
+                console.error('Error adding resource:', error);
+                showToast('Error adding resource', 'error');
             }
         }
 
@@ -3468,7 +3468,7 @@
                     <div class="empty-state">
                         <div class="empty-icon">📚</div>
                         <h3>No resources added yet</h3>
-                        <p>Add up to 4 resource slugs to populate the Resources section.</p>
+                        <p>Add up to 4 resource slugs to display in the Resources section.</p>
                     </div>
                 `;
                 return;
@@ -3505,10 +3505,10 @@
             setTimeout(() => loadResourcesPreviewImages(), 100);
         }
 
-        function generateFullSizeResourcePreview(post, template) {
-            const title = escapeHtml(post.title || 'Resource Post');
-            const excerpt = escapeHtml(post.excerpt || 'Making a difference in the world');
-            const imageUrl = post.featured_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop';
+        function generateFullSizeResourcePreview(resource, template) {
+            const title = escapeHtml(resource.title || 'Resource');
+            const excerpt = escapeHtml(resource.excerpt || 'Valuable resource for our community');
+            const imageUrl = resource.featured_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop';
             
             // Exactly like Change Makers template
             return `
@@ -3553,18 +3553,22 @@
                 if (!previewEl) continue;
 
                 try {
-                    // Query blog_posts table exactly like Change Makers
-                    const { data: post, error } = await supabase
-                        .from('blog_posts')
-                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                    // Query resources table for approved resources
+                    const { data: resource, error } = await supabase
+                        .from('resources')
+                        .select('id, title, slug, excerpt, featured_image, created_at, published_at')
                         .eq('slug', slug)
-                        .eq('status', 'published')
+                        .eq('status', 'approved')
                         .maybeSingle();
 
-                    if (!error && post) {
-                        const previewHTML = generateFullSizeResourcePreview(post, template);
+                    if (!error && resource) {
+                        const previewHTML = generateFullSizeResourcePreview({
+                            title: resource.title,
+                            excerpt: resource.excerpt,
+                            featured_image_url: resource.featured_image
+                        }, template);
                         previewEl.innerHTML = previewHTML;
-                        console.log(`Resources preview ${i}:`, post.title, 'Image:', post.featured_image_url);
+                        console.log(`Resources preview ${i}:`, resource.title, 'Image:', resource.featured_image);
                     } else {
                         console.log(`Resources preview ${i}: Using fallback for`, slug);
                         previewEl.innerHTML = generateFullSizeResourcePreview({
