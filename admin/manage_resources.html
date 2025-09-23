@@ -974,36 +974,27 @@
 
         async function loadData() {
             try {
-                // Blog filter disabled - requires authentication to load blogs table
-                // Skip loading blogs since it may require authentication
-                blogs = [];
-                const blogFilter = document.getElementById('blogFilter');
-                blogFilter.innerHTML = '<option value="">Blog filter unavailable</option>';
-                blogFilter.disabled = true;
+                // Load resources from database
 
                 // Load posts - optimized query with pagination
-                const { data: postsData, error: postsError } = await window.dcfSupabase
+                const { data: resourcesData, error: resourcesError } = await window.dcfSupabase
                     .from('resources')
-                    .select(`
-                        id, title, slug, excerpt, featured_image_url, status, 
-                        published_at, created_at, updated_at, author_id,
-                        blogs!inner(slug, name)
-                    `)
+                    .select('*')
                     .order('created_at', { ascending: false })
                     .limit(50);
 
-                if (postsError) {
-                    console.error('Failed to load resources:', postsError);
-                    showToast('Failed to load resources: ' + postsError.message, 'error');
-                    posts = [];
-                    filteredPosts = [];
+                if (resourcesError) {
+                    console.error('Failed to load resources:', resourcesError);
+                    showToast('Failed to load resources: ' + resourcesError.message, 'error');
+                    resources = [];
+                    filteredResources = [];
                     displayResources(); // Show empty state
                     updateResultsInfo();
                     return;
                 }
                 
-                posts = postsData || [];
-                filteredPosts = [...posts];
+                resources = resourcesData || [];
+                filteredResources = [...resources];
 
                 displayResources();
                 updateResultsInfo();
@@ -1021,8 +1012,7 @@
             document.getElementById('searchInput').addEventListener('input', debounce(filterResources, 300));
             
             // Filters
-            document.getElementById('blogFilter').addEventListener('change', filterResources);
-            document.getElementById('postTypeFilter').addEventListener('change', filterResources);
+            document.getElementById('typeFilter').addEventListener('change', filterResources);
             document.getElementById('statusFilter').addEventListener('change', filterResources);
             document.getElementById('authorFilter').addEventListener('change', filterResources);
 
@@ -1038,35 +1028,23 @@
 
         function filterResources() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const blogId = document.getElementById('blogFilter').value;
-            const postType = document.getElementById('postTypeFilter').value;
+            const resourceType = document.getElementById('typeFilter').value;
             const status = document.getElementById('statusFilter').value;
 
-            filteredPosts = posts.filter(post => {
+            filteredResources = resources.filter(resource => {
                 // Enhanced search including type-specific fields
                 let matchesSearch = !search || 
-                    post.title.toLowerCase().includes(search) ||
-                    post.slug.toLowerCase().includes(search) ||
-                    (post.excerpt && post.excerpt.toLowerCase().includes(search)) ||
-                    (post.content && post.content.toLowerCase().includes(search));
+                    resource.title.toLowerCase().includes(search) ||
+                    resource.slug.toLowerCase().includes(search) ||
+                    (resource.excerpt && resource.excerpt.toLowerCase().includes(search)) ||
+                    (resource.description && resource.description.toLowerCase().includes(search)) ||
+                    (resource.author_name && resource.author_name.toLowerCase().includes(search));
                 
-                // Add people-specific search
-                if (!matchesSearch && post.post_type === 'people_post') {
-                    matchesSearch = 
-                        (post.person_first_name && post.person_first_name.toLowerCase().includes(search)) ||
-                        (post.person_last_name && post.person_last_name.toLowerCase().includes(search));
-                }
-                
-                // Add news-specific search
-                if (!matchesSearch && post.post_type === 'news_post') {
-                    matchesSearch = post.news_category && post.news_category.toLowerCase().includes(search);
-                }
 
-                const matchesBlog = !blogId || post.blog_id === blogId;
-                const matchesPostType = !postType || post.post_type === postType;
-                const matchesStatus = !status || post.status === status;
+                const matchesType = !resourceType || resource.type === resourceType;
+                const matchesStatus = !status || resource.status === status;
 
-                return matchesSearch && matchesBlog && matchesPostType && matchesStatus;
+                return matchesSearch && matchesType && matchesStatus;
             });
 
             displayResources();
@@ -1074,22 +1052,22 @@
         }
 
         function displayResources() {
-            const postsList = document.getElementById('postsList');
+            const resourcesList = document.getElementById('resourcesList');
             const emptyState = document.getElementById('emptyState');
 
-            if (filteredPosts.length === 0) {
-                postsList.style.display = 'none';
+            if (filteredResources.length === 0) {
+                resourcesList.style.display = 'none';
                 emptyState.style.display = 'block';
                 return;
             }
 
             emptyState.style.display = 'none';
-            postsList.style.display = 'block';
-            postsList.innerHTML = '';
+            resourcesList.style.display = 'block';
+            resourcesList.innerHTML = '';
 
-            filteredPosts.forEach(post => {
-                const postItem = createResourceItem(post);
-                postsList.appendChild(postItem);
+            filteredResources.forEach(resource => {
+                const resourceItem = createResourceItem(resource);
+                resourcesList.appendChild(resourceItem);
             });
         }
 
@@ -1151,21 +1129,21 @@
 
         function updateResultsInfo() {
             const info = document.getElementById('resultsInfo');
-            const total = posts.length;
-            const filtered = filteredPosts.length;
+            const total = resources.length;
+            const filtered = filteredResources.length;
             
             if (total === filtered) {
-                info.textContent = `${total} post${total !== 1 ? 's' : ''}`;
+                info.textContent = `${total} resource${total !== 1 ? 's' : ''}`;
             } else {
-                info.textContent = `${filtered} of ${total} posts`;
+                info.textContent = `${filtered} of ${total} resources`;
             }
         }
 
         function toggleResourceSelection(resourceId, selected) {
             if (selected) {
-                selectedPosts.add(postId);
+                selectedResources.add(resourceId);
             } else {
-                selectedPosts.delete(postId);
+                selectedResources.delete(resourceId);
             }
             
             updateBulkActions();
@@ -1173,7 +1151,7 @@
 
         function updateBulkActions() {
             const bulkActions = document.getElementById('bulkActions');
-            const count = selectedPosts.size;
+            const count = selectedResources.size;
             
             if (count > 0) {
                 bulkActions.classList.add('show');
@@ -1281,8 +1259,8 @@
                 showToast('Post deleted successfully', 'success');
                 
                 // Remove from local array for instant UI update
-                posts = posts.filter(p => p.id !== postId);
-                filteredPosts = filteredPosts.filter(p => p.id !== postId);
+                resources = resources.filter(r => r.id !== resourceId);
+                filteredResources = filteredResources.filter(r => r.id !== resourceId);
                 displayResources();
                 updateResultsInfo();
                 
@@ -1298,13 +1276,13 @@
             }
         }
 
-        async function duplicateResource(postId) {
+        async function duplicateResource(resourceId) {
             try {
-                const originalPost = posts.find(p => p.id === postId);
-                if (!originalPost) throw new Error('Post not found');
+                const originalResource = resources.find(r => r.id === resourceId);
+                if (!originalResource) throw new Error('Resource not found');
 
-                const duplicatedPost = {
-                    ...originalPost,
+                const duplicatedResource = {
+                    ...originalResource,
                     id: undefined, // Remove ID to create new
                     title: `${originalPost.title} (Copy)`,
                     slug: `${originalPost.slug}-copy-${Date.now()}`,
