@@ -1068,16 +1068,25 @@
             try {
                 await ensureSupabase();
                 
-                // Check if Supabase is available
-                if (window.dcfSupabase) {
-                    console.log('Loading resource by slug:', resourceSlug);
-                    
-                    // Fetch from database by slug
-                    const { data: resource, error } = await window.dcfSupabase
-                        .from('resources')
-                        .select('*')
-                        .eq('slug', resourceSlug)
-                        .single();
+                // Check if Supabase client is properly initialized
+                if (!window.dcfSupabase || !window.dcfSupabase.from) {
+                    console.error('Supabase client not properly initialized:', {
+                        exists: !!window.dcfSupabase,
+                        hasFrom: !!window.dcfSupabase?.from,
+                        type: typeof window.dcfSupabase
+                    });
+                    showError('Database connection not available');
+                    return;
+                }
+                
+                console.log('Loading resource by slug:', resourceSlug);
+                
+                // Fetch from database by slug
+                const { data: resource, error } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*')
+                    .eq('slug', resourceSlug)
+                    .single();
                     
                     if (error) {
                         console.error('Database error:', error);
