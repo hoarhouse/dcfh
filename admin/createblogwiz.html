@@ -883,26 +883,6 @@
             document.getElementById('blogName').addEventListener('input', function() {
                 const name = this.value;
                 document.getElementById('step1Next').disabled = !name.trim();
-                
-                // Auto-generate slug
-                if (name) {
-                    const slug = name.toLowerCase()
-                        .replace(/[^a-z0-9\s-]/g, '')
-                        .replace(/\s+/g, '_')
-                        .replace(/-+/g, '_')
-                        .trim();
-                    document.getElementById('blogSlug').value = slug;
-                }
-                
-                updatePreview();
-            });
-
-            // Slug input
-            document.getElementById('blogSlug').addEventListener('input', function() {
-                // Clean up slug input
-                this.value = this.value.toLowerCase()
-                    .replace(/[^a-z0-9_-]/g, '')
-                    .replace(/\s+/g, '_');
                 updatePreview();
             });
 
@@ -929,8 +909,37 @@
             document.getElementById('previewStatus').textContent = status;
         }
 
-        function nextStep() {
+        async function nextStep() {
             if (currentStep < 3) {
+                // Generate slug when going to Step 3
+                if (currentStep === 2) {
+                    const blogName = document.getElementById('blogName').value.trim();
+                    if (blogName) {
+                        try {
+                            // Show loading state
+                            const nextBtn = document.querySelector('.wizard-step.active .btn-primary');
+                            if (nextBtn) {
+                                const originalText = nextBtn.textContent;
+                                nextBtn.textContent = 'Generating URL...';
+                                nextBtn.disabled = true;
+                                
+                                const slug = await generateBlogSlugFromName(blogName);
+                                document.getElementById('blogSlug').value = slug;
+                                if (document.getElementById('slugPreview')) {
+                                    document.getElementById('slugPreview').textContent = slug;
+                                }
+                                
+                                // Restore button
+                                nextBtn.textContent = originalText;
+                                nextBtn.disabled = false;
+                            }
+                        } catch (error) {
+                            console.error('Error generating blog slug:', error);
+                            showToast('Error generating URL slug', 'error');
+                            return; // Don't proceed to next step
+                        }
+                    }
+                }
                 showStep(currentStep + 1);
             }
         }
