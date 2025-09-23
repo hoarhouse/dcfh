@@ -3806,19 +3806,19 @@
         }
 
         try {
-            // Get Resources slugs from CMS
+            // Get Resources slugs from CMS (don't use .single() as section might not exist)
             const { data: cmsData, error: cmsError } = await supabase
                 .from('cms_sections')
                 .select('slugs')
-                .eq('section_name', 'resources')
-                .single();
+                .eq('section_name', 'resources');
 
             if (cmsError) {
                 console.error('Resources CMS error:', cmsError);
                 throw cmsError;
             }
 
-            const slugEntries = cmsData?.slugs || [];
+            // Handle case where section doesn't exist (empty array) or exists (first item)
+            const slugEntries = (cmsData && cmsData.length > 0) ? (cmsData[0].slugs || []) : [];
             console.log('=== Resources CMS Data ===');
             console.log('Slug entries:', slugEntries);
 
