@@ -1093,117 +1093,56 @@
             });
         }
 
-        function createResourceItem(post) {
+        function createResourceItem(resource) {
             const item = document.createElement('div');
             item.className = 'post-item';
-            item.dataset.postId = post.id;
+            item.dataset.resourceId = resource.id;
 
-            // Determine post type and prepare type-specific displays
-            const postType = post.post_type || 'blog_post';
-            let typeLabel = 'Blog';
-            let typeClass = 'type-blog';
-            let additionalInfo = '';
-
-            if (postType === 'people_post') {
-                typeLabel = 'People';
-                typeClass = 'type-people';
-                
-                // Add person info if available
-                if (post.person_first_name || post.person_last_name) {
-                    const fullName = `${post.person_first_name || ''} ${post.person_last_name || ''}`.trim();
-                    const photoUrl = post.person_photo_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23e5e5e5"/><text x="50" y="55" font-size="30" fill="%23999" text-anchor="middle">👤</text></svg>';
-                    
-                    additionalInfo = `
-                        <div class="person-info">
-                            <img src="${photoUrl}" alt="${fullName}" class="person-photo" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><circle cx=\\'50\\' cy=\\'50\\' r=\\'40\\' fill=\\'%23e5e5e5\\'/><text x=\\'50\\' y=\\'55\\' font-size=\\'30\\' fill=\\'%23999\\' text-anchor=\\'middle\\'>👤</text></svg>'">
-                            <div class="person-name">Featured: ${escapeHtml(fullName)}</div>
-                        </div>
-                    `;
-                }
-            } else if (postType === 'news_post') {
-                typeLabel = 'News';
-                typeClass = 'type-news';
-                
-                // Add news-specific info
-                if (post.news_category || post.publication_date) {
-                    const parts = [];
-                    if (post.news_category) parts.push(`Category: ${escapeHtml(post.news_category)}`);
-                    if (post.publication_date) parts.push(`Published: ${new Date(post.publication_date).toLocaleDateString()}`);
-                    if (parts.length > 0) {
-                        additionalInfo = `<div style="margin-top: 0.5rem; color: #666; font-size: 0.85rem;">${parts.join(' • ')}</div>`;
-                    }
-                }
-            }
-
-            const publishedDate = post.published_at ? 
-                new Date(post.published_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                }) : 'Not published';
-
-            const excerpt = post.excerpt || stripHtml(post.content).substring(0, 150) + '...';
-            // Blog name removed since we're not joining with blogs table for public access
-            const blogName = 'Blog Post';
-
-            // Create featured image HTML if available
-            const featuredImageHtml = post.featured_image_url ? `
-                <div class="post-image" style="flex-shrink: 0; margin-right: 1rem;">
-                    <img src="${post.featured_image_url}" alt="${escapeHtml(post.title)}" 
-                         style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;"
-                         onerror="this.style.display='none'">
-                </div>
-            ` : '';
-
+            const uploadDate = new Date(resource.created_at).toLocaleDateString();
+            const fileSize = resource.file_size ? `${(resource.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A';
+            
             item.innerHTML = `
                 <div class="post-checkbox">
-                    <input type="checkbox" onchange="toggleResourceSelection('${post.id}', this.checked)">
+                    <input type="checkbox" onchange="toggleResourceSelection('${resource.id}', this.checked)">
                 </div>
-                
-                ${featuredImageHtml}
                 
                 <div class="post-content">
                     <div class="post-main">
                         <div class="post-info">
                             <div class="post-title">
-                                <a href="post-edit.html?id=${post.id}">${escapeHtml(post.title)}</a>
-                                <span class="type-badge ${typeClass}">${typeLabel}</span>
-                                <div class="post-slug" onclick="copyToClipboard('${post.slug}')" title="Click to copy slug">
-                                    ${post.slug}
+                                <span>${escapeHtml(resource.title)}</span>
+                                <div class="post-slug" onclick="copySlug('${resource.slug}')" title="Click to copy slug">
+                                    ${resource.slug}
                                 </div>
                             </div>
                             
                             <div class="post-meta">
-                                <span class="status-badge status-${post.status}">${post.status}</span>
-                                <span>${blogName}</span>
-                                <span>${publishedDate}</span>
-                                <span>${post.view_count || 0} views</span>
+                                <span class="status-badge status-${resource.status}">${resource.status}</span>
+                                <span>${escapeHtml(resource.type)}</span>
+                                <span>By ${escapeHtml(resource.author_name)}</span>
+                                <span>${uploadDate}</span>
+                                <span>${fileSize}</span>
                             </div>
                             
-                            ${additionalInfo}
-                            
-                            <div class="post-excerpt">${escapeHtml(excerpt)}</div>
+                            <div class="post-excerpt">${escapeHtml((resource.description || resource.excerpt || '').substring(0, 150))}...</div>
                         </div>
                         
                         <div class="post-stats">
-                            <div>Views: ${post.view_count || 0}</div>
-                            <div>Created: ${new Date(post.created_at).toLocaleDateString()}</div>
-                            ${post.updated_at !== post.created_at ? 
-                                `<div>Updated: ${new Date(post.updated_at).toLocaleDateString()}</div>` : 
-                                ''
-                            }
+                            <div>Downloads: ${resource.download_count || 0}</div>
+                            <div>Views: ${resource.view_count || 0}</div>
+                            <div>Rating: ${resource.rating_average || 0}/5</div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="post-actions">
-                    <a href="blogwiz.html?post_id=${post.id}" class="action-btn primary">Edit</a>
-                    <a href="../blog/post.html?blog=${post.blogs.slug}&post=${post.slug}" target="_blank" class="action-btn">View</a>
-                    <button onclick="duplicateResource('${post.id}')" class="action-btn">Duplicate</button>
-                    <button onclick="changeResourceStatus('${post.id}', '${post.status === 'published' ? 'draft' : 'published'}')" class="action-btn">
-                        ${post.status === 'published' ? 'Unpublish' : 'Publish'}
-                    </button>
-                    <button onclick="deleteResource('${post.id}')" class="action-btn danger">Delete</button>
+                    ${resource.status === 'pending' ? `
+                        <button onclick="approveResource('${resource.id}')" class="action-btn primary">Approve</button>
+                        <button onclick="rejectResource('${resource.id}')" class="action-btn danger">Reject</button>
+                    ` : ''}
+                    <button onclick="copySlug('${resource.slug}')" class="action-btn">Copy Slug</button>
+                    <a href="../resources/dcf_resource_detail.html?id=${resource.id}" target="_blank" class="action-btn">View</a>
+                    <button onclick="deleteResource('${resource.id}')" class="action-btn danger">Delete</button>
                 </div>
             `;
 
@@ -1456,11 +1395,83 @@
             }, 3000);
         }
 
+
+        async function approveResource(resourceId) {
+            await updateResourceStatus(resourceId, 'approved');
+        }
+
+        async function rejectResource(resourceId) {
+            await updateResourceStatus(resourceId, 'rejected');
+        }
+
+        async function updateResourceStatus(resourceId, newStatus) {
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('resources')
+                    .update({ status: newStatus })
+                    .eq('id', resourceId);
+
+                if (error) throw error;
+                showToast(`Resource ${newStatus} successfully`, 'success');
+                loadData();
+            } catch (error) {
+                console.error('Error updating resource status:', error);
+                showToast('Error updating resource status', 'error');
+            }
+        }
+
+        function copySlug(slug) {
+            navigator.clipboard.writeText(slug).then(() => {
+                showToast('Slug copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy slug', 'error');
+            });
+        }
+
+        function refreshResources() {
+            loadData();
+        }
     </script>
     
     <script>
     // dcf-init.js handles everything automatically
     console.log('Manual initialization not needed - dcf-init.js handles startup');
+
+        async function approveResource(resourceId) {
+            await updateResourceStatus(resourceId, 'approved');
+        }
+
+        async function rejectResource(resourceId) {
+            await updateResourceStatus(resourceId, 'rejected');
+        }
+
+        async function updateResourceStatus(resourceId, newStatus) {
+            try {
+                const { error } = await window.dcfSupabase
+                    .from('resources')
+                    .update({ status: newStatus })
+                    .eq('id', resourceId);
+
+                if (error) throw error;
+                showToast(`Resource ${newStatus} successfully`, 'success');
+                loadData();
+            } catch (error) {
+                console.error('Error updating resource status:', error);
+                showToast('Error updating resource status', 'error');
+            }
+        }
+
+        function copySlug(slug) {
+            navigator.clipboard.writeText(slug).then(() => {
+                showToast('Slug copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy slug', 'error');
+            });
+        }
+
+        function refreshResources() {
+            loadData();
+        }
     </script>
 </body>
 </html>
