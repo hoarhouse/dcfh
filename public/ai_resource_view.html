@@ -1108,33 +1108,52 @@
         // Load related resources
         async function loadRelatedResources(resourceId) {
             try {
-                // Mock related resources - replace with actual query
-                const relatedResources = [
-                    {
-                        id: 'r1',
-                        title: 'AI Governance Best Practices',
-                        type: 'Guide',
-                        author_name: 'Dr. Maria Schmidt',
-                        download_count: 892,
-                        rating_average: 4.6
-                    },
-                    {
-                        id: 'r2',
-                        title: 'Implementing Ethical AI in Healthcare',
-                        type: 'Case Study',
-                        author_name: 'Prof. János Nagy',
-                        download_count: 567,
-                        rating_average: 4.9
-                    },
-                    {
-                        id: 'r3',
-                        title: 'Human Dignity in the Digital Age',
-                        type: 'Research',
-                        author_name: 'Dr. Antal Kuthy',
-                        download_count: 1103,
-                        rating_average: 4.7
+                let relatedResources = [];
+                
+                // Try to fetch from Supabase
+                if (window.dcfSupabase && currentResource) {
+                    const { data, error } = await window.dcfSupabase
+                        .from('resources')
+                        .select('id, title, type, author_name, download_count, rating_average')
+                        .eq('status', 'approved')
+                        .neq('id', resourceId)
+                        .limit(3)
+                        .order('created_at', { ascending: false });
+                    
+                    if (!error && data) {
+                        relatedResources = data;
                     }
-                ];
+                }
+                
+                // Fallback to mock data if needed
+                if (relatedResources.length === 0) {
+                    relatedResources = [
+                        {
+                            id: 'r1',
+                            title: 'AI Governance Best Practices',
+                            type: 'guides',
+                            author_name: 'Dr. Maria Schmidt',
+                            download_count: 892,
+                            rating_average: 4.6
+                        },
+                        {
+                            id: 'r2',
+                            title: 'Implementing Ethical AI in Healthcare',
+                            type: 'case-studies',
+                            author_name: 'Prof. János Nagy',
+                            download_count: 567,
+                            rating_average: 4.9
+                        },
+                        {
+                            id: 'r3',
+                            title: 'Human Dignity in the Digital Age',
+                            type: 'research',
+                            author_name: 'Dr. Antal Kuthy',
+                            download_count: 1103,
+                            rating_average: 4.7
+                        }
+                    ];
+                }
                 
                 const relatedGrid = document.getElementById('relatedGrid');
                 relatedGrid.innerHTML = relatedResources.map(resource => `
