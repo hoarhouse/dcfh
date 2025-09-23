@@ -1030,10 +1030,29 @@
             }
         }
         
+        // Load with retry logic
+        async function initWithRetry(attempts = 3) {
+            for (let i = 0; i < attempts; i++) {
+                await ensureSupabase();
+                
+                if (window.dcfSupabase && window.dcfSupabase.from) {
+                    console.log(`✅ Supabase ready on attempt ${i + 1}`);
+                    initializePage();
+                    return;
+                }
+                
+                console.log(`Attempt ${i + 1} failed, waiting...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            console.error('Failed to initialize Supabase after', attempts, 'attempts');
+            showError('Failed to connect to database');
+        }
+        
         // Load immediately when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Try to initialize immediately
-            setTimeout(initializePage, 500);
+            // Start initialization with retry
+            setTimeout(() => initWithRetry(3), 500);
         });
 
         // Load first available resource
@@ -1041,7 +1060,7 @@
             try {
                 await ensureSupabase();
                 
-                if (window.dcfSupabase) {
+                if (window.dcfSupabase && window.dcfSupabase.from) {
                     const { data: resources, error } = await window.dcfSupabase
                         .from('resources')
                         .select('slug')
