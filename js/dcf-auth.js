@@ -600,7 +600,9 @@ const dcfAuth = {
 
 // Export to window for global access
 window.dcfAuth = dcfAuth;
-window.dcfSupabase = () => dcfSupabase; // Function to get current client
+// Don't overwrite the global dcfSupabase client
+// window.dcfSupabase is already set by dcf-core.js
+window.getSupabaseClient = () => dcfSupabase; // Function to get current client
 window.getCurrentUser = getCurrentUser;
 window.isUserLoggedIn = isUserLoggedIn;
 window.handleLogout = handleLogout;
