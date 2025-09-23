@@ -1114,20 +1114,33 @@
 
     <!-- Scripts - Load core first, then auth with error handling -->
     <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-auth.js"></script>
     <script src="../js/dcf-ui.js"></script>
     <script>
-        // Wrap auth initialization to prevent blocking
+        // Safe auth initialization with fallback
         (function() {
-            try {
-                var script = document.createElement('script');
-                script.src = '../js/dcf-auth.js';
-                script.onerror = function() {
-                    console.log('Auth script failed to load, continuing without auth');
-                };
-                document.head.appendChild(script);
-            } catch (e) {
-                console.log('Auth initialization skipped:', e);
-            }
+            // Try to initialize auth if available
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    if (typeof window.initializeAuth === 'function') {
+                        try {
+                            window.initializeAuth();
+                            console.log('Authentication initialized');
+                        } catch (error) {
+                            console.warn('Auth initialization failed:', error);
+                        }
+                    } else if (typeof window.DCFAuth !== 'undefined' && window.DCFAuth.init) {
+                        try {
+                            window.DCFAuth.init();
+                            console.log('DCF Auth initialized');
+                        } catch (error) {
+                            console.warn('DCF Auth initialization failed:', error);
+                        }
+                    } else {
+                        console.log('Authentication system not available - continuing without auth');
+                    }
+                }, 100);
+            });
         })();
     </script>
     <script src="../js/dcf-init.js"></script>
@@ -1310,37 +1323,60 @@
         function detectFileType(resource) {
             if (!resource) return 'unknown';
             
+            // Debug logging
+            console.log('Detecting file type for:', {
+                file_format: resource.file_format,
+                file_url: resource.file_url,
+                content_type: resource.content_type,
+                type: resource.type
+            });
+            
             // Check file_format field first
-            const format = (resource.file_format || '').toLowerCase();
+            const format = (resource.file_format || '').toLowerCase().trim();
             if (format) {
-                if (format === 'pdf') return 'pdf';
-                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(format)) return 'image';
-                if (['mp4', 'webm', 'ogg', 'mov'].includes(format)) return 'video';
-                if (['mp3', 'wav', 'ogg', 'aac'].includes(format)) return 'audio';
-                if (['txt', 'text'].includes(format)) return 'text';
+                if (format === 'pdf' || format === 'application/pdf') return 'pdf';
+                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(format)) return 'image';
+                if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(format)) return 'video';
+                if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(format)) return 'audio';
+                if (['txt', 'text', 'plain'].includes(format)) return 'text';
                 if (['md', 'markdown'].includes(format)) return 'markdown';
             }
             
             // Check file_url extension as fallback
             if (resource.file_url) {
-                const ext = resource.file_url.split('.').pop().toLowerCase();
+                // Remove query parameters and get extension
+                const urlPath = resource.file_url.split('?')[0];
+                const ext = urlPath.split('.').pop().toLowerCase().trim();
+                
                 if (ext === 'pdf') return 'pdf';
-                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return 'image';
-                if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) return 'video';
-                if (['mp3', 'wav', 'ogg', 'aac'].includes(ext)) return 'audio';
+                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(ext)) return 'image';
+                if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext)) return 'video';
+                if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(ext)) return 'audio';
                 if (['txt', 'text'].includes(ext)) return 'text';
                 if (['md', 'markdown'].includes(ext)) return 'markdown';
             }
             
             // Check content_type if available
             if (resource.content_type) {
-                if (resource.content_type.includes('pdf')) return 'pdf';
-                if (resource.content_type.includes('image')) return 'image';
-                if (resource.content_type.includes('video')) return 'video';
-                if (resource.content_type.includes('audio')) return 'audio';
-                if (resource.content_type.includes('text')) return 'text';
+                const contentType = resource.content_type.toLowerCase();
+                if (contentType.includes('pdf')) return 'pdf';
+                if (contentType.includes('image')) return 'image';
+                if (contentType.includes('video')) return 'video';
+                if (contentType.includes('audio')) return 'audio';
+                if (contentType.includes('text')) return 'text';
             }
             
+            // Check the type field as last resort
+            if (resource.type) {
+                const resourceType = resource.type.toLowerCase();
+                if (resourceType.includes('pdf')) return 'pdf';
+                if (resourceType.includes('image') || resourceType.includes('photo')) return 'image';
+                if (resourceType.includes('video')) return 'video';
+                if (resourceType.includes('audio') || resourceType.includes('podcast')) return 'audio';
+                if (resourceType.includes('document') || resourceType.includes('text')) return 'text';
+            }
+            
+            console.log('File type detected as: unknown');
             return 'unknown';
         }
         
@@ -1404,7 +1440,27 @@
         
         // PDF Preview with PDF.js
         async function renderPDFPreview(container) {
+            // Debug logging
+            console.log('=== PDF Preview Debug ===');
+            console.log('Attempting to load PDF:', currentResource.file_url);
+            console.log('Resource file format:', currentResource.file_format);
+            console.log('Resource content type:', currentResource.content_type);
+            
             if (!currentResource.file_url) {
+                console.log('No file_url available, using fallback');
+                renderFallbackPreview(container);
+                return;
+            }
+            
+            // Validate URL looks like a PDF endpoint
+            const url = currentResource.file_url.toLowerCase();
+            const isPDFUrl = url.endsWith('.pdf') || 
+                           url.includes('pdf') || 
+                           (currentResource.content_type && currentResource.content_type.includes('pdf'));
+            
+            if (!isPDFUrl) {
+                console.warn('URL does not appear to be a PDF:', currentResource.file_url);
+                console.log('Falling back to featured image or placeholder');
                 renderFallbackPreview(container);
                 return;
             }
@@ -1425,19 +1481,49 @@
                         </div>
                     `;
                     
-                    // Load PDF
-                    const pdf = await pdfjsLib.getDocument(currentResource.file_url).promise;
-                    window.pdfDoc = pdf;
-                    window.pdfPageNum = 1;
-                    window.pdfNumPages = pdf.numPages;
+                    // Try to load PDF with better error handling
+                    console.log('Loading PDF document...');
+                    const loadingTask = pdfjsLib.getDocument({
+                        url: currentResource.file_url,
+                        withCredentials: false,
+                        // Add CORS mode
+                        isEvalSupported: false,
+                        disableAutoFetch: false,
+                        disableStream: false
+                    });
                     
-                    // Render first page
-                    renderPDFPage(1);
+                    loadingTask.promise.then(function(pdf) {
+                        console.log('PDF loaded successfully, pages:', pdf.numPages);
+                        window.pdfDoc = pdf;
+                        window.pdfPageNum = 1;
+                        window.pdfNumPages = pdf.numPages;
+                        
+                        // Render first page
+                        renderPDFPage(1);
+                    }).catch(function(error) {
+                        console.error('PDF loading failed:', error);
+                        console.log('Error details:', {
+                            message: error.message,
+                            name: error.name,
+                            stack: error.stack
+                        });
+                        
+                        // Check for specific error types
+                        if (error.message && error.message.includes('Invalid PDF structure')) {
+                            console.log('Invalid PDF structure - file may not be a real PDF');
+                        } else if (error.message && error.message.includes('CORS')) {
+                            console.log('CORS error - PDF cannot be loaded from this domain');
+                        }
+                        
+                        console.log('Falling back to featured image or placeholder');
+                        renderFallbackPreview(container);
+                    });
                 } else {
                     throw new Error('PDF.js library not loaded');
                 }
             } catch (error) {
-                console.error('Error loading PDF:', error);
+                console.error('Error in PDF preview setup:', error);
+                console.log('Falling back to featured image or placeholder');
                 renderFallbackPreview(container);
             }
         }
