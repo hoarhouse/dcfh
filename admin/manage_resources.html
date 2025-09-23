@@ -935,9 +935,9 @@
 
             <div id="emptyState" class="empty-state" style="display: none;">
                 <div class="empty-icon">📝</div>
-                <h3>No Blog Posts Found</h3>
-                <p>Create your first blog post to get started.</p>
-                <a href="blogwiz.html" class="btn btn-primary" style="margin-top: 1rem;">Create First Post</a>
+                <h3>No Resources Found</h3>
+                <p>Upload your first resource to get started.</p>
+                <a href="../resources/dcf_resource_upload.html" class="btn btn-primary" style="margin-top: 1rem;">Upload First Resource</a>
             </div>
 
             <div id="resourcesList" class="posts-list" style="display: none;">
@@ -977,24 +977,18 @@
                 // Blog filter disabled - requires authentication to load blogs table
                 // Skip loading blogs since it may require authentication
                 blogs = [];
-                const blogFilter = document.getElementById('blogFilter');
-                blogFilter.innerHTML = '<option value="">Blog filter unavailable</option>';
-                blogFilter.disabled = true;
+                // Remove blog filter references for resources
 
                 // Load posts - optimized query with pagination
                 const { data: resourcesData, error: resourcesError } = await window.dcfSupabase
                     .from('resources')
-                    .select(`
-                        id, title, slug, excerpt, featured_image_url, status, 
-                        published_at, created_at, updated_at, author_id,
-                        blogs!inner(slug, name)
-                    `)
+                    .select('*')
                     .order('created_at', { ascending: false })
                     .limit(50);
 
                 if (resourcesError) {
-                    console.error('Failed to load posts:', resourcesError);
-                    showToast('Failed to load blog posts: ' + resourcesError.message, 'error');
+                    console.error('Failed to load resources:', resourcesError);
+                    showToast('Failed to load resources: ' + resourcesError.message, 'error');
                     posts = [];
                     filteredResources = [];
                     displayResources(); // Show empty state
@@ -1002,15 +996,15 @@
                     return;
                 }
                 
-                posts = resourcesData || [];
-                filteredResources = [...posts];
+                resources = resourcesData || [];
+                filteredResources = [...resources];
 
                 displayResources();
                 updateResultsInfo();
 
             } catch (error) {
                 console.error('Error loading data:', error);
-                showToast('Failed to load posts', 'error');
+                showToast('Failed to load resources', 'error');
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -1021,8 +1015,7 @@
             document.getElementById('searchInput').addEventListener('input', debounce(filterResources, 300));
             
             // Filters
-            document.getElementById('blogFilter').addEventListener('change', filterResources);
-            document.getElementById('postTypeFilter').addEventListener('change', filterResources);
+            document.getElementById('typeFilter').addEventListener('change', filterResources);
             document.getElementById('statusFilter').addEventListener('change', filterResources);
             document.getElementById('authorFilter').addEventListener('change', filterResources);
 
