@@ -3400,14 +3400,26 @@
                 console.log('   These slugs have no matching published posts in blog_posts table');
             }
             
-            // Add template information to each post
-            const blogPostsWithTemplates = (blogPosts || [])
-                .map(post => ({
-                    ...post,
-                    chosenTemplate: templateMap[post.slug] || 'bold-type'
-                }))
-                .slice(0, 4);
-            console.log('8️⃣ Final posts with templates:', blogPostsWithTemplates);
+            // Create a map of posts by slug for easy lookup
+            const postsMap = {};
+            (blogPosts || []).forEach(post => {
+                postsMap[post.slug] = post;
+            });
+            
+            // Build cards in the EXACT order specified by CMS
+            const blogPostsWithTemplates = [];
+            slugEntries.forEach(entry => {
+                const slug = entry.slug || entry;
+                const post = postsMap[slug];
+                if (post) {
+                    blogPostsWithTemplates.push({
+                        ...post,
+                        chosenTemplate: entry.template || 'bold-type'
+                    });
+                }
+            });
+            
+            console.log('8️⃣ Final posts in CMS order:', blogPostsWithTemplates);
             console.log('9️⃣ FINAL COUNT TO RENDER:', blogPostsWithTemplates.length);
             console.log('=== 🔍 DCF NEWS DIAGNOSTIC END ===');
 
@@ -3415,7 +3427,7 @@
                 showFallbackCards(dcfNewsCards);
                 return;
             }
-            // Generate dynamic cards
+            // Generate dynamic cards in CMS-specified order
             dcfNewsCards.innerHTML = blogPostsWithTemplates.map((post, index) => 
                 generateCardHTML(post, index, post.chosenTemplate)
             ).join('');
@@ -3666,20 +3678,31 @@
                 throw postsError;
             }
 
-            // Add template information to each post
-            const changeMakersWithTemplates = (blogPosts || [])
-                .map(post => ({
-                    ...post,
-                    chosenTemplate: templateMap[post.slug] || 'profile-card-1'
-                }))
-                .slice(0, 4);
+            // Create a map of posts by slug for easy lookup
+            const postsMap = {};
+            (blogPosts || []).forEach(post => {
+                postsMap[post.slug] = post;
+            });
+            
+            // Build cards in the EXACT order specified by CMS
+            const changeMakersWithTemplates = [];
+            slugEntries.forEach(entry => {
+                const slug = entry.slug || entry;
+                const post = postsMap[slug];
+                if (post) {
+                    changeMakersWithTemplates.push({
+                        ...post,
+                        chosenTemplate: entry.template || 'profile-card-1'
+                    });
+                }
+            });
 
             if (changeMakersWithTemplates.length === 0) {
                 showFallbackChangeMakers(changeMakersGrid);
                 return;
             }
 
-            // Generate Change Makers profile cards
+            // Generate Change Makers profile cards in CMS-specified order
             changeMakersGrid.innerHTML = changeMakersWithTemplates.map((post, index) => 
                 generateProfileCardHTML(post, index, post.chosenTemplate)
             ).join('');
