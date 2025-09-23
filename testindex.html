@@ -3799,7 +3799,9 @@
         
         if (!supabase || typeof supabase.from !== 'function') {
             console.error('Supabase client not available for Resources');
-            showFallbackResources(resourcesCards);
+            loading.style.display = 'none';
+            resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Error: Unable to load resources</div>';
+            resourcesCards.style.display = 'block';
             return;
         }
 
@@ -3821,8 +3823,10 @@
             console.log('Slug entries:', slugEntries);
 
             if (slugEntries.length === 0) {
-                console.log('No Resources slugs found, showing fallback');
-                showFallbackResources(resourcesCards);
+                console.log('No Resources slugs configured in CMS');
+                // Hide loading and resources container entirely when no slugs configured
+                loading.style.display = 'none';
+                resourcesCards.style.display = 'none';
                 return;
             }
 
@@ -3832,7 +3836,9 @@
             ).filter(Boolean);
 
             if (slugsToFetch.length === 0) {
-                showFallbackResources(resourcesCards);
+                // No valid slugs found
+                loading.style.display = 'none';
+                resourcesCards.style.display = 'none';
                 return;
             }
 
@@ -3849,8 +3855,11 @@
             }
 
             if (!posts || posts.length === 0) {
-                console.log('No Resources posts found');
-                showFallbackResources(resourcesCards);
+                console.log('No matching Resources posts found');
+                // Show empty state when configured but no posts found
+                loading.style.display = 'none';
+                resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No resources available</div>';
+                resourcesCards.style.display = 'block';
                 return;
             }
 
@@ -3865,15 +3874,20 @@
                 return generateResourceCardHTML(post, index, template);
             }).filter(Boolean).join('');
 
-            // Update DOM
-            resourcesCards.innerHTML = cardsHTML;
-            resourcesCards.style.display = 'grid';
+            // Update DOM - only show if we have cards
+            if (cardsHTML) {
+                resourcesCards.innerHTML = cardsHTML;
+                resourcesCards.style.display = 'grid';
+            } else {
+                resourcesCards.style.display = 'none';
+            }
             loading.style.display = 'none';
 
         } catch (error) {
             console.error('Error loading Resources:', error);
             loading.style.display = 'none';
-            showFallbackResources(resourcesCards);
+            resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Error loading resources</div>';
+            resourcesCards.style.display = 'block';
         }
     }
 
@@ -3881,27 +3895,6 @@
     function generateResourceCardHTML(post, index, template = 'profile-card-1') {
         // Use the same profile card templates as Change Makers
         return generateProfileCardHTML(post, index, template);
-    }
-
-    // Show fallback Resources if data cannot be loaded
-    function showFallbackResources(container) {
-        const fallbackResources = [
-            { title: 'White Papers', excerpt: 'Access comprehensive AI ethics research documents and policy frameworks', template: 'profile-card-1' },
-            { title: 'Video Library', excerpt: 'Educational content and keynote speeches on ethical AI development', template: 'profile-card-2' },
-            { title: 'Implementation Guides', excerpt: 'Practical how-to resources and best practices for AI integration', template: 'profile-card-3' },
-            { title: 'Educational Materials', excerpt: 'Curriculum packages and training content for educators', template: 'profile-card-4' }
-        ];
-
-        container.innerHTML = fallbackResources.map((resource, index) => 
-            generateResourceCardHTML({
-                title: resource.title,
-                excerpt: resource.excerpt,
-                featured_image_url: `https://images.unsplash.com/photo-${1600000000000 + index}?w=400&h=500&fit=crop`
-            }, index, resource.template)
-        ).join('');
-        
-        container.style.display = 'grid';
-        document.getElementById('resourcesLoading').style.display = 'none';
     }
 
     // Add navigation to initiative cards
