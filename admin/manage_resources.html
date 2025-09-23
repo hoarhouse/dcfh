@@ -917,7 +917,7 @@
         <div class="posts-container">
             <div class="posts-header">
                 <div class="results-info" id="resultsInfo">
-                    Loading posts...
+                    Loading resources...
                 </div>
                 
                 <div class="sort-dropdown">
@@ -940,7 +940,7 @@
                 <a href="blogwiz.html" class="btn btn-primary" style="margin-top: 1rem;">Create First Post</a>
             </div>
 
-            <div id="postsList" class="posts-list" style="display: none;">
+            <div id="resourcesList" class="posts-list" style="display: none;">
                 <!-- Posts will be loaded here -->
             </div>
         </div>
@@ -982,8 +982,8 @@
                 blogFilter.disabled = true;
 
                 // Load posts - optimized query with pagination
-                const { data: postsData, error: postsError } = await window.dcfSupabase
-                    .from('blog_posts')
+                const { data: resourcesData, error: resourcesError } = await window.dcfSupabase
+                    .from('resources')
                     .select(`
                         id, title, slug, excerpt, featured_image_url, status, 
                         published_at, created_at, updated_at, author_id,
@@ -992,20 +992,20 @@
                     .order('created_at', { ascending: false })
                     .limit(50);
 
-                if (postsError) {
-                    console.error('Failed to load posts:', postsError);
-                    showToast('Failed to load blog posts: ' + postsError.message, 'error');
+                if (resourcesError) {
+                    console.error('Failed to load posts:', resourcesError);
+                    showToast('Failed to load blog posts: ' + resourcesError.message, 'error');
                     posts = [];
-                    filteredPosts = [];
-                    displayPosts(); // Show empty state
+                    filteredResources = [];
+                    displayResources(); // Show empty state
                     updateResultsInfo();
                     return;
                 }
                 
-                posts = postsData || [];
-                filteredPosts = [...posts];
+                posts = resourcesData || [];
+                filteredResources = [...posts];
 
-                displayPosts();
+                displayResources();
                 updateResultsInfo();
 
             } catch (error) {
@@ -1018,13 +1018,13 @@
 
         function setupEventListeners() {
             // Search
-            document.getElementById('searchInput').addEventListener('input', debounce(filterPosts, 300));
+            document.getElementById('searchInput').addEventListener('input', debounce(filterResources, 300));
             
             // Filters
-            document.getElementById('blogFilter').addEventListener('change', filterPosts);
-            document.getElementById('postTypeFilter').addEventListener('change', filterPosts);
-            document.getElementById('statusFilter').addEventListener('change', filterPosts);
-            document.getElementById('authorFilter').addEventListener('change', filterPosts);
+            document.getElementById('blogFilter').addEventListener('change', filterResources);
+            document.getElementById('postTypeFilter').addEventListener('change', filterResources);
+            document.getElementById('statusFilter').addEventListener('change', filterResources);
+            document.getElementById('authorFilter').addEventListener('change', filterResources);
 
             // View toggle
             document.querySelectorAll('.view-toggle button').forEach(btn => {
@@ -1036,13 +1036,13 @@
             });
         }
 
-        function filterPosts() {
+        function filterResources() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const blogId = document.getElementById('blogFilter').value;
             const postType = document.getElementById('postTypeFilter').value;
             const status = document.getElementById('statusFilter').value;
 
-            filteredPosts = posts.filter(post => {
+            filteredResources = posts.filter(post => {
                 // Enhanced search including type-specific fields
                 let matchesSearch = !search || 
                     post.title.toLowerCase().includes(search) ||
@@ -1069,37 +1069,37 @@
                 return matchesSearch && matchesBlog && matchesPostType && matchesStatus;
             });
 
-            displayPosts();
+            displayResources();
             updateResultsInfo();
         }
 
-        function displayPosts() {
-            const postsList = document.getElementById('postsList');
+        function displayResources() {
+            const resourcesList = document.getElementById('resourcesList');
             const emptyState = document.getElementById('emptyState');
 
-            if (filteredPosts.length === 0) {
-                postsList.style.display = 'none';
+            if (filteredResources.length === 0) {
+                resourcesList.style.display = 'none';
                 emptyState.style.display = 'block';
                 return;
             }
 
             emptyState.style.display = 'none';
-            postsList.style.display = 'block';
-            postsList.innerHTML = '';
+            resourcesList.style.display = 'block';
+            resourcesList.innerHTML = '';
 
-            filteredPosts.forEach(post => {
-                const postItem = createPostItem(post);
-                postsList.appendChild(postItem);
+            filteredResources.forEach(post => {
+                const postItem = createResourceItem(post);
+                resourcesList.appendChild(postItem);
             });
         }
 
-        function createPostItem(post) {
+        function createResourceItem(post) {
             const item = document.createElement('div');
             item.className = 'post-item';
             item.dataset.postId = post.id;
 
             // Determine post type and prepare type-specific displays
-            const postType = post.post_type || 'blog_post';
+            const postType = post.post_type || 'resource';
             let typeLabel = 'Blog';
             let typeClass = 'type-blog';
             let additionalInfo = '';
@@ -1157,7 +1157,7 @@
 
             item.innerHTML = `
                 <div class="post-checkbox">
-                    <input type="checkbox" onchange="togglePostSelection('${post.id}', this.checked)">
+                    <input type="checkbox" onchange="toggleResourceSelection('${post.id}', this.checked)">
                 </div>
                 
                 ${featuredImageHtml}
@@ -1198,7 +1198,7 @@
                 
                 <div class="post-actions">
                     <a href="blogwiz.html?post_id=${post.id}" class="action-btn primary">Edit</a>
-                    <a href="../blog/post.html?blog=${post.blogs.slug}&post=${post.slug}" target="_blank" class="action-btn">View</a>
+                    <a href="../blog/post.html?blog=${resource.type.slug}&post=${post.slug}" target="_blank" class="action-btn">View</a>
                     <button onclick="duplicatePost('${post.id}')" class="action-btn">Duplicate</button>
                     <button onclick="changePostStatus('${post.id}', '${post.status === 'published' ? 'draft' : 'published'}')" class="action-btn">
                         ${post.status === 'published' ? 'Unpublish' : 'Publish'}
@@ -1213,7 +1213,7 @@
         function updateResultsInfo() {
             const info = document.getElementById('resultsInfo');
             const total = posts.length;
-            const filtered = filteredPosts.length;
+            const filtered = filteredResources.length;
             
             if (total === filtered) {
                 info.textContent = `${total} post${total !== 1 ? 's' : ''}`;
@@ -1222,11 +1222,11 @@
             }
         }
 
-        function togglePostSelection(postId, selected) {
+        function toggleResourceSelection(postId, selected) {
             if (selected) {
-                selectedPosts.add(postId);
+                selectedResources.add(postId);
             } else {
-                selectedPosts.delete(postId);
+                selectedResources.delete(postId);
             }
             
             updateBulkActions();
@@ -1234,7 +1234,7 @@
 
         function updateBulkActions() {
             const bulkActions = document.getElementById('bulkActions');
-            const count = selectedPosts.size;
+            const count = selectedResources.size;
             
             if (count > 0) {
                 bulkActions.classList.add('show');
@@ -1256,7 +1256,7 @@
                 }
 
                 const { error } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .update(updateData)
                     .eq('id', postId);
 
@@ -1299,7 +1299,7 @@
 
                 // First, verify the post exists and get its details for logging
                 const { data: postData, error: fetchError } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .select('id, title, slug')
                     .eq('id', postId)
                     .single();
@@ -1313,7 +1313,7 @@
                 
                 // Now delete the post with row count verification
                 const { data: deletedData, error: deleteError, count } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .delete()
                     .eq('id', postId)
                     .select('id');
@@ -1343,8 +1343,8 @@
                 
                 // Remove from local array for instant UI update
                 posts = posts.filter(p => p.id !== postId);
-                filteredPosts = filteredPosts.filter(p => p.id !== postId);
-                displayPosts();
+                filteredResources = filteredResources.filter(p => p.id !== postId);
+                displayResources();
                 updateResultsInfo();
                 
                 // Reload from database to ensure consistency
@@ -1385,7 +1385,7 @@
                 };
 
                 const { error } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .insert([duplicatedPost]);
 
                 if (error) throw error;
