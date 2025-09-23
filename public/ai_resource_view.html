@@ -1477,16 +1477,16 @@
         
         // Image Preview with zoom
         function renderImagePreview(container) {
-            const imageUrl = currentResource.file_url || currentResource.featured_image_url;
-            
-            if (!imageUrl) {
+            // Priority: Use file_url for actual image files
+            // Only use featured_image_url if this is actually an image resource without file_url
+            if (!currentResource.file_url) {
                 renderFallbackPreview(container);
                 return;
             }
             
             container.innerHTML = `
                 <div class="image-viewer" id="imageViewer">
-                    <img src="${imageUrl}" 
+                    <img src="${currentResource.file_url}" 
                          alt="${currentResource.title}"
                          onerror="handleImageError(this)">
                 </div>
@@ -1588,14 +1588,22 @@
             `;
         }
         
-        // Fallback Preview (featured image or placeholder)
+        // Fallback Preview (featured image for unsupported formats or placeholder)
         function renderFallbackPreview(container) {
-            if (currentResource && currentResource.featured_image_url) {
+            // Only use featured image as a fallback when we can't preview the actual document
+            // This ensures document viewers always take priority
+            if (currentResource && currentResource.featured_image_url && !canPreviewDocument(currentResource)) {
+                console.log('Using featured image as fallback for unsupported format');
                 container.innerHTML = `
-                    <img src="${currentResource.featured_image_url}" 
-                         alt="${currentResource.title}" 
-                         style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;"
-                         onerror="renderPlaceholder()">
+                    <div class="preview-placeholder">
+                        <img src="${currentResource.featured_image_url}" 
+                             alt="${currentResource.title}" 
+                             style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;"
+                             onerror="renderPlaceholder()">
+                        <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                            Preview image - Click download to access the full ${currentResource.file_format || 'document'}
+                        </p>
+                    </div>
                 `;
             } else {
                 renderPlaceholder();
