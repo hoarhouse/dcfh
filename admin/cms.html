@@ -1771,9 +1771,9 @@
                     <div class="add-slug-section">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Add Resource ID</label>
-                                <input type="text" id="resNewResourceId" class="form-input" placeholder="Enter resource ID (e.g., 6d3dafde-b228-4df1-a6ab-bac2d98246e0)">
-                                <small class="form-hint">Enter the UUID of a resource. The system will automatically fetch the resource details.</small>
+                                <label class="form-label">Add Blog Post Slug</label>
+                                <input type="text" id="resNewSlug" class="form-input" placeholder="Enter blog post slug (e.g., stuart-russell)">
+                                <small class="form-hint">Enter the slug of a blog post. The system will automatically fetch the post details.</small>
                             </div>
                         </div>
                     </div>
@@ -3357,23 +3357,38 @@
             const slug = newSlugInput.value.trim();
             
             if (!slug) {
-                showToast('Please enter a resource slug', 'error');
+                showToast('Please enter a blog post slug', 'error');
                 return;
             }
 
             if (resourcesSlugs.some(item => (item.slug || item) === slug)) {
-                showToast('This resource slug is already added', 'error');
+                showToast('This blog post is already added', 'error');
                 return;
             }
 
             if (resourcesSlugs.length >= 4) {
-                showToast('Maximum 4 slugs allowed for Resources section', 'error');
+                showToast('Maximum 4 posts allowed for Resources section', 'error');
                 return;
             }
 
             try {
-                // For now, we'll just add the slug without verification
-                // since resources table might have different structure
+                // Verify the resource exists and is approved
+                const { data: resource, error: resourceError } = await window.dcfSupabase
+                    .from('resources')
+                    .select('title, slug, status, published_at')
+                    .eq('slug', slug)
+                    .eq('status', 'approved')
+                    .lte('published_at', new Date().toISOString())
+                    .single();
+
+                if (resourceError || !resource) {
+                    showToast('Resource not found or not published yet', 'error');
+                    console.error('Resource lookup error:', resourceError);
+                    return;
+                }
+
+                console.log('Found published resource:', resource);
+
                 const selectedTemplate = document.getElementById('resSelectedTemplate').value;
                 resourcesSlugs.push({
                     slug: slug,
@@ -3387,11 +3402,11 @@
                 newSlugInput.value = '';
                 displayResourcesSlugs();
 
-                showToast('Resource slug added successfully', 'success');
+                showToast('Resource added successfully', 'success');
 
             } catch (error) {
-                console.error('Error adding resource slug:', error);
-                showToast('Error adding resource slug', 'error');
+                console.error('Error adding blog post:', error);
+                showToast('Error adding blog post', 'error');
             }
         }
 
@@ -3491,11 +3506,11 @@
         }
 
         function generateFullSizeResourcePreview(post, template) {
-            const title = escapeHtml(post.title || 'Resource');
-            const excerpt = escapeHtml(post.description || 'Resource description');
-            const imageUrl = post.thumbnail_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop';
+            const title = escapeHtml(post.title || 'Resource Post');
+            const excerpt = escapeHtml(post.excerpt || 'Making a difference in the world');
+            const imageUrl = post.featured_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop';
             
-            // For now, just use the same template as Change Makers
+            // Exactly like Change Makers template
             return `
                 <div class="profile-card profile-card-full">
                     <img src="${imageUrl}" alt="${title}" class="profile-full-image">
@@ -3503,6 +3518,19 @@
                         <div class="profile-content" style="padding-bottom: 15px;">
                             <h3 class="profile-name" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2;">${title}</h3>
                             <p class="profile-subtitle" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; margin-bottom: 10px;">${excerpt.substring(0, 60)}... <em style="font-style: italic; opacity: 0.8;">more</em></p>
+                            <div class="profile-actions">
+                                <button class="profile-icon-btn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                                    </svg>
+                                </button>
+                                <button class="profile-icon-btn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -3525,23 +3553,24 @@
                 if (!previewEl) continue;
 
                 try {
-                    // Query resources table instead of blog_posts
-                    const { data: resource, error } = await supabase
-                        .from('resources')
-                        .select('id, title, description, thumbnail_url, resource_type, created_at')
+                    // Query blog_posts table exactly like Change Makers
+                    const { data: post, error } = await supabase
+                        .from('blog_posts')
+                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
                         .eq('slug', slug)
+                        .eq('status', 'published')
                         .maybeSingle();
 
-                    if (!error && resource) {
-                        const previewHTML = generateFullSizeResourcePreview(resource, template);
+                    if (!error && post) {
+                        const previewHTML = generateFullSizeResourcePreview(post, template);
                         previewEl.innerHTML = previewHTML;
-                        console.log(`Resources preview ${i}:`, resource.title, 'Image:', resource.thumbnail_url);
+                        console.log(`Resources preview ${i}:`, post.title, 'Image:', post.featured_image_url);
                     } else {
                         console.log(`Resources preview ${i}: Using fallback for`, slug);
                         previewEl.innerHTML = generateFullSizeResourcePreview({
                             title: 'Resource Preview',
-                            description: 'Resource content will appear here',
-                            thumbnail_url: `https://images.unsplash.com/photo-${1481627834876 + i}?w=400&h=500&fit=crop`
+                            excerpt: 'Resource content will appear here',
+                            featured_image_url: `https://images.unsplash.com/photo-${1481627834876 + i}?w=400&h=500&fit=crop`
                         }, template);
                     }
                 } catch (error) {
