@@ -1720,6 +1720,66 @@
             });
         }
 
+        // Featured image upload handling
+        document.getElementById('featuredImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFeaturedImageUpload(file);
+            }
+        });
+
+        function handleFeaturedImageUpload(file) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showFeaturedImageError('Please upload a valid image file (JPG, PNG, WebP)');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showFeaturedImageError('Featured image must be less than 5MB');
+                return;
+            }
+            
+            selectedFeaturedImage = file;
+            createFeaturedImagePreview(file);
+        }
+
+        function createFeaturedImagePreview(file) {
+            const previewDiv = document.getElementById('featuredImagePreview');
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 2px solid #28a745;">
+                        <img src="${e.target.result}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #28a745;">Featured Image Selected</div>
+                            <div style="font-size: 0.9rem; color: #666;">${file.name} • ${fileSize} MB</div>
+                        </div>
+                        <button type="button" onclick="removeFeaturedImage()" style="background: #dc3545; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer;">Remove</button>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeFeaturedImage() {
+            selectedFeaturedImage = null;
+            document.getElementById('featuredImagePreview').innerHTML = '';
+            document.getElementById('featuredImage').value = '';
+        }
+
+        function showFeaturedImageError(message) {
+            const previewDiv = document.getElementById('featuredImagePreview');
+            previewDiv.innerHTML = `
+                <div style="padding: 1rem; background: #fee; border: 2px solid #ef9a9a; border-radius: 8px; color: #c82333;">
+                    ${message}
+                </div>
+            `;
+            document.getElementById('featuredImage').value = '';
+        }
+
         // Handle checkbox interactions
         function initializeCheckboxes() {
             document.querySelectorAll('.checkbox-item').forEach(item => {
