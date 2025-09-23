@@ -1184,6 +1184,20 @@
                     <div class="upload-status" id="uploadStatus">Uploading...</div>
                     <div id="filePreview"></div>
                 </div>
+
+                <!-- Featured Image Upload Section -->
+                <div class="form-group" style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0;">
+                    <label class="form-label" for="featuredImage">Featured Image (Optional)</label>
+                    <div class="file-upload" onclick="document.getElementById('featuredImage').click()" style="border-style: solid; border-color: #e5e5e5;">
+                        <div class="file-upload-text">Upload a promotional image for your resource card</div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">
+                            JPG, PNG, WebP (Max: 5MB)<br>
+                            This image will be used for the resource card preview - separate from your main resource files
+                        </div>
+                        <input type="file" id="featuredImage" class="file-upload-input" accept=".jpg,.jpeg,.png,.webp">
+                    </div>
+                    <div id="featuredImagePreview" style="margin-top: 1rem;"></div>
+                </div>
                 
                 <!-- Final Preview Section -->
                 <div id="finalPreviewSection" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5e5;">
@@ -1214,6 +1228,16 @@
                 <div class="form-group">
                     <label class="form-label" for="description">Description *</label>
                     <textarea id="description" name="description" class="textarea" placeholder="Describe what this resource covers, who it's for, and how it can be used..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="excerpt">Short Excerpt *</label>
+                    <textarea id="excerpt" name="excerpt" class="form-input" placeholder="Brief summary for resource cards (max 200 characters)" maxlength="200" style="min-height: 80px;" required></textarea>
+                    <small style="color: #666; font-size: 0.85rem;">This appears on resource cards and search results</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="slug">Resource URL Slug *</label>
+                    <input type="text" id="slug" name="slug" class="form-input" placeholder="e.g., ai-ethics-framework-guide" required>
+                    <small style="color: #666; font-size: 0.85rem;">Letters, numbers, and dashes only. This creates your resource's URL.</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="category">Category *</label>
@@ -1484,6 +1508,24 @@
             
             return sanitized;
         }
+
+        function sanitizeSlug(slug) {
+            if (typeof slug !== 'string') return '';
+            
+            // Convert to lowercase and replace spaces/special chars with dashes
+            let sanitized = slug.toLowerCase()
+                .replace(/[^a-z0-9\s\-]/g, '') // Remove non-alphanumeric except spaces and dashes
+                .replace(/\s+/g, '-') // Replace spaces with dashes
+                .replace(/--+/g, '-') // Replace multiple dashes with single dash
+                .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+            
+            // Limit length
+            if (sanitized.length > 100) {
+                sanitized = sanitized.substring(0, 100);
+            }
+            
+            return sanitized;
+        }
         
         /**
          * Safely set text content to prevent XSS
@@ -1597,11 +1639,66 @@
                     e.target.value = sanitizeText(pastedText, 1000);
                 });
             }
+
+            // Excerpt field sanitization and validation
+            const excerptField = document.getElementById('excerpt');
+            if (excerptField) {
+                // Set maxlength for hard stop
+                excerptField.setAttribute('maxlength', 200);
+                
+                excerptField.addEventListener('blur', function(e) {
+                    const sanitized = sanitizeText(e.target.value, 200);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                        console.warn('Excerpt input sanitized');
+                    }
+                    validateField('excerpt', 10, 200); // Min 10 chars, max 200
+                });
+                
+                excerptField.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+                
+                excerptField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.target.value = sanitizeText(pastedText, 200);
+                });
+            }
+
+            // Slug field sanitization and validation
+            const slugField = document.getElementById('slug');
+            if (slugField) {
+                // Set maxlength for hard stop
+                slugField.setAttribute('maxlength', 100);
+                
+                slugField.addEventListener('input', function(e) {
+                    const sanitized = sanitizeSlug(e.target.value);
+                    if (sanitized !== e.target.value) {
+                        e.target.value = sanitized;
+                    }
+                });
+                
+                slugField.addEventListener('blur', function(e) {
+                    validateField('slug', 3, 100); // Min 3 chars, max 100
+                });
+                
+                slugField.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+                
+                slugField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.target.value = sanitizeSlug(pastedText);
+                });
+            }
         }
         
         let currentStep = 1;
         let resourceData = {};
         let selectedFiles = [];
+        let selectedFeaturedImage = null;
 
         // Progress tracking
         function updateProgress() {
@@ -2231,9 +2328,13 @@
             // SECURITY: Sanitize all inputs before processing
             const rawTitle = document.getElementById('title').value;
             const rawDescription = document.getElementById('description').value;
+            const rawExcerpt = document.getElementById('excerpt').value;
+            const rawSlug = document.getElementById('slug').value;
             
             resourceData.title = sanitizeText(rawTitle, 100);
             resourceData.description = sanitizeText(rawDescription, 1000);
+            resourceData.excerpt = sanitizeText(rawExcerpt, 200);
+            resourceData.slug = sanitizeSlug(rawSlug);
             resourceData.type = document.getElementById('category').value;
             resourceData.topics = Array.from(document.querySelectorAll('input[name="topics"]:checked')).map(cb => cb.value);
             
@@ -2293,6 +2394,7 @@
                     <div style="font-size: 3rem; margin-right: 1rem;">${previewIcon}</div>
                     <div class="preview-info">
                         <h3 id="preview-title">${resourceData.title}</h3>
+                        <p><strong>URL Slug:</strong> ${resourceData.slug || 'Not specified'}</p>
                         <p><strong>Category:</strong> ${categoryLabels[resourceData.type] || resourceData.type}</p>
                         <p><strong>File${resourceData.files && resourceData.files.length > 1 ? 's' : ''}:</strong> ${
                             resourceData.files && resourceData.files.length > 0 ? 
@@ -2301,6 +2403,12 @@
                                     resourceData.files[0].name
                                 ) : 'No file'
                         } (${fileSize} MB)</p>
+                    </div>
+                </div>
+                <div class="preview-section">
+                    <h4>Excerpt</h4>
+                    <div style="color: #555; line-height: 1.6; font-size: 0.95rem; background: #e3f2fd; padding: 1rem; border-radius: 8px; border-left: 4px solid #2196f3;">
+                        ${resourceData.excerpt || 'No excerpt provided'}
                     </div>
                 </div>
                 <div class="preview-section">
@@ -2526,9 +2634,33 @@
                 const primaryFile = resourceData.files && resourceData.files.length > 0 ? resourceData.files[0] : null;
                 const totalSize = resourceData.files ? resourceData.files.reduce((sum, file) => sum + file.size, 0) : 0;
                 
+                // Determine featured_image - use first image file if available, or a default based on type
+                let featuredImage = null;
+                if (resourceData.files && resourceData.files.length > 0) {
+                    const imageFile = resourceData.files.find(f => f.type && f.type.startsWith('image/'));
+                    if (imageFile && fileUrl) {
+                        // If there's an image file, use its URL
+                        featuredImage = fileUrl;
+                    }
+                }
+                // Use default images based on resource type if no image file
+                if (!featuredImage) {
+                    const defaultImages = {
+                        research: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+                        templates: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&h=300&fit=crop',
+                        guides: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400&h=300&fit=crop',
+                        presentations: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
+                        datasets: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop'
+                    };
+                    featuredImage = defaultImages[resourceData.type] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop';
+                }
+
                 const resourceRecord = {
                     title: resourceData.title,
+                    slug: resourceData.slug,
                     description: resourceData.description,
+                    excerpt: resourceData.excerpt,
+                    featured_image: featuredImage,
                     file_url: fileUrl,
                     file_type: primaryFile ? primaryFile.type : null,
                     file_size: resourceData.files && resourceData.files.length > 1 ? totalSize : (primaryFile ? primaryFile.size : null),
@@ -2540,6 +2672,7 @@
                     organization: null, // Optional field, form doesn't collect this
                     tags: resourceData.topics && resourceData.topics.length > 0 ? resourceData.topics : null,
                     status: 'pending', // Should be pending for moderation, not approved
+                    published_at: new Date().toISOString(), // Set to current time for immediate publishing after approval
                     created_at: new Date().toISOString()
                 };
 
