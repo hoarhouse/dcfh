@@ -2691,20 +2691,46 @@
                     }
                 }
 
+                // Upload featured image if provided
+                let featuredImageUrl = null;
+                if (resourceData.featuredImage) {
+                    const featuredFileName = `featured-${Date.now()}-${Math.random().toString(36).substring(2)}-${resourceData.featuredImage.name}`;
+                    
+                    const { data: featuredUploadData, error: featuredUploadError } = await supabase.storage
+                        .from('resource-files')
+                        .upload(featuredFileName, resourceData.featuredImage, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+                    
+                    if (featuredUploadError) {
+                        console.error('Featured image upload error:', featuredUploadError);
+                        // Continue without featured image rather than failing entirely
+                    } else {
+                        const { data: featuredUrlData } = supabase.storage
+                            .from('resource-files')
+                            .getPublicUrl(featuredFileName);
+                        
+                        featuredImageUrl = featuredUrlData.publicUrl;
+                    }
+                }
+                
                 // Insert resource record
                 const primaryFile = resourceData.files && resourceData.files.length > 0 ? resourceData.files[0] : null;
                 const totalSize = resourceData.files ? resourceData.files.reduce((sum, file) => sum + file.size, 0) : 0;
                 
-                // Determine featured_image - use first image file if available, or a default based on type
-                let featuredImage = null;
-                if (resourceData.files && resourceData.files.length > 0) {
+                // Determine featured_image - use uploaded featured image, or find from files, or use default
+                let featuredImage = featuredImageUrl; // Use uploaded featured image first
+                
+                if (!featuredImage && resourceData.files && resourceData.files.length > 0) {
                     const imageFile = resourceData.files.find(f => f.type && f.type.startsWith('image/'));
                     if (imageFile && fileUrl) {
-                        // If there's an image file, use its URL
+                        // If there's an image file in main files, use its URL
                         featuredImage = fileUrl;
                     }
                 }
-                // Use default images based on resource type if no image file
+                
+                // Use default images based on resource type if no image
                 if (!featuredImage) {
                     const defaultImages = {
                         research: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
