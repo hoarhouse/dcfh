@@ -1015,11 +1015,42 @@
             setTimeout(initializePage, 500);
         });
 
+        // Load first available resource
+        async function loadFirstResource() {
+            try {
+                await ensureSupabase();
+                
+                if (window.dcfSupabase) {
+                    const { data: resources, error } = await window.dcfSupabase
+                        .from('resources')
+                        .select('id')
+                        .eq('status', 'approved')
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+                    
+                    if (!error && resources && resources.length > 0) {
+                        loadResource(resources[0].id);
+                    } else {
+                        showError('No resources available');
+                    }
+                } else {
+                    showError('Database connection not available');
+                }
+            } catch (error) {
+                console.error('Error loading first resource:', error);
+                showError('Failed to load resources');
+            }
+        }
+        
         // Load resource data
         async function loadResource(resourceId) {
             try {
+                await ensureSupabase();
+                
                 // Check if Supabase is available
                 if (window.dcfSupabase) {
+                    console.log('Loading resource:', resourceId);
+                    
                     // Fetch from database
                     const { data: resource, error } = await window.dcfSupabase
                         .from('resources')
@@ -1027,10 +1058,14 @@
                         .eq('id', resourceId)
                         .single();
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Database error:', error);
+                        throw error;
+                    }
                     
                     if (resource) {
                         currentResource = resource;
+                        console.log('Loaded resource:', resource.title);
                         
                         // Add default values for missing fields
                         currentResource.author_title = currentResource.author_title || 'Senior Researcher';
@@ -1040,32 +1075,19 @@
                         currentResource.page_count = currentResource.page_count || 0;
                         currentResource.citation_count = currentResource.citation_count || 0;
                         currentResource.rating_average = currentResource.rating_average || 0;
+                        currentResource.download_count = currentResource.download_count || 0;
+                        currentResource.file_size = currentResource.file_size || 0;
+                        
+                        // Format type for display
+                        if (currentResource.type) {
+                            currentResource.type = currentResource.type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        }
                     } else {
                         throw new Error('Resource not found');
                     }
                 } else {
-                    // Fallback to mock data if Supabase not available
-                    console.log('Using mock data - Supabase not available');
-                    currentResource = {
-                        id: resourceId,
-                        title: "Ethical AI Framework for Human-Centered Technology Development",
-                        type: "research",
-                        author_name: "Dr. Antal Kuthy",
-                        author_title: "Senior AI Researcher, DCF Hungary",
-                        author_bio: "Leading technologist and AI researcher with extensive experience in developing human-centered AI systems and ethical technology frameworks.",
-                        institution: "DCF Hungary & Budapest University of Technology",
-                        published_at: "2024-11-15",
-                        description: "This comprehensive framework presents a groundbreaking approach to integrating Catholic Social Teaching principles with cutting-edge AI development methodologies.",
-                        file_format: "PDF",
-                        file_size: 2516582,
-                        page_count: 42,
-                        download_count: 1247,
-                        citation_count: 89,
-                        rating_average: 4.8,
-                        excerpt: "A comprehensive guide to building AI systems that prioritize human values, dignity, and the common good.",
-                        featured_image_url: null,
-                        file_url: "/resources/files/ethical-ai-framework.pdf"
-                    };
+                    showError('Database connection not available');
+                    return;
                 }
                 
                 // Populate page with data
@@ -1151,48 +1173,26 @@
                     }
                 }
                 
-                // Fallback to mock data if needed
-                if (relatedResources.length === 0) {
-                    relatedResources = [
-                        {
-                            id: 'r1',
-                            title: 'AI Governance Best Practices',
-                            type: 'guides',
-                            author_name: 'Dr. Maria Schmidt',
-                            download_count: 892,
-                            rating_average: 4.6
-                        },
-                        {
-                            id: 'r2',
-                            title: 'Implementing Ethical AI in Healthcare',
-                            type: 'case-studies',
-                            author_name: 'Prof. János Nagy',
-                            download_count: 567,
-                            rating_average: 4.9
-                        },
-                        {
-                            id: 'r3',
-                            title: 'Human Dignity in the Digital Age',
-                            type: 'research',
-                            author_name: 'Dr. Antal Kuthy',
-                            download_count: 1103,
-                            rating_average: 4.7
-                        }
-                    ];
-                }
                 
                 const relatedGrid = document.getElementById('relatedGrid');
-                relatedGrid.innerHTML = relatedResources.map(resource => `
-                    <div class="related-card" onclick="viewResource('${resource.id}')">
-                        <div class="related-type">${resource.type}</div>
-                        <h3 class="related-title">${resource.title}</h3>
-                        <div class="related-author">By ${resource.author_name}</div>
-                        <div class="related-stats">
-                            <span>⬇ ${resource.download_count}</span>
-                            <span>★ ${resource.rating_average.toFixed(1)}</span>
+                relatedGrid.innerHTML = relatedResources.map(resource => {
+                    // Format type for display
+                    const displayType = resource.type ? resource.type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Resource';
+                    const rating = resource.rating_average || 0;
+                    const downloads = resource.download_count || 0;
+                    
+                    return `
+                        <div class="related-card" onclick="viewResource('${resource.id}')">
+                            <div class="related-type">${displayType}</div>
+                            <h3 class="related-title">${resource.title}</h3>
+                            <div class="related-author">By ${resource.author_name || 'DCF Hungary'}</div>
+                            <div class="related-stats">
+                                <span>⬇ ${downloads}</span>
+                                ${rating > 0 ? `<span>★ ${rating.toFixed(1)}</span>` : ''}
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
             } catch (error) {
                 console.error('Error loading related resources:', error);
