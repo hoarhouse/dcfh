@@ -2430,7 +2430,7 @@
             goToStep(2);
         });
 
-        document.getElementById('infoForm').addEventListener('submit', function(e) {
+        document.getElementById('infoForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // SECURITY: Sanitize all inputs before processing
@@ -2442,8 +2442,33 @@
             resourceData.description = sanitizeText(rawDescription, 1000);
             resourceData.excerpt = sanitizeText(rawExcerpt, 200);
             
-            // Generate slug from title when moving to Step 3
-            resourceData.slug = generateSlugFromTitle(resourceData.title);
+            // Generate unique slug from title when moving to Step 3
+            try {
+                // Show loading state
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Generating URL...';
+                submitBtn.disabled = true;
+                
+                resourceData.slug = await generateSlugFromTitle(resourceData.title);
+                
+                // Restore button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                generateResourcePreview();
+                generateReviewFilePreviews(selectedFiles);
+                goToStep(3);
+            } catch (error) {
+                console.error('Error generating slug:', error);
+                showAlert('Error generating URL slug. Please try again.', 'error');
+                
+                // Restore button on error
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Continue';
+                submitBtn.disabled = false;
+                return;
+            }
             
             resourceData.type = document.getElementById('category').value;
             resourceData.topics = Array.from(document.querySelectorAll('input[name="topics"]:checked')).map(cb => cb.value);
@@ -2452,10 +2477,6 @@
             if (resourceData.title !== rawTitle || resourceData.description !== rawDescription) {
                 console.warn('⚠️ Security: Resource form input sanitization was applied');
             }
-            
-            generateResourcePreview();
-            generateReviewFilePreviews(selectedFiles);
-            goToStep(3);
         });
 
         // Generate resource preview
