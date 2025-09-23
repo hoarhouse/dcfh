@@ -1176,37 +1176,28 @@
             }
         }
         
-        // Load with retry logic
-        async function initWithRetry(attempts = 3) {
-            for (let i = 0; i < attempts; i++) {
-                await ensureSupabase();
-                
-                if (window.dcfSupabase && window.dcfSupabase.from) {
-                    console.log(`✅ Supabase ready on attempt ${i + 1}`);
-                    initializePage();
-                    return;
-                }
-                
-                console.log(`Attempt ${i + 1} failed, waiting...`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-            
-            console.error('Failed to initialize Supabase after', attempts, 'attempts');
-            showError('Failed to connect to database');
-        }
+        // Initialize when DCF system is ready
+        window.addEventListener('dcfReady', function() {
+            console.log('DCF system ready, initializing page...');
+            initializePage();
+        });
         
-        // Load immediately when DOM is ready
+        // Fallback if dcfReady doesn't fire
         document.addEventListener('DOMContentLoaded', function() {
-            // Start initialization with retry
-            setTimeout(() => initWithRetry(3), 500);
+            setTimeout(() => {
+                if (!window.dcfInitialized) {
+                    console.log('DCF not ready after timeout, attempting direct init...');
+                    initializePage();
+                }
+            }, 2000);
         });
 
         // Load first available resource
         async function loadFirstResource() {
             try {
-                await ensureSupabase();
+                const supabase = await waitForSupabase();
                 
-                if (window.dcfSupabase && window.dcfSupabase.from) {
+                if (supabase && supabase.from) {
                     const { data: resources, error } = await window.dcfSupabase
                         .from('resources')
                         .select('slug')
