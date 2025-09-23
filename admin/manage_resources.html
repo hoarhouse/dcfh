@@ -917,7 +917,7 @@
         <div class="posts-container">
             <div class="posts-header">
                 <div class="results-info" id="resultsInfo">
-                    Loading posts...
+                    Loading resources...
                 </div>
                 
                 <div class="sort-dropdown">
@@ -935,12 +935,12 @@
 
             <div id="emptyState" class="empty-state" style="display: none;">
                 <div class="empty-icon">📝</div>
-                <h3>No Blog Posts Found</h3>
-                <p>Create your first blog post to get started.</p>
+                <h3>No Resources Found</h3>
+                <p>Upload your first resource to get started.</p>
                 <a href="blogwiz.html" class="btn btn-primary" style="margin-top: 1rem;">Create First Post</a>
             </div>
 
-            <div id="postsList" class="posts-list" style="display: none;">
+            <div id="resourcesList" class="posts-list" style="display: none;">
                 <!-- Posts will be loaded here -->
             </div>
         </div>
@@ -983,7 +983,7 @@
 
                 // Load posts - optimized query with pagination
                 const { data: postsData, error: postsError } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .select(`
                         id, title, slug, excerpt, featured_image_url, status, 
                         published_at, created_at, updated_at, author_id,
@@ -993,11 +993,11 @@
                     .limit(50);
 
                 if (postsError) {
-                    console.error('Failed to load posts:', postsError);
-                    showToast('Failed to load blog posts: ' + postsError.message, 'error');
+                    console.error('Failed to load resources:', postsError);
+                    showToast('Failed to load resources: ' + postsError.message, 'error');
                     posts = [];
                     filteredPosts = [];
-                    displayPosts(); // Show empty state
+                    displayResources(); // Show empty state
                     updateResultsInfo();
                     return;
                 }
@@ -1005,12 +1005,12 @@
                 posts = postsData || [];
                 filteredPosts = [...posts];
 
-                displayPosts();
+                displayResources();
                 updateResultsInfo();
 
             } catch (error) {
                 console.error('Error loading data:', error);
-                showToast('Failed to load posts', 'error');
+                showToast('Failed to load resources', 'error');
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -1018,13 +1018,13 @@
 
         function setupEventListeners() {
             // Search
-            document.getElementById('searchInput').addEventListener('input', debounce(filterPosts, 300));
+            document.getElementById('searchInput').addEventListener('input', debounce(filterResources, 300));
             
             // Filters
-            document.getElementById('blogFilter').addEventListener('change', filterPosts);
-            document.getElementById('postTypeFilter').addEventListener('change', filterPosts);
-            document.getElementById('statusFilter').addEventListener('change', filterPosts);
-            document.getElementById('authorFilter').addEventListener('change', filterPosts);
+            document.getElementById('blogFilter').addEventListener('change', filterResources);
+            document.getElementById('postTypeFilter').addEventListener('change', filterResources);
+            document.getElementById('statusFilter').addEventListener('change', filterResources);
+            document.getElementById('authorFilter').addEventListener('change', filterResources);
 
             // View toggle
             document.querySelectorAll('.view-toggle button').forEach(btn => {
@@ -1036,7 +1036,7 @@
             });
         }
 
-        function filterPosts() {
+        function filterResources() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const blogId = document.getElementById('blogFilter').value;
             const postType = document.getElementById('postTypeFilter').value;
@@ -1069,11 +1069,11 @@
                 return matchesSearch && matchesBlog && matchesPostType && matchesStatus;
             });
 
-            displayPosts();
+            displayResources();
             updateResultsInfo();
         }
 
-        function displayPosts() {
+        function displayResources() {
             const postsList = document.getElementById('postsList');
             const emptyState = document.getElementById('emptyState');
 
@@ -1088,12 +1088,12 @@
             postsList.innerHTML = '';
 
             filteredPosts.forEach(post => {
-                const postItem = createPostItem(post);
+                const postItem = createResourceItem(post);
                 postsList.appendChild(postItem);
             });
         }
 
-        function createPostItem(post) {
+        function createResourceItem(post) {
             const item = document.createElement('div');
             item.className = 'post-item';
             item.dataset.postId = post.id;
@@ -1157,7 +1157,7 @@
 
             item.innerHTML = `
                 <div class="post-checkbox">
-                    <input type="checkbox" onchange="togglePostSelection('${post.id}', this.checked)">
+                    <input type="checkbox" onchange="toggleResourceSelection('${post.id}', this.checked)">
                 </div>
                 
                 ${featuredImageHtml}
@@ -1199,11 +1199,11 @@
                 <div class="post-actions">
                     <a href="blogwiz.html?post_id=${post.id}" class="action-btn primary">Edit</a>
                     <a href="../blog/post.html?blog=${post.blogs.slug}&post=${post.slug}" target="_blank" class="action-btn">View</a>
-                    <button onclick="duplicatePost('${post.id}')" class="action-btn">Duplicate</button>
-                    <button onclick="changePostStatus('${post.id}', '${post.status === 'published' ? 'draft' : 'published'}')" class="action-btn">
+                    <button onclick="duplicateResource('${post.id}')" class="action-btn">Duplicate</button>
+                    <button onclick="changeResourceStatus('${post.id}', '${post.status === 'published' ? 'draft' : 'published'}')" class="action-btn">
                         ${post.status === 'published' ? 'Unpublish' : 'Publish'}
                     </button>
-                    <button onclick="deletePost('${post.id}')" class="action-btn danger">Delete</button>
+                    <button onclick="deleteResource('${post.id}')" class="action-btn danger">Delete</button>
                 </div>
             `;
 
@@ -1222,7 +1222,7 @@
             }
         }
 
-        function togglePostSelection(postId, selected) {
+        function toggleResourceSelection(postId, selected) {
             if (selected) {
                 selectedPosts.add(postId);
             } else {
@@ -1244,7 +1244,7 @@
             }
         }
 
-        async function changePostStatus(postId, newStatus) {
+        async function changeResourceStatus(postId, newStatus) {
             try {
                 const updateData = { 
                     status: newStatus,
@@ -1256,7 +1256,7 @@
                 }
 
                 const { error } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .update(updateData)
                     .eq('id', postId);
 
@@ -1271,7 +1271,7 @@
             }
         }
 
-        async function deletePost(postId) {
+        async function deleteResource(postId) {
             console.log('[Delete] Attempting to delete post:', postId);
             
             if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
@@ -1299,7 +1299,7 @@
 
                 // First, verify the post exists and get its details for logging
                 const { data: postData, error: fetchError } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .select('id, title, slug')
                     .eq('id', postId)
                     .single();
@@ -1313,7 +1313,7 @@
                 
                 // Now delete the post with row count verification
                 const { data: deletedData, error: deleteError, count } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .delete()
                     .eq('id', postId)
                     .select('id');
@@ -1344,7 +1344,7 @@
                 // Remove from local array for instant UI update
                 posts = posts.filter(p => p.id !== postId);
                 filteredPosts = filteredPosts.filter(p => p.id !== postId);
-                displayPosts();
+                displayResources();
                 updateResultsInfo();
                 
                 // Reload from database to ensure consistency
@@ -1359,7 +1359,7 @@
             }
         }
 
-        async function duplicatePost(postId) {
+        async function duplicateResource(postId) {
             try {
                 const originalPost = posts.find(p => p.id === postId);
                 if (!originalPost) throw new Error('Post not found');
@@ -1385,7 +1385,7 @@
                 };
 
                 const { error } = await window.dcfSupabase
-                    .from('blog_posts')
+                    .from('resources')
                     .insert([duplicatedPost]);
 
                 if (error) throw error;
