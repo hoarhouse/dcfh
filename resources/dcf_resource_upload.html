@@ -1532,16 +1532,69 @@
             return sanitized;
         }
 
-        function generateSlugFromTitle(title) {
+        async function ensureUniqueSlug(baseSlug) {
+            if (!baseSlug) return 'resource-' + Date.now();
+            
+            try {
+                // Check if base slug exists
+                const { data, error } = await window.dcfSupabase
+                    .from('resources')
+                    .select('slug')
+                    .eq('slug', baseSlug)
+                    .single();
+                
+                if (error && error.code === 'PGRST116') {
+                    // No rows found - slug is unique
+                    return baseSlug;
+                }
+                
+                if (error) {
+                    console.warn('Slug uniqueness check failed:', error);
+                    return baseSlug + '-' + Date.now();
+                }
+                
+                // Slug exists, try with numbers
+                let counter = 1;
+                let uniqueSlug;
+                
+                while (counter <= 100) { // Prevent infinite loop
+                    uniqueSlug = `${baseSlug}-${counter}`;
+                    
+                    const { data: checkData, error: checkError } = await window.dcfSupabase
+                        .from('resources')
+                        .select('slug')
+                        .eq('slug', uniqueSlug)
+                        .single();
+                    
+                    if (checkError && checkError.code === 'PGRST116') {
+                        // This variation is unique
+                        return uniqueSlug;
+                    }
+                    
+                    counter++;
+                }
+                
+                // Fallback if all numbered variations exist
+                return baseSlug + '-' + Date.now();
+                
+            } catch (error) {
+                console.warn('Error checking slug uniqueness:', error);
+                return baseSlug + '-' + Date.now();
+            }
+        }
+
+        async function generateSlugFromTitle(title) {
             if (!title || typeof title !== 'string') return '';
             
-            return title.toLowerCase()
+            const baseSlug = title.toLowerCase()
                 .trim()
                 .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and dashes
                 .replace(/\s+/g, '-') // Replace spaces with dashes
                 .replace(/-+/g, '-') // Replace multiple dashes with single dash
                 .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
-                .substring(0, 100); // Limit length
+                .substring(0, 80); // Leave room for numbering
+            
+            return await ensureUniqueSlug(baseSlug);
         }
         
         /**
