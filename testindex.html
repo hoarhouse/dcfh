@@ -3281,8 +3281,8 @@
                 .single();
 
             if (cmsError) {
-                console.error('CMS error:', cmsError);
-                throw cmsError;
+                console.warn('CMS data not available, using empty configuration:', cmsError);
+                // Don't throw - continue with empty slugs
             }
 
             const slugEntries = cmsData?.slugs || [];
@@ -3325,8 +3325,9 @@
                 .limit(4);
 
             if (postsError) {
-                console.error('❌ Posts query error:', postsError);
-                throw postsError;
+                console.warn('Posts query error, showing fallback content:', postsError);
+                showFallbackCards(dcfNewsCards);
+                return;
             }
 
             console.log('6️⃣ Blog posts returned from query:', blogPosts);
@@ -3375,8 +3376,8 @@
             addCardClickHandlers();
 
         } catch (error) {
-            console.error('Error loading DCF News:', error);
-            showErrorState(dcfNewsCards);
+            console.warn('Error loading DCF News:', error);
+            showFallbackCards(dcfNewsCards);
         }
     }
 
@@ -3582,8 +3583,8 @@
                 .single();
 
             if (cmsError) {
-                console.error('Change Makers CMS error:', cmsError);
-                throw cmsError;
+                console.warn('Change Makers CMS data not available:', cmsError);
+                // Don't throw - continue with empty slugs
             }
 
             const slugEntries = cmsData?.slugs || [];
@@ -3614,8 +3615,9 @@
                 .limit(4);
 
             if (postsError) {
-                console.error('Change Makers posts query error:', postsError);
-                throw postsError;
+                console.warn('Change Makers posts query error, showing fallback:', postsError);
+                showFallbackChangeMakers(changeMakersGrid);
+                return;
             }
 
             // Create a map of posts by slug for easy lookup
@@ -3651,7 +3653,7 @@
             addCardClickHandlers();
 
         } catch (error) {
-            console.error('Error loading Change Makers:', error);
+            console.warn('Error loading Change Makers:', error);
             showFallbackChangeMakers(changeMakersGrid);
         }
     }
@@ -3826,8 +3828,8 @@
             console.log('📊 DEBUG: Filter: section_name = "resources"');
 
             if (cmsError) {
-                console.error('Resources CMS error:', cmsError);
-                throw cmsError;
+                console.warn('Resources CMS data not available:', cmsError);
+                // Don't throw - continue with empty slugs
             }
 
             // Handle case where section doesn't exist (empty array) or exists (first item)
@@ -3875,8 +3877,11 @@
             console.log('📚 DEBUG: Filters: slug IN', slugsToFetch, 'AND status = "approved"');
 
             if (resourcesError) {
-                console.error('Error fetching Resources:', resourcesError);
-                throw resourcesError;
+                console.warn('Error fetching Resources, showing empty state:', resourcesError);
+                loading.style.display = 'none';
+                resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Resources temporarily unavailable</div>';
+                resourcesCards.style.display = 'block';
+                return;
             }
 
             if (!resources || resources.length === 0) {
@@ -3923,9 +3928,9 @@
             loading.style.display = 'none';
 
         } catch (error) {
-            console.error('Error loading Resources:', error);
+            console.warn('Error loading Resources:', error);
             loading.style.display = 'none';
-            resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Error loading resources</div>';
+            resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Resources section coming soon</div>';
             resourcesCards.style.display = 'block';
         }
     }
