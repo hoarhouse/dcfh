@@ -3533,7 +3533,32 @@
             const description = escapeHtml(resource.description || resource.excerpt || 'Valuable resource for our community');
             const imageUrl = resource.featured_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop';
             const resourceType = resource.type || 'Guide';  // Changed to match schema
-            const fileType = resource.file_type || 'PDF';
+            
+            // Convert MIME types to user-friendly file types
+            let fileType = resource.file_type || 'PDF';
+            if (fileType.includes('application/vnd.openxmlformats')) {
+                if (fileType.includes('presentationml')) {
+                    fileType = 'PowerPoint';
+                } else if (fileType.includes('wordprocessingml')) {
+                    fileType = 'Word';
+                } else if (fileType.includes('spreadsheetml')) {
+                    fileType = 'Excel';
+                } else {
+                    fileType = 'Document';
+                }
+            } else if (fileType.includes('application/pdf')) {
+                fileType = 'PDF';
+            } else if (fileType.includes('image/')) {
+                fileType = 'Image';
+            } else if (fileType.includes('video/')) {
+                fileType = 'Video';
+            } else if (fileType.includes('text/')) {
+                fileType = 'Text';
+            } else if (fileType.length > 15) {
+                // If it's still a long MIME type, just use generic term
+                fileType = 'File';
+            }
+            
             const fileUrl = resource.file_url || '#';
             
             // Generate resource-specific templates - EXACT match with testindex.html
