@@ -1215,18 +1215,23 @@
         <div class="step-container" id="step6" style="display: none;">
             <div class="welcome-message">
                 <div style="font-size: 4rem; margin-bottom: 1rem;" data-icon="message"></div>
-                <h2>Almost There!</h2>
-                <p><strong>Please check your email to confirm your account.</strong></p>
-                <p style="margin-top: 1rem; color: #666;">We've sent a confirmation link to your email address. Click the link in the email to activate your account, then you can sign in and start collaborating with our community.</p>
+                <h2>Check Your Email!</h2>
+                <p><strong>A confirmation link has been sent to your email address.</strong></p>
+                <p style="margin-top: 1rem; color: #666;">Please check your inbox (and spam folder) for an email from DCF Hungary. Click the confirmation link to activate your account.</p>
                 
                 <div style="background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1.5rem; margin: 2rem 0; text-align: left;">
                     <h4 style="margin-bottom: 1rem; color: #333;"><span data-icon="success"></span> What happens next:</h4>
                     <ol style="color: #666; line-height: 1.8; padding-left: 1.5rem;">
-                        <li>Check your email inbox (and spam folder)</li>
-                        <li>Click the confirmation link in the email</li>
-                        <li>Your account will be activated</li>
-                        <li>Sign in and start exploring!</li>
+                        <li><strong>Check your email inbox</strong> (may take 1-2 minutes)</li>
+                        <li><strong>Also check spam/junk folder</strong> if not in inbox</li>
+                        <li><strong>Click the confirmation link</strong> in the email</li>
+                        <li><strong>Sign in</strong> with your new account</li>
                     </ol>
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+                    <p style="color: #856404; margin: 0;"><strong>Didn't receive the email?</strong></p>
+                    <p style="color: #856404; margin: 0.5rem 0 0 0;">Wait 2-3 minutes, check your spam folder, or <a href="dcf_login_page.html" style="color: #0056b3; text-decoration: underline;">try signing in</a> - it may trigger a resend.</p>
                 </div>
                 
                 <div class="button-group">
@@ -2032,12 +2037,22 @@
 
         // Complete signup
         async function completeSignup() {
+            const submitBtn = event.target;
+            const originalText = submitBtn.textContent;
+            
+            // Add timeout mechanism
+            const timeoutDuration = 30000; // 30 seconds
+            let timeoutId;
+            
             try {
-                // Show loading state
-                const submitBtn = event.target;
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Creating Account...';
+                // Show loading state with timeout
+                submitBtn.innerHTML = '<span data-icon="loading"></span> Creating Account...';
                 submitBtn.disabled = true;
+                
+                // Set timeout for hanging requests
+                timeoutId = setTimeout(() => {
+                    throw new Error('TIMEOUT|Account creation is taking too long. Please check your internet connection and try again.');
+                }, timeoutDuration);
 
                 // Use modular Supabase client
                 const supabase = window.dcfSupabase;
@@ -2046,23 +2061,45 @@
                 }
 
                 // Step 1: Create the auth user with Supabase Auth
-                const { data: authData, error: authError } = await supabase.auth.signUp({
+                console.log('Starting signup for email:', userData.email);
+                
+                const signUpPromise = supabase.auth.signUp({
                     email: userData.email,
                     password: userData.password,
                     options: {
                         data: {
                             full_name: userData.fullName
-                        }
+                        },
+                        emailRedirectTo: window.location.origin + '/auth/dcf_email_confirm.html'
                     }
                 });
+                
+                // Wait for signup with built-in promise
+                const { data: authData, error: authError } = await signUpPromise;
 
                 if (authError) {
+                    console.error('Auth signup error:', authError);
+                    
+                    // Check for duplicate email
                     if (authError.message.includes('already registered') || 
                         authError.message.includes('User already registered') ||
-                        authError.code === 'user_already_exists') {
-                        throw new Error('EXISTING_EMAIL|An account with this email already exists. Please sign in instead of creating a new account.');
+                        authError.message.includes('duplicate key') ||
+                        authError.code === 'user_already_exists' ||
+                        authError.status === 400) {
+                        throw new Error('EXISTING_EMAIL|An account with this email already exists. Please sign in instead.');
                     }
+                    
+                    // Check for rate limiting
+                    if (authError.message.includes('rate limit') || authError.status === 429) {
+                        throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
+                    }
+                    
                     throw authError;
+                }
+                
+                // Verify we got user data
+                if (!authData || !authData.user) {
+                    throw new Error('Signup succeeded but no user data returned. Please try again.');
                 }
 
                 // Parse name components
@@ -2158,30 +2195,76 @@
 
                 console.log('Account created successfully:', authData);
                 
+                // Clear timeout on success
+                if (timeoutId) clearTimeout(timeoutId);
+                
+                // Store email for reference
+                sessionStorage.setItem('dcf_signup_email', userData.email);
+                
                 // Show success message
                 goToStep(6);
+                
+                // Update success message with actual email
+                const emailNotice = document.createElement('div');
+                emailNotice.style.cssText = 'background: #e3f2fd; border: 1px solid #2196f3; color: #1976d2; padding: 1rem; border-radius: 8px; margin: 1rem 0;';
+                emailNotice.innerHTML = `<strong>Email sent to:</strong> ${userData.email}`;
+                const welcomeMessage = document.querySelector('.welcome-message');
+                if (welcomeMessage) {
+                    welcomeMessage.insertBefore(emailNotice, welcomeMessage.children[3]);
+                }
 
             } catch (error) {
                 console.error('Signup error:', error);
                 
-                // Handle existing email specifically
-                if (error.message.includes('EXISTING_EMAIL|')) {
-                    const cleanMessage = error.message.replace('EXISTING_EMAIL|', '');
-                    showAlert(cleanMessage, 'error', 'Account Already Exists');
+                // Clear timeout on error
+                if (timeoutId) clearTimeout(timeoutId);
+                
+                // Handle timeout specifically
+                if (error.message.includes('TIMEOUT|')) {
+                    const cleanMessage = error.message.replace('TIMEOUT|', '');
+                    showAlert(cleanMessage, 'error', 'Connection Timeout');
                     
-                    // Show redirect option after 2 seconds
-                    setTimeout(() => {
-                        showConfirm('Would you like to go to the sign-in page now?').then(confirmed => {
-                            if (confirmed) {
-                                window.location.href = 'dcf_login_page.html';
-                            }
-                        });
-                    }, 2000);
+                    // Reset button with retry option
+                    submitBtn.innerHTML = '<span data-icon="refresh"></span> Retry Signup';
+                    submitBtn.disabled = false;
+                    return;
+                }
+                
+                // Handle existing email specifically
+                if (error.message.includes('EXISTING_EMAIL|') || 
+                    error.message.includes('already registered') ||
+                    error.message.includes('User already registered')) {
+                    
+                    const cleanMessage = error.message.includes('EXISTING_EMAIL|') 
+                        ? error.message.replace('EXISTING_EMAIL|', '')
+                        : 'An account with this email already exists. Please sign in instead.';
+                    
+                    // Show clear error with options
+                    const errorContainer = document.createElement('div');
+                    errorContainer.style.cssText = 'background: #ffebee; border: 1px solid #ef5350; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;';
+                    errorContainer.innerHTML = `
+                        <h3 style="color: #c62828; margin-bottom: 0.5rem;">Account Already Exists</h3>
+                        <p style="color: #d32f2f;">${cleanMessage}</p>
+                        <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                            <button onclick="window.location.href='dcf_login_page.html'" class="btn btn-primary">Go to Sign In</button>
+                            <button onclick="goToStep(1)" class="btn btn-secondary">Use Different Email</button>
+                        </div>
+                    `;
+                    
+                    // Insert error at top of current step
+                    const currentStepContainer = document.getElementById(`step${currentStep}`);
+                    const existingError = currentStepContainer.querySelector('.signup-error-container');
+                    if (existingError) existingError.remove();
+                    
+                    errorContainer.className = 'signup-error-container';
+                    currentStepContainer.insertBefore(errorContainer, currentStepContainer.firstChild.nextSibling);
                     
                     // Reset button
-                    const submitBtn = event.target;
                     submitBtn.textContent = 'Join Community';
                     submitBtn.disabled = false;
+                    
+                    // Scroll to error
+                    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
                 
@@ -2196,12 +2279,21 @@
                     return;
                 }
                 
-                // Handle other errors
-                showAlert('Error creating account: ' + error.message, 'error', 'Account Creation Error');
+                // Handle other errors with better messaging
+                const userFriendlyMessage = error.message.includes('fetch failed') 
+                    ? 'Connection error. Please check your internet and try again.'
+                    : error.message.includes('NetworkError')
+                    ? 'Network error. Please check your connection.'
+                    : error.message.includes('Failed to fetch')
+                    ? 'Unable to connect to the server. Please try again.'
+                    : 'Error creating account: ' + error.message;
                 
-                // Reset button
-                const submitBtn = event.target;
-                submitBtn.textContent = 'Join Community';
+                showAlert(userFriendlyMessage, 'error', 'Account Creation Error');
+                
+                // Reset button with appropriate text
+                submitBtn.innerHTML = error.message.includes('fetch') || error.message.includes('Network') 
+                    ? '<span data-icon="refresh"></span> Retry' 
+                    : 'Join Community';
                 submitBtn.disabled = false;
             }
         }
