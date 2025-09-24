@@ -3855,53 +3855,53 @@
                 return;
             }
 
-            // Fetch the blog posts
-            console.log('🔄 DEBUG: Querying blog_posts table for slugs:', slugsToFetch);
-            const { data: posts, error: postsError } = await supabase
-                .from('blog_posts')
-                .select('*')
+            // Fetch resources from resources table
+            console.log('🔄 DEBUG: Querying resources table for slugs:', slugsToFetch);
+            const { data: resources, error: resourcesError } = await supabase
+                .from('resources')
+                .select('id, title, slug, description, excerpt, featured_image_url, resource_type, file_type, created_at, published_at')
                 .in('slug', slugsToFetch)
-                .eq('status', 'published');
+                .eq('status', 'approved');
 
-            console.log('📚 DEBUG: Blog posts query result:', { posts, postsError });
-            console.log('📚 DEBUG: Table queried: blog_posts');
-            console.log('📚 DEBUG: Filters: slug IN', slugsToFetch, 'AND status = "published"');
+            console.log('📚 DEBUG: Resources query result:', { resources, resourcesError });
+            console.log('📚 DEBUG: Table queried: resources');
+            console.log('📚 DEBUG: Filters: slug IN', slugsToFetch, 'AND status = "approved"');
 
-            if (postsError) {
-                console.error('Error fetching Resources posts:', postsError);
-                throw postsError;
+            if (resourcesError) {
+                console.error('Error fetching Resources:', resourcesError);
+                throw resourcesError;
             }
 
-            if (!posts || posts.length === 0) {
-                console.log('⚠️ DEBUG: No matching blog posts found for slugs:', slugsToFetch);
-                // Show empty state when configured but no posts found
+            if (!resources || resources.length === 0) {
+                console.log('⚠️ DEBUG: No matching resources found for slugs:', slugsToFetch);
+                // Show empty state when configured but no resources found
                 loading.style.display = 'none';
                 resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No resources available</div>';
                 resourcesCards.style.display = 'block';
                 return;
             }
 
-            console.log('✅ DEBUG: Found', posts.length, 'matching blog posts');
+            console.log('✅ DEBUG: Found', resources.length, 'matching resources');
 
             // Generate cards HTML with templates
             const cardsHTML = slugEntries.map((entry, index) => {
                 const slug = typeof entry === 'string' ? entry : entry.slug;
-                const template = typeof entry === 'object' ? entry.template : 'profile-card-1';
-                const post = posts.find(p => p.slug === slug);
+                const template = typeof entry === 'object' ? entry.template : 'resource-doc-card';
+                const resource = resources.find(r => r.slug === slug);
                 
                 console.log(`🎨 DEBUG: Generating card ${index + 1}:`, {
                     slug,
                     template,
-                    postFound: !!post,
-                    postTitle: post?.title
+                    resourceFound: !!resource,
+                    resourceTitle: resource?.title
                 });
                 
-                if (!post) {
-                    console.log(`⚠️ DEBUG: No post found for slug "${slug}"`);
+                if (!resource) {
+                    console.log(`⚠️ DEBUG: No resource found for slug "${slug}"`);
                     return '';
                 }
                 
-                return generateResourceCardHTML(post, index, template);
+                return generateResourceCardHTML(resource, index, template);
             }).filter(Boolean).join('');
 
             // Update DOM - only show if we have cards
