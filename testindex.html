@@ -3806,11 +3806,17 @@
         }
 
         try {
+            console.log('🔍 DEBUG: Starting loadResourcesCards()');
+            
             // Get Resources slugs from CMS (don't use .single() as section might not exist)
             const { data: cmsData, error: cmsError } = await supabase
                 .from('cms_sections')
                 .select('slugs')
                 .eq('section_name', 'resources');
+
+            console.log('📊 DEBUG: CMS Query Result:', { cmsData, cmsError });
+            console.log('📊 DEBUG: Table queried: cms_sections');
+            console.log('📊 DEBUG: Filter: section_name = "resources"');
 
             if (cmsError) {
                 console.error('Resources CMS error:', cmsError);
@@ -3820,10 +3826,12 @@
             // Handle case where section doesn't exist (empty array) or exists (first item)
             const slugEntries = (cmsData && cmsData.length > 0) ? (cmsData[0].slugs || []) : [];
             console.log('=== Resources CMS Data ===');
-            console.log('Slug entries:', slugEntries);
+            console.log('📌 DEBUG: Raw CMS data:', cmsData);
+            console.log('📌 DEBUG: Slug entries extracted:', slugEntries);
+            console.log('📌 DEBUG: Number of slug entries:', slugEntries.length);
 
             if (slugEntries.length === 0) {
-                console.log('No Resources slugs configured in CMS');
+                console.log('⚠️ DEBUG: No Resources slugs configured in CMS - hiding section');
                 // Hide loading and resources container entirely when no slugs configured
                 loading.style.display = 'none';
                 resourcesCards.style.display = 'none';
@@ -3831,11 +3839,16 @@
             }
 
             // Extract just the slugs
-            const slugsToFetch = slugEntries.map(entry => 
-                typeof entry === 'string' ? entry : entry.slug
-            ).filter(Boolean);
+            const slugsToFetch = slugEntries.map((entry, i) => {
+                const slug = typeof entry === 'string' ? entry : entry.slug;
+                console.log(`🔸 DEBUG: Processing slug ${i + 1}:`, { entry, extractedSlug: slug });
+                return slug;
+            }).filter(Boolean);
+
+            console.log('📝 DEBUG: Slugs to fetch from blog_posts:', slugsToFetch);
 
             if (slugsToFetch.length === 0) {
+                console.log('⚠️ DEBUG: No valid slugs extracted - hiding section');
                 // No valid slugs found
                 loading.style.display = 'none';
                 resourcesCards.style.display = 'none';
@@ -3843,11 +3856,16 @@
             }
 
             // Fetch the blog posts
+            console.log('🔄 DEBUG: Querying blog_posts table for slugs:', slugsToFetch);
             const { data: posts, error: postsError } = await supabase
                 .from('blog_posts')
                 .select('*')
                 .in('slug', slugsToFetch)
                 .eq('status', 'published');
+
+            console.log('📚 DEBUG: Blog posts query result:', { posts, postsError });
+            console.log('📚 DEBUG: Table queried: blog_posts');
+            console.log('📚 DEBUG: Filters: slug IN', slugsToFetch, 'AND status = "published"');
 
             if (postsError) {
                 console.error('Error fetching Resources posts:', postsError);
@@ -3855,7 +3873,7 @@
             }
 
             if (!posts || posts.length === 0) {
-                console.log('No matching Resources posts found');
+                console.log('⚠️ DEBUG: No matching blog posts found for slugs:', slugsToFetch);
                 // Show empty state when configured but no posts found
                 loading.style.display = 'none';
                 resourcesCards.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No resources available</div>';
@@ -3863,13 +3881,25 @@
                 return;
             }
 
+            console.log('✅ DEBUG: Found', posts.length, 'matching blog posts');
+
             // Generate cards HTML with templates
             const cardsHTML = slugEntries.map((entry, index) => {
                 const slug = typeof entry === 'string' ? entry : entry.slug;
                 const template = typeof entry === 'object' ? entry.template : 'profile-card-1';
                 const post = posts.find(p => p.slug === slug);
                 
-                if (!post) return '';
+                console.log(`🎨 DEBUG: Generating card ${index + 1}:`, {
+                    slug,
+                    template,
+                    postFound: !!post,
+                    postTitle: post?.title
+                });
+                
+                if (!post) {
+                    console.log(`⚠️ DEBUG: No post found for slug "${slug}"`);
+                    return '';
+                }
                 
                 return generateResourceCardHTML(post, index, template);
             }).filter(Boolean).join('');
