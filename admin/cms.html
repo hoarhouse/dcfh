@@ -3588,7 +3588,7 @@
             for (let i = 0; i < resourcesSlugs.length; i++) {
                 const slugEntry = resourcesSlugs[i];
                 const slug = slugEntry.slug || slugEntry;
-                const template = slugEntry.template || 'profile-card-1';
+                const template = slugEntry.template || 'resource-doc-card';
                 const previewEl = document.getElementById(`res-preview-${i}`);
                 
                 if (!previewEl) continue;
@@ -3597,7 +3597,7 @@
                     // Query resources table for approved resources
                     const { data: resource, error } = await supabase
                         .from('resources')
-                        .select('id, title, slug, excerpt, featured_image_url, created_at, published_at')
+                        .select('id, title, slug, description, excerpt, featured_image_url, resource_type, file_type, created_at, published_at')
                         .eq('slug', slug)
                         .eq('status', 'approved')
                         .maybeSingle();
@@ -3605,17 +3605,23 @@
                     if (!error && resource) {
                         const previewHTML = generateFullSizeResourcePreview({
                             title: resource.title,
+                            description: resource.description,
                             excerpt: resource.excerpt,
-                            featured_image_url: resource.featured_image_url
+                            featured_image_url: resource.featured_image_url,
+                            resource_type: resource.resource_type,
+                            file_type: resource.file_type
                         }, template);
                         previewEl.innerHTML = previewHTML;
-                        console.log(`Resources preview ${i}:`, resource.title, 'Image:', resource.featured_image_url);
+                        console.log(`Resources preview ${i}:`, resource.title, 'Type:', resource.resource_type);
                     } else {
                         console.log(`Resources preview ${i}: Using fallback for`, slug);
                         previewEl.innerHTML = generateFullSizeResourcePreview({
                             title: 'Resource Preview',
+                            description: 'Resource content will appear here',
                             excerpt: 'Resource content will appear here',
-                            featured_image_url: `https://images.unsplash.com/photo-${1481627834876 + i}?w=400&h=500&fit=crop`
+                            featured_image_url: `https://images.unsplash.com/photo-${1481627834876 + i}?w=400&h=500&fit=crop`,
+                            resource_type: 'Guide',
+                            file_type: 'PDF'
                         }, template);
                     }
                 } catch (error) {
