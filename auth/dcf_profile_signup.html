@@ -374,6 +374,8 @@
             position: relative;
             overflow: hidden;
             min-height: 48px;
+            -webkit-tap-highlight-color: transparent; /* Remove iOS tap highlight */
+            touch-action: manipulation; /* Improve touch responsiveness */
         }
 
         .checkbox-item:hover {
@@ -402,7 +404,11 @@
         }
 
         .checkbox-item input[type="checkbox"] {
-            display: none;
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 1px;
+            height: 1px;
         }
 
         .checkbox-item label {
@@ -411,6 +417,10 @@
             flex: 1;
             text-align: center;
             padding-right: 24px;
+            display: block;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let parent handle clicks */
         }
 
         .checkbox-item.selected label {
@@ -846,10 +856,37 @@
 
             .checkbox-group {
                 grid-template-columns: 1fr;
+                gap: 0.75rem; /* Better spacing on mobile */
+            }
+            
+            /* Enhanced touch targets for mobile */
+            .checkbox-item {
+                min-height: 56px; /* Larger touch target (Apple recommends 44px minimum) */
+                font-size: 1rem; /* Ensure readable text */
+                padding: 1.25rem 1rem; /* More padding for easier tapping */
+            }
+            
+            /* Visual feedback on tap */
+            .checkbox-item:active {
+                transform: scale(0.98);
+                transition: transform 0.1s ease;
+                background: #f0f0f0;
+            }
+            
+            .checkbox-item.selected:active {
+                transform: scale(0.98);
+                opacity: 0.95;
             }
 
             .button-group {
                 flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .btn {
+                width: 100%; /* Full width buttons on mobile */
+                min-height: 48px; /* Minimum touch target size */
+                font-size: 1rem;
             }
 
             .profile-header {
@@ -860,6 +897,21 @@
             .profile-avatar {
                 margin-right: 0;
                 margin-bottom: 1rem;
+            }
+            
+            /* Improve form inputs on mobile */
+            .form-input, .form-select, .textarea {
+                font-size: 16px; /* Prevent iOS zoom on focus */
+                min-height: 48px;
+            }
+            
+            /* Better password toggle button size on mobile */
+            .password-toggle {
+                min-width: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
         }
     </style>
@@ -1687,6 +1739,13 @@
             }
         }
 
+        // Detect mobile device
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0);
+        }
+        
         // Handle checkbox interactions
         document.addEventListener('dcfReady', function() {
             // SECURITY: Initialize input sanitization
@@ -1699,27 +1758,83 @@
             
             // Initialize checkbox handling after DOM loads
             initializeCheckboxes();
+            
+            // Log mobile detection for debugging
+            if (isMobileDevice()) {
+                console.log('📱 Mobile device detected - touch events enabled');
+            } else {
+                console.log('💻 Desktop device detected');
+            }
         });
 
         function initializeCheckboxes() {
             document.querySelectorAll('.checkbox-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const checkbox = this.querySelector('input[type="checkbox"]');
-                    const isCurrentlySelected = this.classList.contains('selected');
+                // Function to handle selection toggle
+                const toggleSelection = (element) => {
+                    const checkbox = element.querySelector('input[type="checkbox"]');
+                    const isCurrentlySelected = element.classList.contains('selected');
                     
                     if (isCurrentlySelected) {
                         // Unselect
-                        this.classList.remove('selected');
+                        element.classList.remove('selected');
                         checkbox.checked = false;
                     } else {
                         // Select
-                        this.classList.add('selected');
+                        element.classList.add('selected');
                         checkbox.checked = true;
                     }
+                    
+                    // Trigger change event for form validation
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+                
+                // Support both click and touch events for mobile
+                // CRITICAL FIX: Removed e.preventDefault() which was blocking mobile taps
+                item.addEventListener('click', function(e) {
+                    // Only stop propagation to prevent bubbling
+                    e.stopPropagation();
+                    
+                    // Ignore if clicking on a link or button inside
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+                        return;
+                    }
+                    
+                    toggleSelection(this);
                 });
+                
+                // Add explicit touch event support for better mobile handling
+                item.addEventListener('touchend', function(e) {
+                    // Prevent ghost clicks on mobile
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    toggleSelection(this);
+                }, { passive: false });
+                
+                // Add keyboard support for accessibility
+                item.setAttribute('tabindex', '0');
+                item.setAttribute('role', 'checkbox');
+                item.setAttribute('aria-checked', item.classList.contains('selected'));
+                
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        toggleSelection(this);
+                        this.setAttribute('aria-checked', this.classList.contains('selected'));
+                    }
+                });
+                
+                // Update aria-checked when checkbox changes
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', function() {
+                    item.setAttribute('aria-checked', this.checked);
+                });
+                
+                // Initialize selected state based on checkbox
+                if (checkbox.checked) {
+                    item.classList.add('selected');
+                    item.setAttribute('aria-checked', 'true');
+                }
             });
         }
 
@@ -2055,9 +2170,16 @@
                 }, timeoutDuration);
 
                 // Use modular Supabase client
-                const supabase = window.dcfSupabase;
+                let supabase = window.dcfSupabase;
                 if (!supabase) {
-                    throw new Error('Supabase client not initialized');
+                    console.error('❌ Supabase client not found. Checking fallback...');
+                    // Try fallback to masterSupabase for compatibility
+                    if (window.masterSupabase) {
+                        console.log('✅ Using fallback masterSupabase');
+                        supabase = window.masterSupabase;
+                    } else {
+                        throw new Error('Supabase client not initialized. Please refresh the page and try again.');
+                    }
                 }
 
                 // Step 1: Create the auth user with Supabase Auth
