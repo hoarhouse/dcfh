@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Editor - DCF Hungary Admin</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23333'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        /* Admin Navigation Styles */
+        .admin-nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .admin-nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .admin-nav-menu .nav-link {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-nav-menu .nav-link:hover {
+            color: #333;
+        }
+
+        .admin-nav-menu .nav-link.active {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .nav-title {
+            font-weight: 600;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .exit-admin-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .exit-admin-btn:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        /* Logo Styles */
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        /* Navigation Menu Styles */
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .nav-menu a.active {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* User Menu Styles */
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        /* User Dropdown Styles */
+        .user-dropdown {
+            position: relative;
+        }
+
+        /* Admin Menu Styles */
+        .dcf-admin-menu {
+            background: #000;
+            color: white;
+            padding: 0;
+            border-bottom: 1px solid #333;
+            display: none; /* Hidden by default, JS will show on admin pages */
+        }
+
+        .dcf-admin-menu.active {
+            display: block;
+        }
+
+        .dcf-admin-menu-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dcf-admin-menu-items {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-item {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .dcf-admin-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1.5rem;
+            height: 100%;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            line-height: 48px;
+        }
+
+        .dcf-admin-menu-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom-color: #666;
+        }
+
+        .dcf-admin-menu-link.active {
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom-color: transparent;
+        }
+
+        .dcf-admin-menu-icon {
+            font-size: 1.1rem;
+        }
+
+        .dcf-admin-badge {
+            background: #dc3545;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: auto;
+        }
+
+        /* Notification and User Dropdown Styles */
+        .notification-wrapper {
+            position: relative;
+        }
+
+        .notification-bell {
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            padding: 0.5rem;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ff6b6b;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 320px;
+            margin-top: 0.5rem;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .notification-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e5e5;
+            margin: 0;
+        }
+
+        .dropdown-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .dropdown-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-email {
+            font-size: 0.85rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        button.logout-btn,
+        .dropdown-item.logout-btn {
+            color: #ef9a9a !important;
+            font-weight: 500 !important;
+            background: none !important;
+            border: none !important;
+            width: 100% !important;
+            text-align: left !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            padding: 0.75rem 1rem !important;
+            font-size: 0.9rem !important;
+            border-radius: 0 !important;
+            transition: background 0.2s !important;
+        }
+
+        button.logout-btn:hover,
+        .dropdown-item.logout-btn:hover {
+            background: #fee !important;
+            color: #ef9a9a !important;
+        }
+
+
+        /* Sub-navigation for Blog Management */
+        .sub-nav-container {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.75rem 0;
+        }
+
+        .sub-nav-tabs {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .sub-nav-tab {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .sub-nav-tab:hover {
+            background: white;
+            color: #333;
+        }
+
+        .sub-nav-tab.active {
+            background: white;
+            color: #333;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .breadcrumb-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .breadcrumb-nav a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb-nav a:hover {
+            color: #000;
+        }
+
+        .breadcrumb-separator {
+            color: #999;
+        }
+
+        /* Editor Container */
+        .editor-container {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        /* Main Editor */
+        .editor-main {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 2rem;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .editor-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 1px solid #e5e5e5;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .form-input.title-input {
+            font-size: 1.5rem;
+            font-weight: 600;
+            padding: 1rem;
+            border: none;
+            border-bottom: 2px solid #e5e5e5;
+            border-radius: 0;
+        }
+
+        .form-input.title-input:focus {
+            border-bottom-color: #333;
+        }
+
+        /* Sidebar */
+        .editor-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        /* Status Indicators */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+
+        .status-indicator.saving {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Character Counter */
+        .char-counter {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .char-counter.warning {
+            color: #ffc107;
+        }
+
+        .char-counter.error {
+            color: #dc3545;
+        }
+
+        /* Required/Optional Indicators */
+        .required-indicator {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .optional-indicator {
+            color: #6c757d;
+            font-weight: normal;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: 0.25rem;
+            color: #6c757d;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        /* Editor Footer */
+        .editor-footer {
+            background: linear-gradient(to bottom, #f8f9fa, #fff);
+            border-top: 2px solid #dee2e6;
+            padding: 1.5rem 2rem;
+            margin-top: 3rem;
+            margin-left: -2rem;
+            margin-right: -2rem;
+            margin-bottom: -2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+
+        .editor-footer-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .required-note {
+            color: #6c757d;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .auto-save-status {
+            color: #28a745;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .editor-footer-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .editor-footer-actions .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .editor-footer-actions .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .editor-footer-actions .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Media Insert Button */
+        .media-insert-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .media-insert-btn:hover {
+            background: white;
+            border-color: #333;
+        }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            max-width: 500px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .toast-message {
+            flex: 1;
+            color: #333;
+        }
+
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast-success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-error .toast-icon {
+            color: #dc3545;
+        }
+
+        /* Featured Media Upload Styles */
+        .featured-media-section {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .featured-media-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .featured-media-title {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .media-type-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: #f0f0f0;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .featured-media-upload {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: #f8f9fa;
+        }
+
+        .featured-media-upload:hover {
+            border-color: #333;
+            background: #fff;
+        }
+
+        .featured-media-upload.drag-over {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .featured-media-preview {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .featured-media-preview img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .featured-media-preview video {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            background: #000;
+        }
+
+        .media-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .media-control-btn {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .media-control-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .media-control-btn.remove {
+            color: #dc3545;
+        }
+
+        .upload-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 123, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+            width: 0;
+        }
+
+        .media-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .media-info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        input[type="file"]#featuredMediaInput {
+            display: none;
+        }
+
+        /* Preview Mode Styles */
+        .preview-container {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            min-height: calc(100vh - 200px);
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 2px solid #e5e5e5;
+            margin-bottom: 2rem;
+        }
+
+        .preview-breadcrumb {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .preview-breadcrumb span {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .preview-featured-media {
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .preview-featured-media img {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            object-fit: cover;
+        }
+
+        .preview-featured-media video {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+        }
+
+        .preview-post-meta {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .preview-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-post-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .preview-post-excerpt {
+            font-size: 1.25rem;
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .preview-post-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .preview-post-content h1 {
+            font-size: 2rem;
+            margin: 2rem 0 1rem;
+            color: #1a1a1a;
+        }
+
+        .preview-post-content h2 {
+            font-size: 1.75rem;
+            margin: 1.75rem 0 1rem;
+            color: #1a1a1a;
+        }
+
+        .preview-post-content h3 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            color: #1a1a1a;
+        }
+
+        .preview-post-content p {
+            margin-bottom: 1.25rem;
+        }
+
+        .preview-post-content ul,
+        .preview-post-content ol {
+            margin-bottom: 1.25rem;
+            padding-left: 2rem;
+        }
+
+        .preview-post-content blockquote {
+            border-left: 4px solid #333;
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #555;
+        }
+
+        .preview-post-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+        }
+
+        .preview-post-content pre {
+            background: #f4f4f4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .preview-post-content code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .preview-author-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .preview-author-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .preview-author-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .preview-author-details h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .preview-author-details p {
+            margin: 0.25rem 0 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .editor-main.preview-mode {
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-sidebar {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .editor-container {
+                padding: 1rem;
+            }
+
+            .editor-main {
+                padding: 1rem;
+            }
+
+            .editor-actions {
+                flex-wrap: wrap;
+            }
+
+            .btn {
+                font-size: 0.85rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            color: #666;
+        }
+
+        /* SEO Preview */
+        .seo-preview {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .seo-preview-title {
+            color: #1a0dab;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+            text-decoration: underline;
+        }
+
+        .seo-preview-url {
+            color: #006621;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .seo-preview-desc {
+            color: #545454;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-init.js"></script>
+    <!-- Quill.js Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
+    <style>
+        /* Quill Editor Custom Styles */
+        .ql-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+        }
+        .ql-editor {
+            min-height: 500px;
+            line-height: 1.6;
+        }
+        .ql-toolbar {
+            background: #f8f9fa;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .ql-container {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading post editor...</div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <span class="logo-icon"></span>
+                DCF Hungary
+            </a>
+            <ul class="nav-menu">
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar"></div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar" id="dropdownAvatar"></div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName"></div>
+                                <div class="dropdown-email" id="dropdownUserEmail"></div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <!-- Admin Menu Bar - Populated by dcf-ui.js -->
+    <div class="dcf-admin-menu" id="dcfAdminMenu">
+        <!-- Menu items will be populated by dcf-ui.js -->
+    </div>
+
+    <!-- Sub-navigation for blog management (will be added by admin nav if needed) -->
+    
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <div class="breadcrumb-container">
+            <nav class="breadcrumb-nav">
+                <a href="dcf_admin_dashboard.html">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a href="dcf_admin_dashboard.html#blog-management" onclick="event.preventDefault(); window.location.href='dcf_admin_dashboard.html#blog-management';">Blog Management</a>
+                <span class="breadcrumb-separator">›</span>
+                <span id="breadcrumbTitle">Create Post</span>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Editor -->
+    <div class="editor-container">
+        <!-- Preview Container -->
+        <div class="preview-container" id="previewContainer">
+            <div class="preview-header" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 2rem; margin: -2rem -2rem 2rem -2rem; border-radius: 8px 8px 0 0;">
+                <div class="preview-notice" style="text-align: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: #495057; margin: 0 0 0.5rem 0; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">👁️</span>
+                        Preview Mode
+                    </h2>
+                    <p style="color: #6c757d; margin: 0; font-size: 1.1rem;">
+                        This is how your post will appear to readers
+                    </p>
+                </div>
+                <div class="preview-actions" style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="togglePreview()" style="padding: 0.75rem 1.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ← Back to Editor
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveDraft()" style="padding: 0.75rem 1.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        💾 Save as Draft
+                    </button>
+                    <button class="btn btn-primary" onclick="publishFromPreview()" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; gap: 0.5rem;">
+                        🚀 Publish This Post
+                    </button>
+                </div>
+            </div>
+            
+            <div class="preview-content" id="previewContent">
+                <!-- Preview content will be generated here -->
+            </div>
+        </div>
+        
+        <!-- Editor Container -->
+        <div class="editor-main">
+            <div class="editor-header">
+                <h1 class="editor-title" id="editorTitle">Create New Post</h1>
+            </div>
+
+            <form id="postForm">
+                <!-- Featured Media Section -->
+                <div class="featured-media-section">
+                    <div class="featured-media-header">
+                        <div class="featured-media-title">
+                            🖼️ Featured Media
+                            <span class="media-type-badge" id="mediaTypeBadge" style="display: none;"></span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #666;">
+                            Optional • Images (5MB) or Videos (50MB)
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Area -->
+                    <div id="featuredMediaContainer">
+                        <div class="featured-media-upload" id="featuredMediaUpload" onclick="selectFeaturedMedia()">
+                            <input type="file" id="featuredMediaInput" accept="image/*,video/*" onchange="handleFeaturedMediaSelect(event)">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">Click to upload or drag and drop</div>
+                            <div class="upload-hint">JPG, PNG, GIF, WebP, MP4, MOV, AVI</div>
+                            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Area (hidden by default) -->
+                        <div class="featured-media-preview" id="featuredMediaPreview" style="display: none;">
+                            <div class="media-controls">
+                                <button type="button" class="media-control-btn" onclick="replaceFeaturedMedia()" title="Replace">
+                                    🔄
+                                </button>
+                                <button type="button" class="media-control-btn remove" onclick="removeFeaturedMedia()" title="Remove">
+                                    ✕
+                                </button>
+                            </div>
+                            <div id="mediaPreviewContent"></div>
+                            <div class="media-info" id="mediaInfo"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Title -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Post Title <span class="required-indicator">*</span>
+                    </label>
+                    <input type="text" 
+                           id="postTitle" 
+                           class="form-input title-input" 
+                           placeholder="Enter post title..."
+                           maxlength="100"
+                           required>
+                    <div class="char-counter" id="titleCounter">0 / 100</div>
+                </div>
+
+                <!-- Slug -->
+                <div class="form-group">
+                    <label class="form-label">
+                        URL Slug <span class="optional-indicator">(auto-generated)</span>
+                    </label>
+                    <input type="text" 
+                           id="postSlug" 
+                           class="form-input" 
+                           placeholder="auto-generated-from-title"
+                           readonly>
+                    <small class="form-hint">Automatically generated from title - cannot be edited to prevent conflicts</small>
+                </div>
+
+                <!-- Excerpt -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Excerpt <span class="optional-indicator">(optional)</span>
+                    </label>
+                    <textarea id="postExcerpt" 
+                              class="form-textarea" 
+                              rows="3" 
+                              placeholder="Brief description of your post..."
+                              maxlength="160"></textarea>
+                    <div class="char-counter" id="excerptCounter">0 / 160</div>
+                    <small class="form-hint">A short summary that appears in search results and post listings</small>
+                </div>
+
+                <!-- Content Editor -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Content <span class="required-indicator">*</span>
+                    </label>
+                    <div style="margin-bottom: 1rem;">
+                        <button type="button" class="media-insert-btn" onclick="openMediaLibrary()">
+                            📷 Insert Media
+                        </button>
+                    </div>
+                    <textarea id="postContent" name="content"></textarea>
+                </div>
+
+                <!-- Action Buttons at Bottom -->
+                <div class="editor-footer">
+                    <div class="editor-footer-info">
+                        <span class="required-note"><span class="required-indicator">*</span> Required fields</span>
+                        <span id="autoSaveStatus" class="auto-save-status"></span>
+                    </div>
+                    <div class="editor-footer-actions">
+                        <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                            💾 Save Draft
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="togglePreview()">
+                            👁️ Preview
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="publishPost()">
+                            🚀 Publish
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator" id="saveIndicator"></span>
+                    <span id="saveStatus">Ready</span>
+                </div>
+                <div class="status-item">
+                    <span>Word Count: </span>
+                    <strong id="wordCount">0</strong>
+                </div>
+                <div class="status-item">
+                    <span>Last saved: </span>
+                    <span id="lastSaved">Never</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="editor-sidebar">
+            <!-- Publish Settings -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Publish Settings</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Blog</label>
+                    <select id="postBlog" class="form-select" required>
+                        <option value="">Select a blog...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select id="postStatus" class="form-select">
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="scheduled">Scheduled</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="scheduledGroup" style="display: none;">
+                    <label class="form-label">Schedule For</label>
+                    <input type="datetime-local" id="scheduledDate" class="form-input">
+                </div>
+            </div>
+
+            <!-- SEO Settings -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">SEO Settings</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Meta Title</label>
+                    <input type="text" 
+                           id="metaTitle" 
+                           class="form-input" 
+                           placeholder="SEO optimized title"
+                           maxlength="60">
+                    <div class="char-counter" id="metaTitleCounter">0 / 60</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Meta Description</label>
+                    <textarea id="metaDescription" 
+                              class="form-textarea" 
+                              rows="3" 
+                              placeholder="SEO meta description"
+                              maxlength="160"></textarea>
+                    <div class="char-counter" id="metaDescCounter">0 / 160</div>
+                </div>
+
+                <!-- SEO Preview -->
+                <div class="seo-preview">
+                    <div class="seo-preview-title" id="seoPreviewTitle">Post Title</div>
+                    <div class="seo-preview-url">hoarhouse.github.io/dcfh/blog/post-slug</div>
+                    <div class="seo-preview-desc" id="seoPreviewDesc">Post excerpt or meta description will appear here...</div>
+                </div>
+            </div>
+
+            <!-- Featured Image -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Featured Image</h3>
+                <div id="featuredImagePreview" style="margin-bottom: 1rem;">
+                    <div style="background: #f8f9fa; height: 150px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #999;">
+                        No image selected
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="selectFeaturedImage()" style="width: 100%;">
+                    Select Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentPostId = null;
+        let currentBlogId = null;
+        let autoSaveTimer = null;
+        let hasUnsavedChanges = false;
+        let editorInstance = null;
+        let currentFeaturedMedia = {
+            url: null,
+            type: 'none',
+            filename: null,
+            size: null
+        };
+        let isPreviewMode = false;
+
+        // Initialize on page load
+        window.addEventListener('dcfReady', async () => {
+            // Skip authentication for admin area - allow unrestricted access
+            console.log('Blog post editor initializing...');
+            
+            // Wait for Supabase to be ready
+            let retries = 0;
+            while (!window.dcfSupabase && retries < 10) {
+                console.log('Waiting for Supabase client...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                retries++;
+            }
+            
+            // Check for Supabase
+            if (!window.dcfSupabase) {
+                console.error('Supabase client not found after waiting!');
+                showToast('Database connection error. Please refresh the page.', 'error');
+                return;
+            }
+            
+            console.log('Supabase client ready');
+            await testSupabaseConnection();
+            
+            await initializeEditor();
+            
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPostId = urlParams.get('post_id');
+            currentBlogId = urlParams.get('blog_id');
+            
+            // Load data immediately
+            await loadBlogs();
+            
+            if (currentPostId) {
+                await loadPost(currentPostId);
+                document.getElementById('editorTitle').textContent = 'Edit Post';
+                document.getElementById('breadcrumbTitle').textContent = 'Edit Post';
+            } else if (currentBlogId) {
+                document.getElementById('postBlog').value = currentBlogId;
+            }
+            
+            // Set up auto-save
+            setupAutoSave();
+            
+            // Set up character counters
+            setupCharacterCounters();
+            
+            // Set up form listeners
+            setupFormListeners();
+        });
+
+        // Initialize Quill Editor
+        async function initializeEditor() {
+            return new Promise((resolve) => {
+                // Get the textarea
+                const textarea = document.getElementById('postContent');
+                if (!textarea) {
+                    resolve();
+                    return;
+                }
+                
+                // Create Quill container
+                const quillContainer = document.createElement('div');
+                quillContainer.id = 'quillEditor';
+                
+                // Hide textarea and insert Quill container
+                textarea.style.display = 'none';
+                textarea.parentNode.insertBefore(quillContainer, textarea.nextSibling);
+                
+                // Initialize Quill with comprehensive toolbar
+                editorInstance = new Quill('#quillEditor', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            [{ 'font': [] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'script': 'sub'}, { 'script': 'super' }],
+                            [{ 'indent': '-1'}, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'align': [] }],
+                            ['link', 'image', 'video'],
+                            ['clean']
+                        ]
+                    },
+                    placeholder: 'Write your blog post content here...'
+                });
+                
+                // Set up event listeners
+                editorInstance.on('text-change', function() {
+                    hasUnsavedChanges = true;
+                    updateWordCount();
+                });
+                
+                // Set initial content if editing
+                if (textarea.value) {
+                    editorInstance.root.innerHTML = textarea.value;
+                }
+                
+                resolve();
+            });
+        }
+
+        // Load blogs for dropdown
+        async function loadBlogs() {
+            try {
+                const { data: blogs, error } = await window.dcfSupabase
+                    .from('blogs')
+                    .select('*')
+                    .order('name');
+                
+                if (error) throw error;
+                
+                const select = document.getElementById('postBlog');
+                select.innerHTML = '<option value="">Select a blog...</option>';
+                
+                blogs.forEach(blog => {
+                    const option = document.createElement('option');
+                    option.value = blog.id;
+                    option.textContent = blog.name;
+                    // Add slug as data attribute for URL generation
+                    option.dataset.slug = blog.slug || blog.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
+                    select.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+                showToast('Error loading blogs', 'error');
+            }
+        }
+
+        // Load existing post
+        async function loadPost(postId) {
+            showLoading(true);
+            
+            try {
+                const { data: post, error } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*')
+                    .eq('id', postId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Populate form fields
+                document.getElementById('postTitle').value = post.title || '';
+                document.getElementById('postSlug').value = post.slug || '';
+                document.getElementById('postExcerpt').value = post.excerpt || '';
+                document.getElementById('postBlog').value = post.blog_id || '';
+                document.getElementById('postStatus').value = post.status || 'draft';
+                
+                // Handle SEO metadata from JSONB field
+                if (post.seo_meta) {
+                    document.getElementById('metaTitle').value = post.seo_meta.title || '';
+                    document.getElementById('metaDescription').value = post.seo_meta.description || '';
+                } else {
+                    document.getElementById('metaTitle').value = '';
+                    document.getElementById('metaDescription').value = '';
+                }
+                
+                // Set content in Quill
+                if (editorInstance) {
+                    editorInstance.root.innerHTML = post.content || '';
+                }
+                
+                // Load featured media if exists
+                if (post.featured_image_url) {
+                    currentFeaturedMedia.url = post.featured_image_url;
+                    currentFeaturedMedia.type = post.featured_media_type || 'image';
+                    displayFeaturedMedia();
+                }
+                
+                // Handle scheduled date
+                if (post.scheduled_for) {
+                    document.getElementById('scheduledDate').value = post.scheduled_for.slice(0, 16);
+                }
+                
+                // Update counters
+                updateAllCounters();
+                updateSeoPreview();
+                
+                hasUnsavedChanges = false;
+                
+            } catch (error) {
+                console.error('Error loading post:', error);
+                showToast('Error loading post', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Save draft
+        async function saveDraft() {
+            const postData = collectPostData();
+            postData.status = 'draft';
+            
+            if (!postData.title || !postData.blog_id) {
+                showToast('Please provide a title and select a blog', 'warning');
+                return;
+            }
+            
+            await savePost(postData, false);
+        }
+
+        // Publish post
+        async function publishPost() {
+            const postData = collectPostData();
+            postData.status = 'published';
+            
+            if (!postData.title || !postData.blog_id || !postData.content) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            await savePost(postData);
+        }
+
+        // Save post to database
+        async function savePost(postData, isAutoSave = false) {
+            if (!isAutoSave) {
+                updateSaveStatus('saving');
+            }
+            
+            try {
+                let result;
+                
+                if (currentPostId) {
+                    // Update existing post
+                    postData.updated_at = new Date().toISOString();
+                    result = await window.dcfSupabase
+                        .from('blog_posts')
+                        .update(postData)
+                        .eq('id', currentPostId);
+                } else {
+                    // Create new post
+                    result = await window.dcfSupabase
+                        .from('blog_posts')
+                        .insert([postData])
+                        .select();
+                    
+                    if (result.data && result.data[0]) {
+                        currentPostId = result.data[0].id;
+                        // Update URL to include post ID
+                        window.history.replaceState({}, '', `?post_id=${currentPostId}`);
+                    }
+                }
+                
+                if (result.error) throw result.error;
+                
+                hasUnsavedChanges = false;
+                updateSaveStatus('saved');
+                updateLastSaved();
+                
+                if (!isAutoSave) {
+                    // Check if this is a publish action
+                    if (postData.status === 'published') {
+                        // Get blog info for URL generation
+                        const blogSelect = document.getElementById('postBlog');
+                        const selectedOption = blogSelect.options[blogSelect.selectedIndex];
+                        postData.blog_slug = selectedOption.dataset.slug || 'blog';
+                        
+                        // Show success modal instead of toast for publish
+                        showPublishSuccessModal(postData, currentPostId);
+                    } else {
+                        showToast('Post saved successfully', 'success');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error saving post:', error);
+                updateSaveStatus('error');
+                if (!isAutoSave) {
+                    showToast('Error saving post: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Collect form data
+        function collectPostData() {
+            const data = {
+                title: document.getElementById('postTitle').value,
+                slug: document.getElementById('postSlug').value,
+                excerpt: document.getElementById('postExcerpt').value,
+                content: editorInstance ? editorInstance.root.innerHTML : '',
+                featured_image_url: currentFeaturedMedia.url,
+                featured_media_type: currentFeaturedMedia.type,
+                blog_id: document.getElementById('postBlog').value,
+                status: document.getElementById('postStatus').value,
+                seo_meta: {
+                    title: document.getElementById('metaTitle').value,
+                    description: document.getElementById('metaDescription').value
+                },
+                author_id: window.currentUser?.id || null
+            };
+            
+            // Generate slug if empty
+            if (!data.slug && data.title) {
+                data.slug = data.title.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+            
+            // Handle scheduled date
+            if (data.status === 'scheduled') {
+                data.scheduled_for = document.getElementById('scheduledDate').value;
+            }
+            
+            return data;
+        }
+
+        // Auto-save functionality
+        function setupAutoSave() {
+            // Clear existing timer
+            if (autoSaveTimer) {
+                clearInterval(autoSaveTimer);
+            }
+            
+            // Set up new timer (every 30 seconds)
+            autoSaveTimer = setInterval(() => {
+                if (hasUnsavedChanges && currentPostId && !isPreviewMode) {
+                    const postData = collectPostData();
+                    savePost(postData, true);
+                }
+            }, 30000);
+        }
+
+        // Character counter setup
+        function setupCharacterCounters() {
+            // Title counter
+            document.getElementById('postTitle').addEventListener('input', function() {
+                updateCharCounter('titleCounter', this.value.length, 100);
+                updateSeoPreview();
+            });
+            
+            // Excerpt counter
+            document.getElementById('postExcerpt').addEventListener('input', function() {
+                updateCharCounter('excerptCounter', this.value.length, 160);
+                updateSeoPreview();
+            });
+            
+            // Meta title counter
+            document.getElementById('metaTitle').addEventListener('input', function() {
+                updateCharCounter('metaTitleCounter', this.value.length, 60);
+                updateSeoPreview();
+            });
+            
+            // Meta description counter
+            document.getElementById('metaDescription').addEventListener('input', function() {
+                updateCharCounter('metaDescCounter', this.value.length, 160);
+                updateSeoPreview();
+            });
+        }
+
+        // Update character counter
+        function updateCharCounter(counterId, current, max) {
+            const counter = document.getElementById(counterId);
+            counter.textContent = `${current} / ${max}`;
+            
+            // Update color based on length
+            counter.classList.remove('warning', 'error');
+            if (current > max) {
+                counter.classList.add('error');
+            } else if (current > max * 0.9) {
+                counter.classList.add('warning');
+            }
+        }
+
+        // Update all counters
+        function updateAllCounters() {
+            updateCharCounter('titleCounter', document.getElementById('postTitle').value.length, 100);
+            updateCharCounter('excerptCounter', document.getElementById('postExcerpt').value.length, 160);
+            updateCharCounter('metaTitleCounter', document.getElementById('metaTitle').value.length, 60);
+            updateCharCounter('metaDescCounter', document.getElementById('metaDescription').value.length, 160);
+            updateWordCount();
+        }
+
+        // Update word count
+        function updateWordCount() {
+            if (editorInstance) {
+                const text = editorInstance.getText();
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                const wordCount = words.length;
+                document.getElementById('wordCount').textContent = wordCount;
+            }
+        }
+
+        // Update SEO preview
+        function updateSeoPreview() {
+            const title = document.getElementById('metaTitle').value || document.getElementById('postTitle').value || 'Post Title';
+            const desc = document.getElementById('metaDescription').value || document.getElementById('postExcerpt').value || 'Post excerpt or meta description will appear here...';
+            
+            document.getElementById('seoPreviewTitle').textContent = title;
+            document.getElementById('seoPreviewDesc').textContent = desc;
+        }
+
+        // Form listeners
+        function setupFormListeners() {
+            // Auto-generate slug from title
+            document.getElementById('postTitle').addEventListener('input', function() {
+                if (!document.getElementById('postSlug').value) {
+                    const slug = this.value.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    document.getElementById('postSlug').value = slug;
+                }
+                hasUnsavedChanges = true;
+            });
+            
+            // Show/hide scheduled date field
+            document.getElementById('postStatus').addEventListener('change', function() {
+                const scheduledGroup = document.getElementById('scheduledGroup');
+                if (this.value === 'scheduled') {
+                    scheduledGroup.style.display = 'block';
+                } else {
+                    scheduledGroup.style.display = 'none';
+                }
+            });
+            
+            // Mark as changed on any input
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('change', () => {
+                    hasUnsavedChanges = true;
+                });
+            });
+            
+            // Warn before leaving with unsaved changes
+            window.addEventListener('beforeunload', (e) => {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+        }
+
+        // Return to posts list
+        function returnToPosts() {
+            if (hasUnsavedChanges) {
+                if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                    return;
+                }
+            }
+            window.location.href = 'blogpostsmanage.html';
+        }
+        
+        // Add debug function to test Supabase connection
+        async function testSupabaseConnection() {
+            console.log('Testing Supabase connection...');
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('blogs')
+                    .select('id, name')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Supabase test query error:', error);
+                } else {
+                    console.log('Supabase connection successful. Test data:', data);
+                }
+            } catch (err) {
+                console.error('Supabase connection test failed:', err);
+            }
+        }
+
+        // Update save status indicator
+        function updateSaveStatus(status) {
+            const indicator = document.getElementById('saveIndicator');
+            const statusText = document.getElementById('saveStatus');
+            const autoSaveIndicator = document.getElementById('autoSaveStatus');
+            
+            if (indicator) {
+                indicator.classList.remove('saving', 'error');
+            }
+            
+            switch(status) {
+                case 'saving':
+                    if (indicator) indicator.classList.add('saving');
+                    if (statusText) statusText.textContent = 'Saving...';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '⏳ Saving...';
+                        autoSaveIndicator.style.color = '#ffc107';
+                    }
+                    break;
+                case 'saved':
+                    if (statusText) statusText.textContent = 'All changes saved';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '✓ All changes saved';
+                        autoSaveIndicator.style.color = '#28a745';
+                    }
+                    break;
+                case 'error':
+                    if (indicator) indicator.classList.add('error');
+                    if (statusText) statusText.textContent = 'Error saving';
+                    if (autoSaveIndicator) {
+                        autoSaveIndicator.textContent = '✗ Error saving';
+                        autoSaveIndicator.style.color = '#dc3545';
+                    }
+                    break;
+                default:
+                    if (statusText) statusText.textContent = 'Ready';
+                    if (autoSaveIndicator) autoSaveIndicator.textContent = '';
+            }
+        }
+
+        // Update last saved time
+        function updateLastSaved() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastSaved').textContent = timeString;
+        }
+
+        // Open media library (placeholder)
+        function openMediaLibrary() {
+            // This would open a modal to select from media library
+            showToast('Media library integration coming soon', 'info');
+        }
+
+        // Select featured image (placeholder)
+        function selectFeaturedImage() {
+            // This would open media selector for featured image
+            showToast('Featured image selection coming soon', 'info');
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Toast notification
+        // Featured Media Functions
+        function selectFeaturedMedia() {
+            document.getElementById('featuredMediaInput').click();
+        }
+        
+        function replaceFeaturedMedia() {
+            selectFeaturedMedia();
+        }
+        
+        async function handleFeaturedMediaSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+            const isImage = validImageTypes.includes(file.type);
+            const isVideo = validVideoTypes.includes(file.type);
+            
+            if (!isImage && !isVideo) {
+                showToast('Invalid file type. Please upload an image or video.', 'error');
+                return;
+            }
+            
+            // Validate file size
+            const maxImageSize = 5 * 1024 * 1024; // 5MB
+            const maxVideoSize = 50 * 1024 * 1024; // 50MB
+            const maxSize = isImage ? maxImageSize : maxVideoSize;
+            
+            if (file.size > maxSize) {
+                const maxSizeMB = maxSize / (1024 * 1024);
+                showToast(`File too large. Maximum size is ${maxSizeMB}MB.`, 'error');
+                return;
+            }
+            
+            // Upload the file
+            await uploadFeaturedMedia(file, isImage ? 'image' : 'video');
+        }
+        
+        async function uploadFeaturedMedia(file, mediaType) {
+            // Show progress
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('uploadProgressBar');
+            uploadProgress.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            try {
+                // Generate unique filename
+                const timestamp = Date.now();
+                const extension = file.name.split('.').pop();
+                const filename = `featured_${timestamp}.${extension}`;
+                const filePath = `featured-media/${filename}`;
+                
+                // Create a mock progress animation
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressBar.style.width = `${progress}%`;
+                    }
+                }, 200);
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .upload(filePath, file);
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: urlData } = window.dcfSupabase
+                    .storage
+                    .from('media')
+                    .getPublicUrl(filePath);
+                
+                // Update current featured media
+                currentFeaturedMedia = {
+                    url: urlData.publicUrl,
+                    type: mediaType,
+                    filename: file.name,
+                    size: file.size
+                };
+                
+                // Display the media
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    displayFeaturedMedia();
+                    hasUnsavedChanges = true;
+                    showToast('Featured media uploaded successfully', 'success');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error uploading featured media:', error);
+                uploadProgress.style.display = 'none';
+                showToast('Failed to upload media. Please try again.', 'error');
+            }
+        }
+        
+        function displayFeaturedMedia() {
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            const previewArea = document.getElementById('featuredMediaPreview');
+            const previewContent = document.getElementById('mediaPreviewContent');
+            const mediaInfo = document.getElementById('mediaInfo');
+            const typeBadge = document.getElementById('mediaTypeBadge');
+            
+            if (!currentFeaturedMedia.url) return;
+            
+            // Hide upload area, show preview
+            uploadArea.style.display = 'none';
+            previewArea.style.display = 'block';
+            
+            // Clear and set preview content
+            previewContent.innerHTML = '';
+            
+            if (currentFeaturedMedia.type === 'image') {
+                const img = document.createElement('img');
+                img.src = currentFeaturedMedia.url;
+                img.alt = 'Featured image';
+                previewContent.appendChild(img);
+                
+                typeBadge.textContent = 'IMAGE';
+                typeBadge.style.display = 'inline-block';
+            } else if (currentFeaturedMedia.type === 'video') {
+                const video = document.createElement('video');
+                video.src = currentFeaturedMedia.url;
+                video.controls = true;
+                video.setAttribute('controlsList', 'nodownload');
+                previewContent.appendChild(video);
+                
+                typeBadge.textContent = 'VIDEO';
+                typeBadge.style.display = 'inline-block';
+            }
+            
+            // Show media info
+            const sizeInMB = (currentFeaturedMedia.size / (1024 * 1024)).toFixed(2);
+            mediaInfo.innerHTML = `
+                <div class="media-info-item">
+                    📁 ${currentFeaturedMedia.filename || 'Featured Media'}
+                </div>
+                <div class="media-info-item">
+                    💾 ${sizeInMB} MB
+                </div>
+                <div class="media-info-item">
+                    ${currentFeaturedMedia.type === 'image' ? '🖼️' : '🎬'} ${currentFeaturedMedia.type.toUpperCase()}
+                </div>
+            `;
+        }
+        
+        async function removeFeaturedMedia() {
+            if (!confirm('Remove featured media from this post?')) return;
+            
+            // If there's a URL and it's in our storage, delete it
+            if (currentFeaturedMedia.url && currentFeaturedMedia.url.includes('supabase')) {
+                try {
+                    // Extract file path from URL
+                    const urlParts = currentFeaturedMedia.url.split('/');
+                    const filePath = `featured-media/${urlParts[urlParts.length - 1]}`;
+                    
+                    await window.dcfSupabase
+                        .storage
+                        .from('media')
+                        .remove([filePath]);
+                } catch (error) {
+                    console.error('Error removing media from storage:', error);
+                }
+            }
+            
+            // Reset featured media
+            currentFeaturedMedia = {
+                url: null,
+                type: 'none',
+                filename: null,
+                size: null
+            };
+            
+            // Reset UI
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            const previewArea = document.getElementById('featuredMediaPreview');
+            const typeBadge = document.getElementById('mediaTypeBadge');
+            
+            uploadArea.style.display = 'block';
+            previewArea.style.display = 'none';
+            typeBadge.style.display = 'none';
+            
+            // Clear file input
+            document.getElementById('featuredMediaInput').value = '';
+            
+            hasUnsavedChanges = true;
+            showToast('Featured media removed', 'info');
+        }
+        
+        // Set up drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('featuredMediaUpload');
+            
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('drag-over');
+                });
+                
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const file = files[0];
+                        document.getElementById('featuredMediaInput').files = files;
+                        handleFeaturedMediaSelect({ target: { files: [file] } });
+                    }
+                });
+            }
+        });
+        
+        // Preview Functions
+        function togglePreview() {
+            const title = document.getElementById('postTitle').value;
+            const content = editorInstance ? editorInstance.root.innerHTML : '';
+            
+            // Check if we have minimum content to preview
+            if (!title && !content) {
+                showToast('Please add a title and content before previewing', 'error');
+                return;
+            }
+            
+            isPreviewMode = !isPreviewMode;
+            
+            if (isPreviewMode) {
+                showPreview();
+            } else {
+                hidePreview();
+            }
+        }
+        
+        function showPreview() {
+            // Hide editor, show preview
+            document.querySelector('.editor-main').classList.add('preview-mode');
+            document.getElementById('previewContainer').classList.add('active');
+            
+            // Generate preview content
+            generatePreviewContent();
+            
+            // Update button text
+            document.getElementById('previewBtn').textContent = 'Exit Preview';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function hidePreview() {
+            // Show editor, hide preview
+            document.querySelector('.editor-main').classList.remove('preview-mode');
+            document.getElementById('previewContainer').classList.remove('active');
+            
+            // Update button text
+            document.getElementById('previewBtn').textContent = 'Preview Post';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function generatePreviewContent() {
+            const title = document.getElementById('postTitle').value || 'Untitled Post';
+            const excerpt = document.getElementById('postExcerpt').value;
+            const content = editorInstance ? editorInstance.root.innerHTML : '';
+            const blogSelect = document.getElementById('postBlog');
+            const blogName = blogSelect.options[blogSelect.selectedIndex]?.text || 'General';
+            
+            // Get current date
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = now.toLocaleDateString('en-US', dateOptions);
+            
+            // Get author info (mock data for now, replace with actual user data)
+            const authorName = 'DCF Admin';
+            const authorRole = 'Content Editor';
+            const authorInitials = authorName.split(' ').map(n => n[0]).join('');
+            
+            let previewHTML = '';
+            
+            // Add featured media if exists
+            if (currentFeaturedMedia.url) {
+                if (currentFeaturedMedia.type === 'image') {
+                    previewHTML += `
+                        <div class="preview-featured-media">
+                            <img src="${currentFeaturedMedia.url}" alt="Featured image">
+                        </div>
+                    `;
+                } else if (currentFeaturedMedia.type === 'video') {
+                    previewHTML += `
+                        <div class="preview-featured-media">
+                            <video controls>
+                                <source src="${currentFeaturedMedia.url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Add post meta
+            previewHTML += `
+                <div class="preview-post-meta">
+                    <div class="preview-meta-item">
+                        📅 ${formattedDate}
+                    </div>
+                    <div class="preview-meta-item">
+                        📁 ${blogName}
+                    </div>
+                    <div class="preview-meta-item">
+                        ✍️ ${authorName}
+                    </div>
+                </div>
+            `;
+            
+            // Add title
+            previewHTML += `<h1 class="preview-post-title">${escapeHtml(title)}</h1>`;
+            
+            // Add excerpt if exists
+            if (excerpt) {
+                previewHTML += `<div class="preview-post-excerpt">${escapeHtml(excerpt)}</div>`;
+            }
+            
+            // Add content
+            previewHTML += `<div class="preview-post-content">${content}</div>`;
+            
+            // Add author section
+            previewHTML += `
+                <div class="preview-author-section">
+                    <div class="preview-author-info">
+                        <div class="preview-author-avatar">${authorInitials}</div>
+                        <div class="preview-author-details">
+                            <h3>${authorName}</h3>
+                            <p>${authorRole}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Set the preview content
+            document.getElementById('previewContent').innerHTML = previewHTML;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function publishFromPreview() {
+            // Collect post data and set status to published
+            const postData = collectPostData();
+            postData.status = 'published';
+            
+            // Save the post
+            await savePost(postData, false);
+            
+            // Exit preview mode
+            hidePreview();
+            
+            // The success modal will be shown by the savePost function
+        }
+        
+        
+        // Warn about unsaved changes when in preview
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges && !isPreviewMode) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        
+        function showToast(message, type = 'info') {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${getToastIcon(type)}</span>
+                    <span class="toast-message">${message}</span>
+                </div>
+            `;
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function getToastIcon(type) {
+            switch(type) {
+                case 'success': return '✓';
+                case 'error': return '✕';
+                case 'warning': return '⚠';
+                default: return 'ℹ';
+            }
+        }
+
+        // Show publish success modal
+        function showPublishSuccessModal(postData, postId) {
+            const modal = document.getElementById('publishSuccessModal');
+            const titleElement = document.getElementById('publishedPostTitle');
+            const urlInput = document.getElementById('publishedPostUrl');
+            const viewBtn = document.getElementById('viewPostBtn');
+            
+            // Set post title
+            titleElement.textContent = `"${postData.title}"`;
+            
+            // Generate post URL (adjust this based on your URL structure)
+            const slug = postData.slug || postData.title.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+            
+            // Assuming the blog posts are served at /dcfh/blog/[blog-slug]/[post-slug]
+            const postUrl = `${window.location.origin}/dcfh/blog/${postData.blog_slug || 'news'}/${slug}`;
+            urlInput.value = postUrl;
+            viewBtn.href = postUrl;
+            
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        // Copy post URL to clipboard
+        function copyPostUrl() {
+            const urlInput = document.getElementById('publishedPostUrl');
+            urlInput.select();
+            document.execCommand('copy');
+            showToast('URL copied to clipboard!', 'success');
+        }
+
+        // Create another post
+        function createAnotherPost() {
+            // Reset form and close modal
+            document.getElementById('publishSuccessModal').style.display = 'none';
+            
+            // Clear form
+            document.getElementById('postForm').reset();
+            currentPostId = null;
+            currentFeaturedMedia = null;
+            
+            // Reset editor
+            if (window.postEditor) {
+                window.postEditor.setContents([]);
+            }
+            
+            // Update title
+            document.getElementById('editorTitle').textContent = 'Create New Post';
+            
+            // Clear featured media
+            document.getElementById('featuredMediaUpload').style.display = 'block';
+            document.getElementById('featuredMediaPreview').style.display = 'none';
+            
+            showToast('Ready to create a new post!', 'success');
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('publishSuccessModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    </script>
+
+    <!-- Publish Success Modal -->
+    <div id="publishSuccessModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 10000;">
+        <div class="modal-content" style="background: white; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 1.5rem; border-radius: 8px 8px 0 0;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem;">
+                    <span style="font-size: 1.5rem;">🎉</span>
+                    Post Published Successfully!
+                </h2>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                    <p style="color: #666; font-size: 1.1rem; margin-bottom: 0.5rem;">
+                        Your blog post has been published and is now live!
+                    </p>
+                    <p id="publishedPostTitle" style="font-weight: 600; color: #333; font-size: 1.2rem; margin: 1rem 0;">
+                        <!-- Post title will be inserted here -->
+                    </p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">Post URL:</p>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input id="publishedPostUrl" type="text" readonly 
+                               style="flex: 1; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px; background: white; font-size: 0.9rem;">
+                        <button onclick="copyPostUrl()" class="btn btn-secondary btn-small" style="white-space: nowrap; padding: 0.5rem 1rem;">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a id="viewPostBtn" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 0.75rem 1.5rem;">
+                        👁️ View Post
+                    </a>
+                    <button onclick="createAnotherPost()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        ➕ Create Another
+                    </button>
+                    <button onclick="returnToPosts()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        📝 Back to Posts
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
