@@ -2378,11 +2378,58 @@
         window.saveCoverPosition = saveCoverPosition;
 
         // Remove avatar
-        function removeAvatar() {
-            avatarFile = null;
-            const preview = document.getElementById('avatarPreview');
-            preview.innerHTML = '<span data-icon="user" data-size="standard"></span>';
-            document.getElementById('avatarInput').value = '';
+        async function removeAvatar() {
+            // Determine which profile to update based on editing mode
+            const targetProfileId = isEditingEntity && currentEntityProfile 
+                ? currentEntityProfile.id 
+                : currentUser.id;
+            
+            console.log('🗑️ AVATAR DELETION AUDIT:');
+            console.log('Deletion mode - isEditingEntity:', isEditingEntity);
+            console.log('Target profile ID for deletion:', targetProfileId);
+            console.log('Entity profile ID: 2c563cb1-fbf2-4bbb-bbca-6439721aa605');
+            console.log('Personal profile ID: 668d68a1-2dc1-4515-8333-e9efe52c3d75');
+            
+            if (isEditingEntity && currentEntityProfile) {
+                console.log('✅ Deleting avatar from ENTITY profile:', currentEntityProfile.username);
+            } else {
+                console.log('✅ Deleting avatar from PERSONAL profile');
+            }
+            
+            try {
+                // Clear from database
+                const { error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .update({ avatar_url: null })
+                    .eq('id', targetProfileId);
+                
+                if (error) {
+                    console.error('Failed to delete avatar from database:', error);
+                    showNotification('Failed to remove avatar', 'error');
+                    return;
+                }
+                
+                console.log('✅ Avatar successfully deleted from profile:', targetProfileId);
+                
+                // Clear local state
+                avatarFile = null;
+                const preview = document.getElementById('avatarPreview');
+                preview.innerHTML = '<span data-icon="user" data-size="standard"></span>';
+                document.getElementById('avatarInput').value = '';
+                
+                // Update the profile object in memory
+                if (isEditingEntity && currentEntityProfile) {
+                    currentEntityProfile.avatar_url = null;
+                } else if (window.dcfUser && window.dcfUser.profile) {
+                    window.dcfUser.profile.avatar_url = null;
+                }
+                
+                showNotification('Avatar removed successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error removing avatar:', error);
+                showNotification('Failed to remove avatar', 'error');
+            }
         }
 
         // Select privacy option
