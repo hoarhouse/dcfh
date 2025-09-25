@@ -395,6 +395,22 @@ function updateUserMenu() {
         ? `<div class="dropdown-avatar" style="background-image: url('${dcfUser.profile.avatar_url}'); background-size: cover; background-position: center;"></div>`
         : `<div class="dropdown-avatar">${initials}</div>`;
     
+    // Add profile switcher section if user has multiple profiles
+    let profileSwitcherHTML = '';
+    if (window.dcfUser.availableProfiles && window.dcfUser.availableProfiles.length > 1) {
+        profileSwitcherHTML = `
+            <div class="dropdown-divider"></div>
+            <div style="padding: 0.5rem 1.5rem; color: #999; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Switch Profile</div>
+            ${window.dcfUser.availableProfiles.map(profile => `
+                <button onclick="switchActiveProfile('${profile.id}')" class="dropdown-item ${profile.id === window.dcfUser.activeProfile.id ? 'active-profile' : ''}" style="width: 100%; text-align: left;">
+                    <span class="dropdown-icon">${profile.account_type === 'entity' ? '🏢' : '👤'}</span>
+                    ${profile.name}${profile.account_type === 'entity' ? ` (${profile.entity_type || 'Entity'})` : ''}
+                    ${profile.id === window.dcfUser.activeProfile.id ? ' ✓' : ''}
+                </button>
+            `).join('')}
+        `;
+    }
+    
     userMenu.innerHTML = `
         <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
             <span class="notification-icon">🔔</span>
@@ -410,6 +426,7 @@ function updateUserMenu() {
                         <div class="dropdown-email">${dcfUser.profile.email}</div>
                     </div>
                 </div>
+                ${profileSwitcherHTML}
                 <div class="dropdown-divider"></div>
                 <a href="${basePath}members/dcf_member_profile.html" class="dropdown-item">
                     <span class="dropdown-icon">👤</span>
@@ -496,6 +513,17 @@ function addNotificationBellCSS() {
             font-size: 0.7rem; 
             font-weight: 600; 
             border: 2px solid white; 
+        }
+        .dropdown-item.active-profile {
+            background: #f0f8ff;
+            color: #0066cc;
+            font-weight: 600;
+        }
+        .dropdown-divider {
+            height: 0;
+            margin: 0.5rem 0;
+            overflow: hidden;
+            border-top: 1px solid #e5e5e5;
         }
     `;
     document.head.appendChild(style);
