@@ -1686,6 +1686,26 @@
         let currentEntityProfile = null;
         let isEditingEntity = false;
 
+        // Load entity for editing (kept for compatibility)
+        async function loadEntityForEditing() {
+            try {
+                const { data: entities, error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('created_by', currentUser.id)
+                    .eq('account_type', 'entity')
+                    .limit(1)
+                    .single();
+                    
+                if (error && error.code !== 'PGRST116') throw error;
+                
+                if (entities) {
+                    currentEntityProfile = entities;
+                }
+            } catch (error) {
+                console.error('Load entity error:', error);
+            }
+        }
 
         // Sign out function
         async function signOut() {
