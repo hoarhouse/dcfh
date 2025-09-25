@@ -2666,12 +2666,44 @@
                 
                 showNotification('Entity account created successfully!', 'success');
                 cancelEntityCreation();
+                loadExistingEntities();
                 
             } catch (error) {
                 console.error('Entity creation error:', error);
                 showNotification('Failed to create entity: ' + error.message, 'error');
             } finally {
                 showLoading(false);
+            }
+        }
+        
+        async function loadExistingEntities() {
+            try {
+                const { data: entities, error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('id, first_name, username, entity_type, created_at')
+                    .eq('created_by', currentUser.id)
+                    .eq('account_type', 'entity')
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                const container = document.getElementById('existingEntities');
+                if (entities && entities.length > 0) {
+                    container.innerHTML = `
+                        <h3 style="margin-bottom: 1rem; color: #333; font-size: 1.2rem;">Your Entity Accounts</h3>
+                        ${entities.map(entity => `
+                            <div style="padding: 1rem; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; background: white;">
+                                <div>
+                                    <strong style="color: #333;">${entity.first_name}</strong>
+                                    <div style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">@${entity.username} • ${entity.entity_type || 'Entity'}</div>
+                                </div>
+                                <a href="dcf_member_profile.html?id=${entity.id}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View Profile</a>
+                            </div>
+                        `).join('')}
+                    `;
+                }
+            } catch (error) {
+                console.error('Load entities error:', error);
             }
         }
         
