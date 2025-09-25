@@ -461,6 +461,10 @@ function updateUserMenu() {
                     <span class="dropdown-icon">👤</span>
                     My Profile
                 </a>
+                <a href="${basePath}members/dcf_member_profile.html?id=2c563cb1-fbf2-4bbb-bbca-6439721aa605" class="dropdown-item">
+                    <span class="dropdown-icon">🏢</span>
+                    DCF Entity Profile
+                </a>
                 <a href="${basePath}members/dcf_my_connections.html" class="dropdown-item">
                     <span class="dropdown-icon">👥</span>
                     My Connections
