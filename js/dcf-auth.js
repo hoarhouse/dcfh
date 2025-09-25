@@ -208,6 +208,7 @@ async function loadUserEntityProfiles() {
                 dcfUser.availableProfiles.push(entityProfile);
             });
         }
+        console.log('🔍 DEBUG: availableProfiles after loading:', window.dcfUser.availableProfiles);
     } catch (error) {
         console.error('Error loading entity profiles:', error);
     }
