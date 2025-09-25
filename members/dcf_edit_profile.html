@@ -2636,13 +2636,16 @@
                 showLoading(true);
                 
                 // Check if username is already taken
-                const { data: existingUser } = await window.dcfSupabase
+                const { data: existingUsers, error: checkError } = await window.dcfSupabase
                     .from('user_profiles')
                     .select('username')
-                    .eq('username', entityUsername)
-                    .single();
+                    .eq('username', entityUsername);
                     
-                if (existingUser) {
+                if (checkError && checkError.code !== 'PGRST116') {
+                    throw checkError;
+                }
+
+                if (existingUsers && existingUsers.length > 0) {
                     showNotification('Username is already taken', 'error');
                     showLoading(false);
                     return;
