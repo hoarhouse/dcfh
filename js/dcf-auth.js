@@ -128,8 +128,19 @@ async function loadUserProfile(session) {
                     username: session.user.email.split('@')[0],
                     avatar_url: null
                 },
-                session: session
+                session: session,
+                activeProfile: null,
+                availableProfiles: []
             };
+            
+            // Initialize active profile for fallback case
+            dcfUser.activeProfile = dcfUser.profile;
+            console.log('✅ DEBUG: activeProfile set to (fallback):', dcfUser.activeProfile?.name);
+            dcfUser.availableProfiles = [dcfUser.profile];
+            
+            // Try loading entity profiles even in fallback case
+            console.log('🔄 DEBUG: Profile set (fallback), now loading entities...');
+            await loadUserEntityProfiles();
         } else {
             console.log('👤 Profile loaded:', profile.username);
             dcfUser = {
@@ -177,7 +188,12 @@ async function loadUserProfile(session) {
         
         // Initialize active profile context
         dcfUser.activeProfile = dcfUser.profile;
+        console.log('✅ DEBUG: activeProfile set to (error fallback):', dcfUser.activeProfile?.name);
         dcfUser.availableProfiles = [dcfUser.profile];
+        
+        // Try loading entity profiles even in error case
+        console.log('🔄 DEBUG: Profile set (error fallback), now loading entities...');
+        await loadUserEntityProfiles();
     }
 }
 
