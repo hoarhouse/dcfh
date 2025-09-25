@@ -2898,6 +2898,30 @@
                 return;
             }
             
+            // CRITICAL VALIDATION: Ensure we're updating the correct profile
+            const targetProfileId = profileUserId || currentUser.id;
+            console.log('🔒 COVER IMAGE UPDATE VALIDATION:');
+            console.log('Current user ID:', currentUser.id);
+            console.log('Profile being viewed (profileUserId):', profileUserId);
+            console.log('Target profile ID for update:', targetProfileId);
+            console.log('Entity profile ID: 2c563cb1-fbf2-4bbb-bbca-6439721aa605');
+            console.log('Personal profile ID: 668d68a1-2dc1-4515-8333-e9efe52c3d75');
+            
+            // Additional validation to prevent data corruption
+            if (profileUserId && profileUserId !== currentUser.id) {
+                console.error('❌ SECURITY VIOLATION: Attempting to modify another user\'s profile');
+                showAlert('Security error: Cannot modify another user\'s profile', 'error');
+                return;
+            }
+            
+            if (targetProfileId === '2c563cb1-fbf2-4bbb-bbca-6439721aa605') {
+                console.log('✅ Updating ENTITY profile cover image');
+            } else if (targetProfileId === '668d68a1-2dc1-4515-8333-e9efe52c3d75') {
+                console.log('✅ Updating PERSONAL profile cover image');
+            } else {
+                console.log('⚠️ Updating profile with ID:', targetProfileId);
+            }
+            
             const saveBtn = document.getElementById('saveCoverBtn');
             if (saveBtn) {
                 saveBtn.disabled = true;
@@ -2905,8 +2929,8 @@
             }
             
             try {
-                // Upload to Supabase storage
-                const fileName = `covers/${currentUser.id}_${Date.now()}_${selectedCoverFile.name}`;
+                // Upload to Supabase storage using target profile ID
+                const fileName = `covers/${targetProfileId}_${Date.now()}_${selectedCoverFile.name}`;
                 const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
                     .from('media')
                     .upload(fileName, selectedCoverFile);
@@ -2931,14 +2955,15 @@
                 const coverUrl = urlData.publicUrl;
                 console.log('Public URL:', coverUrl);
                 
-                // Update profile with new cover URL
+                // Update profile with new cover URL using correct profile ID
+                console.log('📝 Updating profile cover_image_url for profile ID:', targetProfileId);
                 const { error: updateError } = await window.dcfSupabase
                     .from('user_profiles')
                     .update({ 
                         cover_image_url: coverUrl,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', currentUser.id);
+                    .eq('id', targetProfileId);
                 
                 if (updateError) {
                     console.error('Update error:', updateError);
