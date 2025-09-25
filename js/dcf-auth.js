@@ -11,14 +11,11 @@ console.log('🔐 DCF Authentication System Loading...');
 // =============================================================================
 
 let dcfSupabase = null;
-window.dcfUser = {
+let dcfUser = {
     isLoggedIn: false,
     profile: null,
-    session: null,
-    activeProfile: null, // NEW: Currently active profile context
-    availableProfiles: [] // NEW: List of profiles user can switch to
+    session: null
 };
-let dcfUser = window.dcfUser; // Reference for internal use
 
 // =============================================================================
 // 2. SUPABASE CLIENT INITIALIZATION
@@ -64,13 +61,7 @@ async function initializeAuth() {
         
         if (error) {
             console.warn('⚠️ Session check failed:', error.message);
-            Object.assign(dcfUser, { 
-                isLoggedIn: false, 
-                profile: null, 
-                session: null,
-                activeProfile: null,
-                availableProfiles: []
-            });
+            dcfUser = { isLoggedIn: false, profile: null, session: null };
             updateUIForLoggedOutState();
             return false;
         }
@@ -82,26 +73,14 @@ async function initializeAuth() {
             return true;
         } else {
             console.log('📝 No existing session found');
-            Object.assign(dcfUser, { 
-                isLoggedIn: false, 
-                profile: null, 
-                session: null,
-                activeProfile: null,
-                availableProfiles: []
-            });
+            dcfUser = { isLoggedIn: false, profile: null, session: null };
             updateUIForLoggedOutState();
             return false;
         }
         
     } catch (error) {
         console.warn('⚠️ Authentication initialization failed:', error.message);
-        Object.assign(dcfUser, { 
-            isLoggedIn: false, 
-            profile: null, 
-            session: null,
-            activeProfile: null,
-            availableProfiles: []
-        });
+        dcfUser = { isLoggedIn: false, profile: null, session: null };
         updateUIForLoggedOutState();
         return false;
     }
@@ -128,19 +107,8 @@ async function loadUserProfile(session) {
                     username: session.user.email.split('@')[0],
                     avatar_url: null
                 },
-                session: session,
-                activeProfile: null,
-                availableProfiles: []
+                session: session
             };
-            
-            // Initialize active profile for fallback case
-            dcfUser.activeProfile = dcfUser.profile;
-            console.log('✅ DEBUG: activeProfile set to (fallback):', dcfUser.activeProfile?.name);
-            dcfUser.availableProfiles = [dcfUser.profile];
-            
-            // Try loading entity profiles even in fallback case
-            console.log('🔄 DEBUG: Profile set (fallback), now loading entities...');
-            await loadUserEntityProfiles();
         } else {
             console.log('👤 Profile loaded:', profile.username);
             dcfUser = {
@@ -154,19 +122,8 @@ async function loadUserProfile(session) {
                     last_name: profile.last_name,
                     avatar_url: profile.avatar_url
                 },
-                session: session,
-                activeProfile: null,
-                availableProfiles: []
+                session: session
             };
-            
-            // Initialize active profile context (defaults to personal profile)
-            dcfUser.activeProfile = dcfUser.profile;
-            console.log('✅ DEBUG: activeProfile set to:', dcfUser.activeProfile?.name);
-            dcfUser.availableProfiles = [dcfUser.profile];
-            
-            // Now that profile is set, load entity profiles
-            console.log('🔄 DEBUG: Profile set, now loading entities...');
-            await loadUserEntityProfiles();
         }
         
     } catch (error) {
@@ -181,72 +138,8 @@ async function loadUserProfile(session) {
                 username: session.user.email.split('@')[0],
                 avatar_url: null
             },
-            session: session,
-            activeProfile: null,
-            availableProfiles: []
+            session: session
         };
-        
-        // Initialize active profile context
-        dcfUser.activeProfile = dcfUser.profile;
-        console.log('✅ DEBUG: activeProfile set to (error fallback):', dcfUser.activeProfile?.name);
-        dcfUser.availableProfiles = [dcfUser.profile];
-        
-        // Try loading entity profiles even in error case
-        console.log('🔄 DEBUG: Profile set (error fallback), now loading entities...');
-        await loadUserEntityProfiles();
-    }
-}
-
-async function loadUserEntityProfiles() {
-    console.log('🔍 DEBUG: loadUserEntityProfiles() called, current user:', window.dcfUser.profile);
-    try {
-        if (!dcfSupabase || !window.dcfUser || !window.dcfUser.profile || !window.dcfUser.profile.id) {
-            console.log('⚠️ DEBUG: loadUserEntityProfiles skipped - no valid user profile yet');
-            return;
-        }
-        
-        const { data: entities, error } = await dcfSupabase
-            .from('user_profiles')
-            .select('*')
-            .eq('created_by', window.dcfUser.profile.id)
-            .eq('account_type', 'entity');
-            
-        if (error) throw error;
-        
-        console.log('🔍 DEBUG: Found entities from database:', entities);
-        
-        if (entities && entities.length > 0) {
-            console.log('🔍 DEBUG: Processing entities, user profile ID:', window.dcfUser.profile.id);
-            
-            entities.forEach(entity => {
-                const entityProfile = {
-                    id: entity.id,
-                    email: entity.email,
-                    name: entity.first_name,
-                    username: entity.username,
-                    avatar_url: entity.avatar_url,
-                    account_type: 'entity',
-                    entity_type: entity.entity_type
-                };
-                window.dcfUser.availableProfiles.push(entityProfile);
-                console.log('✅ DEBUG: Added entity profile:', entityProfile.name);
-            });
-        }
-        console.log('🔍 DEBUG: availableProfiles after loading:', window.dcfUser.availableProfiles);
-    } catch (error) {
-        console.error('Error loading entity profiles:', error);
-    }
-}
-
-function switchActiveProfile(profileId) {
-    const profile = dcfUser.availableProfiles.find(p => p.id === profileId);
-    if (profile) {
-        dcfUser.activeProfile = profile;
-        // Update UI elements if they exist
-        if (dcfUser.isLoggedIn) {
-            updateUserMenu();
-        }
-        console.log('Switched to profile:', profile.name);
     }
 }
 
@@ -423,23 +316,6 @@ function updateUserMenu() {
         ? `<div class="dropdown-avatar" style="background-image: url('${dcfUser.profile.avatar_url}'); background-size: cover; background-position: center;"></div>`
         : `<div class="dropdown-avatar">${initials}</div>`;
     
-    // Add profile switcher section if user has multiple profiles
-    console.log('🔍 DEBUG: updateUserMenu() - availableProfiles count:', window.dcfUser.availableProfiles?.length);
-    let profileSwitcherHTML = '';
-    if (window.dcfUser.availableProfiles && window.dcfUser.availableProfiles.length > 1) {
-        profileSwitcherHTML = `
-            <div class="dropdown-divider"></div>
-            <div style="padding: 0.5rem 1.5rem; color: #999; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Switch Profile</div>
-            ${window.dcfUser.availableProfiles.map(profile => `
-                <button onclick="switchActiveProfile('${profile.id}')" class="dropdown-item ${profile.id === window.dcfUser.activeProfile.id ? 'active-profile' : ''}" style="width: 100%; text-align: left;">
-                    <span class="dropdown-icon">${profile.account_type === 'entity' ? '🏢' : '👤'}</span>
-                    ${profile.name}${profile.account_type === 'entity' ? ` (${profile.entity_type || 'Entity'})` : ''}
-                    ${profile.id === window.dcfUser.activeProfile.id ? ' ✓' : ''}
-                </button>
-            `).join('')}
-        `;
-    }
-    
     userMenu.innerHTML = `
         <div class="notification-bell" onclick="toggleNotificationDropdown(event)">
             <span class="notification-icon">🔔</span>
@@ -455,15 +331,10 @@ function updateUserMenu() {
                         <div class="dropdown-email">${dcfUser.profile.email}</div>
                     </div>
                 </div>
-                ${profileSwitcherHTML}
                 <div class="dropdown-divider"></div>
                 <a href="${basePath}members/dcf_member_profile.html" class="dropdown-item">
                     <span class="dropdown-icon">👤</span>
                     My Profile
-                </a>
-                <a href="${basePath}members/dcf_member_profile.html?id=2c563cb1-fbf2-4bbb-bbca-6439721aa605" class="dropdown-item">
-                    <span class="dropdown-icon">🏢</span>
-                    DCF Entity Profile
                 </a>
                 <a href="${basePath}members/dcf_my_connections.html" class="dropdown-item">
                     <span class="dropdown-icon">👥</span>
@@ -546,17 +417,6 @@ function addNotificationBellCSS() {
             font-size: 0.7rem; 
             font-weight: 600; 
             border: 2px solid white; 
-        }
-        .dropdown-item.active-profile {
-            background: #f0f8ff;
-            color: #0066cc;
-            font-weight: 600;
-        }
-        .dropdown-divider {
-            height: 0;
-            margin: 0.5rem 0;
-            overflow: hidden;
-            border-top: 1px solid #e5e5e5;
         }
     `;
     document.head.appendChild(style);
@@ -707,8 +567,7 @@ function setupAuthStateListener() {
 // =============================================================================
 
 function getCurrentUser() {
-    // Return active profile context instead of base profile
-    return dcfUser?.activeProfile || null;
+    return dcfUser.isLoggedIn ? dcfUser.profile : null;
 }
 
 function isUserLoggedIn() {
@@ -750,30 +609,7 @@ window.handleLogout = handleLogout;
 window.toggleUserMenu = toggleUserMenu;
 window.toggleNotificationDropdown = toggleNotificationDropdown;
 
-// Export profile switching functions
-window.switchActiveProfile = switchActiveProfile;
-window.loadUserEntityProfiles = loadUserEntityProfiles;
-window.dcfUser = dcfUser;
-
 // Export for manual initialization
 window.initializeAuth = initializeAuth;
 
 console.log('✅ DCF Authentication System loaded (manual initialization required)');
-
-// Initialize on page load if not already initialized
-document.addEventListener('DOMContentLoaded', async function() {
-    if (!window.dcfUser.isLoggedIn) {
-        console.log('🔄 Initializing DCF auth system...');
-        await initializeAuth();
-    }
-});
-
-// Also initialize if DOM is already loaded
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(async () => {
-        if (!window.dcfUser.isLoggedIn) {
-            console.log('🔄 Initializing DCF auth system (DOM ready)...');
-            await initializeAuth();
-        }
-    }, 1000);
-}

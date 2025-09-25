@@ -1878,12 +1878,11 @@
             sanitized = sanitized.replace(/\\u003cscript/gi, '');
             
             // Step 9: Normalize whitespace
-            // Preserve normal spaces and line breaks, only collapse excessive whitespace
-            sanitized = sanitized.replace(/[ \t]{3,}/g, '  ').replace(/\n{3,}/g, '\n\n').trim();
+            sanitized = sanitized.replace(/\s+/g, ' ').trim();
             
             // Log if content was sanitized (for security monitoring)
             // Only warn if something OTHER than whitespace normalization occurred
-            const normalizedInput = input.replace(/[ \t]{3,}/g, '  ').replace(/\n{3,}/g, '\n\n').trim();
+            const normalizedInput = input.replace(/\s+/g, ' ').trim();
             if (sanitized !== normalizedInput) {
                 console.warn('⚠️ Input sanitization applied. Potential attack attempt blocked.');
                 console.log('Original length:', originalLength, 'Sanitized length:', sanitized.length);
@@ -1938,7 +1937,7 @@
                 if (e.target.id && e.target.id.startsWith('commentText-')) {
                     const sanitized = sanitizeText(e.target.value, 1000);
                     if (sanitized !== e.target.value) {
-                        const normalizedInput = e.target.value.replace(/[ \t]{3,}/g, '  ').replace(/\n{3,}/g, '\n\n').trim();
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
                         if (sanitized !== normalizedInput) {
                             e.target.value = sanitized;
                             console.warn('⚠️ Comment sanitized');
@@ -1949,7 +1948,7 @@
                 if (e.target.id && e.target.id.startsWith('replyText-')) {
                     const sanitized = sanitizeText(e.target.value, 500);
                     if (sanitized !== e.target.value) {
-                        const normalizedInput = e.target.value.replace(/[ \t]{3,}/g, '  ').replace(/\n{3,}/g, '\n\n').trim();
+                        const normalizedInput = e.target.value.replace(/\s+/g, ' ').trim();
                         if (sanitized !== normalizedInput) {
                             e.target.value = sanitized;
                             console.warn('⚠️ Reply sanitized');
@@ -2636,8 +2635,7 @@
             // Avatar handled by dcf-auth.js
             
             // Hide/show edit buttons based on whether viewing own profile
-            const isOwnProfile = !profileUserId || profileUserId === currentUser?.id || 
-                        (currentProfile && currentProfile.created_by === currentUser?.id);
+            const isOwnProfile = !profileUserId || profileUserId === currentUser?.id;
             
             // Show/hide Edit Cover button based on ownership
             const editCoverBtn = document.getElementById('editCoverBtn');
@@ -2898,30 +2896,6 @@
                 return;
             }
             
-            // CRITICAL VALIDATION: Ensure we're updating the correct profile
-            const targetProfileId = profileUserId || currentUser.id;
-            console.log('🔒 COVER IMAGE UPDATE VALIDATION:');
-            console.log('Current user ID:', currentUser.id);
-            console.log('Profile being viewed (profileUserId):', profileUserId);
-            console.log('Target profile ID for update:', targetProfileId);
-            console.log('Entity profile ID: 2c563cb1-fbf2-4bbb-bbca-6439721aa605');
-            console.log('Personal profile ID: 668d68a1-2dc1-4515-8333-e9efe52c3d75');
-            
-            // Additional validation to prevent data corruption
-            if (profileUserId && profileUserId !== currentUser.id) {
-                console.error('❌ SECURITY VIOLATION: Attempting to modify another user\'s profile');
-                showAlert('Security error: Cannot modify another user\'s profile', 'error');
-                return;
-            }
-            
-            if (targetProfileId === '2c563cb1-fbf2-4bbb-bbca-6439721aa605') {
-                console.log('✅ Updating ENTITY profile cover image');
-            } else if (targetProfileId === '668d68a1-2dc1-4515-8333-e9efe52c3d75') {
-                console.log('✅ Updating PERSONAL profile cover image');
-            } else {
-                console.log('⚠️ Updating profile with ID:', targetProfileId);
-            }
-            
             const saveBtn = document.getElementById('saveCoverBtn');
             if (saveBtn) {
                 saveBtn.disabled = true;
@@ -2929,10 +2903,10 @@
             }
             
             try {
-                // Upload to Supabase storage using target profile ID
-                const fileName = `covers/${targetProfileId}_${Date.now()}_${selectedCoverFile.name}`;
+                // Upload to Supabase storage
+                const fileName = `covers/${currentUser.id}_${Date.now()}_${selectedCoverFile.name}`;
                 const { data: uploadData, error: uploadError } = await window.dcfSupabase.storage
-                    .from('media')
+                    .from('user-media')
                     .upload(fileName, selectedCoverFile);
                 
                 if (uploadError) {
@@ -2949,21 +2923,20 @@
                 
                 // Get public URL
                 const { data: urlData } = window.dcfSupabase.storage
-                    .from('media')
+                    .from('user-media')
                     .getPublicUrl(fileName);
                 
                 const coverUrl = urlData.publicUrl;
                 console.log('Public URL:', coverUrl);
                 
-                // Update profile with new cover URL using correct profile ID
-                console.log('📝 Updating profile cover_image_url for profile ID:', targetProfileId);
+                // Update profile with new cover URL
                 const { error: updateError } = await window.dcfSupabase
                     .from('user_profiles')
                     .update({ 
                         cover_image_url: coverUrl,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', targetProfileId);
+                    .eq('id', currentUser.id);
                 
                 if (updateError) {
                     console.error('Update error:', updateError);
@@ -3480,27 +3453,15 @@
         // Apply privacy controls based on connection status
         function applyPrivacyControls(status) {
             console.log('Applying privacy controls, connection status:', status);
-            console.log('Profile visibility:', currentProfile?.visibility);
-            console.log('Profile public:', currentProfile?.profile_public);
             
-            // Check if this is an entity profile created by current user
-            const isOwnEntity = currentProfile && currentProfile.created_by === currentUser?.id;
-            
-            // Check if profile is set to public (for entities or regular profiles)
-            const isPublicProfile = currentProfile && (
-                currentProfile.visibility === 'public' || 
-                currentProfile.profile_public === true ||
-                currentProfile.is_public === true
-            );
-            
-            // If viewing own profile, own entity, connected user, or public profile, show everything
-            if (status === 'self' || status === 'connected' || isOwnEntity || isPublicProfile) {
+            // If viewing own profile or connected, show everything
+            if (status === 'self' || status === 'connected') {
                 // Show all sections
                 showAllSections();
                 return;
             }
             
-            // For non-connected users on private profiles, hide sensitive sections
+            // For non-connected users, hide sensitive sections
             hidePrivateSections();
             
             // Show connect prompt instead of post creation
@@ -3704,31 +3665,11 @@
 
         // Submit post function
         async function submitPost() {
-            const postBtn = document.getElementById('postSubmitBtnExpanded');
-            
-            // Prevent double submission
-            if (postBtn && postBtn.disabled) return;
-            
-            // Disable button and show loading state
-            if (postBtn) {
-                postBtn.disabled = true;
-                postBtn.textContent = 'Posting...';
-                postBtn.style.background = '#6c757d';
-                postBtn.style.cursor = 'not-allowed';
-            }
-            
             console.log('submitPost called');
             console.log('currentUser:', window.getCurrentUser());
             const currentUser = window.getCurrentUser();
             if (!currentUser) {
                 showNotification('Please log in to create posts', 'error');
-                // Reset button on error
-                if (postBtn) {
-                    postBtn.disabled = false;
-                    postBtn.textContent = 'Post';
-                    postBtn.style.background = '#000';
-                    postBtn.style.cursor = 'pointer';
-                }
                 return;
             }
             
@@ -3743,93 +3684,41 @@
             
             if (!content) {
                 showNotification('Please enter some content for your post', 'error');
-                // Reset button on error
-                if (postBtn) {
-                    postBtn.disabled = false;
-                    postBtn.textContent = 'Post';
-                    postBtn.style.background = '#000';
-                    postBtn.style.cursor = 'pointer';
-                }
                 return;
             }
             
             try {
                 let mediaUrls = [];
                 if (selectedPostFiles && selectedPostFiles.length > 0) {
-                    // Show progress bar
-                    const progressBar = document.getElementById('postUploadProgress');
-                    const statusText = document.getElementById('postUploadStatus');
-                    
-                    if (progressBar) progressBar.style.display = 'block';
-                    if (statusText) {
-                        statusText.style.display = 'block';
-                        statusText.textContent = 'Uploading files...';
-                    }
-                    
                     try {
                         mediaUrls = await uploadPostMedia(selectedPostFiles);
-                        if (statusText) statusText.textContent = 'Upload complete!';
                     } catch (error) {
                         console.error('Media upload failed:', error);
                         showNotification('Failed to upload media files', 'error');
-                        
-                        // Reset button on error
-                        if (postBtn) {
-                            postBtn.disabled = false;
-                            postBtn.textContent = 'Post';
-                            postBtn.style.background = '#000';
-                            postBtn.style.cursor = 'pointer';
-                        }
-                        if (progressBar) progressBar.style.display = 'none';
-                        if (statusText) statusText.style.display = 'none';
                         return;
                     }
                 }
 
-                const insertData = {
-                    author_id: profileUserId || currentUser.id,
-                    author_email: currentUser.email,
-                    author_name: profileUserId && currentProfile ? `@${currentProfile.username}` : `@${currentUser.username}`,
-                    username: profileUserId && currentProfile ? currentProfile.username : currentUser.username,
-                    content: content,
-                    media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-                    media_count: mediaUrls.length,
-                    media_type: mediaUrls.length > 0 && selectedPostFiles && selectedPostFiles[0] ? 
-                        (selectedPostFiles[0].type.startsWith('image/') ? 'images' : 'video') : null
-                };
-
-                console.log('Inserting post data:', insertData);
-                console.log('Current user for entity post:', currentUser);
-                console.log('Profile User ID:', profileUserId);
-
                 const { data, error } = await window.dcfSupabase
                     .from('posts')
-                    .insert(insertData)
+                    .insert({
+                        author_id: currentUser.id,
+                        author_email: currentUser.email,
+                        author_name: `@${currentUser.username}`,
+                        username: currentUser.username,
+                        content: content,
+                        media_url: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+                        media_count: mediaUrls.length,
+                        media_type: mediaUrls.length > 0 ? (selectedPostFiles[0].type.startsWith('image/') ? 'images' : 'video') : null
+                    })
                     .select()
                     .single();
-                    
-                console.log('Database response:', { data, error });
-                if (error) console.error('Full error details:', error);
                     
                 if (error) throw error;
                 
                 textarea.value = '';
                 handlePostInput();
                 showNotification('Post created successfully!', 'success');
-                
-                // Reset button state
-                if (postBtn) {
-                    postBtn.disabled = false;
-                    postBtn.textContent = 'Post';
-                    postBtn.style.background = '#000';
-                    postBtn.style.cursor = 'pointer';
-                }
-                
-                // Hide progress bar
-                const progressBar = document.getElementById('postUploadProgress');
-                const statusText = document.getElementById('postUploadStatus');
-                if (progressBar) progressBar.style.display = 'none';
-                if (statusText) statusText.style.display = 'none';
                 
                 // Clear media selection after successful post
                 removePostFiles();
@@ -3846,20 +3735,6 @@
             } catch (error) {
                 console.error('Error creating post:', error);
                 showNotification('Failed to create post. Please try again.', 'error');
-                
-                // Reset button on error
-                if (postBtn) {
-                    postBtn.disabled = false;
-                    postBtn.textContent = 'Post';
-                    postBtn.style.background = '#000';
-                    postBtn.style.cursor = 'pointer';
-                }
-                
-                // Hide progress bar on error
-                const progressBar = document.getElementById('postUploadProgress');
-                const statusText = document.getElementById('postUploadStatus');
-                if (progressBar) progressBar.style.display = 'none';
-                if (statusText) statusText.style.display = 'none';
             }
         }
 
