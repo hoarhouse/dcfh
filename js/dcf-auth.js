@@ -11,11 +11,14 @@ console.log('🔐 DCF Authentication System Loading...');
 // =============================================================================
 
 let dcfSupabase = null;
-let dcfUser = {
+window.dcfUser = {
     isLoggedIn: false,
     profile: null,
-    session: null
+    session: null,
+    activeProfile: null, // NEW: Currently active profile context
+    availableProfiles: [] // NEW: List of profiles user can switch to
 };
+let dcfUser = window.dcfUser; // Reference for internal use
 
 // =============================================================================
 // 2. SUPABASE CLIENT INITIALIZATION
@@ -61,7 +64,13 @@ async function initializeAuth() {
         
         if (error) {
             console.warn('⚠️ Session check failed:', error.message);
-            dcfUser = { isLoggedIn: false, profile: null, session: null };
+            Object.assign(dcfUser, { 
+                isLoggedIn: false, 
+                profile: null, 
+                session: null,
+                activeProfile: null,
+                availableProfiles: []
+            });
             updateUIForLoggedOutState();
             return false;
         }
@@ -73,14 +82,26 @@ async function initializeAuth() {
             return true;
         } else {
             console.log('📝 No existing session found');
-            dcfUser = { isLoggedIn: false, profile: null, session: null };
+            Object.assign(dcfUser, { 
+                isLoggedIn: false, 
+                profile: null, 
+                session: null,
+                activeProfile: null,
+                availableProfiles: []
+            });
             updateUIForLoggedOutState();
             return false;
         }
         
     } catch (error) {
         console.warn('⚠️ Authentication initialization failed:', error.message);
-        dcfUser = { isLoggedIn: false, profile: null, session: null };
+        Object.assign(dcfUser, { 
+            isLoggedIn: false, 
+            profile: null, 
+            session: null,
+            activeProfile: null,
+            availableProfiles: []
+        });
         updateUIForLoggedOutState();
         return false;
     }
@@ -122,8 +143,17 @@ async function loadUserProfile(session) {
                     last_name: profile.last_name,
                     avatar_url: profile.avatar_url
                 },
-                session: session
+                session: session,
+                activeProfile: null,
+                availableProfiles: []
             };
+            
+            // Initialize active profile context (defaults to personal profile)
+            dcfUser.activeProfile = dcfUser.profile;
+            dcfUser.availableProfiles = [dcfUser.profile];
+            
+            // Load entity profiles if any exist
+            await loadUserEntityProfiles();
         }
         
     } catch (error) {
@@ -138,8 +168,57 @@ async function loadUserProfile(session) {
                 username: session.user.email.split('@')[0],
                 avatar_url: null
             },
-            session: session
+            session: session,
+            activeProfile: null,
+            availableProfiles: []
         };
+        
+        // Initialize active profile context
+        dcfUser.activeProfile = dcfUser.profile;
+        dcfUser.availableProfiles = [dcfUser.profile];
+    }
+}
+
+async function loadUserEntityProfiles() {
+    try {
+        if (!dcfSupabase || !dcfUser.profile) return;
+        
+        const { data: entities, error } = await dcfSupabase
+            .from('user_profiles')
+            .select('*')
+            .eq('created_by', dcfUser.profile.id)
+            .eq('account_type', 'entity');
+            
+        if (error) throw error;
+        
+        if (entities && entities.length > 0) {
+            entities.forEach(entity => {
+                const entityProfile = {
+                    id: entity.id,
+                    email: entity.email,
+                    name: entity.first_name,
+                    username: entity.username,
+                    avatar_url: entity.avatar_url,
+                    account_type: 'entity',
+                    entity_type: entity.entity_type
+                };
+                dcfUser.availableProfiles.push(entityProfile);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading entity profiles:', error);
+    }
+}
+
+function switchActiveProfile(profileId) {
+    const profile = dcfUser.availableProfiles.find(p => p.id === profileId);
+    if (profile) {
+        dcfUser.activeProfile = profile;
+        // Update UI elements if they exist
+        if (dcfUser.isLoggedIn) {
+            updateUserMenu();
+        }
+        console.log('Switched to profile:', profile.name);
     }
 }
 
@@ -567,7 +646,8 @@ function setupAuthStateListener() {
 // =============================================================================
 
 function getCurrentUser() {
-    return dcfUser.isLoggedIn ? dcfUser.profile : null;
+    // Return active profile context instead of base profile
+    return dcfUser?.activeProfile || null;
 }
 
 function isUserLoggedIn() {
@@ -608,6 +688,11 @@ window.isUserLoggedIn = isUserLoggedIn;
 window.handleLogout = handleLogout;
 window.toggleUserMenu = toggleUserMenu;
 window.toggleNotificationDropdown = toggleNotificationDropdown;
+
+// Export profile switching functions
+window.switchActiveProfile = switchActiveProfile;
+window.loadUserEntityProfiles = loadUserEntityProfiles;
+window.dcfUser = dcfUser;
 
 // Export for manual initialization
 window.initializeAuth = initializeAuth;
