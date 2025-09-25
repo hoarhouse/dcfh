@@ -2558,6 +2558,44 @@
                 
                 showNotification('Profile updated successfully!', 'success');
                 
+                // AUDIT LOG: Data persistence verification
+                console.log('🔍 DATA PERSISTENCE VERIFICATION:');
+                console.log('Profile supposedly saved. Verifying persistence...');
+                
+                // Immediately fetch the profile to verify the changes persisted
+                const { data: verifyData, error: verifyError } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', profileIdToUpdate)
+                    .single();
+                
+                if (verifyError) {
+                    console.error('❌ VERIFICATION FAILED - Could not fetch profile:', verifyError);
+                } else {
+                    console.log('✅ VERIFICATION - Profile fetched successfully');
+                    console.log('🎯 Saved profile ID:', verifyData.id);
+                    console.log('📝 Saved data snapshot:', {
+                        username: verifyData.username,
+                        bio: verifyData.bio?.substring(0, 50) + '...',
+                        account_type: verifyData.account_type,
+                        entity_name: verifyData.entity_name,
+                        updated_at: verifyData.updated_at
+                    });
+                    
+                    // Check if this is the entity profile and verify key fields
+                    if (profileIdToUpdate === '2c563cb1-fbf2-4bbb-bbca-6439721aa605') {
+                        console.log('🏢 ENTITY PROFILE VERIFICATION:');
+                        console.log('Entity Name:', verifyData.entity_name || 'NOT SET');
+                        console.log('Entity Type:', verifyData.entity_type || 'NOT SET');
+                        console.log('Entity Description:', verifyData.entity_description?.substring(0, 50) || 'NOT SET');
+                        console.log('Account Type:', verifyData.account_type);
+                        
+                        if (verifyData.account_type !== 'entity') {
+                            console.error('⚠️ WARNING: Entity profile does not have account_type = "entity"');
+                        }
+                    }
+                }
+                
                 // Reset unsaved changes flag
                 hasUnsavedChanges = false;
                 
