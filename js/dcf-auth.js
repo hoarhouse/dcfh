@@ -180,6 +180,7 @@ async function loadUserProfile(session) {
 }
 
 async function loadUserEntityProfiles() {
+    console.log('🔍 DEBUG: loadUserEntityProfiles() called, current user:', window.dcfUser.profile);
     try {
         if (!dcfSupabase || !dcfUser.profile) return;
         
@@ -190,6 +191,8 @@ async function loadUserEntityProfiles() {
             .eq('account_type', 'entity');
             
         if (error) throw error;
+        
+        console.log('🔍 DEBUG: Found entities from database:', entities);
         
         if (entities && entities.length > 0) {
             entities.forEach(entity => {
