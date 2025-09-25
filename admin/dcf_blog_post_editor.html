@@ -1876,10 +1876,38 @@
                 if (currentPostId) {
                     // Update existing post
                     postData.updated_at = new Date().toISOString();
+                    
+                    // === BLOG MOVE DEBUG ===
+                    console.log('=== BLOG MOVE DEBUG ===');
+                    console.log('Current Post ID being updated:', currentPostId);
+                    console.log('New blog_id from form:', postData.blog_id);
+                    console.log('Update data being sent:', postData);
+                    console.log('Full postData keys:', Object.keys(postData));
+                    
+                    // Add .select() to get the updated data back
                     result = await window.dcfSupabase
                         .from('blog_posts')
                         .update(postData)
-                        .eq('id', currentPostId);
+                        .eq('id', currentPostId)
+                        .select();
+                    
+                    console.log('Database update response:', { data: result.data, error: result.error });
+                    console.log('Rows affected:', result.data ? result.data.length : 0);
+                    
+                    // After the update, verify it worked
+                    const { data: verifyData, error: verifyError } = await window.dcfSupabase
+                        .from('blog_posts')
+                        .select('blog_id, title')
+                        .eq('id', currentPostId)
+                        .single();
+                    
+                    console.log('Verification - current blog_id after update:', verifyData?.blog_id);
+                    console.log('Expected blog_id:', postData.blog_id);
+                    console.log('Update successful:', verifyData?.blog_id === postData.blog_id);
+                    if (verifyError) {
+                        console.error('Verification error:', verifyError);
+                    }
+                    console.log('=== END BLOG MOVE DEBUG ===');
                 } else {
                     // Create new post
                     result = await window.dcfSupabase
@@ -1926,6 +1954,14 @@
 
         // Collect form data
         function collectPostData() {
+            const blogSelect = document.getElementById('postBlog');
+            const selectedBlogId = blogSelect.value;
+            
+            console.log('=== COLLECT POST DATA DEBUG ===');
+            console.log('Blog select element:', blogSelect);
+            console.log('Selected blog ID from form:', selectedBlogId);
+            console.log('Current blog ID in memory:', currentBlogId);
+            
             const data = {
                 title: document.getElementById('postTitle').value,
                 slug: document.getElementById('postSlug').value,
@@ -1933,7 +1969,7 @@
                 content: editorInstance ? editorInstance.root.innerHTML : '',
                 featured_image_url: currentFeaturedMedia.url,
                 featured_media_type: currentFeaturedMedia.type,
-                blog_id: document.getElementById('postBlog').value,
+                blog_id: selectedBlogId,
                 status: document.getElementById('postStatus').value,
                 seo_meta: {
                     title: document.getElementById('metaTitle').value,
