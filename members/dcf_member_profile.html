@@ -3454,15 +3454,27 @@
         // Apply privacy controls based on connection status
         function applyPrivacyControls(status) {
             console.log('Applying privacy controls, connection status:', status);
+            console.log('Profile visibility:', currentProfile?.visibility);
+            console.log('Profile public:', currentProfile?.profile_public);
             
-            // If viewing own profile or connected, show everything
-            if (status === 'self' || status === 'connected') {
+            // Check if this is an entity profile created by current user
+            const isOwnEntity = currentProfile && currentProfile.created_by === currentUser?.id;
+            
+            // Check if profile is set to public (for entities or regular profiles)
+            const isPublicProfile = currentProfile && (
+                currentProfile.visibility === 'public' || 
+                currentProfile.profile_public === true ||
+                currentProfile.is_public === true
+            );
+            
+            // If viewing own profile, own entity, connected user, or public profile, show everything
+            if (status === 'self' || status === 'connected' || isOwnEntity || isPublicProfile) {
                 // Show all sections
                 showAllSections();
                 return;
             }
             
-            // For non-connected users, hide sensitive sections
+            // For non-connected users on private profiles, hide sensitive sections
             hidePrivateSections();
             
             // Show connect prompt instead of post creation
