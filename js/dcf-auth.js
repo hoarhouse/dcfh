@@ -400,6 +400,7 @@ function updateUserMenu() {
         : `<div class="dropdown-avatar">${initials}</div>`;
     
     // Add profile switcher section if user has multiple profiles
+    console.log('🔍 DEBUG: updateUserMenu() - availableProfiles count:', window.dcfUser.availableProfiles?.length);
     let profileSwitcherHTML = '';
     if (window.dcfUser.availableProfiles && window.dcfUser.availableProfiles.length > 1) {
         profileSwitcherHTML = `
