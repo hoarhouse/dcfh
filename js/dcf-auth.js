@@ -182,12 +182,15 @@ async function loadUserProfile(session) {
 async function loadUserEntityProfiles() {
     console.log('🔍 DEBUG: loadUserEntityProfiles() called, current user:', window.dcfUser.profile);
     try {
-        if (!dcfSupabase || !dcfUser.profile) return;
+        if (!dcfSupabase || !window.dcfUser || !window.dcfUser.profile || !window.dcfUser.profile.id) {
+            console.log('⚠️ DEBUG: loadUserEntityProfiles skipped - no valid user profile yet');
+            return;
+        }
         
         const { data: entities, error } = await dcfSupabase
             .from('user_profiles')
             .select('*')
-            .eq('created_by', dcfUser.profile.id)
+            .eq('created_by', window.dcfUser.profile.id)
             .eq('account_type', 'entity');
             
         if (error) throw error;
@@ -195,6 +198,8 @@ async function loadUserEntityProfiles() {
         console.log('🔍 DEBUG: Found entities from database:', entities);
         
         if (entities && entities.length > 0) {
+            console.log('🔍 DEBUG: Processing entities, user profile ID:', window.dcfUser.profile.id);
+            
             entities.forEach(entity => {
                 const entityProfile = {
                     id: entity.id,
@@ -205,7 +210,8 @@ async function loadUserEntityProfiles() {
                     account_type: 'entity',
                     entity_type: entity.entity_type
                 };
-                dcfUser.availableProfiles.push(entityProfile);
+                window.dcfUser.availableProfiles.push(entityProfile);
+                console.log('✅ DEBUG: Added entity profile:', entityProfile.name);
             });
         }
         console.log('🔍 DEBUG: availableProfiles after loading:', window.dcfUser.availableProfiles);
