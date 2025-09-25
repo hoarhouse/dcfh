@@ -1861,6 +1861,9 @@
                 // Load entity for editing
                 await loadEntityForEditing();
                 
+                // Check for entity profile for switcher
+                await checkForEntityProfile();
+                
                 showLoading(false);
                 console.log('Profile data loaded:', data);
                 
@@ -2838,6 +2841,47 @@
         // Show/hide loading overlay
         function showLoading(show) {
             document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+        
+        // Simple profile switcher functions
+        let entityProfileData = null;
+
+        async function checkForEntityProfile() {
+            try {
+                const { data: entities } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('created_by', currentUser.id)
+                    .eq('account_type', 'entity')
+                    .limit(1);
+                    
+                if (entities && entities.length > 0) {
+                    entityProfileData = entities[0];
+                    document.getElementById('entityProfileBtn').style.display = 'block';
+                    document.getElementById('entityProfileBtn').textContent = entities[0].first_name;
+                }
+            } catch (error) {
+                console.error('Entity check error:', error);
+            }
+        }
+
+        function switchToPersonalProfile() {
+            isEditingEntity = false;
+            document.getElementById('personalProfileBtn').classList.add('active');
+            document.getElementById('entityProfileBtn').classList.remove('active');
+            document.getElementById('editPageTitle').textContent = 'Edit Personal Profile';
+            populateFormFields(currentProfile);
+        }
+
+        function switchToEntityProfile() {
+            if (!entityProfileData) return;
+            
+            isEditingEntity = true;
+            document.getElementById('entityProfileBtn').classList.add('active');
+            document.getElementById('personalProfileBtn').classList.remove('active');
+            document.getElementById('editPageTitle').textContent = 'Edit Entity Profile';
+            populateFormFields(entityProfileData);
+            currentEntityProfile = entityProfileData;
         }
     </script>
     
