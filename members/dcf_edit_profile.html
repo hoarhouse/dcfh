@@ -2234,6 +2234,20 @@
             const file = e.target.files[0];
             if (!file) return;
             
+            // AUDIT LOG: Avatar upload target verification
+            console.log('🖼️ AVATAR UPLOAD AUDIT:');
+            console.log('Current editing mode - isEditingEntity:', isEditingEntity);
+            console.log('Entity profile ID: 2c563cb1-fbf2-4bbb-bbca-6439721aa605');
+            console.log('Personal profile ID: 668d68a1-2dc1-4515-8333-e9efe52c3d75');
+            
+            if (isEditingEntity && currentEntityProfile) {
+                console.log('✅ Avatar will be uploaded for ENTITY profile:', currentEntityProfile.id);
+                console.log('Entity username:', currentEntityProfile.username);
+            } else {
+                console.log('✅ Avatar will be uploaded for PERSONAL profile:', currentUser.id);
+                console.log('Personal username:', currentUser.user_metadata?.username);
+            }
+            
             // Validate file type
             if (!file.type.startsWith('image/')) {
                 showNotification('Please select an image file', 'error');
@@ -2452,12 +2466,22 @@
         }, true);
         
         async function saveProfile() {
+            console.log('🔍 SAVE AUDIT: saveProfile called');
+            console.log('isEditingEntity:', isEditingEntity);
+            console.log('currentEntityProfile:', currentEntityProfile);
+            console.log('currentUser:', currentUser);
+            
             try {
                 showLoading(true);
                 
                 // Determine which profile we're saving
                 const profileToUpdate = isEditingEntity ? currentEntityProfile : currentProfile;
                 const profileIdToUpdate = isEditingEntity ? currentEntityProfile.id : currentUser.id;
+                
+                console.log('📍 Target profile ID for save:', profileIdToUpdate);
+                console.log('Should be entity ID if entity: 2c563cb1-fbf2-4bbb-bbca-6439721aa605');
+                console.log('Should be personal ID if personal: 668d68a1-2dc1-4515-8333-e9efe52c3d75');
+                console.log('Profile being updated:', profileToUpdate);
                 
                 // Collect form data with sanitization
                 const updates = {
@@ -2508,11 +2532,18 @@
                 console.log('Attempting to save profile with data:', updates);
                 console.log('Current user ID:', currentUser.id);
                 
+                console.log('📊 Updates object being sent:', updates);
+                console.log('🎯 Actual save query will update profile ID:', profileIdToUpdate);
+                
                 // Update profile in database
-                const { error } = await window.dcfSupabase
+                const { data: saveResult, error } = await window.dcfSupabase
                     .from('user_profiles')
                     .update(updates)
-                    .eq('id', profileIdToUpdate);
+                    .eq('id', profileIdToUpdate)
+                    .select();
+                
+                console.log('💾 Save operation result:', saveResult);
+                console.log('Database error if any:', error);
                 
                 if (error) {
                     console.error('Update error details:', {
@@ -2812,14 +2843,28 @@
         }
 
         function switchToEntityProfile() {
-            if (!entityProfileData) return;
+            console.log('🔄 Entity switch triggered');
+            console.log('Entity profile data available:', entityProfileData);
+            
+            if (!entityProfileData) {
+                console.error('❌ No entity profile data to switch to');
+                return;
+            }
+            
+            console.log('Entity profile ID being loaded:', entityProfileData.id);
+            console.log('Loaded entity data:', entityProfileData);
             
             isEditingEntity = true;
+            console.log('isEditingEntity flag set to:', isEditingEntity);
+            
             document.getElementById('entityProfileBtn').classList.add('active');
             document.getElementById('personalProfileBtn').classList.remove('active');
             document.getElementById('editPageTitle').textContent = 'Edit Entity Profile';
             populateFormFields(entityProfileData);
             currentEntityProfile = entityProfileData;
+            
+            console.log('✅ Entity profile switch complete');
+            console.log('currentEntityProfile now set to:', currentEntityProfile);
         }
     </script>
     
