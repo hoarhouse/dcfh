@@ -150,9 +150,11 @@ async function loadUserProfile(session) {
             
             // Initialize active profile context (defaults to personal profile)
             dcfUser.activeProfile = dcfUser.profile;
+            console.log('✅ DEBUG: activeProfile set to:', dcfUser.activeProfile?.name);
             dcfUser.availableProfiles = [dcfUser.profile];
             
-            // Load entity profiles if any exist
+            // Now that profile is set, load entity profiles
+            console.log('🔄 DEBUG: Profile set, now loading entities...');
             await loadUserEntityProfiles();
         }
         
