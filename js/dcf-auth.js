@@ -726,3 +726,21 @@ window.dcfUser = dcfUser;
 window.initializeAuth = initializeAuth;
 
 console.log('✅ DCF Authentication System loaded (manual initialization required)');
+
+// Initialize on page load if not already initialized
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!window.dcfUser.isLoggedIn) {
+        console.log('🔄 Initializing DCF auth system...');
+        await initializeAuth();
+    }
+});
+
+// Also initialize if DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(async () => {
+        if (!window.dcfUser.isLoggedIn) {
+            console.log('🔄 Initializing DCF auth system (DOM ready)...');
+            await initializeAuth();
+        }
+    }, 1000);
+}
