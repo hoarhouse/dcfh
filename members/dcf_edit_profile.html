@@ -759,6 +759,29 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Profile Tabs */
+        .profile-tab {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e5e5e5;
+            background: white;
+            color: #666;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .profile-tab.active {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        .profile-tab:hover:not(.active) {
+            border-color: #333;
+            color: #333;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .edit-grid {
@@ -816,8 +839,20 @@
     <div class="container">
         <!-- Page Header -->
         <div class="page-header">
-            <h1 class="page-title">Edit Profile</h1>
-            <p class="page-subtitle">Update your profile information and manage your account settings</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <div class="profile-switcher" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button id="personalTab" class="profile-tab active" onclick="switchToPersonal()">
+                            Personal Profile
+                        </button>
+                        <button id="entityTab" class="profile-tab" onclick="switchToEntity()" style="display: none;">
+                            Entity Profile
+                        </button>
+                    </div>
+                    <h1 class="page-title" id="pageTitle">Edit Personal Profile</h1>
+                    <p class="page-subtitle" id="pageSubtitle">Update your profile information and manage your account settings</p>
+                </div>
+            </div>
         </div>
 
         <!-- Edit Grid Layout -->
@@ -1652,6 +1687,67 @@
         let avatarFile = null;
         let coverFile = null;
         let coverPosition = 50;
+        let currentEntityProfile = null;
+        let isEditingEntity = false;
+
+        // Profile switcher functions
+        function switchToPersonal() {
+            isEditingEntity = false;
+            document.getElementById('personalTab').classList.add('active');
+            document.getElementById('entityTab').classList.remove('active');
+            document.getElementById('pageTitle').textContent = 'Edit Personal Profile';
+            document.getElementById('pageSubtitle').textContent = 'Update your profile information and manage your account settings';
+            
+            // Load personal profile data
+            populateFormFields(currentProfile);
+        }
+
+        async function switchToEntity() {
+            if (!currentEntityProfile) {
+                showNotification('Loading entity profile...', 'info');
+                await loadEntityForEditing();
+            }
+            
+            if (!currentEntityProfile) {
+                showNotification('No entity profile found', 'error');
+                return;
+            }
+            
+            isEditingEntity = true;
+            document.getElementById('entityTab').classList.add('active');
+            document.getElementById('personalTab').classList.remove('active');
+            document.getElementById('pageTitle').textContent = 'Edit Entity Profile';
+            document.getElementById('pageSubtitle').textContent = 'Update your entity information and settings';
+            
+            // Load entity profile data
+            populateFormFields(currentEntityProfile);
+        }
+
+        async function loadEntityForEditing() {
+            try {
+                const { data: entities, error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('created_by', currentUser.id)
+                    .eq('account_type', 'entity')
+                    .limit(1)
+                    .single();
+                    
+                if (error && error.code !== 'PGRST116') throw error;
+                
+                if (entities) {
+                    currentEntityProfile = entities;
+                    document.getElementById('entityTab').style.display = 'block';
+                    document.getElementById('entityTab').textContent = `${entities.first_name}`;
+                }
+            } catch (error) {
+                console.error('Load entity error:', error);
+            }
+        }
+
+        // Expose switcher functions to window
+        window.switchToPersonal = switchToPersonal;
+        window.switchToEntity = switchToEntity;
 
         // Sign out function
         async function signOut() {
@@ -1765,6 +1861,9 @@
                 
                 // Load existing entities
                 await loadExistingEntities();
+                
+                // Load entity for editing
+                await loadEntityForEditing();
                 
                 showLoading(false);
                 console.log('Profile data loaded:', data);
@@ -2419,6 +2518,10 @@
             try {
                 showLoading(true);
                 
+                // Determine which profile we're saving
+                const profileToUpdate = isEditingEntity ? currentEntityProfile : currentProfile;
+                const profileIdToUpdate = isEditingEntity ? currentEntityProfile.id : currentUser.id;
+                
                 // Collect form data with sanitization
                 const updates = {
                     first_name: sanitizeText(document.getElementById('firstName').value.trim(), 100),
@@ -2472,7 +2575,7 @@
                 const { error } = await window.dcfSupabase
                     .from('user_profiles')
                     .update(updates)
-                    .eq('id', currentUser.id);
+                    .eq('id', profileIdToUpdate);
                 
                 if (error) {
                     console.error('Update error details:', {
