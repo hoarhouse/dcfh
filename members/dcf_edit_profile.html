@@ -2590,31 +2590,77 @@
             document.getElementById('createEntityButton').style.display = 'block';
         }
         
-        function createEntityAccount() {
-            // Placeholder function - show coming soon notification
-            showNotification('Entity creation coming soon!', 'info');
-            
-            // You can add validation here if needed
-            const entityName = document.getElementById('entityName').value.trim();
-            const entityUsername = document.getElementById('entityUsername').value.trim();
+        async function createEntityAccount() {
+            const entityName = sanitizeText(document.getElementById('entityName').value.trim(), 100);
+            const entityUsername = sanitizeUsername(document.getElementById('entityUsername').value.trim());
             const entityType = document.getElementById('entityType').value;
-            const entityDescription = document.getElementById('entityDescription').value.trim();
+            const entitySize = document.getElementById('entitySize').value;
+            const entityDescription = sanitizeText(document.getElementById('entityDescription').value.trim(), 500);
             
+            // Validation
             if (!entityName || !entityUsername || !entityType) {
                 showNotification('Please fill in all required fields', 'error');
                 return;
             }
             
-            // For now, just log the data and reset the form
-            console.log('Entity Account Data:', {
-                name: entityName,
-                username: entityUsername,
-                type: entityType,
-                description: entityDescription
-            });
+            if (entityName.length < 2) {
+                showNotification('Entity name must be at least 2 characters', 'error');
+                return;
+            }
             
-            // Reset the form after "creation"
-            cancelEntityCreation();
+            if (entityUsername.length < 3) {
+                showNotification('Username must be at least 3 characters', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Check if username is already taken
+                const { data: existingUser } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('username', entityUsername)
+                    .single();
+                    
+                if (existingUser) {
+                    showNotification('Username is already taken', 'error');
+                    showLoading(false);
+                    return;
+                }
+                
+                // Create entity account
+                const { data, error } = await window.dcfSupabase
+                    .from('user_profiles')
+                    .insert({
+                        email: `entity_${Date.now()}@dcfhungary.internal`,
+                        first_name: entityName,
+                        username: entityUsername,
+                        account_type: 'entity',
+                        entity_type: entityType,
+                        entity_size: entitySize,
+                        entity_description: entityDescription,
+                        bio: entityDescription,
+                        created_by: currentUser.id,
+                        visibility: 'public',
+                        profile_public: true,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                showNotification('Entity account created successfully!', 'success');
+                cancelEntityCreation();
+                
+            } catch (error) {
+                console.error('Entity creation error:', error);
+                showNotification('Failed to create entity: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
         }
         
         // Expose entity functions to window for onclick handlers
