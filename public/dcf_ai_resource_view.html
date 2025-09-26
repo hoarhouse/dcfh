@@ -5152,18 +5152,50 @@
         async function initializeCarousel() {
             try {
                 // Load related resources from the same category
-                if (!currentResource || !window.dcfSupabase) return;
+                if (!currentResource || !window.dcfSupabase) {
+                    console.log('[Carousel] Missing resource or Supabase client');
+                    return;
+                }
                 
-                const { data: relatedResources, error } = await window.dcfSupabase
+                console.log('[Carousel] Initializing with resource:', {
+                    id: currentResource.id,
+                    category: currentResource.category,
+                    title: currentResource.title
+                });
+                
+                // Build query
+                let query = window.dcfSupabase
                     .from('resources')
-                    .select('*')
-                    .eq('category', currentResource.category)
+                    .select('*');
+                
+                // Only filter by category if it's defined and valid
+                if (currentResource.category && 
+                    currentResource.category !== 'undefined' && 
+                    currentResource.category !== 'null' &&
+                    currentResource.category !== '') {
+                    query = query.eq('category', currentResource.category);
+                    console.log('[Carousel] Filtering by category:', currentResource.category);
+                } else {
+                    console.log('[Carousel] No valid category found, loading recent resources');
+                }
+                
+                // Apply other filters
+                query = query
                     .eq('status', 'approved')
                     .neq('id', currentResource.id)
                     .order('created_at', { ascending: false })
                     .limit(10);
                 
-                if (!error && relatedResources) {
+                const { data: relatedResources, error } = await query;
+                
+                if (error) {
+                    console.error('[Carousel] Query error:', error);
+                    return;
+                }
+                
+                if (relatedResources) {
+                    console.log(`[Carousel] Found ${relatedResources.length} related resources`);
+                    
                     // Add current resource at the beginning
                     carouselState.resources = [currentResource, ...relatedResources];
                     carouselState.currentIndex = 0;
@@ -5181,9 +5213,11 @@
                         document.getElementById('carouselThumbnails').style.display = 'flex';
                         document.getElementById('autoAdvanceControls').style.display = 'flex';
                     }
+                } else {
+                    console.log('[Carousel] No related resources found');
                 }
             } catch (error) {
-                console.error('Error loading carousel resources:', error);
+                console.error('[Carousel] Error loading carousel resources:', error);
             }
         }
         
