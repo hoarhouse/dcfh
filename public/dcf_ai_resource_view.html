@@ -6628,11 +6628,21 @@
             }
         }
 
-        // Open fullscreen (for PDFs)
+        // Open fullscreen (for PDFs and Office documents)
         function openFullscreen() {
-            if (currentResource && currentResource.file_url) {
-                window.open(currentResource.file_url, '_blank');
+            if (!currentResource || !currentResource.file_url) return;
+            
+            const fileType = detectFileType(currentResource);
+            let fullscreenUrl = currentResource.file_url;
+            
+            // Use proper viewer URLs for Office documents
+            if (['word', 'excel', 'powerpoint'].includes(fileType)) {
+                const encodedUrl = encodeURIComponent(currentResource.file_url);
+                // Use view mode instead of embed mode for fullscreen
+                fullscreenUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedUrl}`;
             }
+            
+            window.open(fullscreenUrl, '_blank');
         }
 
         // Track resource view
