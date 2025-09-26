@@ -4116,22 +4116,7 @@
                 // Render thumbnails
                 renderPdfThumbnails(pdf, numPages);
                 
-                // Initialize navigation - set page 1 as current
-                setTimeout(() => {
-                    pdfGoToPage(1);
-                    
-                    // Add scroll listener to track current page
-                    const scrollContainer = document.getElementById('modalPdfPages');
-                    if (scrollContainer) {
-                        let scrollTimeout;
-                        scrollContainer.addEventListener('scroll', function() {
-                            clearTimeout(scrollTimeout);
-                            scrollTimeout = setTimeout(() => {
-                                updateCurrentPageFromScroll(scrollContainer);
-                            }, 100);
-                        });
-                    }
-                }, 100);
+                // Initialize navigation - no scroll listener needed for single-page modal
                 
                 // Render only the current page (page 1) initially
                 await renderSinglePdfPage(pdf, 1, pagesContainer);
@@ -4257,8 +4242,15 @@
                     pageNum.textContent = i;
                     thumbDiv.appendChild(pageNum);
                     
-                    // Click handler
-                    thumbDiv.onclick = () => pdfGoToPage(i);
+                    // Click handler - check if in modal mode
+                    thumbDiv.onclick = () => {
+                        const modalPdfViewer = document.getElementById('modalPdfViewer');
+                        if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                            renderModalPdfPage(i);
+                        } else {
+                            pdfGoToPage(i);
+                        }
+                    };
                     
                 } catch (error) {
                     console.error(`Error rendering thumbnail ${i}:`, error);
