@@ -2126,7 +2126,8 @@
                         currentResource.author_title = currentResource.author_title || 'Senior Researcher';
                         currentResource.author_bio = currentResource.author_bio || 'Expert contributor to DCF Hungary\'s research initiatives.';
                         currentResource.institution = currentResource.institution || 'DCF Hungary';
-                        currentResource.file_format = currentResource.file_format || 'PDF';
+                        // DO NOT default file_format - let detectFileType handle it
+                        // currentResource.file_format = currentResource.file_format || 'PDF';  // REMOVED - This was causing JPGs to be detected as PDFs
                         currentResource.page_count = currentResource.page_count || 0;
                         currentResource.citation_count = currentResource.citation_count || 0;
                         currentResource.rating_average = currentResource.rating_average || 0;
@@ -2154,45 +2155,96 @@
         function detectFileType(resource) {
             if (!resource) return 'unknown';
             
+            let detectedType = 'unknown';
+            let detectionMethod = 'none';
+            
             // Debug logging
-            console.log('Detecting file type for:', {
+            console.log('=== FILE TYPE DETECTION ===');
+            console.log('Resource:', resource.title);
+            console.log('Metadata:', {
                 file_format: resource.file_format,
                 file_url: resource.file_url,
                 content_type: resource.content_type,
                 type: resource.type
             });
             
-            // Check file_format field first
-            const format = (resource.file_format || '').toLowerCase().trim();
-            if (format) {
-                if (format === 'pdf' || format === 'application/pdf') return 'pdf';
-                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(format)) return 'image';
-                if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(format)) return 'video';
-                if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(format)) return 'audio';
-                if (['txt', 'text', 'plain'].includes(format)) return 'text';
-                if (['md', 'markdown'].includes(format)) return 'markdown';
-                // Office documents
-                if (['docx', 'doc'].includes(format)) return 'word';
-                if (['xlsx', 'xls'].includes(format)) return 'excel';
-                if (['pptx', 'ppt'].includes(format)) return 'powerpoint';
-            }
-            
-            // Check file_url extension as fallback
+            // PRIORITY 1: Check file_url extension FIRST (most reliable)
             if (resource.file_url) {
                 // Remove query parameters and get extension
                 const urlPath = resource.file_url.split('?')[0];
                 const ext = urlPath.split('.').pop().toLowerCase().trim();
                 
-                if (ext === 'pdf') return 'pdf';
-                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(ext)) return 'image';
-                if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext)) return 'video';
-                if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(ext)) return 'audio';
-                if (['txt', 'text'].includes(ext)) return 'text';
-                if (['md', 'markdown'].includes(ext)) return 'markdown';
-                // Office documents
-                if (['docx', 'doc'].includes(ext)) return 'word';
-                if (['xlsx', 'xls'].includes(ext)) return 'excel';
-                if (['pptx', 'ppt'].includes(ext)) return 'powerpoint';
+                console.log('URL Extension detected:', ext);
+                
+                if (ext === 'pdf') {
+                    detectedType = 'pdf';
+                    detectionMethod = 'URL extension';
+                } else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(ext)) {
+                    detectedType = 'image';
+                    detectionMethod = 'URL extension';
+                } else if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext)) {
+                    detectedType = 'video';
+                    detectionMethod = 'URL extension';
+                } else if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(ext)) {
+                    detectedType = 'audio';
+                    detectionMethod = 'URL extension';
+                } else if (['txt', 'text'].includes(ext)) {
+                    detectedType = 'text';
+                    detectionMethod = 'URL extension';
+                } else if (['md', 'markdown'].includes(ext)) {
+                    detectedType = 'markdown';
+                    detectionMethod = 'URL extension';
+                } else if (['docx', 'doc'].includes(ext)) {
+                    detectedType = 'word';
+                    detectionMethod = 'URL extension';
+                } else if (['xlsx', 'xls'].includes(ext)) {
+                    detectedType = 'excel';
+                    detectionMethod = 'URL extension';
+                } else if (['pptx', 'ppt'].includes(ext)) {
+                    detectedType = 'powerpoint';
+                    detectionMethod = 'URL extension';
+                }
+                
+                // If we found a type from URL extension, return it immediately
+                if (detectedType !== 'unknown') {
+                    console.log(`✅ File type detected as: ${detectedType} (via ${detectionMethod})`);
+                    return detectedType;
+                }
+            }
+            
+            // PRIORITY 2: Check file_format field as fallback (only if URL didn't match)
+            const format = (resource.file_format || '').toLowerCase().trim();
+            if (format && detectedType === 'unknown') {
+                console.log('Checking file_format field:', format);
+                
+                if (format === 'pdf' || format === 'application/pdf') {
+                    detectedType = 'pdf';
+                    detectionMethod = 'file_format field';
+                } else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(format)) {
+                    detectedType = 'image';
+                    detectionMethod = 'file_format field';
+                } else if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(format)) {
+                    detectedType = 'video';
+                    detectionMethod = 'file_format field';
+                } else if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(format)) {
+                    detectedType = 'audio';
+                    detectionMethod = 'file_format field';
+                } else if (['txt', 'text', 'plain'].includes(format)) {
+                    detectedType = 'text';
+                    detectionMethod = 'file_format field';
+                } else if (['md', 'markdown'].includes(format)) {
+                    detectedType = 'markdown';
+                    detectionMethod = 'file_format field';
+                } else if (['docx', 'doc'].includes(format)) {
+                    detectedType = 'word';
+                    detectionMethod = 'file_format field';
+                } else if (['xlsx', 'xls'].includes(format)) {
+                    detectedType = 'excel';
+                    detectionMethod = 'file_format field';
+                } else if (['pptx', 'ppt'].includes(format)) {
+                    detectedType = 'powerpoint';
+                    detectionMethod = 'file_format field';
+                }
             }
             
             // Check content_type if available
