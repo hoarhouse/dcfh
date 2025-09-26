@@ -4219,11 +4219,12 @@
             
             // Check if we're in modal view
             const modalPdfViewer = document.getElementById('modalPdfViewer');
+            const modalPdfPages = document.getElementById('modalPdfPages');
+            
             if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
-                // We're in modal - find the scrollable container
-                scrollContainer = document.getElementById('modalPdfPages') || 
-                                document.querySelector('.pdf-viewer-scrollable');
-                pageElements = modalPdfViewer.querySelectorAll('.pdf-page-wrapper');
+                // We're in modal - the scrollable container is modalPdfPages
+                scrollContainer = modalPdfPages;
+                pageElements = modalPdfPages ? modalPdfPages.querySelectorAll('.pdf-page-wrapper') : [];
                 console.log('[PDF Nav] Modal mode detected, found', pageElements.length, 'pages');
             } else {
                 // We're in preview mode
@@ -4501,7 +4502,11 @@
         
         // Keyboard shortcuts for PDF
         document.addEventListener('keydown', function(e) {
-            if (!modalOpen || detectFileType(currentResource) !== 'pdf') return;
+            // Check if we're viewing a PDF either in preview or modal
+            const isPdfPreview = detectFileType(currentResource) === 'pdf' && !modalOpen;
+            const isPdfModal = modalOpen && detectFileType(currentResource) === 'pdf';
+            
+            if (!isPdfPreview && !isPdfModal) return;
             
             switch(e.key) {
                 case 'PageUp':
