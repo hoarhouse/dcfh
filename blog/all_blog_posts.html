@@ -649,8 +649,13 @@
     </main>
 
     <script>
-        // Wait for DCF modular system to initialize Supabase
+        // Configuration
+        const POSTS_PER_PAGE = 10;
+        let currentPage = 1;
+        let totalPosts = 0;
+        let allPosts = [];
         let supabase;
+        let useLoadMore = false; // Set to true for load more, false for pagination
 
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize immediately without delay
@@ -661,95 +666,175 @@
                 document.getElementById('error').style.display = 'block';
                 return;
             }
-            loadBlogs();
+            loadAllBlogPosts();
         });
 
-        async function loadBlogs() {
+        async function loadAllBlogPosts() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const emptyState = document.getElementById('emptyState');
-            const blogsGrid = document.getElementById('blogsGrid');
+            const blogFeed = document.getElementById('blogFeed');
 
             try {
-                // Query active blogs with post counts
-                const { data: blogs, error: queryError } = await supabase
-                    .from('blogs')
+                // Query ALL blog posts from all blogs, ordered by newest first
+                const { data: posts, error: queryError } = await supabase
+                    .from('blog_posts')
                     .select(`
                         id,
-                        name,
+                        title,
                         slug,
-                        description,
-                        target_audience,
-                        initiative,
-                        post_count,
-                        created_at
+                        excerpt,
+                        content,
+                        featured_image_url,
+                        status,
+                        published_at,
+                        created_at,
+                        author_id,
+                        blogs!inner(
+                            id,
+                            name,
+                            slug
+                        )
                     `)
-                    .eq('status', 'active')
-                    .order('name');
+                    .eq('status', 'published')
+                    .order('published_at', { ascending: false });
 
                 if (queryError) throw queryError;
 
                 loading.style.display = 'none';
 
-                if (!blogs || blogs.length === 0) {
+                if (!posts || posts.length === 0) {
                     emptyState.style.display = 'block';
                     return;
                 }
 
-                // Display blogs
-                blogsGrid.style.display = 'grid';
-                blogsGrid.innerHTML = '';
+                allPosts = posts;
+                totalPosts = posts.length;
 
-                blogs.forEach(blog => {
-                    const blogCard = createBlogCard(blog);
-                    blogsGrid.appendChild(blogCard);
-                });
+                // Display first page
+                displayPosts();
+                
+                blogFeed.style.display = 'block';
 
             } catch (err) {
-                console.error('Error loading blogs:', err);
+                console.error('Error loading blog posts:', err);
                 loading.style.display = 'none';
                 error.style.display = 'block';
             }
         }
 
-        function createBlogCard(blog) {
-            const card = document.createElement('div');
-            card.className = 'blog-card';
-            card.onclick = () => window.location.href = `category.html?blog=${blog.slug}`;
-
-            // Generate initials for blog image
-            const initials = blog.name
-                .split(' ')
-                .map(word => word[0])
-                .join('')
-                .toUpperCase()
-                .substring(0, 3);
-
-            // Format creation date
-            const createdDate = new Date(blog.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short'
+        function displayPosts() {
+            const blogFeed = document.getElementById('blogFeed');
+            const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+            const endIndex = Math.min(startIndex + POSTS_PER_PAGE, totalPosts);
+            const postsToDisplay = allPosts.slice(startIndex, endIndex);
+            
+            if (!useLoadMore || currentPage === 1) {
+                blogFeed.innerHTML = '';
+            }
+            
+            postsToDisplay.forEach(post => {
+                const postCard = createPostCard(post);
+                blogFeed.appendChild(postCard);
             });
+            
+            updatePaginationControls();
+        }
 
+        function createPostCard(post) {
+            const card = document.createElement('article');
+            card.className = 'blog-post-card';
+            
+            const publishDate = new Date(post.published_at || post.created_at);
+            const formattedDate = publishDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            const title = escapeHtml(post.title || 'Untitled Post');
+            const excerpt = escapeHtml(post.excerpt || 'Click to read more...');
+            const imageUrl = post.featured_image_url || `https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&h=300&fit=crop`;
+            const blogName = post.blogs?.name || 'Blog';
+            const blogSlug = post.blogs?.slug || 'news';
+            const postUrl = `category.html?blog=${blogSlug}&post=${post.slug}`;
+            
+            // Generate author initials (you can enhance this with actual author data)
+            const authorInitials = 'DCF';
+            const authorName = 'DCF Team';
+            
             card.innerHTML = `
-                <div class="blog-image">
-                    ${initials}
+                <div class="post-image">
+                    <img src="${imageUrl}" alt="${title}" onerror="this.src='https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&h=300&fit=crop'">
                 </div>
-                <div class="blog-content">
-                    <h2 class="blog-title">${escapeHtml(blog.name)}</h2>
-                    <p class="blog-description">
-                        ${escapeHtml(blog.description || 'Explore our latest insights and perspectives.')}
-                    </p>
-                    <div class="blog-meta">
-                        <span>Created ${createdDate}</span>
-                        <span class="blog-posts-count">
-                            ${blog.post_count || 0} posts
-                        </span>
+                <div class="post-content">
+                    <div class="post-meta">
+                        <span class="post-category">${blogName}</span>
+                        <span class="post-date">📅 ${formattedDate}</span>
+                    </div>
+                    <h2 class="post-title">${title}</h2>
+                    <p class="post-excerpt">${excerpt}</p>
+                    <div class="post-footer">
+                        <div class="post-author">
+                            <div class="author-avatar">${authorInitials}</div>
+                            <span>${authorName}</span>
+                        </div>
+                        <a href="${postUrl}" class="read-more" onclick="event.stopPropagation()">
+                            Read more →
+                        </a>
                     </div>
                 </div>
             `;
-
+            
+            card.onclick = () => window.location.href = postUrl;
+            
             return card;
+        }
+
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+            
+            if (useLoadMore) {
+                // Load More functionality
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                const hasMore = currentPage < totalPages;
+                
+                loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+                if (hasMore) {
+                    const remaining = totalPosts - (currentPage * POSTS_PER_PAGE);
+                    loadMoreBtn.textContent = `Load More (${remaining} remaining)`;
+                }
+                
+                document.getElementById('pagination').style.display = 'none';
+            } else {
+                // Pagination functionality
+                const pagination = document.getElementById('pagination');
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const pageInfo = document.getElementById('pageInfo');
+                
+                pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+                
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === totalPages;
+                pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+                
+                document.getElementById('loadMoreBtn').style.display = 'none';
+            }
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            displayPosts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadMore() {
+            currentPage++;
+            displayPosts();
         }
 
         function escapeHtml(text) {
@@ -757,6 +842,13 @@
             div.textContent = text || '';
             return div.innerHTML;
         }
+
+        // Auto-refresh every 30 seconds to catch new posts
+        setInterval(() => {
+            if (currentPage === 1) {
+                loadAllBlogPosts();
+            }
+        }, 30000);
     </script>
 </body>
 </html>
