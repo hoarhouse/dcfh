@@ -1824,6 +1824,11 @@
                 grid-template-columns: repeat(2, 1fr);
             }
             
+            .cards-grid.scrollable > * {
+                min-width: calc(50% - 10px);
+                flex: 0 0 calc(50% - 10px);
+            }
+            
             .hero-previews {
                 flex-direction: column;
                 align-items: center;
@@ -1834,6 +1839,11 @@
         @media (max-width: 768px) {
             .cards-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .cards-grid.scrollable > * {
+                min-width: calc(100% - 20px);
+                flex: 0 0 calc(100% - 20px);
             }
             
             .hero-title {
@@ -3483,6 +3493,8 @@
                 generateCardHTML(post, index, post.chosenTemplate)
             ).join('');
 
+            // Setup scrolling if needed
+            setupScrollForSection('dcfNewsCards');
             addCardClickHandlers();
 
         } catch (error) {
@@ -3671,16 +3683,61 @@
         return div.innerHTML;
     }
 
-    // Simplified arrow setup - just hide arrows for now to fix layout
-    function setupScrollArrows(sectionName) {
-        const leftArrow = document.getElementById(`${sectionName}LeftArrow`);
-        const rightArrow = document.getElementById(`${sectionName}RightArrow`);
+    // Setup scroll functionality for sections with more than 4 cards
+    function setupScrollForSection(sectionId) {
+        const container = document.getElementById(sectionId);
+        if (!container) return;
         
-        // Hide arrows for now - focus on fixing layout first
-        if (leftArrow) leftArrow.style.display = 'none';
-        if (rightArrow) rightArrow.style.display = 'none';
+        const cards = container.querySelectorAll('.story-card, .profile-card, .resource-card, .resource-doc-card, .resource-library-card, .resource-tool-card');
+        const leftArrow = document.getElementById(`${sectionId.replace('Cards', '').replace('Grid', '')}LeftArrow`);
+        const rightArrow = document.getElementById(`${sectionId.replace('Cards', '').replace('Grid', '')}RightArrow`);
         
-        return;
+        // If more than 4 cards, enable scrolling
+        if (cards.length > 4) {
+            container.classList.add('scrollable');
+            
+            // Setup arrow visibility
+            const updateArrows = () => {
+                if (!leftArrow || !rightArrow) return;
+                
+                const scrollLeft = container.scrollLeft;
+                const scrollWidth = container.scrollWidth;
+                const clientWidth = container.clientWidth;
+                
+                // Show/hide arrows based on scroll position
+                leftArrow.classList.toggle('visible', scrollLeft > 5);
+                rightArrow.classList.toggle('visible', scrollLeft < scrollWidth - clientWidth - 5);
+            };
+            
+            // Initial arrow setup
+            updateArrows();
+            
+            // Update arrows on scroll
+            container.addEventListener('scroll', updateArrows);
+            
+            // Update on window resize
+            window.addEventListener('resize', updateArrows);
+        } else {
+            // Hide arrows if 4 or fewer cards
+            if (leftArrow) leftArrow.classList.remove('visible');
+            if (rightArrow) rightArrow.classList.remove('visible');
+        }
+    }
+    
+    // Scroll cards function
+    function scrollCards(section, direction) {
+        const container = document.getElementById(`${section}Cards`) || document.getElementById(`${section}Grid`);
+        if (!container) return;
+        
+        const cardWidth = container.querySelector('.story-card, .profile-card, .resource-card, .resource-doc-card, .resource-library-card, .resource-tool-card')?.offsetWidth || 300;
+        const scrollAmount = cardWidth + 20; // Include gap
+        
+        if (direction === 'left') {
+            container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
         
         // Calculate card width (25% of container width)
         const updateArrowVisibility = () => {
@@ -4092,6 +4149,8 @@
             if (cardsHTML) {
                 resourcesCards.innerHTML = cardsHTML;
                 resourcesCards.style.display = 'grid'; // Use grid display like other sections
+                // Setup scrolling if needed
+                setupScrollForSection('resourcesCards');
                 // Add click handlers to Resources cards
                 addCardClickHandlers();
             } else {
