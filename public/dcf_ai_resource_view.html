@@ -4122,35 +4122,19 @@
                 // Render thumbnails
                 renderPdfThumbnails(pdf, numPages);
                 
-                // Initialize navigation with scroll listener for continuous PDF
-                setTimeout(() => {
-                    // Add scroll listener to track current page during continuous scrolling
-                    const scrollContainer = document.getElementById('modalPdfPages');
-                    if (scrollContainer) {
-                        let scrollTimeout;
-                        scrollContainer.addEventListener('scroll', function() {
-                            clearTimeout(scrollTimeout);
-                            scrollTimeout = setTimeout(() => {
-                                updateCurrentPageFromScroll(scrollContainer);
-                            }, 100);
-                        });
-                        console.log('[PDF Modal] Scroll listener added for continuous PDF navigation');
-                    }
-                }, 100);
+                // EMERGENCY: No scroll listener needed for single page display
+                console.log('[PDF Modal] EMERGENCY: Single page mode - no scroll listener needed');
                 
-                // Render all pages for continuous scrolling in modal
-                console.log(`[PDF Modal] Rendering all ${numPages} pages for continuous scrolling`);
+                // EMERGENCY FIX: Render ONLY page 1 in modal
+                console.log(`[PDF Modal] EMERGENCY: Rendering ONLY page 1 of ${numPages} pages`);
                 
                 // Clear any existing content
                 pagesContainer.innerHTML = '';
                 
-                // Render all pages stacked vertically
-                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                    await renderSinglePdfPage(pdf, pageNum, pagesContainer);
-                    console.log(`[PDF Modal] Rendered page ${pageNum}/${numPages}`);
-                }
-                
-                console.log('All PDF pages rendered for continuous scrolling');
+                // FORCE: Render ONLY page 1
+                const maxPagesToRender = 1; // EMERGENCY OVERRIDE
+                await renderSinglePdfPage(pdf, 1, pagesContainer);
+                console.log('[PDF Modal] EMERGENCY: Rendered ONLY page 1');
                 
                 // Set current page to 1
                 pdfViewerState.currentPage = 1;
@@ -4272,8 +4256,15 @@
                     pageNum.textContent = i;
                     thumbDiv.appendChild(pageNum);
                     
-                    // Click handler - scroll to page in continuous view
-                    thumbDiv.onclick = () => pdfGoToPage(i);
+                    // EMERGENCY: Click handler for single page modal replacement
+                    thumbDiv.onclick = () => {
+                        const modalPdfViewer = document.getElementById('modalPdfViewer');
+                        if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                            renderModalPdfPage(i);
+                        } else {
+                            pdfGoToPage(i);
+                        }
+                    };
                     
                 } catch (error) {
                     console.error(`Error rendering thumbnail ${i}:`, error);
@@ -4420,22 +4411,50 @@
         
         window.pdfNextPage = function() {
             if (pdfViewerState.currentPage < pdfViewerState.numPages) {
-                pdfGoToPage(pdfViewerState.currentPage + 1);
+                const nextPage = pdfViewerState.currentPage + 1;
+                
+                // EMERGENCY: Check if we're in modal mode for single page replacement
+                const modalPdfViewer = document.getElementById('modalPdfViewer');
+                if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                    renderModalPdfPage(nextPage);
+                } else {
+                    pdfGoToPage(nextPage);
+                }
             }
         };
         
         window.pdfPrevPage = function() {
             if (pdfViewerState.currentPage > 1) {
-                pdfGoToPage(pdfViewerState.currentPage - 1);
+                const prevPage = pdfViewerState.currentPage - 1;
+                
+                // EMERGENCY: Check if we're in modal mode for single page replacement
+                const modalPdfViewer = document.getElementById('modalPdfViewer');
+                if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                    renderModalPdfPage(prevPage);
+                } else {
+                    pdfGoToPage(prevPage);
+                }
             }
         };
         
         window.pdfFirstPage = function() {
-            pdfGoToPage(1);
+            // EMERGENCY: Check if we're in modal mode for single page replacement
+            const modalPdfViewer = document.getElementById('modalPdfViewer');
+            if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                renderModalPdfPage(1);
+            } else {
+                pdfGoToPage(1);
+            }
         };
         
         window.pdfLastPage = function() {
-            pdfGoToPage(pdfViewerState.numPages);
+            // EMERGENCY: Check if we're in modal mode for single page replacement
+            const modalPdfViewer = document.getElementById('modalPdfViewer');
+            if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                renderModalPdfPage(pdfViewerState.numPages);
+            } else {
+                pdfGoToPage(pdfViewerState.numPages);
+            }
         };
         
         // Update current page based on scroll position
