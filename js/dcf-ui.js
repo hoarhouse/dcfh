@@ -50,7 +50,7 @@ function populateTopNavigation() {
             ]
         },
         { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
-        { href: basePath + 'public/dcf_resources_public.html', text: 'Resources' },
+        { href: basePath + 'public/dcf_ai_resources.html', text: 'Resources' },
         { 
             href: basePath + 'news/dcf_news.html', 
             text: 'News',
