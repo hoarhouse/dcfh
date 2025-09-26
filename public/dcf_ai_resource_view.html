@@ -3622,8 +3622,14 @@
                 case 'word':
                 case 'excel':
                 case 'powerpoint':
-                    // Simply return a placeholder - the actual rendering will be handled by the render functions
-                    return `<div class="office-viewer-modal" id="officeModalContainer" style="width: 100%; height: 100%;"></div>`;
+                    // Return proper modal container structure for Office documents
+                    return `
+                        <div class="modal-office-viewer" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+                            <div id="officeModalContainer" style="flex: 1; width: 100%; height: 100%;">
+                                <!-- Office iframe will be inserted here -->
+                            </div>
+                        </div>
+                    `;
                     
                 default:
                     if (currentResource.featured_image_url) {
@@ -6514,19 +6520,21 @@
         
         // Word Document Preview (.docx, .doc)
         function renderWordPreview(container) {
-            if (!currentResource.file_url) {
+            // Use modal-specific resource for consistency
+            const resource = modalResource || currentResource;
+            if (!resource.file_url) {
                 renderFallbackPreview(container);
                 return;
             }
             
             // Check if URL is publicly accessible
-            const isPublicUrl = !currentResource.file_url.includes('token=') && 
-                               !currentResource.file_url.includes('X-Amz-') &&
-                               (currentResource.file_url.startsWith('http://') || 
-                                currentResource.file_url.startsWith('https://'));
+            const isPublicUrl = !resource.file_url.includes('token=') && 
+                               !resource.file_url.includes('X-Amz-') &&
+                               (resource.file_url.startsWith('http://') || 
+                                resource.file_url.startsWith('https://'));
             
             console.log('[Office Viewer] Word Document Debug:');
-            console.log('- File URL:', currentResource.file_url);
+            console.log('- File URL:', resource.file_url);
             console.log('- Is Public URL:', isPublicUrl);
             
             if (!isPublicUrl) {
@@ -6536,7 +6544,7 @@
             }
             
             // Encode the URL for the viewer
-            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            const encodedUrl = encodeURIComponent(resource.file_url);
             
             // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
             const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
@@ -6545,7 +6553,9 @@
             console.log('[Office Viewer] Primary URL:', viewerUrl);
             console.log('[Office Viewer] Fallback URL:', fallbackUrl);
             
-            container.innerHTML = `
+            // Target specific office container, don't replace entire modal
+            const officeContainer = container.querySelector('#officeModalContainer') || container;
+            officeContainer.innerHTML = `
                 <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
                     <iframe 
                         id="wordViewer"
@@ -6597,19 +6607,21 @@
         
         // Excel Spreadsheet Preview (.xlsx, .xls)
         function renderExcelPreview(container) {
-            if (!currentResource.file_url) {
+            // Use modal-specific resource for consistency
+            const resource = modalResource || currentResource;
+            if (!resource.file_url) {
                 renderFallbackPreview(container);
                 return;
             }
             
             // Check if URL is publicly accessible
-            const isPublicUrl = !currentResource.file_url.includes('token=') && 
-                               !currentResource.file_url.includes('X-Amz-') &&
-                               (currentResource.file_url.startsWith('http://') || 
-                                currentResource.file_url.startsWith('https://'));
+            const isPublicUrl = !resource.file_url.includes('token=') && 
+                               !resource.file_url.includes('X-Amz-') &&
+                               (resource.file_url.startsWith('http://') || 
+                                resource.file_url.startsWith('https://'));
             
             console.log('[Office Viewer] Excel Spreadsheet Debug:');
-            console.log('- File URL:', currentResource.file_url);
+            console.log('- File URL:', resource.file_url);
             console.log('- Is Public URL:', isPublicUrl);
             
             if (!isPublicUrl) {
@@ -6619,7 +6631,7 @@
             }
             
             // Encode the URL for the viewer
-            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            const encodedUrl = encodeURIComponent(resource.file_url);
             
             // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
             const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
@@ -6628,7 +6640,9 @@
             console.log('[Office Viewer] Primary URL:', viewerUrl);
             console.log('[Office Viewer] Fallback URL:', fallbackUrl);
             
-            container.innerHTML = `
+            // Target specific office container, don't replace entire modal
+            const officeContainer = container.querySelector('#officeModalContainer') || container;
+            officeContainer.innerHTML = `
                 <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
                     <iframe 
                         id="excelViewer"
@@ -6680,19 +6694,21 @@
         
         // PowerPoint Presentation Preview (.pptx, .ppt)
         function renderPowerPointPreview(container) {
-            if (!currentResource.file_url) {
+            // Use modal-specific resource for consistency
+            const resource = modalResource || currentResource;
+            if (!resource.file_url) {
                 renderFallbackPreview(container);
                 return;
             }
             
             // Check if URL is publicly accessible
-            const isPublicUrl = !currentResource.file_url.includes('token=') && 
-                               !currentResource.file_url.includes('X-Amz-') &&
-                               (currentResource.file_url.startsWith('http://') || 
-                                currentResource.file_url.startsWith('https://'));
+            const isPublicUrl = !resource.file_url.includes('token=') && 
+                               !resource.file_url.includes('X-Amz-') &&
+                               (resource.file_url.startsWith('http://') || 
+                                resource.file_url.startsWith('https://'));
             
             console.log('[Office Viewer] PowerPoint Presentation Debug:');
-            console.log('- File URL:', currentResource.file_url);
+            console.log('- File URL:', resource.file_url);
             console.log('- Is Public URL:', isPublicUrl);
             
             if (!isPublicUrl) {
@@ -6702,7 +6718,7 @@
             }
             
             // Encode the URL for the viewer
-            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            const encodedUrl = encodeURIComponent(resource.file_url);
             
             // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
             const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
@@ -6711,7 +6727,9 @@
             console.log('[Office Viewer] Primary URL:', viewerUrl);
             console.log('[Office Viewer] Fallback URL:', fallbackUrl);
             
-            container.innerHTML = `
+            // Target specific office container, don't replace entire modal
+            const officeContainer = container.querySelector('#officeModalContainer') || container;
+            officeContainer.innerHTML = `
                 <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
                     <iframe 
                         id="powerpointViewer"
