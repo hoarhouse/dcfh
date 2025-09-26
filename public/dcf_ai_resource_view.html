@@ -1036,6 +1036,60 @@
             opacity: 0.5;
         }
         
+        /* Office Document Viewers */
+        .office-viewer {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            position: relative;
+            background: #f8f8f8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .office-viewer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .office-viewer-modal {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: white;
+        }
+        
+        .office-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 1;
+        }
+        
+        .office-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .office-error-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
         /* Modal/Lightbox System */
         .modal-overlay {
             position: fixed;
@@ -1663,6 +1717,15 @@
                 case 'markdown':
                     renderMarkdownPreview(modalContent, true);
                     break;
+                case 'word':
+                    renderWordPreview(modalContent);
+                    break;
+                case 'excel':
+                    renderExcelPreview(modalContent);
+                    break;
+                case 'powerpoint':
+                    renderPowerPointPreview(modalContent);
+                    break;
             }
         }
         
@@ -1716,6 +1779,22 @@
                 case 'text':
                 case 'markdown':
                     return `<div class="${fileType}-viewer" id="modal${fileType}Viewer">Loading...</div>`;
+                    
+                case 'word':
+                case 'excel':
+                case 'powerpoint':
+                    const encodedUrl = encodeURIComponent(currentResource.file_url);
+                    const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+                    return `
+                        <div class="office-viewer-modal" style="width: 100%; height: 100%; position: relative;">
+                            <iframe 
+                                src="${officeViewerUrl}"
+                                style="width: 100%; height: 100%; border: none;"
+                                frameborder="0"
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    `;
                     
                 default:
                     if (currentResource.featured_image_url) {
@@ -2092,6 +2171,10 @@
                 if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(format)) return 'audio';
                 if (['txt', 'text', 'plain'].includes(format)) return 'text';
                 if (['md', 'markdown'].includes(format)) return 'markdown';
+                // Office documents
+                if (['docx', 'doc'].includes(format)) return 'word';
+                if (['xlsx', 'xls'].includes(format)) return 'excel';
+                if (['pptx', 'ppt'].includes(format)) return 'powerpoint';
             }
             
             // Check file_url extension as fallback
@@ -2106,6 +2189,10 @@
                 if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(ext)) return 'audio';
                 if (['txt', 'text'].includes(ext)) return 'text';
                 if (['md', 'markdown'].includes(ext)) return 'markdown';
+                // Office documents
+                if (['docx', 'doc'].includes(ext)) return 'word';
+                if (['xlsx', 'xls'].includes(ext)) return 'excel';
+                if (['pptx', 'ppt'].includes(ext)) return 'powerpoint';
             }
             
             // Check content_type if available
@@ -2116,6 +2203,10 @@
                 if (contentType.includes('video')) return 'video';
                 if (contentType.includes('audio')) return 'audio';
                 if (contentType.includes('text')) return 'text';
+                // Office documents MIME types
+                if (contentType.includes('wordprocessingml') || contentType.includes('msword')) return 'word';
+                if (contentType.includes('spreadsheetml') || contentType.includes('ms-excel')) return 'excel';
+                if (contentType.includes('presentationml') || contentType.includes('ms-powerpoint')) return 'powerpoint';
             }
             
             // Check the type field as last resort
@@ -2137,7 +2228,7 @@
             if (!resource || !resource.file_url) return false;
             
             const fileType = detectFileType(resource);
-            const supportedTypes = ['pdf', 'image', 'text', 'markdown', 'video', 'audio'];
+            const supportedTypes = ['pdf', 'image', 'text', 'markdown', 'video', 'audio', 'word', 'excel', 'powerpoint'];
             
             return supportedTypes.includes(fileType);
         }
@@ -2179,6 +2270,15 @@
                         break;
                     case 'audio':
                         renderAudioPreview(previewContent);
+                        break;
+                    case 'word':
+                        renderWordPreview(previewContent);
+                        break;
+                    case 'excel':
+                        renderExcelPreview(previewContent);
+                        break;
+                    case 'powerpoint':
+                        renderPowerPointPreview(previewContent);
                         break;
                     default:
                         // Priority 2: For unsupported formats, use featured image if available
@@ -2433,6 +2533,147 @@
             `;
         }
         
+        // Word Document Preview (.docx, .doc)
+        function renderWordPreview(container) {
+            if (!currentResource.file_url) {
+                renderFallbackPreview(container);
+                return;
+            }
+            
+            // Encode the URL for the viewer
+            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            
+            // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
+            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+            const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            
+            container.innerHTML = `
+                <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
+                    <iframe 
+                        id="wordViewer"
+                        src="${viewerUrl}"
+                        style="width: 100%; height: 100%; border: none;"
+                        frameborder="0"
+                        allowfullscreen
+                        onerror="handleOfficeViewerError(this, '${fallbackUrl}')"
+                        onload="hideOfficeLoading()">
+                    </iframe>
+                    <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
+                        <div class="preview-spinner"></div>
+                        <p style="margin-left: 10px;">Loading Word document...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Hide loading after timeout even if iframe doesn't load
+            setTimeout(() => hideOfficeLoading(), 5000);
+        }
+        
+        // Excel Spreadsheet Preview (.xlsx, .xls)
+        function renderExcelPreview(container) {
+            if (!currentResource.file_url) {
+                renderFallbackPreview(container);
+                return;
+            }
+            
+            // Encode the URL for the viewer
+            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            
+            // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
+            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+            const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            
+            container.innerHTML = `
+                <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
+                    <iframe 
+                        id="excelViewer"
+                        src="${viewerUrl}"
+                        style="width: 100%; height: 100%; border: none;"
+                        frameborder="0"
+                        allowfullscreen
+                        onerror="handleOfficeViewerError(this, '${fallbackUrl}')"
+                        onload="hideOfficeLoading()">
+                    </iframe>
+                    <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
+                        <div class="preview-spinner"></div>
+                        <p style="margin-left: 10px;">Loading Excel spreadsheet...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Hide loading after timeout even if iframe doesn't load
+            setTimeout(() => hideOfficeLoading(), 5000);
+        }
+        
+        // PowerPoint Presentation Preview (.pptx, .ppt)
+        function renderPowerPointPreview(container) {
+            if (!currentResource.file_url) {
+                renderFallbackPreview(container);
+                return;
+            }
+            
+            // Encode the URL for the viewer
+            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            
+            // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
+            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+            const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            
+            container.innerHTML = `
+                <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
+                    <iframe 
+                        id="powerpointViewer"
+                        src="${viewerUrl}"
+                        style="width: 100%; height: 100%; border: none;"
+                        frameborder="0"
+                        allowfullscreen
+                        onerror="handleOfficeViewerError(this, '${fallbackUrl}')"
+                        onload="hideOfficeLoading()">
+                    </iframe>
+                    <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
+                        <div class="preview-spinner"></div>
+                        <p style="margin-left: 10px;">Loading PowerPoint presentation...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Hide loading after timeout even if iframe doesn't load
+            setTimeout(() => hideOfficeLoading(), 5000);
+        }
+        
+        // Handle Office viewer errors and fallback
+        window.handleOfficeViewerError = function(iframe, fallbackUrl) {
+            console.warn('Office Online Viewer failed, trying Google Docs Viewer...');
+            iframe.src = fallbackUrl;
+            
+            // If Google Docs also fails, show download option
+            iframe.onerror = function() {
+                console.error('Both viewers failed, showing download option');
+                const container = iframe.parentElement.parentElement;
+                container.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📄</div>
+                        <h3>${currentResource.title}</h3>
+                        <p style="color: #666; margin: 10px 0;">Office document preview unavailable</p>
+                        <p style="font-size: 14px; color: #999; margin-bottom: 20px;">
+                            File type: ${currentResource.file_format ? currentResource.file_format.toUpperCase() : 'Office Document'}
+                        </p>
+                        <button class="preview-btn" onclick="downloadResource()" style="background: #000; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            ⬇ Download Document
+                        </button>
+                    </div>
+                `;
+            };
+        }
+        
+        // Hide Office loading indicator
+        window.hideOfficeLoading = function() {
+            const loadingElement = document.getElementById('officeLoading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+        
         // Fallback Preview (featured image for unsupported formats or placeholder)
         function renderFallbackPreview(container) {
             // This function is only called when we can't preview the actual document
@@ -2461,6 +2702,9 @@
                 audio: '🎵',
                 text: '📝',
                 markdown: '📋',
+                word: '📘',
+                excel: '📊',
+                powerpoint: '📙',
                 unknown: '📑'
             };
             
