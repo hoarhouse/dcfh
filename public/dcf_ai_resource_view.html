@@ -5669,7 +5669,10 @@
         
         // Load annotations
         async function loadAnnotations() {
-            if (!currentResource || !window.dcfSupabase) return;
+            if (!currentResource || !window.dcfSupabase) {
+                console.log('[Annotations] Cannot load - missing resource or Supabase client');
+                return;
+            }
             
             try {
                 const { data, error } = await window.dcfSupabase
@@ -5680,7 +5683,24 @@
                     .limit(1)
                     .single();
                 
-                if (!error && data) {
+                if (error) {
+                    // Check if it's a table not found error
+                    if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+                        console.log('[Annotations] Table resource_annotations does not exist - annotations disabled');
+                        // Silently fail - annotations feature not available
+                    } else if (error.code === 'PGRST116') {
+                        // No rows found - this is fine, just means no annotations exist yet
+                        console.log('[Annotations] No annotations found for this resource');
+                    } else {
+                        // Some other error
+                        console.error('[Annotations] Error loading annotations:', error);
+                    }
+                    return;
+                }
+                
+                if (data) {
+                    console.log('[Annotations] Loading saved annotations');
+                    
                     // Restore canvas data
                     if (data.canvas_data && annotationState.ctx) {
                         const img = new Image();
@@ -5708,7 +5728,7 @@
                     }
                 }
             } catch (error) {
-                console.error('Error loading annotations:', error);
+                console.error('[Annotations] Unexpected error loading annotations:', error);
             }
         }
         
