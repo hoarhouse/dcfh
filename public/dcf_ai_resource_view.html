@@ -1035,6 +1035,227 @@
             font-size: 3rem;
             opacity: 0.5;
         }
+        
+        /* Modal/Lightbox System */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            max-width: 1400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-overlay.active .modal-container {
+            transform: scale(1);
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            color: #333;
+            z-index: 10;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-close:hover {
+            background: white;
+            color: #000;
+            transform: rotate(90deg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-content {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        /* Modal content specific styles */
+        .modal-content .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-content .pdf-viewer canvas {
+            flex: 1;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .modal-content .image-viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content .image-viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            cursor: zoom-in;
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-content .image-viewer.zoomed img {
+            cursor: move;
+            transform: scale(2);
+            max-width: none;
+            max-height: none;
+        }
+        
+        .modal-content .media-viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content .media-viewer video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+        
+        .modal-content .text-viewer,
+        .modal-content .markdown-viewer {
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        /* Body scroll lock when modal is open */
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        /* Click to open indicator for previews */
+        .preview-content {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .preview-content::after {
+            content: '🔍 Click to enlarge';
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .preview-content:hover::after {
+            opacity: 1;
+        }
+        
+        /* Mobile responsive modal */
+        @media (max-width: 768px) {
+            .modal-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .modal-close {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .modal-content {
+                padding: 10px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes modalFadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+        }
     </style>
     
     <!-- Supabase CDN - Must load first -->
@@ -1130,7 +1351,7 @@
                 <div class="preview-header">
                     <h2 class="preview-title">📄 Document Preview</h2>
                     <div class="preview-controls">
-                        <button class="preview-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+                        <button class="preview-btn" onclick="openPreviewInModal()">⛶ Fullscreen</button>
                         <button class="preview-btn" onclick="downloadResource()">⬇ Download</button>
                     </div>
                 </div>
@@ -1256,6 +1477,16 @@
     <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
+    <!-- Modal/Lightbox System -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-container" id="modalContainer">
+            <button class="modal-close" id="modalClose" aria-label="Close modal">✕</button>
+            <div class="modal-content" id="modalContent">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
     <!-- DCF Modular System - Exact order from working blog/index.html -->
     <script src="../js/dcf-core.js"></script>
     <script src="../js/dcf-ui.js"></script>
@@ -1266,6 +1497,277 @@
         // Resource data
         let currentResource = null;
         let citationFormat = 'apa';
+        let modalOpen = false;
+
+        // Modal System Functions
+        function openModal(content) {
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            
+            // Clear previous content
+            modalContent.innerHTML = '';
+            
+            // Add the new content
+            if (typeof content === 'string') {
+                modalContent.innerHTML = content;
+            } else if (content instanceof HTMLElement) {
+                modalContent.appendChild(content);
+            }
+            
+            // Show modal
+            modalOverlay.classList.add('active');
+            document.body.classList.add('modal-open');
+            modalOpen = true;
+            
+            // Store current scroll position
+            document.body.style.top = `-${window.scrollY}px`;
+        }
+        
+        function closeModal() {
+            const modalOverlay = document.getElementById('modalOverlay');
+            
+            // Hide modal
+            modalOverlay.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            modalOpen = false;
+            
+            // Restore scroll position
+            const scrollY = document.body.style.top;
+            document.body.style.top = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+            
+            // Clear modal content after animation
+            setTimeout(() => {
+                document.getElementById('modalContent').innerHTML = '';
+            }, 300);
+        }
+        
+        // Initialize modal event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close button click
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+            
+            // Overlay click (outside modal container)
+            document.getElementById('modalOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+            
+            // ESC key to close
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modalOpen) {
+                    closeModal();
+                }
+            });
+            
+            // Make preview content clickable
+            const previewContent = document.getElementById('previewContent');
+            if (previewContent) {
+                previewContent.addEventListener('click', function(e) {
+                    // Don't trigger on button clicks or controls
+                    if (e.target.tagName !== 'BUTTON' && 
+                        !e.target.closest('.pdf-controls') &&
+                        !e.target.closest('.preview-controls')) {
+                        openPreviewInModal();
+                    }
+                });
+            }
+        });
+        
+        // Open current preview in modal
+        function openPreviewInModal() {
+            if (!currentResource) return;
+            
+            const fileType = detectFileType(currentResource);
+            const modalContentHTML = getModalContent(fileType);
+            
+            openModal(modalContentHTML);
+            
+            // Re-render the preview in modal context
+            const modalContent = document.getElementById('modalContent');
+            switch(fileType) {
+                case 'pdf':
+                    renderPDFPreview(modalContent, true);
+                    break;
+                case 'image':
+                    setupModalImageViewer();
+                    break;
+                case 'video':
+                case 'audio':
+                    // Media players work as-is
+                    break;
+                case 'text':
+                    renderTextPreview(modalContent, true);
+                    break;
+                case 'markdown':
+                    renderMarkdownPreview(modalContent, true);
+                    break;
+            }
+        }
+        
+        // Get modal content based on file type
+        function getModalContent(fileType) {
+            if (!currentResource) return '';
+            
+            switch(fileType) {
+                case 'pdf':
+                    return `
+                        <div class="pdf-viewer">
+                            <canvas id="modalPdfCanvas" style="width: 100%; height: auto;"></canvas>
+                            <div class="pdf-controls">
+                                <button onclick="modalPdfPrevPage()">← Previous</button>
+                                <span id="modalPdfPageNum" style="color: white; margin: 0 1rem;">Page 1</span>
+                                <button onclick="modalPdfNextPage()">Next →</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'image':
+                    return `
+                        <div class="image-viewer" id="modalImageViewer">
+                            <img src="${currentResource.file_url || currentResource.featured_image_url}" 
+                                 alt="${currentResource.title}"
+                                 id="modalImage">
+                        </div>
+                    `;
+                    
+                case 'video':
+                    return `
+                        <div class="media-viewer">
+                            <video controls autoplay style="width: 100%; max-height: 100%;">
+                                <source src="${currentResource.file_url}" type="video/${currentResource.file_format || 'mp4'}">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    `;
+                    
+                case 'audio':
+                    return `
+                        <div class="media-viewer">
+                            <audio controls autoplay style="width: 80%;">
+                                <source src="${currentResource.file_url}" type="audio/${currentResource.file_format || 'mp3'}">
+                                Your browser does not support the audio tag.
+                            </audio>
+                        </div>
+                    `;
+                    
+                case 'text':
+                case 'markdown':
+                    return `<div class="${fileType}-viewer" id="modal${fileType}Viewer">Loading...</div>`;
+                    
+                default:
+                    if (currentResource.featured_image_url) {
+                        return `
+                            <img src="${currentResource.featured_image_url}" 
+                                 alt="${currentResource.title}" 
+                                 style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        `;
+                    }
+                    return `
+                        <div class="preview-placeholder">
+                            <div class="preview-icon">📑</div>
+                            <p>${currentResource.title}</p>
+                        </div>
+                    `;
+            }
+        }
+        
+        // Setup image viewer interactions in modal
+        function setupModalImageViewer() {
+            const viewer = document.getElementById('modalImageViewer');
+            const img = document.getElementById('modalImage');
+            
+            if (viewer && img) {
+                let isZoomed = false;
+                let isDragging = false;
+                let startX, startY, scrollLeft, scrollTop;
+                
+                img.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    isZoomed = !isZoomed;
+                    viewer.classList.toggle('zoomed');
+                    
+                    if (!isZoomed) {
+                        img.style.transform = '';
+                        img.style.left = '';
+                        img.style.top = '';
+                    }
+                });
+                
+                // Pan when zoomed
+                img.addEventListener('mousedown', function(e) {
+                    if (isZoomed) {
+                        isDragging = true;
+                        startX = e.pageX - img.offsetLeft;
+                        startY = e.pageY - img.offsetTop;
+                        img.style.cursor = 'grabbing';
+                    }
+                });
+                
+                img.addEventListener('mousemove', function(e) {
+                    if (!isDragging || !isZoomed) return;
+                    e.preventDefault();
+                    const x = e.pageX - startX;
+                    const y = e.pageY - startY;
+                    img.style.left = `${x}px`;
+                    img.style.top = `${y}px`;
+                    img.style.position = 'relative';
+                });
+                
+                img.addEventListener('mouseup', function() {
+                    isDragging = false;
+                    if (isZoomed) {
+                        img.style.cursor = 'move';
+                    }
+                });
+                
+                img.addEventListener('mouseleave', function() {
+                    isDragging = false;
+                });
+            }
+        }
+        
+        // Modal PDF navigation
+        window.modalPdfDoc = null;
+        window.modalPdfPageNum = 1;
+        window.modalPdfNumPages = 0;
+        
+        window.modalPdfPrevPage = function() {
+            if (window.modalPdfPageNum <= 1) return;
+            window.modalPdfPageNum--;
+            renderModalPdfPage(window.modalPdfPageNum);
+        }
+        
+        window.modalPdfNextPage = function() {
+            if (window.modalPdfPageNum >= window.modalPdfNumPages) return;
+            window.modalPdfPageNum++;
+            renderModalPdfPage(window.modalPdfPageNum);
+        }
+        
+        async function renderModalPdfPage(pageNum) {
+            if (!window.modalPdfDoc) return;
+            
+            const page = await window.modalPdfDoc.getPage(pageNum);
+            const canvas = document.getElementById('modalPdfCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for modal
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
+            
+            const pageNumElement = document.getElementById('modalPdfPageNum');
+            if (pageNumElement) {
+                pageNumElement.textContent = `Page ${pageNum} of ${window.modalPdfNumPages}`;
+            }
+        }
 
         // Wait for DCF system to initialize Supabase
         async function waitForSupabase() {
@@ -1521,7 +2023,7 @@
         }
         
         // PDF Preview with PDF.js
-        async function renderPDFPreview(container) {
+        async function renderPDFPreview(container, isModal = false) {
             // Debug logging
             console.log('=== PDF Preview Debug ===');
             console.log('Attempting to load PDF:', currentResource.file_url);
@@ -1552,16 +2054,23 @@
                 if (window.pdfjsLib) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     
-                    container.innerHTML = `
-                        <div class="pdf-viewer">
-                            <canvas id="pdfCanvas" style="width: 100%; height: auto;"></canvas>
-                            <div class="pdf-controls">
-                                <button onclick="pdfPrevPage()">← Previous</button>
-                                <span id="pdfPageNum" style="color: white; margin: 0 1rem;">Page 1</span>
-                                <button onclick="pdfNextPage()">Next →</button>
+                    const canvasId = isModal ? 'modalPdfCanvas' : 'pdfCanvas';
+                    const pageNumId = isModal ? 'modalPdfPageNum' : 'pdfPageNum';
+                    const prevFunc = isModal ? 'modalPdfPrevPage' : 'pdfPrevPage';
+                    const nextFunc = isModal ? 'modalPdfNextPage' : 'pdfNextPage';
+                    
+                    if (!isModal) {
+                        container.innerHTML = `
+                            <div class="pdf-viewer">
+                                <canvas id="${canvasId}" style="width: 100%; height: auto;"></canvas>
+                                <div class="pdf-controls">
+                                    <button onclick="${prevFunc}()">← Previous</button>
+                                    <span id="${pageNumId}" style="color: white; margin: 0 1rem;">Page 1</span>
+                                    <button onclick="${nextFunc}()">Next →</button>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                     
                     // Try to load PDF with better error handling
                     console.log('Loading PDF document...');
@@ -1576,12 +2085,18 @@
                     
                     loadingTask.promise.then(function(pdf) {
                         console.log('PDF loaded successfully, pages:', pdf.numPages);
-                        window.pdfDoc = pdf;
-                        window.pdfPageNum = 1;
-                        window.pdfNumPages = pdf.numPages;
                         
-                        // Render first page
-                        renderPDFPage(1);
+                        if (isModal) {
+                            window.modalPdfDoc = pdf;
+                            window.modalPdfPageNum = 1;
+                            window.modalPdfNumPages = pdf.numPages;
+                            renderModalPdfPage(1);
+                        } else {
+                            window.pdfDoc = pdf;
+                            window.pdfPageNum = 1;
+                            window.pdfNumPages = pdf.numPages;
+                            renderPDFPage(1);
+                        }
                     }).catch(function(error) {
                         console.error('PDF loading failed:', error);
                         console.log('Error details:', {
@@ -1668,9 +2183,9 @@
         }
         
         // Text Preview
-        async function renderTextPreview(container) {
+        async function renderTextPreview(container, isModal = false) {
             if (!currentResource.file_url) {
-                renderFallbackPreview(container);
+                if (!isModal) renderFallbackPreview(container);
                 return;
             }
             
@@ -1685,14 +2200,14 @@
                 `;
             } catch (error) {
                 console.error('Error loading text file:', error);
-                renderFallbackPreview(container);
+                if (!isModal) renderFallbackPreview(container);
             }
         }
         
         // Markdown Preview
-        async function renderMarkdownPreview(container) {
+        async function renderMarkdownPreview(container, isModal = false) {
             if (!currentResource.file_url) {
-                renderFallbackPreview(container);
+                if (!isModal) renderFallbackPreview(container);
                 return;
             }
             
@@ -1718,7 +2233,7 @@
                 }
             } catch (error) {
                 console.error('Error loading markdown file:', error);
-                renderFallbackPreview(container);
+                if (!isModal) renderFallbackPreview(container);
             }
         }
         
@@ -2029,14 +2544,9 @@
             });
         }
 
-        // Toggle fullscreen preview
+        // Toggle fullscreen preview (redirects to modal)
         function toggleFullscreen() {
-            const preview = document.getElementById('previewContent');
-            if (!document.fullscreenElement) {
-                preview.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            openPreviewInModal();
         }
 
         // View another resource
