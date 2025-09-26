@@ -6526,29 +6526,60 @@
             }, 10000);
         }
         
-        // Handle Office viewer errors and fallback
-        window.handleOfficeViewerError = function(iframe, fallbackUrl) {
-            console.warn('Office Online Viewer failed, trying Google Docs Viewer...');
-            iframe.src = fallbackUrl;
-            
-            // If Google Docs also fails, show download option
-            iframe.onerror = function() {
-                console.error('Both viewers failed, showing download option');
-                const container = iframe.parentElement.parentElement;
-                container.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">📄</div>
-                        <h3>${currentResource.title}</h3>
-                        <p style="color: #666; margin: 10px 0;">Office document preview unavailable</p>
-                        <p style="font-size: 14px; color: #999; margin-bottom: 20px;">
-                            File type: ${currentResource.file_format ? currentResource.file_format.toUpperCase() : 'Office Document'}
-                        </p>
-                        <button class="preview-btn" onclick="downloadResource()" style="background: #000; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                            ⬇ Download Document
-                        </button>
-                    </div>
-                `;
+        // New improved error message function for Office documents
+        function renderOfficeErrorMessage(container, fileType, message) {
+            const fileTypeLabels = {
+                'word': 'Word Document',
+                'excel': 'Excel Spreadsheet',
+                'powerpoint': 'PowerPoint Presentation'
             };
+            
+            const fileTypeIcons = {
+                'word': '📘',
+                'excel': '📊',
+                'powerpoint': '📙'
+            };
+            
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; background: white;">
+                    <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.7;">${fileTypeIcons[fileType] || '📄'}</div>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">${currentResource.title || 'Office Document'}</h3>
+                    <p style="color: #666; margin: 10px 0; max-width: 400px;">${message}</p>
+                    <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; max-width: 500px;">
+                        <p style="font-size: 14px; color: #555; margin: 5px 0;">
+                            <strong>File Type:</strong> ${fileTypeLabels[fileType] || 'Office Document'}
+                        </p>
+                        ${currentResource.file_size ? `
+                        <p style="font-size: 14px; color: #555; margin: 5px 0;">
+                            <strong>File Size:</strong> ${formatFileSize(currentResource.file_size)}
+                        </p>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button onclick="downloadResource()" style="background: #000; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                            📥 Download ${fileTypeLabels[fileType] || 'Document'}
+                        </button>
+                        ${currentResource.file_url && currentResource.file_url.startsWith('http') ? `
+                        <button onclick="window.open('${currentResource.file_url}', '_blank')" style="background: #fff; color: #000; border: 2px solid #000; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.3s;">
+                            🔗 Open in New Tab
+                        </button>` : ''}
+                    </div>
+                    <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; max-width: 500px;">
+                        <p style="font-size: 13px; color: #856404; margin: 0;">
+                            <strong>Note:</strong> Office document preview requires publicly accessible files. 
+                            Files with authentication tokens or from private storage cannot be previewed using external viewers.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Helper function to format file size
+        function formatFileSize(bytes) {
+            if (!bytes) return 'Unknown';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
         }
         
         // Hide Office loading indicator
