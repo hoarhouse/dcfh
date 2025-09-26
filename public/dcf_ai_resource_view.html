@@ -365,12 +365,23 @@
         .preview-pdf { 
             height: 900px; /* Taller for full page view */
             width: 100%; 
-            max-width: 800px; /* Reasonable max width for readability */
+            max-width: 900px; /* Reasonable max width for readability */
             margin: 0 auto; /* Center the PDF */
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 1rem; /* Add padding for breathing room */
+            box-sizing: border-box;
         } /* Portrait document orientation */
+        
+        /* PDF specific content adjustments */
+        .preview-pdf .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5; /* Light gray background for PDF area */
+            border-radius: 8px;
+            overflow: hidden;
+        }
         
         .preview-image { 
             max-height: 70vh; 
@@ -982,12 +993,14 @@
 
         /* PDF Canvas Proper Sizing */
         .pdf-canvas, #pdfCanvas {
-            width: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: auto !important;
             height: auto !important;
-            max-height: 100%;
             object-fit: contain; /* Show full page, don't crop */
             display: block;
             margin: 0 auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         /* PDF Navigation Controls */
@@ -5566,11 +5579,13 @@
                     // Only render for regular preview (not modal)
                     container.innerHTML = `
                         <div class="pdf-viewer">
-                            <canvas id="pdfCanvas" style="width: 100%; height: auto;"></canvas>
-                            <div class="pdf-controls">
-                                <button onclick="pdfPrevPage()">← Previous</button>
-                                <span id="pdfPageNum" style="color: white; margin: 0 1rem;">Page 1</span>
-                                <button onclick="pdfNextPage()">Next →</button>
+                            <div style="flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="pdfCanvas" class="pdf-canvas"></canvas>
+                            </div>
+                            <div class="pdf-navigation">
+                                <button id="prevPage" onclick="pdfPrevPage()">← Previous</button>
+                                <span id="pageInfo">Page 1 of X</span>
+                                <button id="nextPage" onclick="pdfNextPage()">Next →</button>
                             </div>
                         </div>
                     `;
@@ -5630,7 +5645,22 @@
             const canvas = document.getElementById('pdfCanvas');
             const ctx = canvas.getContext('2d');
             
-            const viewport = page.getViewport({ scale: 1.5 });
+            // Calculate scale to fit the container while showing full page
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth || 800;
+            const containerHeight = container.clientHeight || 900;
+            
+            // Get original page dimensions
+            const originalViewport = page.getViewport({ scale: 1 });
+            
+            // Calculate scale to fit width and height
+            const scaleWidth = (containerWidth * 0.9) / originalViewport.width; // 90% of container width
+            const scaleHeight = (containerHeight * 0.9) / originalViewport.height; // 90% of container height
+            
+            // Use the smaller scale to ensure full page is visible
+            const scale = Math.min(scaleWidth, scaleHeight, 2); // Max scale of 2 for quality
+            
+            const viewport = page.getViewport({ scale: scale });
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             
@@ -5639,7 +5669,23 @@
                 viewport: viewport
             }).promise;
             
-            document.getElementById('pdfPageNum').textContent = `Page ${pageNum} of ${window.pdfNumPages}`;
+            // Update page info with current and total pages
+            const pageInfo = document.getElementById('pageInfo');
+            if (pageInfo) {
+                pageInfo.textContent = `Page ${pageNum} of ${window.pdfNumPages}`;
+            } else {
+                // Fallback to old element ID
+                const oldPageNum = document.getElementById('pdfPageNum');
+                if (oldPageNum) {
+                    oldPageNum.textContent = `Page ${pageNum} of ${window.pdfNumPages}`;
+                }
+            }
+            
+            // Update navigation button states
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            if (prevBtn) prevBtn.disabled = pageNum <= 1;
+            if (nextBtn) nextBtn.disabled = pageNum >= window.pdfNumPages;
         }
         
         // PDF navigation functions
@@ -5655,8 +5701,29 @@
             renderPDFPage(window.pdfPageNum);
         }
         
-        // Image Preview with zoom
-        function renderImagePreview(container) {
+        // Detect image orientation based on aspect ratio
+        function detectImageOrientation(imageUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const aspectRatio = this.width / this.height;
+                    if (aspectRatio > 1.2) {
+                        resolve('landscape');
+                    } else if (aspectRatio < 0.8) {
+                        resolve('portrait');
+                    } else {
+                        resolve('square');
+                    }
+                };
+                img.onerror = function() {
+                    resolve('landscape'); // Default fallback
+                };
+                img.src = imageUrl;
+            });
+        }
+
+        // Image Preview with adaptive orientation
+        async function renderImagePreview(container) {
             // Priority: Use file_url for actual image files
             // Only use featured_image_url if this is actually an image resource without file_url
             if (!currentResource.file_url) {
