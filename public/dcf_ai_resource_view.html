@@ -2721,7 +2721,21 @@
             }, 3000);
         }
         
-        // Render all PDF pages in modal (scrollable)
+        // PDF Viewer State
+        let pdfViewerState = {
+            doc: null,
+            currentPage: 1,
+            numPages: 0,
+            zoom: 1,
+            rotation: 0,
+            searchText: '',
+            searchResults: [],
+            currentSearchIndex: 0,
+            pageCache: new Map(),
+            thumbnailsVisible: true
+        };
+        
+        // Enhanced PDF rendering with controls
         async function renderAllPdfPagesInModal() {
             if (!currentResource || !currentResource.file_url) {
                 console.error('No PDF URL available');
@@ -2730,7 +2744,8 @@
             
             // Show loading state
             const pagesContainer = document.getElementById('modalPdfPages');
-            const loadingElement = document.querySelector('.pdf-loading');
+            const loadingElement = document.getElementById('pdfLoading');
+            const thumbnailsContainer = document.getElementById('pdfThumbnails');
             
             if (!pagesContainer) return;
             
@@ -2758,14 +2773,27 @@
                 const numPages = pdf.numPages;
                 console.log(`PDF loaded with ${numPages} pages`);
                 
+                // Store in state
+                pdfViewerState.doc = pdf;
+                pdfViewerState.numPages = numPages;
+                pdfViewerState.currentPage = 1;
+                
+                // Update UI
+                document.getElementById('pdfPageInfo').textContent = `/ ${numPages}`;
+                document.getElementById('pdfPageInput').max = numPages;
+                
                 // Clear loading state
                 if (loadingElement) {
                     loadingElement.style.display = 'none';
                 }
                 pagesContainer.innerHTML = '';
+                thumbnailsContainer.innerHTML = '';
                 
                 // Store PDF document globally for potential future use
                 window.modalPdfDocument = pdf;
+                
+                // Render thumbnails
+                renderPdfThumbnails(pdf, numPages);
                 
                 // Optimize rendering based on number of pages
                 if (numPages <= 10) {
