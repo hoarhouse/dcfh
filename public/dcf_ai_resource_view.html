@@ -4133,37 +4133,12 @@
                     }
                 }, 100);
                 
-                // Optimize rendering based on number of pages
-                if (numPages <= 10) {
-                    // For small PDFs, render all pages at once
-                    const renderPromises = [];
-                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                        renderPromises.push(renderSinglePdfPage(pdf, pageNum, pagesContainer));
-                    }
-                    await Promise.all(renderPromises);
-                    console.log('All PDF pages rendered successfully');
-                } else {
-                    // For larger PDFs, render in batches for better performance
-                    const batchSize = 5;
-                    
-                    // Render first batch immediately
-                    for (let pageNum = 1; pageNum <= Math.min(batchSize, numPages); pageNum++) {
-                        await renderSinglePdfPage(pdf, pageNum, pagesContainer);
-                    }
-                    
-                    // Render remaining pages in background
-                    setTimeout(async () => {
-                        for (let pageNum = batchSize + 1; pageNum <= numPages; pageNum++) {
-                            await renderSinglePdfPage(pdf, pageNum, pagesContainer);
-                            
-                            // Small delay between pages to keep UI responsive
-                            if (pageNum % batchSize === 0) {
-                                await new Promise(resolve => setTimeout(resolve, 100));
-                            }
-                        }
-                        console.log('All remaining PDF pages rendered');
-                    }, 200);
-                }
+                // Render only the current page (page 1) initially
+                await renderSinglePdfPage(pdf, 1, pagesContainer);
+                console.log('PDF page 1 rendered successfully');
+                
+                // Set current page to 1
+                pdfViewerState.currentPage = 1;
                 
             } catch (error) {
                 console.error('Error loading PDF in modal:', error);
