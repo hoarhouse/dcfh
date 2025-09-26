@@ -5630,7 +5630,16 @@
         
         // Save annotations
         async function saveAnnotations() {
-            if (!currentResource || !window.dcfSupabase) return;
+            if (!currentResource || !window.dcfSupabase) {
+                console.log('[Annotations] Cannot save - missing resource or Supabase client');
+                return;
+            }
+            
+            if (!currentResource.id) {
+                console.error('[Annotations] Cannot save - resource has no ID');
+                showToast('Cannot save annotations - invalid resource', 'error');
+                return;
+            }
             
             try {
                 // Convert canvas to data URL
@@ -5646,11 +5655,14 @@
                         created_at: new Date()
                     });
                 
-                if (!error) {
+                if (error) {
+                    console.error('[Annotations] Save error:', error);
+                    showToast('Failed to save annotations', 'error');
+                } else {
                     showToast('Annotations saved successfully');
                 }
             } catch (error) {
-                console.error('Error saving annotations:', error);
+                console.error('[Annotations] Error saving annotations:', error);
                 showToast('Failed to save annotations', 'error');
             }
         }
@@ -5940,6 +5952,7 @@
                     if (resource) {
                         currentResource = resource;
                         console.log('Loaded resource:', resource.title);
+                        console.log('Resource category:', resource.category);
                         
                         // Add default values for missing fields
                         currentResource.author_title = currentResource.author_title || 'Senior Researcher';
@@ -5952,6 +5965,12 @@
                         currentResource.rating_average = currentResource.rating_average || 0;
                         currentResource.download_count = currentResource.download_count || 0;
                         currentResource.file_size = currentResource.file_size || 0;
+                        
+                        // Validate category field - don't set a default, but ensure it's not the string 'undefined'
+                        if (currentResource.category === 'undefined' || currentResource.category === 'null') {
+                            currentResource.category = null;
+                            console.warn('Invalid category value detected, setting to null');
+                        }
                         
                         // Format type for display
                         if (currentResource.type) {
