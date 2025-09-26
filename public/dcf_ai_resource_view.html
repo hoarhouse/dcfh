@@ -1279,7 +1279,7 @@
         
         #modalPdfPages {
             overflow-y: auto;
-            max-height: calc(100vh - 200px);
+            height: 100%;
             scroll-behavior: smooth;
         }
         
@@ -4185,15 +4185,21 @@
                 const context = canvas.getContext('2d');
                 
                 // Calculate scale to fit modal width (with padding)
-                const modalWidth = container.clientWidth || 900;
-                const desiredWidth = Math.min(modalWidth - 40, 900); // Max width of 900px
+                const modalContainer = document.getElementById('modalContainer');
+                const modalWidth = container.clientWidth || modalContainer?.clientWidth || 900;
+                const desiredWidth = Math.min(modalWidth - 80, 1200); // Increased max width and padding
+                
+                console.log('[PDF Render] Container width:', container.clientWidth, 'Modal width:', modalWidth, 'Desired width:', desiredWidth);
                 
                 // Get viewport at scale 1 to get original dimensions
                 const originalViewport = page.getViewport({ scale: 1.0 });
                 
                 // Calculate scale to fit desired width
-                const scale = desiredWidth / originalViewport.width;
+                const scale = Math.max(desiredWidth / originalViewport.width, 1.0); // Ensure minimum scale of 1.0
                 const viewport = page.getViewport({ scale: scale });
+                
+                console.log('[PDF Render] Original dimensions:', originalViewport.width, 'x', originalViewport.height);
+                console.log('[PDF Render] Scale:', scale, 'Final dimensions:', viewport.width, 'x', viewport.height);
                 
                 // Set canvas dimensions
                 canvas.width = viewport.width;
