@@ -6617,11 +6617,38 @@
                 // Show success message
                 showToast('Download starting...');
                 
-                // Force download instead of opening in browser
+                const fileUrl = currentResource.file_url;
+                const fileName = currentResource.title || 'document';
+                
+                // Try to fetch and download as blob for same-origin or CORS-enabled URLs
+                try {
+                    const response = await fetch(fileUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up the blob URL
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                        return;
+                    }
+                } catch (fetchError) {
+                    console.log('Fetch failed, falling back to direct download:', fetchError);
+                }
+                
+                // Fallback: Open in new window with download suggestion
+                // This works for cross-origin URLs but may open instead of download
                 const link = document.createElement('a');
-                link.href = currentResource.file_url;
-                link.download = currentResource.title || 'document';
-                link.target = '_self';
+                link.href = fileUrl;
+                link.download = fileName;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
