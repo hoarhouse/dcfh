@@ -1775,10 +1775,51 @@
                 window.modalPdfDocument = null;
             }
             
+            // Clean up image viewer event listeners
+            cleanupImageViewer();
+            
             // Clear modal content after animation
             setTimeout(() => {
                 document.getElementById('modalContent').innerHTML = '';
             }, 300);
+        }
+        
+        // Clean up image viewer resources
+        function cleanupImageViewer() {
+            const viewer = document.getElementById('modalImageViewer');
+            const img = document.getElementById('modalImage');
+            
+            if (viewer) {
+                viewer.removeEventListener('wheel', handleWheelZoom);
+            }
+            
+            if (img) {
+                img.removeEventListener('mousedown', startDrag);
+            }
+            
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('keydown', handleImageKeyboard);
+            
+            // Clear controls timeout
+            if (imageViewerState.controlsTimeout) {
+                clearTimeout(imageViewerState.controlsTimeout);
+                imageViewerState.controlsTimeout = null;
+            }
+            
+            // Reset state
+            imageViewerState = {
+                zoom: 1,
+                rotation: 0,
+                translateX: 0,
+                translateY: 0,
+                isDragging: false,
+                startX: 0,
+                startY: 0,
+                naturalWidth: 0,
+                naturalHeight: 0,
+                controlsTimeout: null
+            };
         }
         
         // Initialize modal event listeners
@@ -1975,59 +2016,386 @@
             }
         }
         
-        // Setup image viewer interactions in modal
+        // Enhanced image viewer state
+        let imageViewerState = {
+            zoom: 1,
+            rotation: 0,
+            translateX: 0,
+            translateY: 0,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            naturalWidth: 0,
+            naturalHeight: 0,
+            controlsTimeout: null
+        };
+        
+        // Setup enhanced image viewer interactions in modal
         function setupModalImageViewer() {
             const viewer = document.getElementById('modalImageViewer');
             const img = document.getElementById('modalImage');
+            const controls = document.getElementById('imageControls');
             
-            if (viewer && img) {
-                let isZoomed = false;
-                let isDragging = false;
-                let startX, startY, scrollLeft, scrollTop;
-                
-                img.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    isZoomed = !isZoomed;
-                    viewer.classList.toggle('zoomed');
-                    
-                    if (!isZoomed) {
-                        img.style.transform = '';
-                        img.style.left = '';
-                        img.style.top = '';
-                    }
-                });
-                
-                // Pan when zoomed
-                img.addEventListener('mousedown', function(e) {
-                    if (isZoomed) {
-                        isDragging = true;
-                        startX = e.pageX - img.offsetLeft;
-                        startY = e.pageY - img.offsetTop;
-                        img.style.cursor = 'grabbing';
-                    }
-                });
-                
-                img.addEventListener('mousemove', function(e) {
-                    if (!isDragging || !isZoomed) return;
-                    e.preventDefault();
-                    const x = e.pageX - startX;
-                    const y = e.pageY - startY;
-                    img.style.left = `${x}px`;
-                    img.style.top = `${y}px`;
-                    img.style.position = 'relative';
-                });
-                
-                img.addEventListener('mouseup', function() {
-                    isDragging = false;
-                    if (isZoomed) {
-                        img.style.cursor = 'move';
-                    }
-                });
-                
-                img.addEventListener('mouseleave', function() {
-                    isDragging = false;
-                });
+            if (!viewer || !img) return;
+            
+            // Reset state
+            imageViewerState = {
+                zoom: 1,
+                rotation: 0,
+                translateX: 0,
+                translateY: 0,
+                isDragging: false,
+                startX: 0,
+                startY: 0,
+                naturalWidth: 0,
+                naturalHeight: 0,
+                controlsTimeout: null
+            };
+            
+            // Wait for image to load to get natural dimensions
+            if (img.complete) {
+                imageViewerState.naturalWidth = img.naturalWidth;
+                imageViewerState.naturalHeight = img.naturalHeight;
+            } else {
+                img.onload = function() {
+                    imageViewerState.naturalWidth = img.naturalWidth;
+                    imageViewerState.naturalHeight = img.naturalHeight;
+                };
             }
+            
+            // Auto-hide controls
+            setupControlsAutoHide();
+            
+            // Mouse wheel zoom
+            viewer.addEventListener('wheel', handleWheelZoom, { passive: false });
+            
+            // Drag to pan
+            img.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+            
+            // Touch support
+            setupTouchGestures(viewer, img);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleImageKeyboard);
+            
+            // Update initial display
+            updateImageTransform();
+        }
+        
+        // Control functions
+        window.zoomIn = function() {
+            const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+            const currentIndex = zoomLevels.findIndex(z => z >= imageViewerState.zoom);
+            if (currentIndex < zoomLevels.length - 1) {
+                setZoom(zoomLevels[currentIndex + 1]);
+            }
+        };
+        
+        window.zoomOut = function() {
+            const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+            const currentIndex = zoomLevels.findIndex(z => z >= imageViewerState.zoom);
+            if (currentIndex > 0) {
+                setZoom(zoomLevels[currentIndex - 1]);
+            }
+        };
+        
+        window.fitToScreen = function() {
+            const viewer = document.getElementById('modalImageViewer');
+            const img = document.getElementById('modalImage');
+            if (!viewer || !img) return;
+            
+            const viewerRect = viewer.getBoundingClientRect();
+            const scaleX = viewerRect.width / imageViewerState.naturalWidth;
+            const scaleY = (viewerRect.height - 100) / imageViewerState.naturalHeight; // Account for controls
+            const scale = Math.min(scaleX, scaleY, 1);
+            
+            setZoom(scale);
+            imageViewerState.translateX = 0;
+            imageViewerState.translateY = 0;
+            updateImageTransform();
+        };
+        
+        window.actualSize = function() {
+            setZoom(1);
+            imageViewerState.translateX = 0;
+            imageViewerState.translateY = 0;
+            updateImageTransform();
+        };
+        
+        window.rotateLeft = function() {
+            imageViewerState.rotation = (imageViewerState.rotation - 90) % 360;
+            updateImageTransform();
+        };
+        
+        window.rotateRight = function() {
+            imageViewerState.rotation = (imageViewerState.rotation + 90) % 360;
+            updateImageTransform();
+        };
+        
+        window.resetImage = function() {
+            imageViewerState.zoom = 1;
+            imageViewerState.rotation = 0;
+            imageViewerState.translateX = 0;
+            imageViewerState.translateY = 0;
+            updateImageTransform();
+            updateZoomIndicator();
+        };
+        
+        // Helper functions
+        function setZoom(newZoom) {
+            // Clamp zoom between 0.25 and 3
+            imageViewerState.zoom = Math.max(0.25, Math.min(3, newZoom));
+            
+            // Reset translation if zooming out to fit
+            if (imageViewerState.zoom <= 1) {
+                imageViewerState.translateX = 0;
+                imageViewerState.translateY = 0;
+            }
+            
+            updateImageTransform();
+            updateZoomIndicator();
+        }
+        
+        function updateImageTransform() {
+            const img = document.getElementById('modalImage');
+            if (!img) return;
+            
+            const transform = `
+                translate(${imageViewerState.translateX}px, ${imageViewerState.translateY}px)
+                scale(${imageViewerState.zoom})
+                rotate(${imageViewerState.rotation}deg)
+            `;
+            
+            img.style.transform = transform;
+            
+            // Update cursor based on zoom
+            const viewer = document.getElementById('modalImageViewer');
+            if (viewer) {
+                if (imageViewerState.zoom > 1) {
+                    img.style.cursor = 'move';
+                    viewer.classList.add('zoomed');
+                } else {
+                    img.style.cursor = 'zoom-in';
+                    viewer.classList.remove('zoomed');
+                }
+            }
+        }
+        
+        function updateZoomIndicator() {
+            const indicator = document.getElementById('zoomIndicator');
+            if (indicator) {
+                indicator.textContent = `${Math.round(imageViewerState.zoom * 100)}%`;
+            }
+        }
+        
+        function handleWheelZoom(e) {
+            e.preventDefault();
+            
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = imageViewerState.zoom * delta;
+            
+            // Get mouse position relative to image
+            const viewer = e.currentTarget;
+            const rect = viewer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            setZoom(newZoom);
+            showControlsTemporarily();
+        }
+        
+        function startDrag(e) {
+            if (imageViewerState.zoom <= 1) return;
+            
+            imageViewerState.isDragging = true;
+            imageViewerState.startX = e.clientX - imageViewerState.translateX;
+            imageViewerState.startY = e.clientY - imageViewerState.translateY;
+            
+            const viewer = document.getElementById('modalImageViewer');
+            if (viewer) viewer.classList.add('dragging');
+            
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!imageViewerState.isDragging) return;
+            
+            e.preventDefault();
+            
+            imageViewerState.translateX = e.clientX - imageViewerState.startX;
+            imageViewerState.translateY = e.clientY - imageViewerState.startY;
+            
+            // Apply bounds to prevent image from going too far
+            const maxTranslate = (imageViewerState.zoom - 1) * 200;
+            imageViewerState.translateX = Math.max(-maxTranslate, Math.min(maxTranslate, imageViewerState.translateX));
+            imageViewerState.translateY = Math.max(-maxTranslate, Math.min(maxTranslate, imageViewerState.translateY));
+            
+            updateImageTransform();
+        }
+        
+        function endDrag() {
+            imageViewerState.isDragging = false;
+            const viewer = document.getElementById('modalImageViewer');
+            if (viewer) viewer.classList.remove('dragging');
+        }
+        
+        function handleImageKeyboard(e) {
+            if (!modalOpen) return;
+            
+            const img = document.getElementById('modalImage');
+            if (!img) return;
+            
+            switch(e.key) {
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    zoomIn();
+                    break;
+                case '-':
+                case '_':
+                    e.preventDefault();
+                    zoomOut();
+                    break;
+                case '0':
+                    e.preventDefault();
+                    actualSize();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    fitToScreen();
+                    break;
+                case 'r':
+                case 'R':
+                    e.preventDefault();
+                    rotateRight();
+                    break;
+                case 'ArrowUp':
+                    if (imageViewerState.zoom > 1) {
+                        e.preventDefault();
+                        imageViewerState.translateY += 50;
+                        updateImageTransform();
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (imageViewerState.zoom > 1) {
+                        e.preventDefault();
+                        imageViewerState.translateY -= 50;
+                        updateImageTransform();
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (imageViewerState.zoom > 1) {
+                        e.preventDefault();
+                        imageViewerState.translateX += 50;
+                        updateImageTransform();
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (imageViewerState.zoom > 1) {
+                        e.preventDefault();
+                        imageViewerState.translateX -= 50;
+                        updateImageTransform();
+                    }
+                    break;
+            }
+            
+            showControlsTemporarily();
+        }
+        
+        function setupTouchGestures(viewer, img) {
+            let touches = [];
+            let lastTouchEnd = 0;
+            let initialDistance = 0;
+            let initialZoom = 1;
+            
+            viewer.addEventListener('touchstart', function(e) {
+                touches = Array.from(e.touches);
+                
+                if (touches.length === 2) {
+                    // Pinch zoom start
+                    const dx = touches[0].clientX - touches[1].clientX;
+                    const dy = touches[0].clientY - touches[1].clientY;
+                    initialDistance = Math.sqrt(dx * dx + dy * dy);
+                    initialZoom = imageViewerState.zoom;
+                } else if (touches.length === 1 && imageViewerState.zoom > 1) {
+                    // Start pan
+                    imageViewerState.isDragging = true;
+                    imageViewerState.startX = touches[0].clientX - imageViewerState.translateX;
+                    imageViewerState.startY = touches[0].clientY - imageViewerState.translateY;
+                }
+            });
+            
+            viewer.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                touches = Array.from(e.touches);
+                
+                if (touches.length === 2) {
+                    // Pinch zoom
+                    const dx = touches[0].clientX - touches[1].clientX;
+                    const dy = touches[0].clientY - touches[1].clientY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const scale = distance / initialDistance;
+                    
+                    setZoom(initialZoom * scale);
+                } else if (touches.length === 1 && imageViewerState.isDragging) {
+                    // Pan
+                    imageViewerState.translateX = touches[0].clientX - imageViewerState.startX;
+                    imageViewerState.translateY = touches[0].clientY - imageViewerState.startY;
+                    updateImageTransform();
+                }
+            });
+            
+            viewer.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                
+                // Double tap to zoom
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                    if (imageViewerState.zoom > 1) {
+                        resetImage();
+                    } else {
+                        setZoom(2);
+                    }
+                }
+                
+                lastTouchEnd = now;
+                imageViewerState.isDragging = false;
+                touches = [];
+            });
+        }
+        
+        function setupControlsAutoHide() {
+            const controls = document.getElementById('imageControls');
+            const viewer = document.getElementById('modalImageViewer');
+            
+            if (!controls || !viewer) return;
+            
+            // Show controls on mouse movement
+            viewer.addEventListener('mousemove', showControlsTemporarily);
+            
+            // Always show controls on touch devices
+            if ('ontouchstart' in window) {
+                controls.classList.remove('hidden');
+            }
+        }
+        
+        function showControlsTemporarily() {
+            const controls = document.getElementById('imageControls');
+            if (!controls) return;
+            
+            controls.classList.remove('hidden');
+            
+            // Clear existing timeout
+            if (imageViewerState.controlsTimeout) {
+                clearTimeout(imageViewerState.controlsTimeout);
+            }
+            
+            // Hide after 3 seconds of inactivity
+            imageViewerState.controlsTimeout = setTimeout(() => {
+                controls.classList.add('hidden');
+            }, 3000);
         }
         
         // Render all PDF pages in modal (scrollable)
