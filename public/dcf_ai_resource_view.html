@@ -6367,39 +6367,19 @@
                 return;
             }
             
-            // Encode the URL for the viewer
-            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            // Check if URL is publicly accessible
+            const isPublicUrl = !currentResource.file_url.includes('token=') && 
+                               !currentResource.file_url.includes('X-Amz-') &&
+                               (currentResource.file_url.startsWith('http://') || 
+                                currentResource.file_url.startsWith('https://'));
             
-            // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
-            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
-            const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            console.log('[Office Viewer] Excel Spreadsheet Debug:');
+            console.log('- File URL:', currentResource.file_url);
+            console.log('- Is Public URL:', isPublicUrl);
             
-            container.innerHTML = `
-                <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
-                    <iframe 
-                        id="excelViewer"
-                        src="${viewerUrl}"
-                        style="width: 100%; height: 100%; border: none;"
-                        frameborder="0"
-                        allowfullscreen
-                        onerror="handleOfficeViewerError(this, '${fallbackUrl}')"
-                        onload="hideOfficeLoading()">
-                    </iframe>
-                    <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
-                        <div class="preview-spinner"></div>
-                        <p style="margin-left: 10px;">Loading Excel spreadsheet...</p>
-                    </div>
-                </div>
-            `;
-            
-            // Hide loading after timeout even if iframe doesn't load
-            setTimeout(() => hideOfficeLoading(), 5000);
-        }
-        
-        // PowerPoint Presentation Preview (.pptx, .ppt)
-        function renderPowerPointPreview(container) {
-            if (!currentResource.file_url) {
-                renderFallbackPreview(container);
+            if (!isPublicUrl) {
+                console.warn('[Office Viewer] File requires authentication, external viewers will not work');
+                renderOfficeErrorMessage(container, 'excel', 'This spreadsheet requires authentication and cannot be previewed with external viewers.');
                 return;
             }
             
@@ -6410,6 +6390,92 @@
             const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
             const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
             
+            console.log('[Office Viewer] Primary URL:', viewerUrl);
+            console.log('[Office Viewer] Fallback URL:', fallbackUrl);
+            
+            container.innerHTML = `
+                <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
+                    <iframe 
+                        id="excelViewer"
+                        src="${viewerUrl}"
+                        style="width: 100%; height: 100%; border: none;"
+                        frameborder="0"
+                        allowfullscreen>
+                    </iframe>
+                    <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
+                        <div class="preview-spinner"></div>
+                        <p style="margin-left: 10px;">Loading Excel spreadsheet...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Setup proper error handling with event listeners
+            const iframe = document.getElementById('excelViewer');
+            if (iframe) {
+                let errorCount = 0;
+                
+                iframe.addEventListener('load', function() {
+                    console.log('[Office Viewer] Excel spreadsheet loaded successfully');
+                    hideOfficeLoading();
+                });
+                
+                iframe.addEventListener('error', function() {
+                    errorCount++;
+                    console.warn(`[Office Viewer] Excel viewer error (attempt ${errorCount})`);
+                    
+                    if (errorCount === 1) {
+                        console.log('[Office Viewer] Trying Google Docs fallback viewer...');
+                        iframe.src = fallbackUrl;
+                    } else {
+                        console.error('[Office Viewer] Both viewers failed');
+                        renderOfficeErrorMessage(container, 'excel', 'Unable to load spreadsheet preview. The file may be too large or in an unsupported format.');
+                    }
+                });
+            }
+            
+            // Hide loading after timeout even if iframe doesn't load
+            setTimeout(() => {
+                const loading = document.getElementById('officeLoading');
+                if (loading && loading.style.display !== 'none') {
+                    console.warn('[Office Viewer] Timeout reached, hiding loader');
+                    hideOfficeLoading();
+                }
+            }, 10000);
+        }
+        
+        // PowerPoint Presentation Preview (.pptx, .ppt)
+        function renderPowerPointPreview(container) {
+            if (!currentResource.file_url) {
+                renderFallbackPreview(container);
+                return;
+            }
+            
+            // Check if URL is publicly accessible
+            const isPublicUrl = !currentResource.file_url.includes('token=') && 
+                               !currentResource.file_url.includes('X-Amz-') &&
+                               (currentResource.file_url.startsWith('http://') || 
+                                currentResource.file_url.startsWith('https://'));
+            
+            console.log('[Office Viewer] PowerPoint Presentation Debug:');
+            console.log('- File URL:', currentResource.file_url);
+            console.log('- Is Public URL:', isPublicUrl);
+            
+            if (!isPublicUrl) {
+                console.warn('[Office Viewer] File requires authentication, external viewers will not work');
+                renderOfficeErrorMessage(container, 'powerpoint', 'This presentation requires authentication and cannot be previewed with external viewers.');
+                return;
+            }
+            
+            // Encode the URL for the viewer
+            const encodedUrl = encodeURIComponent(currentResource.file_url);
+            
+            // Try Microsoft Office Online Viewer first, fallback to Google Docs Viewer
+            const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+            const fallbackUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
+            
+            console.log('[Office Viewer] Primary URL:', viewerUrl);
+            console.log('[Office Viewer] Fallback URL:', fallbackUrl);
+            
             container.innerHTML = `
                 <div class="office-viewer" style="width: 100%; height: 100%; position: relative;">
                     <iframe 
@@ -6417,9 +6483,7 @@
                         src="${viewerUrl}"
                         style="width: 100%; height: 100%; border: none;"
                         frameborder="0"
-                        allowfullscreen
-                        onerror="handleOfficeViewerError(this, '${fallbackUrl}')"
-                        onload="hideOfficeLoading()">
+                        allowfullscreen>
                     </iframe>
                     <div class="office-loading" id="officeLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: white;">
                         <div class="preview-spinner"></div>
@@ -6428,8 +6492,38 @@
                 </div>
             `;
             
+            // Setup proper error handling with event listeners
+            const iframe = document.getElementById('powerpointViewer');
+            if (iframe) {
+                let errorCount = 0;
+                
+                iframe.addEventListener('load', function() {
+                    console.log('[Office Viewer] PowerPoint presentation loaded successfully');
+                    hideOfficeLoading();
+                });
+                
+                iframe.addEventListener('error', function() {
+                    errorCount++;
+                    console.warn(`[Office Viewer] PowerPoint viewer error (attempt ${errorCount})`);
+                    
+                    if (errorCount === 1) {
+                        console.log('[Office Viewer] Trying Google Docs fallback viewer...');
+                        iframe.src = fallbackUrl;
+                    } else {
+                        console.error('[Office Viewer] Both viewers failed');
+                        renderOfficeErrorMessage(container, 'powerpoint', 'Unable to load presentation preview. The file may be too large or in an unsupported format.');
+                    }
+                });
+            }
+            
             // Hide loading after timeout even if iframe doesn't load
-            setTimeout(() => hideOfficeLoading(), 5000);
+            setTimeout(() => {
+                const loading = document.getElementById('officeLoading');
+                if (loading && loading.style.display !== 'none') {
+                    console.warn('[Office Viewer] Timeout reached, hiding loader');
+                    hideOfficeLoading();
+                }
+            }, 10000);
         }
         
         // Handle Office viewer errors and fallback
