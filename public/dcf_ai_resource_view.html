@@ -4303,6 +4303,49 @@
             pdfGoToPage(pdfViewerState.numPages);
         };
         
+        // Update current page based on scroll position
+        function updateCurrentPageFromScroll(container) {
+            const pages = container.querySelectorAll('.pdf-page-wrapper');
+            if (!pages.length) return;
+            
+            const containerRect = container.getBoundingClientRect();
+            const containerMiddle = containerRect.top + containerRect.height / 2;
+            
+            let currentPage = 1;
+            let minDistance = Infinity;
+            
+            // Find the page closest to the middle of the viewport
+            pages.forEach((page, index) => {
+                const pageRect = page.getBoundingClientRect();
+                const pageMiddle = pageRect.top + pageRect.height / 2;
+                const distance = Math.abs(pageMiddle - containerMiddle);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    currentPage = index + 1;
+                }
+            });
+            
+            // Update state and UI without scrolling
+            if (pdfViewerState.currentPage !== currentPage) {
+                pdfViewerState.currentPage = currentPage;
+                const pageInput = document.getElementById('pdfPageInput');
+                if (pageInput) {
+                    pageInput.value = currentPage;
+                }
+                
+                // Update thumbnail highlight
+                document.querySelectorAll('.pdf-thumbnail').forEach(thumb => {
+                    thumb.classList.remove('active');
+                    if (parseInt(thumb.dataset.page) === currentPage) {
+                        thumb.classList.add('active');
+                    }
+                });
+                
+                console.log(`[PDF Nav] Scroll updated to page ${currentPage}`);
+            }
+        }
+        
         // Zoom functions
         window.pdfZoomIn = function() {
             const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
