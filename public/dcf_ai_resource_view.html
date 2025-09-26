@@ -3005,10 +3005,20 @@
             
             // Store current scroll position
             document.body.style.top = `-${window.scrollY}px`;
+            
+            // Initialize advanced features
+            setTimeout(() => {
+                initializeAdvancedFeatures();
+            }, 100);
         }
         
         function closeModal() {
             const modalOverlay = document.getElementById('modalOverlay');
+            
+            // Clean up advanced features
+            stopAutoAdvance();
+            clearAnnotations();
+            document.getElementById('sharePanel')?.classList.remove('show');
             
             // Hide modal
             modalOverlay.classList.remove('active');
@@ -4997,6 +5007,668 @@
             
             // Initialize
             updateVolumeIcon();
+        }
+        
+        // Carousel System
+        let carouselState = {
+            currentIndex: 0,
+            resources: [],
+            autoAdvance: false,
+            autoAdvanceTimer: null,
+            timerDuration: 5000
+        };
+        
+        // Initialize carousel with related resources
+        async function initializeCarousel() {
+            try {
+                // Load related resources from the same category
+                if (!currentResource || !window.dcfSupabase) return;
+                
+                const { data: relatedResources, error } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*')
+                    .eq('category', currentResource.category)
+                    .eq('status', 'approved')
+                    .neq('id', currentResource.id)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (!error && relatedResources) {
+                    // Add current resource at the beginning
+                    carouselState.resources = [currentResource, ...relatedResources];
+                    carouselState.currentIndex = 0;
+                    
+                    // Update UI
+                    updateCarouselIndicator();
+                    renderCarouselThumbnails();
+                    updateCarouselButtons();
+                    
+                    // Show carousel controls if multiple resources
+                    if (carouselState.resources.length > 1) {
+                        document.getElementById('carouselPrev').style.display = 'block';
+                        document.getElementById('carouselNext').style.display = 'block';
+                        document.getElementById('carouselIndicator').style.display = 'block';
+                        document.getElementById('carouselThumbnails').style.display = 'flex';
+                        document.getElementById('autoAdvanceControls').style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading carousel resources:', error);
+            }
+        }
+        
+        // Update carousel indicator
+        function updateCarouselIndicator() {
+            const indicator = document.getElementById('carouselIndicator');
+            if (indicator && carouselState.resources.length > 0) {
+                indicator.textContent = `${carouselState.currentIndex + 1} of ${carouselState.resources.length}`;
+            }
+        }
+        
+        // Render carousel thumbnails
+        function renderCarouselThumbnails() {
+            const container = document.getElementById('carouselThumbnails');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            carouselState.resources.forEach((resource, index) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'carousel-thumbnail';
+                if (index === carouselState.currentIndex) {
+                    thumb.classList.add('active');
+                }
+                
+                // Create thumbnail based on file type
+                const fileType = detectFileType(resource);
+                if (fileType === 'image' && resource.file_url) {
+                    const img = document.createElement('img');
+                    img.src = resource.file_url;
+                    img.alt = resource.title || '';
+                    thumb.appendChild(img);
+                } else if (resource.featured_image_url) {
+                    const img = document.createElement('img');
+                    img.src = resource.featured_image_url;
+                    img.alt = resource.title || '';
+                    thumb.appendChild(img);
+                } else {
+                    // Placeholder icon based on type
+                    thumb.innerHTML = getFileTypeIcon(fileType);
+                }
+                
+                thumb.addEventListener('click', () => navigateToSlide(index));
+                container.appendChild(thumb);
+            });
+        }
+        
+        // Navigate to specific slide
+        async function navigateToSlide(index) {
+            if (index < 0 || index >= carouselState.resources.length) return;
+            
+            carouselState.currentIndex = index;
+            currentResource = carouselState.resources[index];
+            
+            // Re-render modal content with new resource
+            const fileType = detectFileType(currentResource);
+            const modalContent = getModalContent(fileType);
+            document.getElementById('modalContent').innerHTML = modalContent;
+            
+            // Re-initialize appropriate viewer
+            switch(fileType) {
+                case 'pdf':
+                    renderAllPdfPagesInModal();
+                    break;
+                case 'image':
+                    setupModalImageViewer();
+                    break;
+                case 'video':
+                    setupVideoPlayer();
+                    break;
+                case 'audio':
+                    setupAudioPlayer();
+                    break;
+            }
+            
+            // Update UI
+            updateCarouselIndicator();
+            updateCarouselButtons();
+            updateActiveThumbnail();
+        }
+        
+        // Update carousel navigation buttons
+        function updateCarouselButtons() {
+            const prevBtn = document.getElementById('carouselPrev');
+            const nextBtn = document.getElementById('carouselNext');
+            
+            if (prevBtn) {
+                prevBtn.disabled = carouselState.currentIndex === 0;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = carouselState.currentIndex === carouselState.resources.length - 1;
+            }
+        }
+        
+        // Update active thumbnail
+        function updateActiveThumbnail() {
+            const thumbnails = document.querySelectorAll('.carousel-thumbnail');
+            thumbnails.forEach((thumb, index) => {
+                if (index === carouselState.currentIndex) {
+                    thumb.classList.add('active');
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
+        }
+        
+        // Carousel navigation
+        document.getElementById('carouselPrev')?.addEventListener('click', () => {
+            if (carouselState.currentIndex > 0) {
+                navigateToSlide(carouselState.currentIndex - 1);
+            }
+        });
+        
+        document.getElementById('carouselNext')?.addEventListener('click', () => {
+            if (carouselState.currentIndex < carouselState.resources.length - 1) {
+                navigateToSlide(carouselState.currentIndex + 1);
+            }
+        });
+        
+        // Auto-advance functionality
+        document.getElementById('autoAdvanceToggle')?.addEventListener('click', function() {
+            carouselState.autoAdvance = !carouselState.autoAdvance;
+            this.classList.toggle('active');
+            
+            if (carouselState.autoAdvance) {
+                startAutoAdvance();
+            } else {
+                stopAutoAdvance();
+            }
+        });
+        
+        document.getElementById('timerInput')?.addEventListener('change', function() {
+            carouselState.timerDuration = parseInt(this.value) * 1000;
+            if (carouselState.autoAdvance) {
+                stopAutoAdvance();
+                startAutoAdvance();
+            }
+        });
+        
+        function startAutoAdvance() {
+            stopAutoAdvance();
+            carouselState.autoAdvanceTimer = setInterval(() => {
+                if (carouselState.currentIndex < carouselState.resources.length - 1) {
+                    navigateToSlide(carouselState.currentIndex + 1);
+                } else {
+                    navigateToSlide(0); // Loop back to start
+                }
+            }, carouselState.timerDuration);
+        }
+        
+        function stopAutoAdvance() {
+            if (carouselState.autoAdvanceTimer) {
+                clearInterval(carouselState.autoAdvanceTimer);
+                carouselState.autoAdvanceTimer = null;
+            }
+        }
+        
+        // Annotation System
+        let annotationState = {
+            isDrawing: false,
+            currentTool: null,
+            currentColor: '#FF0000',
+            lineWidth: 2,
+            annotations: [],
+            canvas: null,
+            ctx: null
+        };
+        
+        // Initialize annotation system
+        function initializeAnnotations() {
+            const canvas = document.getElementById('annotationCanvas');
+            if (!canvas) return;
+            
+            // Set canvas size to match container
+            const container = document.getElementById('modalContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            annotationState.canvas = canvas;
+            annotationState.ctx = canvas.getContext('2d');
+            
+            // Setup annotation tools
+            setupAnnotationTools();
+            
+            // Show annotation toolbar for supported file types
+            const fileType = detectFileType(currentResource);
+            if (fileType === 'image' || fileType === 'pdf') {
+                document.getElementById('annotationToolbar').style.display = 'flex';
+            }
+        }
+        
+        // Setup annotation tools
+        function setupAnnotationTools() {
+            // Pen tool
+            document.getElementById('penTool')?.addEventListener('click', function() {
+                setActiveTool('pen');
+                annotationState.lineWidth = 2;
+            });
+            
+            // Highlighter tool
+            document.getElementById('highlighterTool')?.addEventListener('click', function() {
+                setActiveTool('highlighter');
+                annotationState.lineWidth = 15;
+            });
+            
+            // Text tool
+            document.getElementById('textTool')?.addEventListener('click', function() {
+                setActiveTool('text');
+            });
+            
+            // Shape tool
+            document.getElementById('shapeTool')?.addEventListener('click', function() {
+                setActiveTool('shape');
+            });
+            
+            // Eraser tool
+            document.getElementById('eraserTool')?.addEventListener('click', function() {
+                setActiveTool('eraser');
+                annotationState.lineWidth = 10;
+            });
+            
+            // Color picker
+            document.getElementById('colorTool')?.addEventListener('click', function() {
+                document.getElementById('colorPicker').classList.toggle('show');
+            });
+            
+            // Color options
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    annotationState.currentColor = this.dataset.color;
+                    document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    document.getElementById('colorPicker').classList.remove('show');
+                });
+            });
+            
+            // Clear all annotations
+            document.getElementById('clearAnnotations')?.addEventListener('click', clearAnnotations);
+            
+            // Canvas drawing events
+            const canvas = annotationState.canvas;
+            if (canvas) {
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+                
+                // Touch events for mobile
+                canvas.addEventListener('touchstart', handleTouch);
+                canvas.addEventListener('touchmove', handleTouch);
+                canvas.addEventListener('touchend', stopDrawing);
+            }
+        }
+        
+        // Set active annotation tool
+        function setActiveTool(tool) {
+            annotationState.currentTool = tool;
+            
+            // Update UI
+            document.querySelectorAll('.annotation-tool').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const toolBtn = document.getElementById(tool + 'Tool');
+            if (toolBtn) {
+                toolBtn.classList.add('active');
+            }
+            
+            // Update canvas state
+            const canvas = annotationState.canvas;
+            if (canvas) {
+                if (tool) {
+                    canvas.classList.add('drawing');
+                } else {
+                    canvas.classList.remove('drawing');
+                }
+            }
+        }
+        
+        // Drawing functions
+        function startDrawing(e) {
+            if (!annotationState.currentTool) return;
+            
+            annotationState.isDrawing = true;
+            const rect = annotationState.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const ctx = annotationState.ctx;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            
+            if (annotationState.currentTool === 'text') {
+                createTextAnnotation(x, y);
+            }
+        }
+        
+        function draw(e) {
+            if (!annotationState.isDrawing || !annotationState.currentTool) return;
+            if (annotationState.currentTool === 'text') return;
+            
+            const rect = annotationState.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const ctx = annotationState.ctx;
+            ctx.lineWidth = annotationState.lineWidth;
+            ctx.lineCap = 'round';
+            
+            if (annotationState.currentTool === 'pen') {
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = annotationState.currentColor;
+            } else if (annotationState.currentTool === 'highlighter') {
+                ctx.globalAlpha = 0.3;
+                ctx.strokeStyle = annotationState.currentColor;
+            } else if (annotationState.currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+            }
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // Reset composite operation
+            if (annotationState.currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+        
+        function stopDrawing() {
+            annotationState.isDrawing = false;
+        }
+        
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                             e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            annotationState.canvas.dispatchEvent(mouseEvent);
+        }
+        
+        // Create text annotation
+        function createTextAnnotation(x, y) {
+            const annotation = document.createElement('div');
+            annotation.className = 'text-annotation editing';
+            annotation.contentEditable = true;
+            annotation.style.left = x + 'px';
+            annotation.style.top = y + 'px';
+            
+            // Add delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'annotation-delete';
+            deleteBtn.textContent = '✕';
+            deleteBtn.onclick = () => annotation.remove();
+            annotation.appendChild(deleteBtn);
+            
+            document.getElementById('modalContainer').appendChild(annotation);
+            annotation.focus();
+            
+            // Make draggable
+            makeDraggable(annotation);
+            
+            // Save annotation
+            annotationState.annotations.push({
+                type: 'text',
+                x: x,
+                y: y,
+                text: '',
+                timestamp: new Date()
+            });
+        }
+        
+        // Make element draggable
+        function makeDraggable(element) {
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+            
+            element.addEventListener('mousedown', function(e) {
+                if (e.target.contentEditable === 'true') return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialX = parseInt(element.style.left);
+                initialY = parseInt(element.style.top);
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                element.style.left = (initialX + dx) + 'px';
+                element.style.top = (initialY + dy) + 'px';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+        }
+        
+        // Clear all annotations
+        function clearAnnotations() {
+            if (annotationState.ctx) {
+                annotationState.ctx.clearRect(0, 0, annotationState.canvas.width, annotationState.canvas.height);
+            }
+            document.querySelectorAll('.text-annotation').forEach(ann => ann.remove());
+            annotationState.annotations = [];
+        }
+        
+        // Save annotations
+        async function saveAnnotations() {
+            if (!currentResource || !window.dcfSupabase) return;
+            
+            try {
+                // Convert canvas to data URL
+                const canvasData = annotationState.canvas?.toDataURL() || null;
+                
+                const { error } = await window.dcfSupabase
+                    .from('resource_annotations')
+                    .insert({
+                        resource_id: currentResource.id,
+                        user_id: window.dcfUser?.id || 'anonymous',
+                        canvas_data: canvasData,
+                        text_annotations: JSON.stringify(annotationState.annotations),
+                        created_at: new Date()
+                    });
+                
+                if (!error) {
+                    showToast('Annotations saved successfully');
+                }
+            } catch (error) {
+                console.error('Error saving annotations:', error);
+                showToast('Failed to save annotations', 'error');
+            }
+        }
+        
+        // Load annotations
+        async function loadAnnotations() {
+            if (!currentResource || !window.dcfSupabase) return;
+            
+            try {
+                const { data, error } = await window.dcfSupabase
+                    .from('resource_annotations')
+                    .select('*')
+                    .eq('resource_id', currentResource.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (!error && data) {
+                    // Restore canvas data
+                    if (data.canvas_data && annotationState.ctx) {
+                        const img = new Image();
+                        img.onload = () => {
+                            annotationState.ctx.drawImage(img, 0, 0);
+                        };
+                        img.src = data.canvas_data;
+                    }
+                    
+                    // Restore text annotations
+                    if (data.text_annotations) {
+                        const textAnnotations = JSON.parse(data.text_annotations);
+                        textAnnotations.forEach(ann => {
+                            if (ann.type === 'text') {
+                                // Recreate text annotation
+                                const annotation = document.createElement('div');
+                                annotation.className = 'text-annotation';
+                                annotation.style.left = ann.x + 'px';
+                                annotation.style.top = ann.y + 'px';
+                                annotation.textContent = ann.text;
+                                document.getElementById('modalContainer').appendChild(annotation);
+                                makeDraggable(annotation);
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading annotations:', error);
+            }
+        }
+        
+        // Share functionality
+        function initializeSharing() {
+            // Share button (add to modal toolbar)
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'modal-share-btn';
+            shareBtn.innerHTML = '🔗 Share';
+            shareBtn.onclick = toggleSharePanel;
+            document.getElementById('modalContainer')?.appendChild(shareBtn);
+            
+            // Copy link button
+            document.getElementById('shareCopyBtn')?.addEventListener('click', copyShareLink);
+            
+            // Toggle switches
+            document.getElementById('editToggle')?.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+            
+            document.getElementById('commentToggle')?.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+            
+            document.getElementById('passwordToggle')?.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        }
+        
+        // Toggle share panel
+        function toggleSharePanel() {
+            const panel = document.getElementById('sharePanel');
+            if (panel) {
+                panel.classList.toggle('show');
+                
+                // Generate share link
+                if (panel.classList.contains('show')) {
+                    generateShareLink();
+                }
+            }
+        }
+        
+        // Generate share link
+        async function generateShareLink() {
+            if (!currentResource) return;
+            
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?slug=${currentResource.slug}&shared=true`;
+            
+            const input = document.getElementById('shareLinkInput');
+            if (input) {
+                input.value = shareUrl;
+            }
+            
+            // Save share settings to database
+            try {
+                if (window.dcfSupabase) {
+                    const expiry = document.getElementById('shareExpiry').value;
+                    const expiryDate = calculateExpiryDate(expiry);
+                    
+                    const { data, error } = await window.dcfSupabase
+                        .from('resource_shares')
+                        .insert({
+                            resource_id: currentResource.id,
+                            share_url: shareUrl,
+                            allow_edit: document.getElementById('editToggle').classList.contains('active'),
+                            allow_comments: document.getElementById('commentToggle').classList.contains('active'),
+                            require_password: document.getElementById('passwordToggle').classList.contains('active'),
+                            expires_at: expiryDate,
+                            created_by: window.dcfUser?.id || 'anonymous'
+                        });
+                    
+                    if (!error) {
+                        console.log('Share link created:', data);
+                    }
+                }
+            } catch (error) {
+                console.error('Error creating share link:', error);
+            }
+        }
+        
+        // Calculate expiry date
+        function calculateExpiryDate(expiry) {
+            const now = new Date();
+            switch(expiry) {
+                case '1h':
+                    return new Date(now.getTime() + 60 * 60 * 1000);
+                case '24h':
+                    return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                case '7d':
+                    return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                case '30d':
+                    return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+                default:
+                    return null;
+            }
+        }
+        
+        // Copy share link
+        function copyShareLink() {
+            const input = document.getElementById('shareLinkInput');
+            if (input) {
+                input.select();
+                document.execCommand('copy');
+                
+                const btn = document.getElementById('shareCopyBtn');
+                if (btn) {
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'Copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }
+            }
+        }
+        
+        // Helper function to get file type icon
+        function getFileTypeIcon(fileType) {
+            const icons = {
+                pdf: '📄',
+                image: '🖼️',
+                video: '🎥',
+                audio: '🎵',
+                text: '📝',
+                default: '📎'
+            };
+            return `<span style="font-size: 30px;">${icons[fileType] || icons.default}</span>`;
+        }
+        
+        // Initialize advanced features when modal opens
+        function initializeAdvancedFeatures() {
+            initializeCarousel();
+            initializeAnnotations();
+            initializeSharing();
+            loadAnnotations();
         }
 
         // Wait for DCF system to initialize Supabase
