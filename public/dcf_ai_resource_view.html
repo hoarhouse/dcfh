@@ -1132,6 +1132,60 @@
             object-fit: contain;
         }
         
+        /* Scrollable PDF viewer for modal */
+        .pdf-viewer-scrollable {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            background: #525659;
+        }
+        
+        .pdf-pages-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+        
+        .pdf-page-wrapper {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            max-width: 100%;
+        }
+        
+        .pdf-page-wrapper canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .pdf-page-number {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .pdf-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: white;
+        }
+        
         .modal-content .image-viewer {
             width: 100%;
             height: 100%;
@@ -1536,6 +1590,12 @@
             document.body.style.top = '';
             window.scrollTo(0, parseInt(scrollY || '0') * -1);
             
+            // Clean up PDF document if loaded
+            if (window.modalPdfDocument) {
+                window.modalPdfDocument.destroy();
+                window.modalPdfDocument = null;
+            }
+            
             // Clear modal content after animation
             setTimeout(() => {
                 document.getElementById('modalContent').innerHTML = '';
@@ -1588,7 +1648,7 @@
             const modalContent = document.getElementById('modalContent');
             switch(fileType) {
                 case 'pdf':
-                    renderPDFPreview(modalContent, true);
+                    renderAllPdfPagesInModal();
                     break;
                 case 'image':
                     setupModalImageViewer();
@@ -1613,12 +1673,13 @@
             switch(fileType) {
                 case 'pdf':
                     return `
-                        <div class="pdf-viewer">
-                            <canvas id="modalPdfCanvas" style="width: 100%; height: auto;"></canvas>
-                            <div class="pdf-controls">
-                                <button onclick="modalPdfPrevPage()">← Previous</button>
-                                <span id="modalPdfPageNum" style="color: white; margin: 0 1rem;">Page 1</span>
-                                <button onclick="modalPdfNextPage()">Next →</button>
+                        <div class="pdf-viewer-scrollable" id="modalPdfViewer">
+                            <div class="pdf-loading">
+                                <div class="preview-spinner"></div>
+                                <p>Loading PDF pages...</p>
+                            </div>
+                            <div class="pdf-pages-container" id="modalPdfPages">
+                                <!-- PDF pages will be rendered here -->
                             </div>
                         </div>
                     `;
@@ -1728,44 +1789,151 @@
             }
         }
         
-        // Modal PDF navigation
-        window.modalPdfDoc = null;
-        window.modalPdfPageNum = 1;
-        window.modalPdfNumPages = 0;
-        
-        window.modalPdfPrevPage = function() {
-            if (window.modalPdfPageNum <= 1) return;
-            window.modalPdfPageNum--;
-            renderModalPdfPage(window.modalPdfPageNum);
+        // Render all PDF pages in modal (scrollable)
+        async function renderAllPdfPagesInModal() {
+            if (!currentResource || !currentResource.file_url) {
+                console.error('No PDF URL available');
+                return;
+            }
+            
+            // Show loading state
+            const pagesContainer = document.getElementById('modalPdfPages');
+            const loadingElement = document.querySelector('.pdf-loading');
+            
+            if (!pagesContainer) return;
+            
+            try {
+                // Set PDF.js worker
+                if (!window.pdfjsLib) {
+                    console.error('PDF.js library not loaded');
+                    return;
+                }
+                
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                
+                console.log('Loading PDF for modal:', currentResource.file_url);
+                
+                // Load the PDF document
+                const loadingTask = pdfjsLib.getDocument({
+                    url: currentResource.file_url,
+                    withCredentials: false,
+                    isEvalSupported: false,
+                    disableAutoFetch: false,
+                    disableStream: false
+                });
+                
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+                console.log(`PDF loaded with ${numPages} pages`);
+                
+                // Clear loading state
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
+                pagesContainer.innerHTML = '';
+                
+                // Store PDF document globally for potential future use
+                window.modalPdfDocument = pdf;
+                
+                // Optimize rendering based on number of pages
+                if (numPages <= 10) {
+                    // For small PDFs, render all pages at once
+                    const renderPromises = [];
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        renderPromises.push(renderSinglePdfPage(pdf, pageNum, pagesContainer));
+                    }
+                    await Promise.all(renderPromises);
+                    console.log('All PDF pages rendered successfully');
+                } else {
+                    // For larger PDFs, render in batches for better performance
+                    const batchSize = 5;
+                    
+                    // Render first batch immediately
+                    for (let pageNum = 1; pageNum <= Math.min(batchSize, numPages); pageNum++) {
+                        await renderSinglePdfPage(pdf, pageNum, pagesContainer);
+                    }
+                    
+                    // Render remaining pages in background
+                    setTimeout(async () => {
+                        for (let pageNum = batchSize + 1; pageNum <= numPages; pageNum++) {
+                            await renderSinglePdfPage(pdf, pageNum, pagesContainer);
+                            
+                            // Small delay between pages to keep UI responsive
+                            if (pageNum % batchSize === 0) {
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                            }
+                        }
+                        console.log('All remaining PDF pages rendered');
+                    }, 200);
+                }
+                
+            } catch (error) {
+                console.error('Error loading PDF in modal:', error);
+                pagesContainer.innerHTML = `
+                    <div style="color: white; text-align: center; padding: 20px;">
+                        <p>Error loading PDF document</p>
+                        <p style="font-size: 0.9em; opacity: 0.7;">${error.message}</p>
+                    </div>
+                `;
+            }
         }
         
-        window.modalPdfNextPage = function() {
-            if (window.modalPdfPageNum >= window.modalPdfNumPages) return;
-            window.modalPdfPageNum++;
-            renderModalPdfPage(window.modalPdfPageNum);
-        }
-        
-        async function renderModalPdfPage(pageNum) {
-            if (!window.modalPdfDoc) return;
-            
-            const page = await window.modalPdfDoc.getPage(pageNum);
-            const canvas = document.getElementById('modalPdfCanvas');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for modal
-            
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            await page.render({
-                canvasContext: ctx,
-                viewport: viewport
-            }).promise;
-            
-            const pageNumElement = document.getElementById('modalPdfPageNum');
-            if (pageNumElement) {
-                pageNumElement.textContent = `Page ${pageNum} of ${window.modalPdfNumPages}`;
+        // Render a single PDF page for the modal
+        async function renderSinglePdfPage(pdf, pageNum, container) {
+            try {
+                const page = await pdf.getPage(pageNum);
+                
+                // Create wrapper for this page
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'pdf-page-wrapper';
+                
+                // Create canvas for this page
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                // Calculate scale to fit modal width (with padding)
+                const modalWidth = container.clientWidth || 900;
+                const desiredWidth = Math.min(modalWidth - 40, 900); // Max width of 900px
+                
+                // Get viewport at scale 1 to get original dimensions
+                const originalViewport = page.getViewport({ scale: 1.0 });
+                
+                // Calculate scale to fit desired width
+                const scale = desiredWidth / originalViewport.width;
+                const viewport = page.getViewport({ scale: scale });
+                
+                // Set canvas dimensions
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                // Add page number indicator
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'pdf-page-number';
+                pageNumber.textContent = `Page ${pageNum}`;
+                
+                // Append elements
+                pageWrapper.appendChild(canvas);
+                pageWrapper.appendChild(pageNumber);
+                container.appendChild(pageWrapper);
+                
+                // Render the page
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                console.log(`Rendered page ${pageNum}`);
+                
+            } catch (error) {
+                console.error(`Error rendering page ${pageNum}:`, error);
+                
+                // Add error placeholder for this page
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'pdf-page-wrapper';
+                errorDiv.style.padding = '20px';
+                errorDiv.style.textAlign = 'center';
+                errorDiv.innerHTML = `<p style="color: #666;">Error loading page ${pageNum}</p>`;
+                container.appendChild(errorDiv);
             }
         }
 
@@ -2022,8 +2190,14 @@
             }
         }
         
-        // PDF Preview with PDF.js
+        // PDF Preview with PDF.js (only for small preview, not modal)
         async function renderPDFPreview(container, isModal = false) {
+            // Modal mode is now handled by renderAllPdfPagesInModal
+            if (isModal) {
+                console.log('Modal PDF rendering handled by renderAllPdfPagesInModal');
+                return;
+            }
+            
             // Debug logging
             console.log('=== PDF Preview Debug ===');
             console.log('Attempting to load PDF:', currentResource.file_url);
@@ -2054,23 +2228,17 @@
                 if (window.pdfjsLib) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     
-                    const canvasId = isModal ? 'modalPdfCanvas' : 'pdfCanvas';
-                    const pageNumId = isModal ? 'modalPdfPageNum' : 'pdfPageNum';
-                    const prevFunc = isModal ? 'modalPdfPrevPage' : 'pdfPrevPage';
-                    const nextFunc = isModal ? 'modalPdfNextPage' : 'pdfNextPage';
-                    
-                    if (!isModal) {
-                        container.innerHTML = `
-                            <div class="pdf-viewer">
-                                <canvas id="${canvasId}" style="width: 100%; height: auto;"></canvas>
-                                <div class="pdf-controls">
-                                    <button onclick="${prevFunc}()">← Previous</button>
-                                    <span id="${pageNumId}" style="color: white; margin: 0 1rem;">Page 1</span>
-                                    <button onclick="${nextFunc}()">Next →</button>
-                                </div>
+                    // Only render for regular preview (not modal)
+                    container.innerHTML = `
+                        <div class="pdf-viewer">
+                            <canvas id="pdfCanvas" style="width: 100%; height: auto;"></canvas>
+                            <div class="pdf-controls">
+                                <button onclick="pdfPrevPage()">← Previous</button>
+                                <span id="pdfPageNum" style="color: white; margin: 0 1rem;">Page 1</span>
+                                <button onclick="pdfNextPage()">Next →</button>
                             </div>
-                        `;
-                    }
+                        </div>
+                    `;
                     
                     // Try to load PDF with better error handling
                     console.log('Loading PDF document...');
@@ -2086,17 +2254,11 @@
                     loadingTask.promise.then(function(pdf) {
                         console.log('PDF loaded successfully, pages:', pdf.numPages);
                         
-                        if (isModal) {
-                            window.modalPdfDoc = pdf;
-                            window.modalPdfPageNum = 1;
-                            window.modalPdfNumPages = pdf.numPages;
-                            renderModalPdfPage(1);
-                        } else {
-                            window.pdfDoc = pdf;
-                            window.pdfPageNum = 1;
-                            window.pdfNumPages = pdf.numPages;
-                            renderPDFPage(1);
-                        }
+                        // Only handle regular preview
+                        window.pdfDoc = pdf;
+                        window.pdfPageNum = 1;
+                        window.pdfNumPages = pdf.numPages;
+                        renderPDFPage(1);
                     }).catch(function(error) {
                         console.error('PDF loading failed:', error);
                         console.log('Error details:', {
