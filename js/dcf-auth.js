@@ -184,7 +184,7 @@ function updateLoggedInNavigation() {
     const loggedInNavItems = [
         { href: basePath + 'members/dcf_member_home.html', text: 'Dashboard' },
         { href: basePath + 'projects/dcf_projects_home.html', text: 'Projects' },
-        { href: basePath + 'resources/dcf_resources_library.html', text: 'Resources' },
+        { href: basePath + 'public/dcf_ai_resources.html', text: 'Resources' },
         { href: basePath + 'blog/index.html', text: 'Blog' },
         { href: basePath + 'people/index.html', text: 'People' },
         { 
