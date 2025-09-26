@@ -4356,24 +4356,99 @@
             });
         };
         
+        // New function to render specific page in modal (replacing current page)
+        async function renderModalPdfPage(pageNum) {
+            if (!window.modalPdfDocument || pageNum < 1 || pageNum > pdfViewerState.numPages) {
+                console.error('[PDF Modal] Invalid page number or no document loaded');
+                return;
+            }
+            
+            console.log(`[PDF Modal] Rendering page ${pageNum} of ${pdfViewerState.numPages}`);
+            
+            const pagesContainer = document.getElementById('modalPdfPages');
+            if (!pagesContainer) {
+                console.error('[PDF Modal] Pages container not found');
+                return;
+            }
+            
+            // Clear current page content
+            pagesContainer.innerHTML = '';
+            
+            // Render the requested page
+            await renderSinglePdfPage(window.modalPdfDocument, pageNum, pagesContainer);
+            
+            // Update viewer state
+            pdfViewerState.currentPage = pageNum;
+            
+            // Update UI
+            const pageInput = document.getElementById('pdfPageInput');
+            if (pageInput) {
+                pageInput.value = pageNum;
+            }
+            
+            // Update thumbnail highlight
+            const thumbnails = document.querySelectorAll('.pdf-thumbnail');
+            thumbnails.forEach(thumb => {
+                thumb.classList.remove('active');
+                if (parseInt(thumb.dataset.page) === pageNum) {
+                    thumb.classList.add('active');
+                    // Scroll thumbnail into view if thumbnails panel is visible
+                    const thumbPanel = document.getElementById('pdfThumbnailPanel');
+                    if (thumbPanel && thumbPanel.style.display !== 'none') {
+                        thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+            
+            console.log(`[PDF Modal] Successfully rendered page ${pageNum}`);
+        }
+        
         window.pdfNextPage = function() {
             if (pdfViewerState.currentPage < pdfViewerState.numPages) {
-                pdfGoToPage(pdfViewerState.currentPage + 1);
+                const nextPage = pdfViewerState.currentPage + 1;
+                
+                // Check if we're in modal mode
+                const modalPdfViewer = document.getElementById('modalPdfViewer');
+                if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                    renderModalPdfPage(nextPage);
+                } else {
+                    pdfGoToPage(nextPage);
+                }
             }
         };
         
         window.pdfPrevPage = function() {
             if (pdfViewerState.currentPage > 1) {
-                pdfGoToPage(pdfViewerState.currentPage - 1);
+                const prevPage = pdfViewerState.currentPage - 1;
+                
+                // Check if we're in modal mode
+                const modalPdfViewer = document.getElementById('modalPdfViewer');
+                if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                    renderModalPdfPage(prevPage);
+                } else {
+                    pdfGoToPage(prevPage);
+                }
             }
         };
         
         window.pdfFirstPage = function() {
-            pdfGoToPage(1);
+            // Check if we're in modal mode
+            const modalPdfViewer = document.getElementById('modalPdfViewer');
+            if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                renderModalPdfPage(1);
+            } else {
+                pdfGoToPage(1);
+            }
         };
         
         window.pdfLastPage = function() {
-            pdfGoToPage(pdfViewerState.numPages);
+            // Check if we're in modal mode
+            const modalPdfViewer = document.getElementById('modalPdfViewer');
+            if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                renderModalPdfPage(pdfViewerState.numPages);
+            } else {
+                pdfGoToPage(pdfViewerState.numPages);
+            }
         };
         
         // Update current page based on scroll position
