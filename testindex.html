@@ -1418,32 +1418,45 @@
             border-color: #000;
         }
 
-        /* STORY CARDS - Horizontal scrolling container */
+        /* STORY CARDS - 4 IN A ROW WITH OPTIONAL SCROLLING */
         .cards-grid {
             position: relative;
             margin-bottom: 2rem;
             margin-top: 2rem;
         }
         
-        /* Scrollable container */
+        /* Default grid display for cards */
+        .cards-grid:not(.scrollable) {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        
+        /* Scrollable container when needed */
         .cards-scroll-container {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             overflow-x: auto;
             scroll-behavior: smooth;
-            padding: 0 40px;
             scrollbar-width: none;
             -ms-overflow-style: none;
+        }
+        
+        /* When there are more than 4 cards, use flex for scrolling */
+        .cards-scroll-container.has-overflow {
+            display: flex;
+            padding: 0 40px;
         }
         
         .cards-scroll-container::-webkit-scrollbar {
             display: none;
         }
         
-        /* Each card in the scroll container */
-        .cards-scroll-container .story-card,
-        .cards-scroll-container .profile-card,
-        .cards-scroll-container .resource-card {
+        /* Each card maintains its width */
+        .cards-scroll-container.has-overflow .story-card,
+        .cards-scroll-container.has-overflow .profile-card,
+        .cards-scroll-container.has-overflow .resource-card {
             min-width: calc(25% - 15px);
             flex: 0 0 calc(25% - 15px);
         }
@@ -1822,8 +1835,11 @@
             }
         }
         @media (max-width: 1024px) {
-            .cards-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .cards-scroll-container .story-card,
+            .cards-scroll-container .profile-card,
+            .cards-scroll-container .resource-card {
+                min-width: calc(50% - 10px);
+                flex: 0 0 calc(50% - 10px);
             }
             
             .hero-previews {
@@ -1834,8 +1850,11 @@
         }
 
         @media (max-width: 768px) {
-            .cards-grid {
-                grid-template-columns: 1fr;
+            .cards-scroll-container .story-card,
+            .cards-scroll-container .profile-card,
+            .cards-scroll-container .resource-card {
+                min-width: calc(100% - 20px);
+                flex: 0 0 calc(100% - 20px);
             }
             
             .hero-title {
@@ -3704,6 +3723,65 @@
         return div.innerHTML;
     }
 
+    // Setup horizontal scrolling with arrow navigation
+    function setupScrollArrows(sectionName) {
+        const container = document.getElementById(`${sectionName}ScrollContainer`);
+        const leftArrow = document.getElementById(`${sectionName}LeftArrow`);
+        const rightArrow = document.getElementById(`${sectionName}RightArrow`);
+        
+        if (!container || !leftArrow || !rightArrow) return;
+        
+        // Calculate card width (25% of container width)
+        const updateArrowVisibility = () => {
+            const scrollLeft = container.scrollLeft;
+            const scrollWidth = container.scrollWidth;
+            const clientWidth = container.clientWidth;
+            
+            // Show/hide left arrow
+            if (scrollLeft > 0) {
+                leftArrow.style.display = 'flex';
+            } else {
+                leftArrow.style.display = 'none';
+            }
+            
+            // Show/hide right arrow
+            if (scrollLeft + clientWidth < scrollWidth - 5) {
+                rightArrow.style.display = 'flex';
+            } else {
+                rightArrow.style.display = 'none';
+            }
+            
+            // Hide both arrows if content fits
+            if (scrollWidth <= clientWidth) {
+                leftArrow.style.display = 'none';
+                rightArrow.style.display = 'none';
+            }
+        };
+        
+        // Scroll function
+        const scrollCards = (direction) => {
+            const cardWidth = container.querySelector('.story-card, .profile-card, .resource-card')?.offsetWidth || 300;
+            const scrollAmount = cardWidth + 20; // Include gap
+            
+            if (direction === 'left') {
+                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        };
+        
+        // Add event listeners
+        leftArrow.addEventListener('click', () => scrollCards('left'));
+        rightArrow.addEventListener('click', () => scrollCards('right'));
+        container.addEventListener('scroll', updateArrowVisibility);
+        
+        // Initial arrow visibility check
+        setTimeout(updateArrowVisibility, 100);
+        
+        // Update on window resize
+        window.addEventListener('resize', updateArrowVisibility);
+    }
+
     // Load Change Makers cards from CMS configuration
     async function loadChangeMakersCards() {
         const changeMakersGrid = document.getElementById('changeMakersGrid');
@@ -3788,10 +3866,19 @@
             }
 
             // Generate Change Makers profile cards in CMS-specified order
-            changeMakersGrid.innerHTML = changeMakersWithTemplates.map((post, index) => 
-                generateProfileCardHTML(post, index, post.chosenTemplate)
-            ).join('');
+            const scrollContainer = document.getElementById('changeMakersScrollContainer');
+            if (scrollContainer) {
+                scrollContainer.innerHTML = changeMakersWithTemplates.map((post, index) => 
+                    generateProfileCardHTML(post, index, post.chosenTemplate)
+                ).join('');
+            } else {
+                changeMakersGrid.innerHTML = changeMakersWithTemplates.map((post, index) => 
+                    generateProfileCardHTML(post, index, post.chosenTemplate)
+                ).join('');
+            }
             
+            // Setup scroll arrows for Change Makers
+            setupScrollArrows('changeMakers');
             // Add click handlers to the Change Makers cards
             addCardClickHandlers();
 
@@ -4061,8 +4148,15 @@
 
             // Update DOM - only show if we have cards
             if (cardsHTML) {
-                resourcesCards.innerHTML = cardsHTML;
-                resourcesCards.style.display = 'grid';
+                const scrollContainer = document.getElementById('resourcesScrollContainer');
+                if (scrollContainer) {
+                    scrollContainer.innerHTML = cardsHTML;
+                } else {
+                    resourcesCards.innerHTML = cardsHTML;
+                }
+                resourcesCards.style.display = 'block';
+                // Setup scroll arrows for Resources
+                setupScrollArrows('resources');
                 // Add click handlers to Resources cards
                 addCardClickHandlers();
             } else {
