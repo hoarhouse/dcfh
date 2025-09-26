@@ -5753,7 +5753,16 @@
         
         // Generate share link
         async function generateShareLink() {
-            if (!currentResource) return;
+            if (!currentResource) {
+                console.log('[Share] No resource loaded');
+                return;
+            }
+            
+            if (!currentResource.slug || !currentResource.id) {
+                console.error('[Share] Resource missing required fields (slug or id)');
+                showToast('Cannot share - invalid resource', 'error');
+                return;
+            }
             
             const baseUrl = window.location.origin + window.location.pathname;
             const shareUrl = `${baseUrl}?slug=${currentResource.slug}&shared=true`;
@@ -5766,7 +5775,7 @@
             // Save share settings to database
             try {
                 if (window.dcfSupabase) {
-                    const expiry = document.getElementById('shareExpiry').value;
+                    const expiry = document.getElementById('shareExpiry')?.value || '7d';
                     const expiryDate = calculateExpiryDate(expiry);
                     
                     const { data, error } = await window.dcfSupabase
@@ -5774,19 +5783,23 @@
                         .insert({
                             resource_id: currentResource.id,
                             share_url: shareUrl,
-                            allow_edit: document.getElementById('editToggle').classList.contains('active'),
-                            allow_comments: document.getElementById('commentToggle').classList.contains('active'),
-                            require_password: document.getElementById('passwordToggle').classList.contains('active'),
+                            allow_edit: document.getElementById('editToggle')?.classList.contains('active') || false,
+                            allow_comments: document.getElementById('commentToggle')?.classList.contains('active') || false,
+                            require_password: document.getElementById('passwordToggle')?.classList.contains('active') || false,
                             expires_at: expiryDate,
                             created_by: window.dcfUser?.id || 'anonymous'
                         });
                     
-                    if (!error) {
-                        console.log('Share link created:', data);
+                    if (error) {
+                        console.error('[Share] Database error:', error);
+                    } else {
+                        console.log('[Share] Share link created:', data);
                     }
+                } else {
+                    console.log('[Share] No Supabase client - share link generated locally only');
                 }
             } catch (error) {
-                console.error('Error creating share link:', error);
+                console.error('[Share] Error creating share link:', error);
             }
         }
         
