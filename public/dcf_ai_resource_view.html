@@ -4121,11 +4121,35 @@
                 // Render thumbnails
                 renderPdfThumbnails(pdf, numPages);
                 
-                // Initialize navigation - no scroll listener needed for single-page modal
+                // Initialize navigation with scroll listener for continuous PDF
+                setTimeout(() => {
+                    // Add scroll listener to track current page during continuous scrolling
+                    const scrollContainer = document.getElementById('modalPdfPages');
+                    if (scrollContainer) {
+                        let scrollTimeout;
+                        scrollContainer.addEventListener('scroll', function() {
+                            clearTimeout(scrollTimeout);
+                            scrollTimeout = setTimeout(() => {
+                                updateCurrentPageFromScroll(scrollContainer);
+                            }, 100);
+                        });
+                        console.log('[PDF Modal] Scroll listener added for continuous PDF navigation');
+                    }
+                }, 100);
                 
-                // Render only the current page (page 1) initially
-                await renderSinglePdfPage(pdf, 1, pagesContainer);
-                console.log('PDF page 1 rendered successfully');
+                // Render all pages for continuous scrolling in modal
+                console.log(`[PDF Modal] Rendering all ${numPages} pages for continuous scrolling`);
+                
+                // Clear any existing content
+                pagesContainer.innerHTML = '';
+                
+                // Render all pages stacked vertically
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    await renderSinglePdfPage(pdf, pageNum, pagesContainer);
+                    console.log(`[PDF Modal] Rendered page ${pageNum}/${numPages}`);
+                }
+                
+                console.log('All PDF pages rendered for continuous scrolling');
                 
                 // Set current page to 1
                 pdfViewerState.currentPage = 1;
