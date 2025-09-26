@@ -1260,6 +1260,9 @@
             flex: 1;
             padding: 20px;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         
         .pdf-pages-container {
@@ -1269,6 +1272,15 @@
             gap: 10px;
             max-width: 100%;
             transition: transform 0.3s ease;
+            overflow-y: auto;
+            flex: 1;
+            padding: 20px 0;
+        }
+        
+        #modalPdfPages {
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            scroll-behavior: smooth;
         }
         
         .pdf-page-wrapper {
@@ -4017,6 +4029,11 @@
                 // Render thumbnails
                 renderPdfThumbnails(pdf, numPages);
                 
+                // Initialize navigation - set page 1 as current
+                setTimeout(() => {
+                    pdfGoToPage(1);
+                }, 100);
+                
                 // Optimize rendering based on number of pages
                 if (numPages <= 10) {
                     // For small PDFs, render all pages at once
@@ -4068,6 +4085,8 @@
                 // Create wrapper for this page
                 const pageWrapper = document.createElement('div');
                 pageWrapper.className = 'pdf-page-wrapper';
+                pageWrapper.id = `pdf-page-${pageNum}`; // Add unique ID for navigation
+                pageWrapper.dataset.pageNumber = pageNum; // Add data attribute for easy access
                 
                 // Create canvas for this page
                 const canvas = document.createElement('canvas');
@@ -4168,25 +4187,86 @@
         // Navigation functions
         window.pdfGoToPage = function(pageNum) {
             pageNum = parseInt(pageNum);
-            if (!pdfViewerState.doc || pageNum < 1 || pageNum > pdfViewerState.numPages) return;
+            if (!pdfViewerState.doc || pageNum < 1 || pageNum > pdfViewerState.numPages) {
+                console.log('[PDF Nav] Invalid page number or no document loaded');
+                return;
+            }
             
+            console.log(`[PDF Nav] Navigating to page ${pageNum} of ${pdfViewerState.numPages}`);
             pdfViewerState.currentPage = pageNum;
             
             // Update UI
-            document.getElementById('pdfPageInput').value = pageNum;
+            const pageInput = document.getElementById('pdfPageInput');
+            if (pageInput) {
+                pageInput.value = pageNum;
+            }
             
-            // Scroll to page
-            const pageElements = document.querySelectorAll('.pdf-page-wrapper');
-            if (pageElements[pageNum - 1]) {
-                pageElements[pageNum - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Find the correct container - could be in modal or preview
+            let scrollContainer = null;
+            let pageElements = null;
+            
+            // Check if we're in modal view
+            const modalPdfViewer = document.getElementById('modalPdfViewer');
+            if (modalPdfViewer && modalPdfViewer.offsetParent !== null) {
+                // We're in modal - find the scrollable container
+                scrollContainer = document.getElementById('modalPdfPages') || 
+                                document.querySelector('.pdf-viewer-scrollable');
+                pageElements = modalPdfViewer.querySelectorAll('.pdf-page-wrapper');
+                console.log('[PDF Nav] Modal mode detected, found', pageElements.length, 'pages');
+            } else {
+                // We're in preview mode
+                scrollContainer = document.querySelector('.pdf-viewer-container');
+                pageElements = document.querySelectorAll('.pdf-page-wrapper');
+                console.log('[PDF Nav] Preview mode detected, found', pageElements.length, 'pages');
+            }
+            
+            // Scroll to the specific page
+            if (pageElements && pageElements[pageNum - 1]) {
+                const targetPage = pageElements[pageNum - 1];
+                
+                if (scrollContainer) {
+                    // Calculate scroll position
+                    const containerRect = scrollContainer.getBoundingClientRect();
+                    const pageRect = targetPage.getBoundingClientRect();
+                    const scrollTop = targetPage.offsetTop - scrollContainer.offsetTop;
+                    
+                    // Smooth scroll to the page
+                    scrollContainer.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                    console.log(`[PDF Nav] Scrolling to position ${scrollTop}`);
+                } else {
+                    // Fallback to scrollIntoView
+                    targetPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    console.log('[PDF Nav] Using scrollIntoView fallback');
+                }
+                
+                // Add visual highlight to current page
+                pageElements.forEach((el, idx) => {
+                    if (idx === pageNum - 1) {
+                        el.style.border = '2px solid #4ECDC4';
+                        el.style.boxShadow = '0 0 10px rgba(78, 205, 196, 0.3)';
+                    } else {
+                        el.style.border = '';
+                        el.style.boxShadow = '';
+                    }
+                });
+            } else {
+                console.warn(`[PDF Nav] Could not find page element for page ${pageNum}`);
             }
             
             // Update thumbnail highlight
-            document.querySelectorAll('.pdf-thumbnail').forEach(thumb => {
+            const thumbnails = document.querySelectorAll('.pdf-thumbnail');
+            thumbnails.forEach(thumb => {
                 thumb.classList.remove('active');
                 if (parseInt(thumb.dataset.page) === pageNum) {
                     thumb.classList.add('active');
-                    thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Only scroll thumbnail into view if thumbnails panel is visible
+                    const thumbPanel = document.getElementById('pdfThumbnailPanel');
+                    if (thumbPanel && thumbPanel.style.display !== 'none') {
+                        thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             });
         };
