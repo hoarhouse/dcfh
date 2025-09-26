@@ -2247,32 +2247,69 @@
                 }
             }
             
-            // Check content_type if available
-            if (resource.content_type) {
+            // PRIORITY 3: Check content_type if still unknown
+            if (resource.content_type && detectedType === 'unknown') {
                 const contentType = resource.content_type.toLowerCase();
-                if (contentType.includes('pdf')) return 'pdf';
-                if (contentType.includes('image')) return 'image';
-                if (contentType.includes('video')) return 'video';
-                if (contentType.includes('audio')) return 'audio';
-                if (contentType.includes('text')) return 'text';
-                // Office documents MIME types
-                if (contentType.includes('wordprocessingml') || contentType.includes('msword')) return 'word';
-                if (contentType.includes('spreadsheetml') || contentType.includes('ms-excel')) return 'excel';
-                if (contentType.includes('presentationml') || contentType.includes('ms-powerpoint')) return 'powerpoint';
+                console.log('Checking content_type:', contentType);
+                
+                if (contentType.includes('pdf')) {
+                    detectedType = 'pdf';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('image')) {
+                    detectedType = 'image';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('video')) {
+                    detectedType = 'video';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('audio')) {
+                    detectedType = 'audio';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('text')) {
+                    detectedType = 'text';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('wordprocessingml') || contentType.includes('msword')) {
+                    detectedType = 'word';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('spreadsheetml') || contentType.includes('ms-excel')) {
+                    detectedType = 'excel';
+                    detectionMethod = 'content_type';
+                } else if (contentType.includes('presentationml') || contentType.includes('ms-powerpoint')) {
+                    detectedType = 'powerpoint';
+                    detectionMethod = 'content_type';
+                }
             }
             
-            // Check the type field as last resort
-            if (resource.type) {
+            // PRIORITY 4: Check the type field as last resort
+            if (resource.type && detectedType === 'unknown') {
                 const resourceType = resource.type.toLowerCase();
-                if (resourceType.includes('pdf')) return 'pdf';
-                if (resourceType.includes('image') || resourceType.includes('photo')) return 'image';
-                if (resourceType.includes('video')) return 'video';
-                if (resourceType.includes('audio') || resourceType.includes('podcast')) return 'audio';
-                if (resourceType.includes('document') || resourceType.includes('text')) return 'text';
+                console.log('Checking resource type field:', resourceType);
+                
+                if (resourceType.includes('pdf')) {
+                    detectedType = 'pdf';
+                    detectionMethod = 'resource type field';
+                } else if (resourceType.includes('image') || resourceType.includes('photo')) {
+                    detectedType = 'image';
+                    detectionMethod = 'resource type field';
+                } else if (resourceType.includes('video')) {
+                    detectedType = 'video';
+                    detectionMethod = 'resource type field';
+                } else if (resourceType.includes('audio') || resourceType.includes('podcast')) {
+                    detectedType = 'audio';
+                    detectionMethod = 'resource type field';
+                } else if (resourceType.includes('document') || resourceType.includes('text')) {
+                    detectedType = 'text';
+                    detectionMethod = 'resource type field';
+                }
             }
             
-            console.log('File type detected as: unknown');
-            return 'unknown';
+            // Log final detection result
+            if (detectedType !== 'unknown') {
+                console.log(`✅ File type detected as: ${detectedType} (via ${detectionMethod})`);
+            } else {
+                console.warn('⚠️ Unable to detect file type, defaulting to: unknown');
+            }
+            
+            return detectedType;
         }
         
         // Check if document can be previewed directly
