@@ -2991,7 +2991,10 @@
     
     <script>
         // Resource data
-        let currentResource = null;
+        let currentResource = null;  // Current resource being viewed on the page
+        let pageResource = null;     // The actual page resource (preserved copy)
+        let modalResource = null;    // Resource currently being viewed in modal
+        let originalResource = null; // Backup of resource before modal opened
         let citationFormat = 'apa';
         let modalOpen = false;
 
@@ -3147,14 +3150,26 @@
         
         // Open current preview in modal
         function openPreviewInModal() {
-            if (!currentResource) return;
+            if (!currentResource) {
+                console.error('[Modal] No currentResource available');
+                return;
+            }
             
-            const fileType = detectFileType(currentResource);
+            console.log('[Modal] Opening modal for resource:', currentResource.title);
+            
+            // CRITICAL: Save original state before opening modal
+            originalResource = JSON.parse(JSON.stringify(currentResource)); // Deep copy
+            modalResource = JSON.parse(JSON.stringify(currentResource));    // Deep copy
+            
+            console.log('[Modal] Preserved original resource:', originalResource.title);
+            console.log('[Modal] Set modal resource:', modalResource.title);
+            
+            const fileType = detectFileType(modalResource);
             const modalContentHTML = getModalContent(fileType);
             
             openModal(modalContentHTML);
             
-            // Re-render the preview in modal context
+            // Re-render the preview in modal context using modalResource
             const modalContent = document.getElementById('modalContent');
             switch(fileType) {
                 case 'pdf':
@@ -3189,7 +3204,14 @@
         
         // Get modal content based on file type
         function getModalContent(fileType) {
-            if (!currentResource) return '';
+            // Use modal-specific resource, fallback to currentResource for compatibility
+            const resource = modalResource || currentResource;
+            if (!resource) {
+                console.error('[Modal] No resource available for modal content');
+                return '';
+            }
+            
+            console.log('[Modal] Generating content for:', resource.title, 'Type:', fileType);
             
             switch(fileType) {
                 case 'pdf':
@@ -3297,14 +3319,14 @@
                     `;
                     
                 case 'image':
-                    const imageUrl = currentResource.file_url || currentResource.featured_image_url || '';
+                    const imageUrl = resource.file_url || resource.featured_image_url || '';
                     if (!imageUrl || imageUrl === 'undefined' || imageUrl === 'null') {
                         return `<div style="text-align: center; padding: 20px;">No image available</div>`;
                     }
                     return `
                         <div class="image-viewer" id="modalImageViewer">
                             <img src="${imageUrl}" 
-                                 alt="${currentResource.title}"
+                                 alt="${resource.title}"
                                  id="modalImage">
                             <div class="image-controls" id="imageControls">
                                 <button class="image-control-btn" onclick="zoomOut()" title="Zoom Out (-)">
@@ -3352,7 +3374,7 @@
                             <div class="video-player-container">
                                 <div class="video-player" id="videoPlayer">
                                     <video id="videoElement" style="width: 100%; height: auto;">
-                                        <source src="${currentResource.file_url}" type="video/${currentResource.file_format || 'mp4'}">
+                                        <source src="${resource.file_url}" type="video/${resource.file_format || 'mp4'}">
                                         Your browser does not support the video tag.
                                     </video>
                                     
@@ -5285,10 +5307,11 @@
             if (index < 0 || index >= carouselState.resources.length) return;
             
             carouselState.currentIndex = index;
-            currentResource = carouselState.resources[index];
+            // Use modal-specific resource instead of corrupting global state
+            modalResource = carouselState.resources[index];
             
             // Re-render modal content with new resource
-            const fileType = detectFileType(currentResource);
+            const fileType = detectFileType(modalResource);
             const modalContent = getModalContent(fileType);
             document.getElementById('modalContent').innerHTML = modalContent;
             
