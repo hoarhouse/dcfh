@@ -2007,6 +2007,23 @@
                 window.modalPdfDocument = null;
             }
             
+            // Reset PDF viewer state
+            if (pdfViewerState.doc) {
+                pdfViewerState.doc.destroy();
+                pdfViewerState = {
+                    doc: null,
+                    currentPage: 1,
+                    numPages: 0,
+                    zoom: 1,
+                    rotation: 0,
+                    searchText: '',
+                    searchResults: [],
+                    currentSearchIndex: 0,
+                    pageCache: new Map(),
+                    thumbnailsVisible: true
+                };
+            }
+            
             // Clean up image viewer event listeners
             cleanupImageViewer();
             
@@ -2896,6 +2913,282 @@
                 container.appendChild(errorDiv);
             }
         }
+        
+        // PDF Control Functions
+        async function renderPdfThumbnails(pdf, numPages) {
+            const container = document.getElementById('pdfThumbnails');
+            if (!container) return;
+            
+            for (let i = 1; i <= numPages; i++) {
+                const thumbDiv = document.createElement('div');
+                thumbDiv.className = 'pdf-thumbnail';
+                thumbDiv.dataset.page = i;
+                if (i === 1) thumbDiv.classList.add('active');
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Render thumbnail
+                try {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 0.25 }); // Small scale for thumbnails
+                    
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    }).promise;
+                    
+                    thumbDiv.appendChild(canvas);
+                    
+                    // Add page number
+                    const pageNum = document.createElement('div');
+                    pageNum.className = 'pdf-thumbnail-number';
+                    pageNum.textContent = i;
+                    thumbDiv.appendChild(pageNum);
+                    
+                    // Click handler
+                    thumbDiv.onclick = () => pdfGoToPage(i);
+                    
+                } catch (error) {
+                    console.error(`Error rendering thumbnail ${i}:`, error);
+                }
+                
+                container.appendChild(thumbDiv);
+            }
+        }
+        
+        // Navigation functions
+        window.pdfGoToPage = function(pageNum) {
+            pageNum = parseInt(pageNum);
+            if (!pdfViewerState.doc || pageNum < 1 || pageNum > pdfViewerState.numPages) return;
+            
+            pdfViewerState.currentPage = pageNum;
+            
+            // Update UI
+            document.getElementById('pdfPageInput').value = pageNum;
+            
+            // Scroll to page
+            const pageElements = document.querySelectorAll('.pdf-page-wrapper');
+            if (pageElements[pageNum - 1]) {
+                pageElements[pageNum - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Update thumbnail highlight
+            document.querySelectorAll('.pdf-thumbnail').forEach(thumb => {
+                thumb.classList.remove('active');
+                if (parseInt(thumb.dataset.page) === pageNum) {
+                    thumb.classList.add('active');
+                    thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        };
+        
+        window.pdfNextPage = function() {
+            if (pdfViewerState.currentPage < pdfViewerState.numPages) {
+                pdfGoToPage(pdfViewerState.currentPage + 1);
+            }
+        };
+        
+        window.pdfPrevPage = function() {
+            if (pdfViewerState.currentPage > 1) {
+                pdfGoToPage(pdfViewerState.currentPage - 1);
+            }
+        };
+        
+        window.pdfFirstPage = function() {
+            pdfGoToPage(1);
+        };
+        
+        window.pdfLastPage = function() {
+            pdfGoToPage(pdfViewerState.numPages);
+        };
+        
+        // Zoom functions
+        window.pdfZoomIn = function() {
+            const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+            const currentIndex = zoomLevels.findIndex(z => z >= pdfViewerState.zoom);
+            if (currentIndex < zoomLevels.length - 1) {
+                setPdfZoom(zoomLevels[currentIndex + 1]);
+            }
+        };
+        
+        window.pdfZoomOut = function() {
+            const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+            const currentIndex = zoomLevels.findIndex(z => z >= pdfViewerState.zoom);
+            if (currentIndex > 0) {
+                setPdfZoom(zoomLevels[currentIndex - 1]);
+            }
+        };
+        
+        window.pdfFitWidth = function() {
+            const container = document.querySelector('.pdf-main-content');
+            const firstPage = document.querySelector('.pdf-page-wrapper canvas');
+            if (!container || !firstPage) return;
+            
+            const containerWidth = container.clientWidth - 40; // Subtract padding
+            const pageWidth = firstPage.width;
+            const scale = containerWidth / pageWidth;
+            
+            setPdfZoom(scale);
+        };
+        
+        window.pdfFitPage = function() {
+            setPdfZoom(1);
+        };
+        
+        function setPdfZoom(zoom) {
+            pdfViewerState.zoom = Math.max(0.5, Math.min(3, zoom));
+            
+            // Update all page canvases
+            const pages = document.querySelectorAll('.pdf-page-wrapper');
+            pages.forEach(page => {
+                const canvas = page.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.transform = `scale(${pdfViewerState.zoom})`;
+                    canvas.style.transformOrigin = 'center top';
+                }
+                
+                if (pdfViewerState.zoom > 1) {
+                    page.classList.add('zoomed');
+                } else {
+                    page.classList.remove('zoomed');
+                }
+            });
+            
+            // Update zoom indicator
+            document.getElementById('pdfZoomIndicator').textContent = `${Math.round(pdfViewerState.zoom * 100)}%`;
+        }
+        
+        // Rotation functions
+        window.pdfRotateLeft = function() {
+            pdfViewerState.rotation = (pdfViewerState.rotation - 90) % 360;
+            applyPdfRotation();
+        };
+        
+        window.pdfRotateRight = function() {
+            pdfViewerState.rotation = (pdfViewerState.rotation + 90) % 360;
+            applyPdfRotation();
+        };
+        
+        function applyPdfRotation() {
+            const pages = document.querySelectorAll('.pdf-page-wrapper canvas');
+            pages.forEach(canvas => {
+                const currentScale = pdfViewerState.zoom;
+                canvas.style.transform = `scale(${currentScale}) rotate(${pdfViewerState.rotation}deg)`;
+            });
+        }
+        
+        // Thumbnail toggle
+        window.togglePdfThumbnails = function() {
+            const panel = document.getElementById('pdfThumbnailPanel');
+            if (panel) {
+                panel.classList.toggle('collapsed');
+                pdfViewerState.thumbnailsVisible = !panel.classList.contains('collapsed');
+            }
+        };
+        
+        // Search functions
+        window.togglePdfSearch = function() {
+            const searchBar = document.getElementById('pdfSearchBar');
+            if (searchBar) {
+                searchBar.classList.toggle('active');
+                if (searchBar.classList.contains('active')) {
+                    document.getElementById('pdfSearchInput').focus();
+                }
+            }
+        };
+        
+        window.pdfSearch = async function(event) {
+            if (event && event.key !== 'Enter') return;
+            
+            const searchText = document.getElementById('pdfSearchInput').value.trim();
+            if (!searchText || !pdfViewerState.doc) return;
+            
+            pdfViewerState.searchText = searchText;
+            pdfViewerState.searchResults = [];
+            
+            // Search through all pages (simplified - real implementation would use PDF.js find controller)
+            for (let i = 1; i <= pdfViewerState.numPages; i++) {
+                const page = await pdfViewerState.doc.getPage(i);
+                const textContent = await page.getTextContent();
+                const text = textContent.items.map(item => item.str).join(' ');
+                
+                if (text.toLowerCase().includes(searchText.toLowerCase())) {
+                    pdfViewerState.searchResults.push(i);
+                }
+            }
+            
+            // Update search results display
+            const resultsEl = document.getElementById('pdfSearchResults');
+            if (pdfViewerState.searchResults.length > 0) {
+                resultsEl.textContent = `Found on ${pdfViewerState.searchResults.length} page(s)`;
+                pdfGoToPage(pdfViewerState.searchResults[0]);
+            } else {
+                resultsEl.textContent = 'No results';
+            }
+        };
+        
+        window.pdfSearchNext = function() {
+            if (pdfViewerState.searchResults.length === 0) return;
+            pdfViewerState.currentSearchIndex = (pdfViewerState.currentSearchIndex + 1) % pdfViewerState.searchResults.length;
+            pdfGoToPage(pdfViewerState.searchResults[pdfViewerState.currentSearchIndex]);
+        };
+        
+        window.pdfSearchPrev = function() {
+            if (pdfViewerState.searchResults.length === 0) return;
+            pdfViewerState.currentSearchIndex = pdfViewerState.currentSearchIndex === 0 ? 
+                pdfViewerState.searchResults.length - 1 : pdfViewerState.currentSearchIndex - 1;
+            pdfGoToPage(pdfViewerState.searchResults[pdfViewerState.currentSearchIndex]);
+        };
+        
+        window.pdfClearSearch = function() {
+            document.getElementById('pdfSearchInput').value = '';
+            document.getElementById('pdfSearchResults').textContent = '';
+            pdfViewerState.searchText = '';
+            pdfViewerState.searchResults = [];
+            pdfViewerState.currentSearchIndex = 0;
+        };
+        
+        // Download function
+        window.pdfDownload = function() {
+            if (currentResource && currentResource.file_url) {
+                window.open(currentResource.file_url, '_blank');
+            }
+        };
+        
+        // Keyboard shortcuts for PDF
+        document.addEventListener('keydown', function(e) {
+            if (!modalOpen || detectFileType(currentResource) !== 'pdf') return;
+            
+            switch(e.key) {
+                case 'PageUp':
+                    e.preventDefault();
+                    pdfPrevPage();
+                    break;
+                case 'PageDown':
+                    e.preventDefault();
+                    pdfNextPage();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    pdfFirstPage();
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    pdfLastPage();
+                    break;
+                case 'f':
+                case 'F':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        togglePdfSearch();
+                    }
+                    break;
+            }
+        });
 
         // Wait for DCF system to initialize Supabase
         async function waitForSupabase() {
