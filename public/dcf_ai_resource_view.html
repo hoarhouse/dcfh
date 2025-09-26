@@ -1246,6 +1246,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
         
         .modal-content .image-viewer img {
@@ -1254,13 +1256,136 @@
             object-fit: contain;
             cursor: zoom-in;
             transition: transform 0.3s ease;
+            user-select: none;
+            -webkit-user-drag: none;
+            transform-origin: center center;
         }
         
         .modal-content .image-viewer.zoomed img {
             cursor: move;
-            transform: scale(2);
             max-width: none;
             max-height: none;
+        }
+        
+        .modal-content .image-viewer.dragging img {
+            cursor: grabbing;
+            transition: none;
+        }
+        
+        /* Image Controls Toolbar */
+        .image-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .image-controls.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .image-control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .image-control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .image-control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .image-control-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+        
+        .control-separator {
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 5px;
+        }
+        
+        .zoom-indicator {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+            padding: 0 10px;
+        }
+        
+        /* Zoom Preset Buttons */
+        .zoom-presets {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .zoom-preset {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .zoom-preset:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .zoom-preset.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+        
+        /* Tooltip for controls */
+        .control-tooltip {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .image-control-btn:hover .control-tooltip {
+            opacity: 1;
         }
         
         .modal-content .media-viewer {
@@ -1753,6 +1878,43 @@
                             <img src="${currentResource.file_url || currentResource.featured_image_url}" 
                                  alt="${currentResource.title}"
                                  id="modalImage">
+                            <div class="image-controls" id="imageControls">
+                                <button class="image-control-btn" onclick="zoomOut()" title="Zoom Out (-)">
+                                    <span>−</span>
+                                    <span class="control-tooltip">Zoom Out (-)</span>
+                                </button>
+                                <span class="zoom-indicator" id="zoomIndicator">100%</span>
+                                <button class="image-control-btn" onclick="zoomIn()" title="Zoom In (+)">
+                                    <span>+</span>
+                                    <span class="control-tooltip">Zoom In (+)</span>
+                                </button>
+                                
+                                <div class="control-separator"></div>
+                                
+                                <button class="image-control-btn" onclick="fitToScreen()" title="Fit to Screen (Space)">
+                                    <span>⊡</span>
+                                    <span class="control-tooltip">Fit to Screen (Space)</span>
+                                </button>
+                                <button class="image-control-btn" onclick="actualSize()" title="Actual Size (0)">
+                                    <span>1:1</span>
+                                    <span class="control-tooltip">Actual Size (0)</span>
+                                </button>
+                                
+                                <div class="control-separator"></div>
+                                
+                                <button class="image-control-btn" onclick="rotateLeft()" title="Rotate Left">
+                                    <span>↺</span>
+                                    <span class="control-tooltip">Rotate Left</span>
+                                </button>
+                                <button class="image-control-btn" onclick="rotateRight()" title="Rotate Right (R)">
+                                    <span>↻</span>
+                                    <span class="control-tooltip">Rotate Right (R)</span>
+                                </button>
+                                <button class="image-control-btn" onclick="resetImage()" title="Reset">
+                                    <span>⟲</span>
+                                    <span class="control-tooltip">Reset</span>
+                                </button>
+                            </div>
                         </div>
                     `;
                     
