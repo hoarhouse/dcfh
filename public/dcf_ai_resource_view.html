@@ -5885,54 +5885,18 @@
 
         // Image Preview with adaptive orientation
         async function renderImagePreview(container) {
-            // Priority: Use file_url for actual image files
-            // Only use featured_image_url if this is actually an image resource without file_url
             if (!currentResource.file_url) {
                 renderFallbackPreview(container);
                 return;
             }
             
-            // Detect image orientation
-            const orientation = await detectImageOrientation(currentResource.file_url);
-            console.log(`Image orientation detected: ${orientation}`);
-            
-            // Apply orientation-specific class to the container
-            const previewContent = document.getElementById('previewContent');
-            if (previewContent) {
-                // Remove any existing preview-image-* classes
-                previewContent.classList.remove('preview-image-landscape', 'preview-image-portrait', 'preview-image-square');
-                // Add the specific orientation class
-                previewContent.classList.add(`preview-image-${orientation}`);
-            }
-            
             container.innerHTML = `
-                <div class="image-viewer image-viewer-${orientation}" id="imageViewer">
+                <div class="image-viewer">
                     <img src="${currentResource.file_url}" 
                          alt="${currentResource.title}"
-                         class="adaptive-image adaptive-image-${orientation}"
-                         id="previewImage"
-                         onerror="handleImageError(this)">
+                         class="adaptive-image">
                 </div>
             `;
-            
-            // Optimize image size after it loads
-            const img = document.getElementById('previewImage');
-            const viewer = document.getElementById('imageViewer');
-            
-            if (img) {
-                img.onload = function() {
-                    optimizeImageSize(this, viewer);
-                };
-                // If already loaded, optimize immediately
-                if (img.complete) {
-                    optimizeImageSize(img, viewer);
-                }
-            }
-            
-            // Add zoom functionality
-            viewer.addEventListener('click', function() {
-                this.classList.toggle('zoomed');
-            });
         }
         
         // Text Preview
