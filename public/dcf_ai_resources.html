@@ -1181,6 +1181,54 @@
             console.log(`✅ Batch processing complete. Processed ${processingQueue.length} files.`);
         }
         
+        // Manual preview regeneration function (can be called from console)
+        window.regeneratePreviewForResource = async function(resourceId) {
+            const cardId = `resource-card-${resourceId}`;
+            const previewContainer = document.getElementById(`preview-${cardId}`);
+            
+            if (!previewContainer) {
+                console.error(`Resource card not found: ${cardId}`);
+                return false;
+            }
+            
+            // Find the resource URL
+            const card = previewContainer.closest('.resource-card');
+            const onclick = card?.querySelector('[onclick]')?.getAttribute('onclick');
+            
+            if (!onclick) {
+                console.error('Could not find resource URL');
+                return false;
+            }
+            
+            // Extract the file URL from the resource data
+            const resource = window.allResources?.find(r => r.id === resourceId);
+            if (!resource || !resource.file_url) {
+                console.error('Resource not found or has no file URL');
+                return false;
+            }
+            
+            console.log(`Regenerating preview for resource ${resourceId}...`);
+            
+            // Show loading state
+            previewContainer.innerHTML = createPreviewPlaceholder(resource.file_type || 'pptx', true);
+            
+            // Generate new preview
+            await generateAndRenderOfficePreview(resource.file_url, cardId);
+            
+            return true;
+        };
+        
+        // Batch regenerate all Office file previews (admin function)
+        window.regenerateAllOfficePreviews = async function() {
+            if (!confirm('This will regenerate all Office document previews. Continue?')) {
+                return;
+            }
+            
+            console.log('Starting batch preview regeneration...');
+            await batchGenerateOfficePreviews();
+            console.log('Batch regeneration complete!');
+        };
+        
         // Enhanced initialization with Office preview support
         document.addEventListener('DOMContentLoaded', function() {
             animateStats();
@@ -1196,6 +1244,7 @@
             
             // Log page load for analytics
             console.log('DCF Hungary AI Resources Library page loaded successfully');
+            console.log('💡 Tip: Use regeneratePreviewForResource(id) or regenerateAllOfficePreviews() in console for manual preview generation');
             
             // Add entrance animations
             setTimeout(() => {
