@@ -4272,6 +4272,25 @@
             }).filter(Boolean).join('');
             
             console.log(`📊 DEBUG: Successfully generated ${successfulCards} cards out of ${slugEntries.length} CMS entries`);
+            
+            // If we have fewer cards than expected, fill in with any additional resources not in CMS
+            if (successfulCards < 5 && resources.length > successfulCards) {
+                console.log(`🔧 DEBUG: Filling in missing cards - have ${successfulCards}, want 5, ${resources.length} total resources available`);
+                const usedSlugs = slugEntries.map(e => typeof e === 'string' ? e : e.slug).filter(Boolean);
+                const unusedResources = resources.filter(r => !usedSlugs.includes(r.slug));
+                
+                let additionalCards = '';
+                for (let i = 0; i < Math.min(5 - successfulCards, unusedResources.length); i++) {
+                    console.log(`➕ DEBUG: Adding extra card for resource: ${unusedResources[i].title}`);
+                    additionalCards += generateResourceCardHTML(unusedResources[i], successfulCards + i, 'resource-doc-card');
+                    successfulCards++;
+                }
+                
+                if (additionalCards) {
+                    cardsHTML += additionalCards;
+                    console.log(`✅ DEBUG: Added extra cards, total now: ${successfulCards}`);
+                }
+            }
 
             // Update DOM - only show if we have cards
             if (cardsHTML) {
