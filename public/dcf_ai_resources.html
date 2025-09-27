@@ -1326,6 +1326,52 @@
             `;
         }
 
+        async function generateAndRenderPDFPreview(url, cardId) {
+            const previewContainer = document.getElementById(`preview-${cardId}`);
+            if (!previewContainer) return;
+            
+            try {
+                const previewUrl = await generatePDFPreview(url);
+                if (previewUrl) {
+                    previewContainer.innerHTML = `
+                        <img src="${previewUrl}" alt="PDF Preview" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+                        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                            PDF
+                        </div>
+                    `;
+                } else {
+                    previewContainer.innerHTML = createPreviewPlaceholder('pdf', false);
+                }
+            } catch (error) {
+                console.error('Error rendering PDF preview:', error);
+                previewContainer.innerHTML = createPreviewPlaceholder('pdf', false);
+            }
+        }
+
+        function getDefaultPlaceholder(type) {
+            // Category-based placeholder colors
+            const colors = {
+                research: '#007bff',
+                templates: '#28a745',
+                guides: '#ffc107',
+                presentations: '#17a2b8',
+                datasets: '#6f42c1',
+                policies: '#dc3545',
+                visual: '#fd7e14',
+                'case-studies': '#20c997'
+            };
+            const bgColor = colors[type] || '#6c757d';
+            
+            return `
+                <div style="width: 100%; height: 200px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; color: white;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 0.5rem;">📚</div>
+                        <div style="font-weight: 600; text-transform: capitalize;">${type ? type.replace('-', ' ') : 'Resource'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         function createResourceCard(resource) {
             const createdDate = new Date(resource.created_at).toLocaleDateString();
             const fileSize = resource.file_size ? `${(resource.file_size / 1024 / 1024).toFixed(1)} MB` : '';
