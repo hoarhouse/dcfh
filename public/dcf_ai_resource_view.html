@@ -480,7 +480,25 @@
         .preview-video { 
             height: 500px; 
             width: 100%; 
-        } /* Video aspect */
+        } /* Default video aspect */
+        
+        /* Video orientation-specific styles */
+        .preview-video-portrait {
+            height: 75vh;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .preview-video-square {
+            height: 60vh;
+            max-width: 60vh;
+            margin: 0 auto;
+        }
+        
+        .preview-video-landscape {
+            height: 500px;
+            width: 100%;
+        }
 
         .preview-excel {
             height: 85vh; /* Maximize viewport usage */
@@ -5940,8 +5958,8 @@
             }
         }
         
-        // Video Preview
-        function renderVideoPreview(container) {
+        // Video Preview with orientation detection
+        async function renderVideoPreview(container) {
             if (!currentResource.file_url) {
                 renderFallbackPreview(container);
                 return;
@@ -5954,6 +5972,17 @@
             }
             document.body.classList.remove('viewing-image');
             
+            // Detect video orientation
+            const orientation = await detectVideoOrientation(currentResource.file_url);
+            console.log(`Video orientation detected: ${orientation}`);
+            
+            // Apply orientation class to preview content
+            const previewContent = document.getElementById('previewContent');
+            if (previewContent) {
+                previewContent.classList.remove('preview-video-landscape', 'preview-video-portrait', 'preview-video-square');
+                previewContent.classList.add(`preview-video-${orientation}`);
+            }
+            
             // Hide fullscreen button for videos
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             if (fullscreenBtn) {
@@ -5961,7 +5990,7 @@
             }
             
             container.innerHTML = `
-                <div class="media-viewer">
+                <div class="media-viewer video-${orientation}">
                     <video controls style="width: 100%; max-height: 100%;">
                         <source src="${currentResource.file_url}" type="video/${currentResource.file_format || 'mp4'}">
                         Your browser does not support the video tag.
