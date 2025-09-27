@@ -1128,57 +1128,144 @@
         }
 
         // Initialize all effects
+        // Helper function to extract file URL from a resource card
+        function extractFileUrlFromCard(cardElement) {
+            // Try to get resource ID from the card element
+            const cardId = cardElement.id;
+            if (!cardId) return null;
+            
+            // Extract resource ID from card ID (format: preview-resource-card-{id})
+            const match = cardId.match(/preview-resource-card-(\d+)/);
+            if (!match) return null;
+            
+            const resourceId = match[1];
+            
+            // Find the resource in our data
+            const resource = window.allResources?.find(r => r.id == resourceId);
+            if (!resource) {
+                console.warn(`Resource not found for ID: ${resourceId}`);
+                return null;
+            }
+            
+            // Return the file URL
+            return resource.file_url || null;
+        }
+        
         // Batch process existing Office files to generate previews
         async function batchGenerateOfficePreviews() {
             console.log('🔄 Starting batch Office preview generation...');
             
-            // Find all Office file cards that need preview generation
-            const officeCards = document.querySelectorAll('[id^="preview-resource-card-"]');
-            const processingQueue = [];
+            // Ensure resources are loaded
+            if (!window.allResources || window.allResources.length === 0) {
+                console.warn('⚠️ Resources not loaded yet. Retrying in 3 seconds...');
+                setTimeout(() => batchGenerateOfficePreviews(), 3000);
+                return;
+            }
             
-            officeCards.forEach(card => {
-                const parent = card.closest('.resource-card');
-                if (parent) {
-                    // Check if this is an Office file without a preview
-                    const hasPlaceholder = card.querySelector('.spinner-border') || 
-                                         card.textContent.includes('Generating preview');
+            // Find all Office file cards that need preview generation
+            const previewContainers = document.querySelectorAll('[id^="preview-resource-card-"]');
+            const processingQueue = [];
+            let skippedCount = 0;
+            let alreadyGeneratedCount = 0;
+            
+            console.log(`📊 Found ${previewContainers.length} preview containers to check`);
+            
+            previewContainers.forEach(container => {
+                // Check if this container has a placeholder that indicates it needs processing
+                const hasPlaceholder = container.querySelector('.spinner-border') || 
+                                     container.textContent.includes('Generating preview') ||
+                                     container.textContent.includes('Preview not available');
+                
+                // Check if it already has a generated preview image
+                const hasImage = container.querySelector('img[src^="data:"]') || 
+                               container.querySelector('img[src*="drive.google.com"]') ||
+                               container.querySelector('img[src*="officeapps.live.com"]');
+                
+                if (hasImage) {
+                    alreadyGeneratedCount++;
+                    return;
+                }
+                
+                if (hasPlaceholder) {
+                    const cardId = container.id.replace('preview-', '');
+                    const fileUrl = extractFileUrlFromCard(container);
                     
-                    if (hasPlaceholder) {
-                        // Extract card ID and find the resource
-                        const cardId = card.id.replace('preview-', '');
-                        const resourceId = cardId.replace('resource-card-', '');
-                        
-                        // Look for the file URL in the parent card's onclick or data attributes
-                        const viewButton = parent.querySelector('[onclick*="viewResource"]');
-                        if (viewButton) {
-                            processingQueue.push({ cardId, element: card });
-                        }
+                    if (fileUrl && (isPPTXFile(fileUrl) || isWordFile(fileUrl) || isExcelFile(fileUrl))) {
+                        const fileType = isPPTXFile(fileUrl) ? 'PPTX' : 
+                                       isWordFile(fileUrl) ? 'DOCX' : 'XLSX';
+                        processingQueue.push({ 
+                            cardId, 
+                            element: container, 
+                            fileUrl,
+                            fileType
+                        });
+                        console.log(`📎 Queued ${fileType} file for preview: ${cardId}`);
+                    } else {
+                        skippedCount++;
                     }
                 }
             });
             
+            console.log(`📊 Preview Generation Stats:
+                - Already generated: ${alreadyGeneratedCount}
+                - Queued for processing: ${processingQueue.length}
+                - Skipped (not Office files): ${skippedCount}`);
+            
+            if (processingQueue.length === 0) {
+                console.log('✅ No Office files need preview generation');
+                return;
+            }
+            
             // Process previews in batches to avoid overwhelming the browser
             const batchSize = 3;
+            let successCount = 0;
+            let failureCount = 0;
+            
             for (let i = 0; i < processingQueue.length; i += batchSize) {
                 const batch = processingQueue.slice(i, i + batchSize);
                 
-                await Promise.all(batch.map(async ({ cardId, element }) => {
+                console.log(`🔄 Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(processingQueue.length/batchSize)}`);
+                
+                await Promise.all(batch.map(async ({ cardId, element, fileUrl, fileType }) => {
                     try {
-                        // The generateAndRenderOfficePreview function will be called
-                        // automatically if the cards are set up correctly
-                        console.log(`Processing preview for ${cardId}`);
+                        console.log(`🎨 Generating preview for ${fileType} file: ${cardId}`);
+                        
+                        // Actually call the preview generation function with the file URL
+                        await generateAndRenderOfficePreview(fileUrl, cardId);
+                        
+                        // Check if preview was successfully generated
+                        const hasNewImage = element.querySelector('img[src^="data:"]') || 
+                                          element.querySelector('img[src*="drive.google.com"]') ||
+                                          element.querySelector('img[src*="officeapps.live.com"]');
+                        
+                        if (hasNewImage) {
+                            successCount++;
+                            console.log(`✅ Successfully generated preview for ${cardId}`);
+                        } else {
+                            failureCount++;
+                            console.log(`⚠️ Preview generation returned but no image for ${cardId}`);
+                        }
                     } catch (error) {
-                        console.error(`Failed to process ${cardId}:`, error);
+                        failureCount++;
+                        console.error(`❌ Failed to generate preview for ${cardId}:`, error.message);
+                        
+                        // Ensure we show a proper fallback placeholder
+                        element.innerHTML = createPreviewPlaceholder(fileType.toLowerCase(), false);
                     }
                 }));
                 
-                // Small delay between batches
+                // Small delay between batches to avoid rate limiting
                 if (i + batchSize < processingQueue.length) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    console.log('⏸️ Pausing before next batch...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
             
-            console.log(`✅ Batch processing complete. Processed ${processingQueue.length} files.`);
+            console.log(`✅ Batch processing complete!
+                - Total processed: ${processingQueue.length}
+                - Successful: ${successCount}
+                - Failed: ${failureCount}
+                - Success rate: ${((successCount/processingQueue.length) * 100).toFixed(1)}%`);
         }
         
         // Manual preview regeneration function (can be called from console)
@@ -1462,23 +1549,34 @@
             }
         }
 
-        // Enhanced PPTX Preview Generation System
-        async function generatePPTXPreview(url, resourceId) {
+        // Enhanced PPTX Preview Generation System with Retry Logic
+        async function generatePPTXPreview(url, resourceId, retryCount = 0) {
             // Check cache first
             if (previewCache.has(url)) {
-                return previewCache.get(url);
+                const cached = previewCache.get(url);
+                console.log(`📦 Using cached preview for: ${url.substring(0, 50)}...`);
+                return cached;
+            }
+            
+            console.log(`🔄 Generating preview for resource ${resourceId} (attempt ${retryCount + 1})`);
+            
+            // Check if URL is valid for preview generation
+            if (!url || !url.startsWith('http')) {
+                console.warn(`⚠️ Invalid URL for preview generation: ${url}`);
+                previewCache.set(url, null); // Cache the failure
+                return null;
             }
             
             // Try multiple preview generation methods in order of preference
             let previewUrl = null;
             
             // Method 1: Microsoft Office Online Viewer (best quality for Office files)
-            if (!previewUrl && url.startsWith('http')) {
+            if (!previewUrl) {
                 previewUrl = await tryMicrosoftOfficePreview(url);
             }
             
             // Method 2: Google Docs Viewer (good fallback)
-            if (!previewUrl && url.startsWith('http')) {
+            if (!previewUrl) {
                 previewUrl = await tryGoogleDocsPreview(url);
             }
             
@@ -1487,9 +1585,21 @@
                 previewUrl = await tryOneDrivePreview(url);
             }
             
+            // Retry logic with exponential backoff
+            if (!previewUrl && retryCount < 2) {
+                const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                console.log(`⏳ No preview generated, retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return generatePPTXPreview(url, resourceId, retryCount + 1);
+            }
+            
             // Cache the result (even if null to avoid repeated attempts)
+            previewCache.set(url, previewUrl);
+            
             if (previewUrl) {
-                previewCache.set(url, previewUrl);
+                console.log(`✅ Preview generated and cached for resource ${resourceId}`);
+            } else {
+                console.log(`❌ Failed to generate preview for resource ${resourceId} after ${retryCount + 1} attempts`);
             }
             
             return previewUrl;
@@ -1498,14 +1608,21 @@
         // Method 1: Microsoft Office Online Viewer
         async function tryMicrosoftOfficePreview(url) {
             try {
+                console.log('🔷 Trying Microsoft Office preview for:', url.substring(0, 50) + '...');
                 const encodedUrl = encodeURIComponent(url);
                 // Microsoft provides a thumbnail service through Office Online
                 const thumbnailUrl = `https://view.officeapps.live.com/op/thumbnail.aspx?src=${encodedUrl}`;
                 
                 // Verify the thumbnail loads
-                return await testImageLoad(thumbnailUrl, 3000);
+                const result = await testImageLoad(thumbnailUrl, 3000);
+                if (result) {
+                    console.log('✅ Microsoft Office preview succeeded');
+                } else {
+                    console.log('⚠️ Microsoft Office preview failed - likely CORS or access issue');
+                }
+                return result;
             } catch (error) {
-                console.log('Microsoft Office preview failed:', error);
+                console.log('❌ Microsoft Office preview error:', error.message);
                 return null;
             }
         }
@@ -1513,13 +1630,20 @@
         // Method 2: Google Docs Viewer
         async function tryGoogleDocsPreview(url) {
             try {
+                console.log('🔷 Trying Google Docs preview for:', url.substring(0, 50) + '...');
                 const encodedUrl = encodeURIComponent(url);
                 // Google Docs viewer can generate thumbnails
                 const thumbnailUrl = `https://drive.google.com/thumbnail?authuser=0&sz=w640&url=${encodedUrl}`;
                 
-                return await testImageLoad(thumbnailUrl, 3000);
+                const result = await testImageLoad(thumbnailUrl, 3000);
+                if (result) {
+                    console.log('✅ Google Docs preview succeeded');
+                } else {
+                    console.log('⚠️ Google Docs preview failed - file may not be publicly accessible');
+                }
+                return result;
             } catch (error) {
-                console.log('Google Docs preview failed:', error);
+                console.log('❌ Google Docs preview error:', error.message);
                 return null;
             }
         }
@@ -1546,40 +1670,75 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 let timeoutId;
+                let hasResolved = false;
                 
                 const cleanup = () => {
+                    if (hasResolved) return;
+                    hasResolved = true;
                     clearTimeout(timeoutId);
                     img.onload = null;
                     img.onerror = null;
+                    img.onabort = null;
                 };
                 
                 img.onload = () => {
                     cleanup();
+                    console.log(`✅ Image loaded successfully from: ${url.substring(0, 50)}...`);
                     resolve(url);
                 };
                 
-                img.onerror = () => {
+                img.onerror = (e) => {
                     cleanup();
+                    // Try to determine the type of error
+                    if (url.includes('officeapps.live.com')) {
+                        console.log(`⚠️ Microsoft Office preview blocked - likely CORS policy`);
+                    } else if (url.includes('drive.google.com')) {
+                        console.log(`⚠️ Google Docs preview blocked - file may not be public`);
+                    } else {
+                        console.log(`⚠️ Image failed to load from: ${url.substring(0, 50)}...`);
+                    }
+                    resolve(null);
+                };
+                
+                img.onabort = () => {
+                    cleanup();
+                    console.log(`⚠️ Image loading aborted: ${url.substring(0, 50)}...`);
                     resolve(null);
                 };
                 
                 // Set timeout
                 timeoutId = setTimeout(() => {
                     cleanup();
+                    console.log(`⏱️ Image loading timed out after ${timeout}ms: ${url.substring(0, 50)}...`);
                     resolve(null);
                 }, timeout);
                 
-                // Add crossorigin attribute for CORS
+                // Try different CORS modes
+                // First try with anonymous (allows caching)
                 img.crossOrigin = 'anonymous';
-                img.src = url;
+                
+                // Set the source to start loading
+                try {
+                    img.src = url;
+                } catch (error) {
+                    cleanup();
+                    console.error(`❌ Error setting image source: ${error.message}`);
+                    resolve(null);
+                }
             });
         }
 
         async function generateAndRenderOfficePreview(url, cardId) {
             const previewContainer = document.getElementById(`preview-${cardId}`);
-            if (!previewContainer) return;
+            if (!previewContainer) {
+                console.warn(`Preview container not found: preview-${cardId}`);
+                return;
+            }
             
             try {
+                // Extract resource ID from cardId (format: resource-card-{id} or card-{id})
+                const resourceId = cardId.replace('resource-card-', '').replace('card-', '');
+                
                 // Determine file type from URL
                 const lowerUrl = url.toLowerCase();
                 const fileExt = lowerUrl.includes('.pptx') || lowerUrl.includes('.ppt') ? 'PPTX' :
@@ -1587,8 +1746,10 @@
                                lowerUrl.includes('.xlsx') || lowerUrl.includes('.xls') ? 'XLSX' : 'Office';
                 const fileType = fileExt.toLowerCase();
                 
+                console.log(`🎯 Starting preview generation for ${fileExt} file (resource ${resourceId})`);
+                
                 // Try to generate a real preview
-                const previewUrl = await generatePPTXPreview(url, cardId);
+                const previewUrl = await generatePPTXPreview(url, resourceId);
                 
                 if (previewUrl) {
                     // Successfully got a preview image
