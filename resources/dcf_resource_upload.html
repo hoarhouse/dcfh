@@ -2659,6 +2659,25 @@
         }
 
         // Submit resource
+        // Helper function to detect file type from URL
+        function detectFileTypeFromUrl(url) {
+            if (!url) return 'unknown';
+            
+            const extension = url.split('.').pop().toLowerCase().split('?')[0];
+            
+            // Image file extensions
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(extension)) {
+                return 'image';
+            }
+            
+            // Video file extensions
+            if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'm4v'].includes(extension)) {
+                return 'video';
+            }
+            
+            return 'unknown';
+        }
+
         async function submitResource() {
             try {
                 // Validate confirmations
@@ -2797,18 +2816,28 @@
                 const primaryFile = resourceData.files && resourceData.files.length > 0 ? resourceData.files[0] : null;
                 const totalSize = resourceData.files ? resourceData.files.reduce((sum, file) => sum + file.size, 0) : 0;
                 
-                // Determine featured_image_url - use uploaded featured image, or find from files, or use default
-                let finalFeaturedImageUrl = featuredImageUrl; // Use uploaded featured image first
+                // Determine featured_image_url
+                let finalFeaturedImageUrl = featuredImageUrl; // Use uploaded featured image first if available
                 
-                if (!finalFeaturedImageUrl && resourceData.files && resourceData.files.length > 0) {
-                    const imageFile = resourceData.files.find(f => f.type && f.type.startsWith('image/'));
-                    if (imageFile && fileUrl) {
-                        // If there's an image file in main files, use its URL
+                // If no featured image uploaded, check if the main file is visual (image/video)
+                if (!finalFeaturedImageUrl && fileUrl) {
+                    const visualFileTypes = ['image', 'video'];
+                    const detectedFileType = detectFileTypeFromUrl(fileUrl);
+                    
+                    // Auto-use the file itself as preview for visual files
+                    if (visualFileTypes.includes(detectedFileType)) {
+                        console.log(`Auto-setting featured image for ${detectedFileType} file:`, fileUrl);
                         finalFeaturedImageUrl = fileUrl;
+                    } else if (resourceData.files && resourceData.files.length > 0) {
+                        // For non-visual main files, still check if there's an image in the files
+                        const imageFile = resourceData.files.find(f => f.type && f.type.startsWith('image/'));
+                        if (imageFile) {
+                            finalFeaturedImageUrl = fileUrl;
+                        }
                     }
                 }
                 
-                // Use default images based on resource type if no image
+                // Use default images based on resource type only if no visual file found
                 if (!finalFeaturedImageUrl) {
                     const defaultImages = {
                         research: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
