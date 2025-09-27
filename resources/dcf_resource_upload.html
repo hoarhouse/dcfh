@@ -1592,9 +1592,74 @@
                 .replace(/\s+/g, '-') // Replace spaces with dashes
                 .replace(/-+/g, '-') // Replace multiple dashes with single dash
                 .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
-                .substring(0, 80); // Leave room for numbering
+                .substring(0, 50); // Maximum 50 characters per requirement
             
             return await ensureUniqueSlug(baseSlug);
+        }
+        
+        async function generateAndDisplaySlug(title) {
+            const slugField = document.getElementById('slug');
+            const slugPreview = document.getElementById('slugPreview');
+            const slugContainer = slugField.parentElement;
+            
+            // Show loading state
+            slugField.style.borderColor = '#ffc107';
+            slugField.style.background = '#fff3cd';
+            slugField.value = 'Generating unique slug...';
+            slugField.disabled = true;
+            
+            // Add loading indicator
+            if (!document.getElementById('slug-loader')) {
+                const loader = document.createElement('div');
+                loader.id = 'slug-loader';
+                loader.innerHTML = '<span style="color: #ffc107; font-size: 0.85rem;">⏳ Checking availability...</span>';
+                slugContainer.appendChild(loader);
+            }
+            
+            try {
+                // Generate unique slug
+                const uniqueSlug = await generateSlugFromTitle(title);
+                
+                // Update slug field with success state
+                slugField.value = uniqueSlug;
+                slugField.style.borderColor = '#28a745';
+                slugField.style.background = '#d4edda';
+                slugField.disabled = false;
+                slugField.setAttribute('readonly', true);
+                
+                // Update preview
+                if (slugPreview) {
+                    slugPreview.textContent = uniqueSlug;
+                }
+                
+                // Show success message
+                const loader = document.getElementById('slug-loader');
+                if (loader) {
+                    loader.innerHTML = '<span style="color: #28a745; font-size: 0.85rem;">✓ Unique slug generated</span>';
+                    setTimeout(() => {
+                        if (document.getElementById('slug-loader')) {
+                            document.getElementById('slug-loader').remove();
+                        }
+                    }, 3000);
+                }
+                
+                // Store the generated slug for form submission
+                window.generatedSlug = uniqueSlug;
+                
+            } catch (error) {
+                console.error('Error generating slug:', error);
+                
+                // Show error state
+                slugField.value = '';
+                slugField.style.borderColor = '#dc3545';
+                slugField.style.background = '#f8d7da';
+                slugField.disabled = false;
+                
+                const loader = document.getElementById('slug-loader');
+                if (loader) {
+                    loader.innerHTML = '<span style="color: #dc3545; font-size: 0.85rem;">✗ Error generating slug. Please try again.</span>';
+                }
+            }
         }
         
         /**
@@ -2450,16 +2515,28 @@
             // Generate unique slug from title when moving to Step 3
             try {
                 // Show loading state
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Generating URL...';
-                submitBtn.disabled = true;
-                
-                resourceData.slug = await generateSlugFromTitle(resourceData.title);
-                
-                // Restore button
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
+                // Use the already generated slug or generate a new one if needed
+                const slugField = document.getElementById('slug');
+                if (slugField.value && slugField.value !== '' && !slugField.value.includes('...')) {
+                    // Use existing slug if already generated
+                    resourceData.slug = slugField.value;
+                } else {
+                    // Generate new slug if not already done
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = 'Generating URL...';
+                    submitBtn.disabled = true;
+                    
+                    resourceData.slug = await generateSlugFromTitle(resourceData.title);
+                    
+                    // Update slug field
+                    slugField.value = resourceData.slug;
+                    document.getElementById('slugPreview').textContent = resourceData.slug;
+                    
+                    // Restore button
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
                 
                 generateResourcePreview();
                 generateReviewFilePreviews(selectedFiles);
