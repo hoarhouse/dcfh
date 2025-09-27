@@ -4233,14 +4233,17 @@
             }
 
             console.log('✅ DEBUG: Found', resources.length, 'matching resources');
+            console.log('📋 DEBUG: CMS has', slugEntries.length, 'slug entries');
+            console.log('🔍 DEBUG: Matching resources to CMS entries...');
 
             // Generate cards HTML with templates
+            let successfulCards = 0;
             const cardsHTML = slugEntries.map((entry, index) => {
                 const slug = typeof entry === 'string' ? entry : entry.slug;
                 const template = typeof entry === 'object' ? entry.template : 'resource-doc-card';
                 const resource = resources.find(r => r.slug === slug);
                 
-                console.log(`🎨 DEBUG: Generating card ${index + 1}:`, {
+                console.log(`🎨 DEBUG: Generating card ${index + 1} of ${slugEntries.length}:`, {
                     slug,
                     template,
                     resourceFound: !!resource,
@@ -4248,12 +4251,15 @@
                 });
                 
                 if (!resource) {
-                    console.log(`⚠️ DEBUG: No resource found for slug "${slug}"`);
+                    console.log(`⚠️ DEBUG: No resource found for slug "${slug}" - skipping card`);
                     return '';
                 }
                 
+                successfulCards++;
                 return generateResourceCardHTML(resource, index, template);
             }).filter(Boolean).join('');
+            
+            console.log(`📊 DEBUG: Successfully generated ${successfulCards} cards out of ${slugEntries.length} CMS entries`);
 
             // Update DOM - only show if we have cards
             if (cardsHTML) {
