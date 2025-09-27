@@ -1283,36 +1283,60 @@
             }
 
             try {
-                // Load the PDF document
-                const loadingTask = pdfjsLib.getDocument(url);
+                // Configure loading task with CORS handling
+                const loadingTask = pdfjsLib.getDocument({
+                    url: url,
+                    withCredentials: false,
+                    // Add CORS proxy if needed (you may need to configure this based on your setup)
+                    // For Supabase storage, files should be publicly accessible
+                });
+                
                 const pdf = await loadingTask.promise;
                 
                 // Get the first page
                 const page = await pdf.getPage(1);
                 
                 // Set up canvas with proper dimensions
-                const viewport = page.getViewport({ scale: 1.5 });
+                // Use smaller scale for performance on resource cards
+                const scale = 1.0;
+                const viewport = page.getViewport({ scale: scale });
+                
+                // Create canvas
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 
+                // Set dimensions
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
                 
                 // Render the page
-                await page.render({
+                const renderContext = {
                     canvasContext: context,
-                    viewport: viewport
-                }).promise;
+                    viewport: viewport,
+                    // Optimize for speed over quality in thumbnails
+                    intent: 'display'
+                };
                 
-                // Convert to data URL
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                await page.render(renderContext).promise;
+                
+                // Convert to data URL with compression
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 
                 // Cache the result
                 previewCache.set(url, dataUrl);
                 
+                // Clean up
+                page.cleanup();
+                
                 return dataUrl;
             } catch (error) {
                 console.error('Error generating PDF preview:', error);
+                
+                // Check if it's a CORS error
+                if (error.message && error.message.includes('CORS')) {
+                    console.log('CORS error detected - PDF preview not available for this file');
+                }
+                
                 return null;
             }
         }
