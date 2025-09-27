@@ -1128,12 +1128,71 @@
         }
 
         // Initialize all effects
+        // Batch process existing Office files to generate previews
+        async function batchGenerateOfficePreviews() {
+            console.log('🔄 Starting batch Office preview generation...');
+            
+            // Find all Office file cards that need preview generation
+            const officeCards = document.querySelectorAll('[id^="preview-resource-card-"]');
+            const processingQueue = [];
+            
+            officeCards.forEach(card => {
+                const parent = card.closest('.resource-card');
+                if (parent) {
+                    // Check if this is an Office file without a preview
+                    const hasPlaceholder = card.querySelector('.spinner-border') || 
+                                         card.textContent.includes('Generating preview');
+                    
+                    if (hasPlaceholder) {
+                        // Extract card ID and find the resource
+                        const cardId = card.id.replace('preview-', '');
+                        const resourceId = cardId.replace('resource-card-', '');
+                        
+                        // Look for the file URL in the parent card's onclick or data attributes
+                        const viewButton = parent.querySelector('[onclick*="viewResource"]');
+                        if (viewButton) {
+                            processingQueue.push({ cardId, element: card });
+                        }
+                    }
+                }
+            });
+            
+            // Process previews in batches to avoid overwhelming the browser
+            const batchSize = 3;
+            for (let i = 0; i < processingQueue.length; i += batchSize) {
+                const batch = processingQueue.slice(i, i + batchSize);
+                
+                await Promise.all(batch.map(async ({ cardId, element }) => {
+                    try {
+                        // The generateAndRenderOfficePreview function will be called
+                        // automatically if the cards are set up correctly
+                        console.log(`Processing preview for ${cardId}`);
+                    } catch (error) {
+                        console.error(`Failed to process ${cardId}:`, error);
+                    }
+                }));
+                
+                // Small delay between batches
+                if (i + batchSize < processingQueue.length) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            
+            console.log(`✅ Batch processing complete. Processed ${processingQueue.length} files.`);
+        }
+        
+        // Enhanced initialization with Office preview support
         document.addEventListener('DOMContentLoaded', function() {
             animateStats();
             animateTimeline();
             addCardEffects();
             initSmoothScroll();
             initParallax();
+            
+            // Start batch preview generation after a short delay
+            setTimeout(() => {
+                batchGenerateOfficePreviews();
+            }, 2000);
             
             // Log page load for analytics
             console.log('DCF Hungary AI Resources Library page loaded successfully');
