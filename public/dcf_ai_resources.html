@@ -1331,16 +1331,19 @@
             const fileSize = resource.file_size ? `${(resource.file_size / 1024 / 1024).toFixed(1)} MB` : '';
             const downloadCount = resource.download_count || 0;
             const rating = resource.rating_average || 0;
+            const cardId = `card-${resource.id}`;
             
-            // Use featured image if available, otherwise show type-based placeholder
+            // Determine preview type and generate appropriate HTML
             let imageHtml = '';
-            if (resource.featured_image_url) {
-                if (isVideoFile(resource.featured_image_url)) {
+            const fileUrl = resource.file_url || resource.featured_image_url || '';
+            
+            if (fileUrl) {
+                if (isVideoFile(fileUrl)) {
                     // Render video preview with poster frame
                     imageHtml = `
                         <div style="width: 100%; height: 200px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                             <video style="width: 100%; height: 100%; object-fit: cover;" muted preload="metadata" onloadeddata="this.currentTime = 1">
-                                <source src="${resource.featured_image_url}" type="video/mp4">
+                                <source src="${fileUrl}" type="video/mp4">
                                 <div style="width: 100%; height: 200px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; color: white;">
                                     <div style="text-align: center;">
                                         <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎥</div>
@@ -1355,31 +1358,32 @@
                             </div>
                         </div>
                     `;
-                } else {
+                } else if (isPDFFile(fileUrl)) {
+                    // PDF preview - will be generated async
+                    imageHtml = `
+                        <div id="preview-${cardId}" style="width: 100%; height: 200px; position: relative;">
+                            ${createPreviewPlaceholder('pdf', true)}
+                        </div>
+                    `;
+                    // Generate PDF preview asynchronously
+                    setTimeout(() => generateAndRenderPDFPreview(fileUrl, cardId), 0);
+                } else if (isPPTXFile(fileUrl)) {
+                    // PPTX preview placeholder
+                    imageHtml = `
+                        <div id="preview-${cardId}" style="width: 100%; height: 200px; position: relative;">
+                            ${createPreviewPlaceholder('pptx', false)}
+                        </div>
+                    `;
+                } else if (resource.featured_image_url) {
                     // Regular image preview
-                    imageHtml = `<img src="${resource.featured_image_url}" alt="${resource.title}" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width: 100%; height: 200px; background: #e9ecef; display: flex; align-items: center; justify-content: center; color: #6c757d;\\'><div style=\\'text-align: center;\\'><div style=\\'font-size: 3rem; margin-bottom: 0.5rem;\\'>📄</div><div>Preview not available</div></div></div>'">`;
+                    imageHtml = `<img src="${resource.featured_image_url}" alt="${resource.title}" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML='${createPreviewPlaceholder('default', false).replace(/'/g, "\\'")}'">`;
+                } else {
+                    // Default placeholder
+                    imageHtml = getDefaultPlaceholder(resource.type);
                 }
             } else {
-                // Category-based placeholder colors
-                const colors = {
-                    research: '#007bff',
-                    templates: '#28a745',
-                    guides: '#ffc107',
-                    presentations: '#17a2b8',
-                    datasets: '#6f42c1',
-                    policies: '#dc3545',
-                    visual: '#fd7e14',
-                    'case-studies': '#20c997'
-                };
-                const bgColor = colors[resource.type] || '#6c757d';
-                imageHtml = `
-                    <div style="width: 100%; height: 200px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; color: white;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">📚</div>
-                            <div style="font-weight: 600; text-transform: capitalize;">${resource.type.replace('-', ' ')}</div>
-                        </div>
-                    </div>
-                `;
+                // No file URL, use default placeholder
+                imageHtml = getDefaultPlaceholder(resource.type);
             }
 
             return `
