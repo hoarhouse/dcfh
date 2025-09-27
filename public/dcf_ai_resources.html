@@ -1317,12 +1317,50 @@
             }
         }
 
-        async function generatePPTXPreview(url) {
-            // For PPTX files, we'll need to use a different approach
-            // Since direct client-side PPTX rendering is complex,
-            // we'll return null to use fallback for now
-            // This can be enhanced with a server-side solution or specialized library
+        async function generatePPTXPreview(url, resourceId) {
+            // For PPTX files, we have several options:
+            // 1. Use Office Online Viewer for public URLs
+            // 2. Use a thumbnail if pre-generated server-side
+            // 3. Fall back to icon
+            
+            // Check if the URL is publicly accessible
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                // Option 1: Try Office Online Viewer (requires public URL)
+                // Note: This creates an iframe preview, not an image
+                const encodedUrl = encodeURIComponent(url);
+                const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+                
+                // For card preview, we'll return null and use placeholder
+                // The full viewer can be used in the detail view
+                return null;
+            }
+            
+            // Option 2: Check for pre-generated thumbnail
+            // This would require server-side processing
             return null;
+        }
+
+        async function generateAndRenderPPTXPreview(url, cardId) {
+            const previewContainer = document.getElementById(`preview-${cardId}`);
+            if (!previewContainer) return;
+            
+            try {
+                // For now, show a styled PPTX indicator
+                previewContainer.innerHTML = `
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #ff6b35 0%, #f77737 100%); display: flex; align-items: center; justify-content: center; color: white; position: relative;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">📊</div>
+                            <div style="font-weight: 600;">PowerPoint Presentation</div>
+                        </div>
+                        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                            PPTX
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error rendering PPTX preview:', error);
+                previewContainer.innerHTML = createPreviewPlaceholder('pptx', false);
+            }
         }
 
         function createPreviewPlaceholder(type, isGenerating = false) {
