@@ -3883,8 +3883,6 @@
             }
             
             console.log('✅ Supabase client available');
-
-        try {
             // Get Change Makers slugs from CMS
             console.log('📡 Fetching Change Makers from CMS...');
             const { data: cmsData, error: cmsError } = await supabase
@@ -3897,6 +3895,7 @@
             if (cmsError) {
                 console.warn('Change Makers CMS data not available:', cmsError);
                 console.log('📌 Showing fallback due to CMS error');
+                clearTimeout(loadingTimeout);
                 showFallbackChangeMakers();
                 return;
             }
@@ -3910,6 +3909,7 @@
 
             if (slugEntries.length === 0) {
                 console.log('No Change Makers slugs found, showing fallback');
+                clearTimeout(loadingTimeout);
                 showFallbackChangeMakers();
                 return;
             }
@@ -3933,6 +3933,7 @@
 
             if (postsError) {
                 console.warn('Change Makers posts query error, showing fallback:', postsError);
+                clearTimeout(loadingTimeout);
                 showFallbackChangeMakers();
                 return;
             }
@@ -3957,9 +3958,9 @@
             });
 
             if (changeMakersWithTemplates.length === 0) {
+                console.log('No matching Change Makers found, showing fallback');
+                clearTimeout(loadingTimeout);
                 showFallbackChangeMakers();
-                changeMakersCarousel.style.display = 'block';
-                changeMakersLoading.style.display = 'none';
                 return;
             }
 
@@ -3969,6 +3970,9 @@
                 generateProfileCardHTML(post, index, post.chosenTemplate)
             ).join('');
 
+            // Clear the timeout since we succeeded
+            clearTimeout(loadingTimeout);
+            
             console.log('🎨 Making carousel visible');
             changeMakersCarousel.style.display = 'block';
             changeMakersLoading.style.display = 'none';
@@ -3977,12 +3981,12 @@
             console.log('🚀 Initializing Change Makers carousel');
             initializeChangeMakersCarousel();
             addCardClickHandlers();
+            console.log('✅ Change Makers loaded successfully');
 
         } catch (error) {
-            console.warn('Error loading Change Makers:', error);
+            console.error('❌ Error loading Change Makers:', error);
+            clearTimeout(loadingTimeout);
             showFallbackChangeMakers();
-            changeMakersCarousel.style.display = 'block';
-            changeMakersLoading.style.display = 'none';
         }
     }
 
@@ -4110,28 +4114,94 @@
 
     // Show fallback Change Makers if data cannot be loaded
     function showFallbackChangeMakers() {
+        console.log('🔄 Showing fallback Change Makers profiles');
+        
+        // Try to get elements, but proceed even if they don't exist
         const changeMakersTrack = document.getElementById('changeMakersTrack');
         const changeMakersCarousel = document.getElementById('changeMakersCarousel');
         const changeMakersLoading = document.getElementById('changeMakersLoading');
         
+        // Hardcoded fallback profiles that don't require any external dependencies
         const fallbackProfiles = [
-            { name: 'Maria Rodriguez', subtitle: 'Transforming healthcare through AI innovation', template: 'profile-card-1' },
-            { name: 'James Chen', subtitle: 'Building ethical technology for communities', template: 'profile-card-2' },
-            { name: 'Sarah Johnson', subtitle: 'Leading educational reform initiatives globally', template: 'profile-card-3' },
-            { name: 'David Kim', subtitle: 'Advancing quantum computing research', template: 'profile-card-4' }
+            { 
+                name: 'Maria Rodriguez', 
+                subtitle: 'Transforming healthcare through AI innovation', 
+                template: 'profile-card-1',
+                imageId: '1573496224306-3fe30b7ac451'
+            },
+            { 
+                name: 'James Chen', 
+                subtitle: 'Building ethical technology for communities', 
+                template: 'profile-card-2',
+                imageId: '1507003211169-0fc67b3e6e79'
+            },
+            { 
+                name: 'Sarah Johnson', 
+                subtitle: 'Leading educational reform initiatives globally', 
+                template: 'profile-card-3',
+                imageId: '1438761681033-6461f1d63b28'
+            },
+            { 
+                name: 'David Kim', 
+                subtitle: 'Advancing quantum computing research', 
+                template: 'profile-card-4',
+                imageId: '1500648767791-00d6e0e7f241'
+            }
         ];
-
-        changeMakersTrack.innerHTML = fallbackProfiles.map((profile, index) => 
-            generateProfileCardHTML({
-                title: profile.name,
-                excerpt: profile.subtitle,
-                featured_image_url: `https://images.unsplash.com/photo-${1500000000000 + index}?w=400&h=500&fit=crop`
-            }, index, profile.template)
-        ).join('');
         
-        changeMakersCarousel.style.display = 'block';
-        changeMakersLoading.style.display = 'none';
-        initializeChangeMakersCarousel();
+        try {
+            if (changeMakersTrack) {
+                // Generate the fallback HTML
+                const fallbackHTML = fallbackProfiles.map((profile, index) => {
+                    // Use a simpler card generation if generateProfileCardHTML is not available
+                    if (typeof generateProfileCardHTML === 'function') {
+                        return generateProfileCardHTML({
+                            title: profile.name,
+                            excerpt: profile.subtitle,
+                            featured_image_url: `https://images.unsplash.com/photo-${profile.imageId}?w=400&h=500&fit=crop`
+                        }, index, profile.template);
+                    } else {
+                        // Fallback to simple HTML if function not available
+                        return `
+                            <div class="profile-card">
+                                <div style="background-image: url('https://images.unsplash.com/photo-${profile.imageId}?w=400&h=500&fit=crop'); height: 200px; background-size: cover; background-position: center;"></div>
+                                <div style="padding: 20px;">
+                                    <h3 style="margin: 0 0 10px 0;">${profile.name}</h3>
+                                    <p style="margin: 0; color: #666;">${profile.subtitle}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+                
+                changeMakersTrack.innerHTML = fallbackHTML;
+                console.log('✅ Fallback profiles added to track');
+            } else {
+                console.error('❌ changeMakersTrack element not found');
+            }
+            
+            if (changeMakersCarousel) {
+                changeMakersCarousel.style.display = 'block';
+                console.log('✅ Carousel made visible');
+            }
+            
+            if (changeMakersLoading) {
+                changeMakersLoading.style.display = 'none';
+                console.log('✅ Loading indicator hidden');
+            }
+            
+            // Try to initialize carousel if function exists
+            if (typeof initializeChangeMakersCarousel === 'function') {
+                initializeChangeMakersCarousel();
+                console.log('✅ Carousel initialized');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error in showFallbackChangeMakers:', error);
+            // Even if there's an error, try to show SOMETHING
+            if (changeMakersCarousel) changeMakersCarousel.style.display = 'block';
+            if (changeMakersLoading) changeMakersLoading.style.display = 'none';
+        }
     }
 
     // Initialize Resources Carousel
