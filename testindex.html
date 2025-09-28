@@ -3846,29 +3846,43 @@
 
     // Load Change Makers cards from CMS configuration
     async function loadChangeMakersCards() {
-        console.log('🎯 Starting loadChangeMakersCards()');
+        console.log('🎯 Starting loadChangeMakersCards() at', new Date().toISOString());
         const changeMakersCarousel = document.getElementById('changeMakersCarousel');
         const changeMakersTrack = document.getElementById('changeMakersTrack');
         const changeMakersLoading = document.getElementById('changeMakersLoading');
         
-        console.log('📍 Elements found:', {
+        console.log('📍 Change Makers Elements found:', {
             carousel: !!changeMakersCarousel,
             track: !!changeMakersTrack,
             loading: !!changeMakersLoading
         });
         
-        // Show loading state
-        changeMakersLoading.style.display = 'block';
-        changeMakersCarousel.style.display = 'none';
-        
-        // Get Supabase client when function runs
-        const supabase = window.dcfSupabase;
-        
-        if (!supabase || typeof supabase.from !== 'function') {
-            console.error('Supabase client not available for Change Makers');
-            showFallbackChangeMakers();
-            return;
+        // Ensure loading state is visible (it should already be from HTML)
+        if (changeMakersLoading) {
+            changeMakersLoading.style.display = 'block';
         }
+        if (changeMakersCarousel) {
+            changeMakersCarousel.style.display = 'none';
+        }
+        
+        // Set up a timeout to show fallback if loading takes too long
+        const loadingTimeout = setTimeout(() => {
+            console.warn('⏱️ Change Makers loading timeout - showing fallback');
+            showFallbackChangeMakers();
+        }, 5000); // 5 second timeout
+        
+        try {
+            // Get Supabase client when function runs
+            const supabase = window.dcfSupabase;
+            
+            if (!supabase || typeof supabase.from !== 'function') {
+                console.error('❌ Supabase client not available for Change Makers');
+                clearTimeout(loadingTimeout);
+                showFallbackChangeMakers();
+                return;
+            }
+            
+            console.log('✅ Supabase client available');
 
         try {
             // Get Change Makers slugs from CMS
