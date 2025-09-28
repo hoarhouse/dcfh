@@ -3846,9 +3846,16 @@
 
     // Load Change Makers cards from CMS configuration
     async function loadChangeMakersCards() {
+        console.log('🎯 Starting loadChangeMakersCards()');
         const changeMakersCarousel = document.getElementById('changeMakersCarousel');
         const changeMakersTrack = document.getElementById('changeMakersTrack');
         const changeMakersLoading = document.getElementById('changeMakersLoading');
+        
+        console.log('📍 Elements found:', {
+            carousel: !!changeMakersCarousel,
+            track: !!changeMakersTrack,
+            loading: !!changeMakersLoading
+        });
         
         // Show loading state
         changeMakersLoading.style.display = 'block';
@@ -3865,20 +3872,27 @@
 
         try {
             // Get Change Makers slugs from CMS
+            console.log('📡 Fetching Change Makers from CMS...');
             const { data: cmsData, error: cmsError } = await supabase
                 .from('cms_sections')
                 .select('slugs')
-                .eq('section_name', 'change_makers')
-                .single();
+                .eq('section_name', 'change_makers');
+
+            console.log('📊 CMS Query Result:', { cmsData, cmsError });
 
             if (cmsError) {
                 console.warn('Change Makers CMS data not available:', cmsError);
-                // Don't throw - continue with empty slugs
+                console.log('📌 Showing fallback due to CMS error');
+                showFallbackChangeMakers();
+                return;
             }
 
-            const slugEntries = cmsData?.slugs || [];
+            // Handle case where section doesn't exist (empty array) or exists (first item)
+            const slugEntries = (cmsData && cmsData.length > 0) ? (cmsData[0].slugs || []) : [];
             console.log('=== Change Makers CMS Data ===');
-            console.log('Slug entries:', slugEntries);
+            console.log('📌 Raw CMS data:', cmsData);
+            console.log('📌 Slug entries extracted:', slugEntries);
+            console.log('📌 Number of slug entries:', slugEntries.length);
 
             if (slugEntries.length === 0) {
                 console.log('No Change Makers slugs found, showing fallback');
