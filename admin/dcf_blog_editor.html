@@ -1918,19 +1918,26 @@
                 const newTemplate = selector.value;
                 const oldTemplate = hiddenInput.value;
                 
+                // No change needed if same template
+                if (oldTemplate === newTemplate) {
+                    console.log('Template unchanged:', newTemplate);
+                    return;
+                }
+                
                 // Check if there's data that might be lost
-                if (oldTemplate !== newTemplate && hasUnsavedChanges) {
-                    if (!confirm('You have unsaved data. Switching templates may require reformatting. Continue?')) {
+                if (hasUnsavedChanges) {
+                    const templateName = window.BlogTemplates?.getTemplate(newTemplate)?.name || newTemplate;
+                    if (!confirm(`Switching to ${templateName} template may require reformatting your data. Continue?`)) {
                         selector.value = oldTemplate;
                         return;
                     }
                 }
                 
-                // Store current data
+                // Store current data before switching
                 preserveFormData();
                 
                 hiddenInput.value = newTemplate;
-                console.log('Template changed to:', newTemplate);
+                console.log('Template changed from', oldTemplate, 'to', newTemplate);
                 
                 // Update form fields for new template
                 updateFormFieldsForTemplate(newTemplate);
@@ -1940,6 +1947,9 @@
                 
                 // Restore compatible data
                 restoreFormData(newTemplate);
+                
+                // Mark as changed
+                hasUnsavedChanges = true;
             }
         }
 
