@@ -2287,17 +2287,27 @@
                 document.getElementById('blogDescription').value = blog.description || '';
                 document.getElementById('blogAudience').value = blog.target_audience || '';
                 
-                // Set template
-                if (blog.template_type) {
-                    const selector = document.getElementById('templateSelector');
-                    const hiddenInput = document.getElementById('selectedTemplate');
-                    if (selector && hiddenInput) {
-                        selector.value = blog.template_type;
-                        hiddenInput.value = blog.template_type;
-                    }
+                // Handle template with backward compatibility
+                let templateType = blog.template_type || 'standard'; // Default to 'standard' for old posts
+                
+                // Validate template exists in config
+                if (window.BlogTemplates && !window.BlogTemplates.isValidTemplate(templateType)) {
+                    console.warn(`Invalid template type '${templateType}' found, defaulting to 'standard'`);
+                    templateType = 'standard';
                 }
                 
-                // Set colors and template data if they exist in metadata
+                // Set template selector and update fields
+                const selector = document.getElementById('templateSelector');
+                const hiddenInput = document.getElementById('selectedTemplate');
+                if (selector && hiddenInput) {
+                    selector.value = templateType;
+                    hiddenInput.value = templateType;
+                    
+                    // Update form fields for the loaded template
+                    updateFormFieldsForTemplate(templateType);
+                }
+                
+                // Set colors if they exist in metadata
                 if (blog.metadata) {
                     if (blog.metadata.primaryColor) {
                         document.getElementById('primaryColor').value = blog.metadata.primaryColor;
@@ -2311,9 +2321,14 @@
                     
                     // Load template-specific data
                     if (blog.metadata.templateData) {
-                        loadTemplateData(blog.template_type || 'standard', blog.metadata.templateData);
+                        // Use setTimeout to ensure fields are visible before populating
+                        setTimeout(() => {
+                            loadTemplateData(templateType, blog.metadata.templateData);
+                        }, 100);
                     }
                 }
+                
+                console.log(`Blog loaded with template: ${templateType}`);
                 
                 document.getElementById('editorTitle').textContent = `Edit: ${blog.name}`;
                 
@@ -2327,29 +2342,57 @@
         async function saveBlog() {
             if (!currentBlogId) return;
             
-            const templateId = document.getElementById('selectedTemplate').value;
+            const templateId = document.getElementById('selectedTemplate').value || 'standard';
             
-            // Validate required fields for current template
-            if (!validateTemplateFields(templateId)) {
-                showToast('Please fill in all required fields for this template', 'error');
+            // Validate template exists
+            if (!window.BlogTemplates || !window.BlogTemplates.isValidTemplate(templateId)) {
+                console.error(`Invalid template '${templateId}', using 'standard'`);
+                templateId = 'standard';
+            }
+            
+            // Validate required fields for current template with specific messages
+            const validationResult = validateTemplateFieldsWithMessages(templateId);
+            if (!validationResult.isValid) {
+                showToast(validationResult.message, 'error');
                 return;
+            }
+            
+            // Get current user for author info if needed
+            let authorInfo = null;
+            if (typeof getCurrentUser === 'function') {
+                const user = getCurrentUser();
+                if (user) {
+                    authorInfo = {
+                        id: user.id,
+                        email: user.email
+                    };
+                }
             }
             
             // Gather template-specific data
             const templateData = gatherTemplateData(templateId);
             
+            // Add author info if not already present
+            if (authorInfo && !templateData.authorId) {
+                templateData.authorId = authorInfo.id;
+                templateData.authorEmail = authorInfo.email;
+            }
+            
             const updateData = {
                 description: document.getElementById('blogDescription').value,
                 target_audience: document.getElementById('blogAudience').value,
-                template_type: templateId,
+                template_type: templateId, // Always save template_type
                 metadata: {
                     primaryColor: document.getElementById('primaryColor').value,
                     accentColor: document.getElementById('accentColor').value,
                     backgroundColor: document.getElementById('backgroundColor').value,
-                    templateData: templateData
+                    templateData: templateData,
+                    lastModifiedBy: authorInfo
                 },
                 updated_at: new Date().toISOString()
             };
+            
+            console.log('Saving blog with template:', templateId);
             
             try {
                 const { error } = await window.dcfSupabase
@@ -2359,12 +2402,15 @@
                 
                 if (error) throw error;
                 
-                showToast('Blog settings saved successfully', 'success');
+                showToast(`Blog saved successfully with ${window.BlogTemplates.getTemplate(templateId).name} template`, 'success');
                 hasUnsavedChanges = false;
+                
+                // Update current blog data
+                currentBlogData = { ...currentBlogData, ...updateData };
                 
             } catch (error) {
                 console.error('Error saving blog:', error);
-                showToast('Error saving blog settings', 'error');
+                showToast(`Error saving blog: ${error.message}`, 'error');
             }
         }
 
@@ -2518,6 +2564,93 @@
             }
             
             return isValid;
+        }
+        
+        // Enhanced validation with specific error messages
+        function validateTemplateFieldsWithMessages(templateId) {
+            const validationRules = {
+                'standard': {
+                    fields: ['authorField'],
+                    messages: { authorField: 'Standard template requires an author name' }
+                },
+                'feature': {
+                    fields: ['authorField', 'heroImageField'],
+                    messages: {
+                        authorField: 'Feature template requires an author name',
+                        heroImageField: 'Feature template requires a hero image URL'
+                    }
+                },
+                'interview': {
+                    fields: ['interviewerField', 'intervieweeField'],
+                    messages: {
+                        interviewerField: 'Interview template requires interviewer name',
+                        intervieweeField: 'Interview template requires interviewee name'
+                    }
+                },
+                'list': {
+                    fields: ['authorField'],
+                    messages: { authorField: 'List template requires an author name' }
+                },
+                'case-study': {
+                    fields: ['authorField', 'problemField', 'solutionField'],
+                    messages: {
+                        authorField: 'Case study template requires an author/researcher name',
+                        problemField: 'Case study template requires a problem statement',
+                        solutionField: 'Case study template requires a solution description'
+                    }
+                },
+                'analysis': {
+                    fields: ['authorField', 'thesisField'],
+                    messages: {
+                        authorField: 'Analysis template requires an author/analyst name',
+                        thesisField: 'Analysis template requires a thesis statement'
+                    }
+                }
+            };
+            
+            const rules = validationRules[templateId] || { fields: [], messages: {} };
+            let isValid = true;
+            let errorMessages = [];
+            
+            // Always validate description
+            if (!document.getElementById('blogDescription').value.trim()) {
+                document.getElementById('blogDescription').style.borderColor = '#dc3545';
+                errorMessages.push('Blog description is required');
+                isValid = false;
+            } else {
+                document.getElementById('blogDescription').style.borderColor = '';
+            }
+            
+            // Validate template-specific required fields
+            rules.fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    if (!field.value.trim()) {
+                        field.style.borderColor = '#dc3545';
+                        errorMessages.push(rules.messages[fieldId] || `${fieldId} is required`);
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '';
+                    }
+                }
+            });
+            
+            // Special validation for list template
+            if (templateId === 'list') {
+                const listItems = getListItems();
+                if (listItems.length === 0) {
+                    errorMessages.push('List template requires at least one list item');
+                    isValid = false;
+                } else if (listItems.length < 3) {
+                    console.warn('List articles should have at least 3 items for better engagement');
+                }
+            }
+            
+            return {
+                isValid: isValid,
+                message: errorMessages.length > 0 ? errorMessages[0] : 'Validation passed',
+                allErrors: errorMessages
+            };
         }
         
         function gatherTemplateData(templateId) {
