@@ -1648,12 +1648,155 @@
             // Load blog data
             await loadBlog();
             
-            // Set up template selectors
-            setupTemplateSelectors();
             
             // Load blog statistics
             await loadBlogStats();
+            
+            // Initialize template selector
+            populateTemplateSelector();
+            setupTemplateEventListeners();
         });
+
+        // Template Selector Functions
+        function populateTemplateSelector() {
+            const selector = document.getElementById('templateSelector');
+            if (!selector || !window.BlogTemplates) {
+                console.warn('Template selector or BlogTemplates not found');
+                return;
+            }
+
+            // Clear existing options
+            selector.innerHTML = '';
+
+            // Get all templates
+            const templates = window.BlogTemplates.getAllTemplates();
+
+            // Add options
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name;
+                selector.appendChild(option);
+            });
+
+            // Set default value
+            selector.value = 'standard';
+            document.getElementById('selectedTemplate').value = 'standard';
+        }
+
+        function setupTemplateEventListeners() {
+            // Template selector change handler
+            const selector = document.getElementById('templateSelector');
+            if (selector) {
+                selector.addEventListener('change', onTemplateChange);
+            }
+
+            // Preview button handler
+            const previewBtn = document.getElementById('previewTemplateBtn');
+            if (previewBtn) {
+                previewBtn.addEventListener('click', showTemplatePreview);
+            }
+
+            // Close preview button handler
+            const closeBtn = document.getElementById('closePreviewBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', hideTemplatePreview);
+            }
+        }
+
+        function onTemplateChange() {
+            const selector = document.getElementById('templateSelector');
+            const hiddenInput = document.getElementById('selectedTemplate');
+            
+            if (selector && hiddenInput) {
+                hiddenInput.value = selector.value;
+                console.log('Template changed to:', selector.value);
+                
+                // Hide preview if it's open
+                hideTemplatePreview();
+            }
+        }
+
+        function showTemplatePreview() {
+            const selector = document.getElementById('templateSelector');
+            const previewPane = document.getElementById('templatePreviewPane');
+            const previewContent = document.getElementById('previewContent');
+            
+            if (!selector || !previewPane || !previewContent || !window.BlogTemplates) {
+                console.warn('Required elements for preview not found');
+                return;
+            }
+
+            const templateId = selector.value;
+            const template = window.BlogTemplates.getTemplate(templateId);
+            
+            if (!template) {
+                console.warn('Template not found:', templateId);
+                return;
+            }
+
+            // Build preview HTML
+            let previewHTML = `
+                <div class="template-preview-item">
+                    <h5>Template: ${template.name}</h5>
+                    <p>${template.description}</p>
+                </div>
+                
+                <div class="template-preview-item">
+                    <h5>Required Fields</h5>
+                    <div class="template-fields">
+                        ${template.requiredFields.map(field => 
+                            `<span class="field-badge required">${field}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+                
+                <div class="template-preview-item">
+                    <h5>Optional Fields</h5>
+                    <div class="template-fields">
+                        ${template.optionalFields.map(field => 
+                            `<span class="field-badge">${field}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+
+            // If template has special format, show it
+            if (template.contentFormat) {
+                previewHTML += `
+                    <div class="template-preview-item">
+                        <h5>Content Format</h5>
+                        <p>This template uses a special <strong>${template.contentFormat}</strong> format for content.</p>
+                    </div>
+                `;
+            }
+
+            // Show sample HTML structure
+            previewHTML += `
+                <div class="template-preview-item">
+                    <h5>Sample Layout</h5>
+                    <div style="border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem; background: white; font-size: 0.8rem; overflow-x: auto;">
+                        <pre style="margin: 0; white-space: pre-wrap;">${escapeHtml(template.htmlStructure)}</pre>
+                    </div>
+                </div>
+            `;
+
+            previewContent.innerHTML = previewHTML;
+            previewPane.style.display = 'block';
+        }
+
+        function hideTemplatePreview() {
+            const previewPane = document.getElementById('templatePreviewPane');
+            if (previewPane) {
+                previewPane.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Load blog data
         async function loadBlog() {
