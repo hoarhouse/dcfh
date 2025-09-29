@@ -2769,6 +2769,328 @@
             }
         }
         
+        // Full Preview Functionality
+        function renderFullPreview() {
+            const modal = document.getElementById('previewModal');
+            const content = document.getElementById('previewContent');
+            const templateId = document.getElementById('selectedTemplate').value || 'standard';
+            
+            if (!modal || !content) {
+                console.error('Preview modal elements not found');
+                return;
+            }
+            
+            // Gather current form data
+            const previewData = gatherPreviewData();
+            
+            // Check for missing required fields
+            const validation = validateTemplateFieldsWithMessages(templateId);
+            
+            // Build preview HTML
+            let previewHTML = '';
+            
+            // Add warning if fields are missing
+            if (!validation.isValid) {
+                previewHTML += `
+                    <div class="preview-warning">
+                        ⚠️ Some required fields are empty. The preview shows placeholder text for missing content.
+                    </div>
+                `;
+            }
+            
+            // Render based on template type
+            switch(templateId) {
+                case 'standard':
+                    previewHTML += renderStandardPreview(previewData);
+                    break;
+                case 'feature':
+                    previewHTML += renderFeaturePreview(previewData);
+                    break;
+                case 'interview':
+                    previewHTML += renderInterviewPreview(previewData);
+                    break;
+                case 'list':
+                    previewHTML += renderListPreview(previewData);
+                    break;
+                case 'case-study':
+                    previewHTML += renderCaseStudyPreview(previewData);
+                    break;
+                case 'analysis':
+                    previewHTML += renderAnalysisPreview(previewData);
+                    break;
+                default:
+                    previewHTML += renderStandardPreview(previewData);
+            }
+            
+            // Insert preview HTML
+            content.innerHTML = previewHTML;
+            
+            // Show modal
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeFullPreview() {
+            const modal = document.getElementById('previewModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+        
+        function gatherPreviewData() {
+            const data = {
+                title: document.getElementById('blogTitle').value || 'Untitled Blog',
+                description: document.getElementById('blogDescription').value || '<span class="preview-placeholder">No description provided</span>',
+                audience: document.getElementById('blogAudience').value || 'General Audience',
+                author: document.getElementById('authorField')?.value || '<span class="preview-placeholder">Author Name</span>',
+                excerpt: document.getElementById('excerptField')?.value || '<span class="preview-placeholder">No excerpt provided</span>',
+                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                readTime: Math.ceil((document.getElementById('blogDescription').value?.length || 0) / 200) || 5
+            };
+            
+            // Add template-specific data
+            const templateId = document.getElementById('selectedTemplate').value;
+            switch(templateId) {
+                case 'feature':
+                    data.heroImage = document.getElementById('heroImageField')?.value || '';
+                    data.pullQuotes = document.getElementById('pullQuotesField')?.value || '';
+                    break;
+                case 'interview':
+                    data.interviewer = document.getElementById('interviewerField')?.value || '<span class="preview-placeholder">Interviewer Name</span>';
+                    data.interviewee = document.getElementById('intervieweeField')?.value || '<span class="preview-placeholder">Interviewee Name</span>';
+                    break;
+                case 'list':
+                    data.listItems = getListItems();
+                    data.numberingStyle = document.getElementById('numberingStyleField')?.value || 'numbered';
+                    break;
+                case 'case-study':
+                    data.problem = document.getElementById('problemField')?.value || '<span class="preview-placeholder">Problem statement will appear here</span>';
+                    data.solution = document.getElementById('solutionField')?.value || '<span class="preview-placeholder">Solution description will appear here</span>';
+                    data.results = document.getElementById('resultsField')?.value || '<span class="preview-placeholder">Results and metrics will appear here</span>';
+                    break;
+                case 'analysis':
+                    data.thesis = document.getElementById('thesisField')?.value || '<span class="preview-placeholder">Thesis statement will appear here</span>';
+                    data.keyArguments = document.getElementById('keyArgumentsField')?.value || '';
+                    data.conclusion = document.getElementById('conclusionField')?.value || '<span class="preview-placeholder">Conclusion will appear here</span>';
+                    break;
+            }
+            
+            return data;
+        }
+        
+        // Template-specific preview renderers
+        function renderStandardPreview(data) {
+            return `
+                <article class="preview-article">
+                    <h1>${data.title}</h1>
+                    <div class="meta">
+                        <span>By ${data.author}</span> • 
+                        <span>${data.date}</span> • 
+                        <span>${data.readTime} min read</span>
+                    </div>
+                    <div class="content">
+                        <p><strong>${data.excerpt}</strong></p>
+                        <p>${data.description}</p>
+                        <p>Target Audience: ${data.audience}</p>
+                    </div>
+                </article>
+            `;
+        }
+        
+        function renderFeaturePreview(data) {
+            const heroStyle = data.heroImage ? 
+                `background-image: url('${data.heroImage}');` : 
+                `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);`;
+            
+            return `
+                <div class="preview-feature">
+                    <div class="hero" style="${heroStyle}">
+                        <div class="hero-overlay">
+                            <h1>${data.title}</h1>
+                            <div class="meta">
+                                <span>By ${data.author}</span> • 
+                                <span>${data.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <article class="preview-article">
+                        <div class="content">
+                            <p><strong>${data.excerpt}</strong></p>
+                            ${data.pullQuotes ? `
+                                <blockquote style="font-size: 1.25rem; font-style: italic; border-left: 4px solid #667eea; padding-left: 1rem; margin: 2rem 0;">
+                                    ${data.pullQuotes.split('\n')[0] || 'Pull quote here'}
+                                </blockquote>
+                            ` : ''}
+                            <p>${data.description}</p>
+                        </div>
+                    </article>
+                </div>
+            `;
+        }
+        
+        function renderInterviewPreview(data) {
+            const sampleQA = [
+                { q: 'What inspired this interview?', a: data.description },
+                { q: 'Who is your audience?', a: `This interview is targeted at ${data.audience}` },
+                { q: 'What can readers expect?', a: data.excerpt }
+            ];
+            
+            return `
+                <article class="preview-article preview-interview">
+                    <h1>${data.title}</h1>
+                    <div class="meta" style="margin-bottom: 2rem;">
+                        <div>An interview with <strong>${data.interviewee}</strong></div>
+                        <div>By ${data.interviewer} • ${data.date}</div>
+                    </div>
+                    <div class="content">
+                        <p style="font-style: italic; font-size: 1.1rem; color: #666;">${data.excerpt}</p>
+                        <hr style="margin: 2rem 0;">
+                        ${sampleQA.map(item => `
+                            <div class="qa-pair">
+                                <div class="question">Q: ${item.q}</div>
+                                <div class="answer">A: ${item.a}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </article>
+            `;
+        }
+        
+        function renderListPreview(data) {
+            const items = data.listItems.length > 0 ? data.listItems : 
+                ['First item in your list', 'Second item in your list', 'Third item in your list'];
+            const listClass = data.numberingStyle === 'numbered' ? 'numbered' : 'bulleted';
+            
+            return `
+                <article class="preview-article preview-list ${listClass}">
+                    <h1>${data.title}</h1>
+                    <div class="meta">
+                        <span>By ${data.author}</span> • 
+                        <span>${data.date}</span> • 
+                        <span>${items.length} items</span>
+                    </div>
+                    <div class="content">
+                        <p><strong>${data.excerpt}</strong></p>
+                        <div class="list-container">
+                            ${items.map(item => `
+                                <div class="list-item">
+                                    ${item || '<span class="preview-placeholder">List item</span>'}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p style="margin-top: 2rem;">${data.description}</p>
+                    </div>
+                </article>
+            `;
+        }
+        
+        function renderCaseStudyPreview(data) {
+            return `
+                <article class="preview-article preview-case-study">
+                    <span style="color: #666; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">CASE STUDY</span>
+                    <h1>${data.title}</h1>
+                    <div class="meta">
+                        <span>By ${data.author}</span> • 
+                        <span>${data.date}</span>
+                    </div>
+                    <div class="content">
+                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                            <strong>Executive Summary</strong>
+                            <p>${data.excerpt}</p>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">The Problem</div>
+                            <p>${data.problem}</p>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">Our Solution</div>
+                            <p>${data.solution}</p>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">Results & Impact</div>
+                            <p>${data.results}</p>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e5e5;">
+                            <p><strong>About This Case Study:</strong> ${data.description}</p>
+                            <p><strong>Target Audience:</strong> ${data.audience}</p>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+        
+        function renderAnalysisPreview(data) {
+            const keyArgs = data.keyArguments ? data.keyArguments.split('\n').filter(arg => arg.trim()) : 
+                ['First key argument', 'Second key argument', 'Third key argument'];
+            
+            return `
+                <article class="preview-article preview-analysis">
+                    <span style="color: #666; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">ANALYSIS</span>
+                    <h1>${data.title}</h1>
+                    <div class="meta">
+                        <span>By ${data.author}</span> • 
+                        <span>${data.date}</span> • 
+                        <span>${data.readTime} min read</span>
+                    </div>
+                    <div class="content">
+                        <div class="thesis">
+                            <strong>Thesis:</strong> ${data.thesis}
+                        </div>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <p><strong>Summary:</strong> ${data.excerpt}</p>
+                        </div>
+                        
+                        <h3>Key Arguments</h3>
+                        ${keyArgs.map((arg, index) => `
+                            <div class="argument">
+                                <strong>${index + 1}.</strong> ${arg || '<span class="preview-placeholder">Argument point</span>'}
+                            </div>
+                        `).join('')}
+                        
+                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+                            <h3>Conclusion</h3>
+                            <p>${data.conclusion}</p>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e5e5;">
+                            <p><strong>Context:</strong> ${data.description}</p>
+                            <p><strong>Target Audience:</strong> ${data.audience}</p>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+        
+        // Device toggle handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileToggle = document.getElementById('previewMobileToggle');
+            const desktopToggle = document.getElementById('previewDesktopToggle');
+            const device = document.getElementById('previewDevice');
+            
+            if (mobileToggle && desktopToggle && device) {
+                mobileToggle.addEventListener('click', () => {
+                    device.className = 'preview-device mobile';
+                });
+                
+                desktopToggle.addEventListener('click', () => {
+                    device.className = 'preview-device desktop';
+                });
+            }
+            
+            // Close on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeFullPreview();
+                }
+            });
+        });
+        
         // Validation and data gathering functions
         function validateTemplateFields(templateId) {
             const validationRules = {
