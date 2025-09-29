@@ -1359,6 +1359,68 @@
             border-color: #ffc107;
             color: #856404;
         }
+
+        /* Dynamic field styles */
+        .template-field {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .template-field.hidden {
+            display: none !important;
+        }
+
+        .template-field.highlight {
+            background: #fffbf0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 3px solid #ffc107;
+        }
+
+        .template-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .field-transition {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .list-item-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .list-item-input .form-input {
+            flex: 1;
+        }
+
+        .list-item-remove {
+            padding: 0.5rem;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 4px;
+            color: #d00;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .list-item-remove:hover {
+            background: #fcc;
+        }
     </style>
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1520,6 +1582,121 @@
                     <small class="form-hint">Who is this blog primarily written for?</small>
                 </div>
 
+                <!-- Dynamic Template Fields Container -->
+                <div id="dynamicFieldsContainer">
+                    <!-- Standard Fields (always visible) -->
+                    <div class="form-group template-field" data-templates="all">
+                        <label class="form-label" id="authorLabel">Author <span class="required-indicator">*</span></label>
+                        <input type="text" id="authorField" class="form-input" placeholder="Enter author name">
+                        <small class="form-hint" id="authorHint">The primary author of this content</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="all">
+                        <label class="form-label" id="excerptLabel">Excerpt</label>
+                        <textarea id="excerptField" class="form-textarea" rows="2" placeholder="Brief summary of the content"></textarea>
+                        <small class="form-hint" id="excerptHint">A short summary that appears in listings</small>
+                    </div>
+
+                    <!-- Feature Story Fields -->
+                    <div class="form-group template-field" data-templates="feature" style="display: none;">
+                        <label class="form-label">Hero Image URL <span class="required-indicator">*</span></label>
+                        <input type="text" id="heroImageField" class="form-input" placeholder="URL to hero image">
+                        <small class="form-hint">Large featured image for the story</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="feature" style="display: none;">
+                        <label class="form-label">Pull Quotes</label>
+                        <textarea id="pullQuotesField" class="form-textarea" rows="3" placeholder="Enter memorable quotes, one per line"></textarea>
+                        <small class="form-hint">Key quotes to highlight in the story</small>
+                    </div>
+
+                    <!-- Interview Fields -->
+                    <div class="form-group template-field" data-templates="interview" style="display: none;">
+                        <label class="form-label">Interviewer Name <span class="required-indicator">*</span></label>
+                        <input type="text" id="interviewerField" class="form-input" placeholder="Name of the interviewer">
+                        <small class="form-hint">Person conducting the interview</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="interview" style="display: none;">
+                        <label class="form-label">Interviewee Name <span class="required-indicator">*</span></label>
+                        <input type="text" id="intervieweeField" class="form-input" placeholder="Name of the person being interviewed">
+                        <small class="form-hint">Person being interviewed</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="interview" style="display: none;">
+                        <label class="form-label">Q&A Format</label>
+                        <div style="background: #f0f8ff; padding: 1rem; border-radius: 6px; margin-top: 0.5rem;">
+                            <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #666;">Format your content as:</p>
+                            <code style="display: block; background: white; padding: 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                                Q: Your question here<br>
+                                A: The answer here<br>
+                                <br>
+                                Q: Another question<br>
+                                A: Another answer
+                            </code>
+                        </div>
+                    </div>
+
+                    <!-- List Article Fields -->
+                    <div class="form-group template-field" data-templates="list" style="display: none;">
+                        <label class="form-label">List Items <span class="required-indicator">*</span></label>
+                        <div id="listItemsContainer">
+                            <div class="list-item-input" style="margin-bottom: 0.5rem;">
+                                <input type="text" class="form-input list-item" placeholder="List item 1">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addListItem()" style="margin-top: 0.5rem;">+ Add Item</button>
+                        <small class="form-hint">Add at least 5 items for a compelling list article</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="list" style="display: none;">
+                        <label class="form-label">Numbering Style</label>
+                        <select id="numberingStyleField" class="form-select">
+                            <option value="numbered">Numbered (1, 2, 3...)</option>
+                            <option value="bulleted">Bulleted</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <!-- Case Study Fields -->
+                    <div class="form-group template-field" data-templates="case-study" style="display: none;">
+                        <label class="form-label">Problem Statement <span class="required-indicator">*</span></label>
+                        <textarea id="problemField" class="form-textarea" rows="3" placeholder="Describe the problem or challenge"></textarea>
+                        <small class="form-hint">The initial challenge or issue being addressed</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="case-study" style="display: none;">
+                        <label class="form-label">Solution <span class="required-indicator">*</span></label>
+                        <textarea id="solutionField" class="form-textarea" rows="3" placeholder="Describe the solution implemented"></textarea>
+                        <small class="form-hint">How the problem was solved</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="case-study" style="display: none;">
+                        <label class="form-label">Results & Metrics</label>
+                        <textarea id="resultsField" class="form-textarea" rows="3" placeholder="Measurable outcomes and impact"></textarea>
+                        <small class="form-hint">Quantifiable results and key metrics</small>
+                    </div>
+
+                    <!-- Analysis/Opinion Fields -->
+                    <div class="form-group template-field" data-templates="analysis" style="display: none;">
+                        <label class="form-label">Thesis Statement <span class="required-indicator">*</span></label>
+                        <textarea id="thesisField" class="form-textarea" rows="2" placeholder="Your main argument or position"></textarea>
+                        <small class="form-hint">The central argument of your analysis</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="analysis" style="display: none;">
+                        <label class="form-label">Key Arguments</label>
+                        <textarea id="keyArgumentsField" class="form-textarea" rows="4" placeholder="List your supporting arguments, one per line"></textarea>
+                        <small class="form-hint">Main points supporting your thesis</small>
+                    </div>
+
+                    <div class="form-group template-field" data-templates="analysis" style="display: none;">
+                        <label class="form-label">Conclusion</label>
+                        <textarea id="conclusionField" class="form-textarea" rows="3" placeholder="Summarize your analysis and implications"></textarea>
+                        <small class="form-hint">Final thoughts and implications</small>
+                    </div>
+                </div>
+
                 <!-- Template Selection -->
                 <div class="template-selector-section">
                     <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #333;">Choose Template</h3>
@@ -1678,6 +1855,10 @@
             // Initialize template selector
             populateTemplateSelector();
             setupTemplateEventListeners();
+            
+            // Set up initial template fields
+            const currentTemplate = document.getElementById('templateSelector').value || 'standard';
+            updateFormFieldsForTemplate(currentTemplate);
         });
 
         // Template Selector Functions
@@ -1732,11 +1913,31 @@
             const hiddenInput = document.getElementById('selectedTemplate');
             
             if (selector && hiddenInput) {
-                hiddenInput.value = selector.value;
-                console.log('Template changed to:', selector.value);
+                const newTemplate = selector.value;
+                const oldTemplate = hiddenInput.value;
+                
+                // Check if there's data that might be lost
+                if (oldTemplate !== newTemplate && hasUnsavedChanges) {
+                    if (!confirm('You have unsaved data. Switching templates may require reformatting. Continue?')) {
+                        selector.value = oldTemplate;
+                        return;
+                    }
+                }
+                
+                // Store current data
+                preserveFormData();
+                
+                hiddenInput.value = newTemplate;
+                console.log('Template changed to:', newTemplate);
+                
+                // Update form fields for new template
+                updateFormFieldsForTemplate(newTemplate);
                 
                 // Hide preview if it's open
                 hideTemplatePreview();
+                
+                // Restore compatible data
+                restoreFormData(newTemplate);
             }
         }
 
@@ -1819,6 +2020,252 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Template-specific field management
+        let preservedData = {};
+        
+        function updateFormFieldsForTemplate(templateId) {
+            if (!window.BlogTemplates) return;
+            
+            const template = window.BlogTemplates.getTemplate(templateId);
+            if (!template) {
+                console.warn('Template not found:', templateId);
+                return;
+            }
+            
+            console.log('Updating fields for template:', templateId);
+            
+            // Hide all template-specific fields first
+            document.querySelectorAll('.template-field').forEach(field => {
+                const templates = field.dataset.templates;
+                if (templates === 'all') {
+                    field.style.display = 'block';
+                } else {
+                    field.style.display = 'none';
+                }
+            });
+            
+            // Show fields for selected template
+            document.querySelectorAll(`.template-field[data-templates="${templateId}"]`).forEach(field => {
+                field.style.display = 'block';
+                field.classList.add('field-transition');
+            });
+            
+            // Update field labels and hints based on template
+            updateFieldLabels(templateId);
+            
+            // Apply template-specific validation
+            applyTemplateValidation(templateId);
+            
+            // Show template indicator
+            showTemplateIndicator(templateId);
+        }
+        
+        function updateFieldLabels(templateId) {
+            const labelMappings = {
+                'interview': {
+                    'excerptLabel': 'Interview Summary',
+                    'excerptHint': 'Brief overview of the interview topics',
+                    'authorLabel': 'Interviewer'
+                },
+                'case-study': {
+                    'excerptLabel': 'Case Study Summary',
+                    'excerptHint': 'Executive summary of the case study',
+                    'authorLabel': 'Researcher'
+                },
+                'list': {
+                    'excerptLabel': 'List Introduction',
+                    'excerptHint': 'Introduction to your list article'
+                },
+                'analysis': {
+                    'excerptLabel': 'Analysis Summary',
+                    'excerptHint': 'Brief summary of your analysis',
+                    'authorLabel': 'Analyst'
+                },
+                'feature': {
+                    'excerptLabel': 'Story Teaser',
+                    'excerptHint': 'Compelling introduction to draw readers in'
+                }
+            };
+            
+            // Reset to defaults first
+            document.getElementById('excerptLabel').innerHTML = 'Excerpt';
+            document.getElementById('excerptHint').textContent = 'A short summary that appears in listings';
+            document.getElementById('authorLabel').innerHTML = 'Author <span class="required-indicator">*</span>';
+            
+            // Apply template-specific labels
+            if (labelMappings[templateId]) {
+                const mappings = labelMappings[templateId];
+                Object.keys(mappings).forEach(elementId => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        if (elementId.includes('Label')) {
+                            element.innerHTML = mappings[elementId] + ' <span class="required-indicator">*</span>';
+                        } else {
+                            element.textContent = mappings[elementId];
+                        }
+                    }
+                });
+            }
+        }
+        
+        function applyTemplateValidation(templateId) {
+            // Remove all existing validation
+            document.querySelectorAll('.template-field input, .template-field textarea').forEach(field => {
+                field.removeAttribute('required');
+            });
+            
+            // Apply template-specific validation
+            const validationRules = {
+                'standard': ['authorField'],
+                'feature': ['authorField', 'heroImageField'],
+                'interview': ['authorField', 'interviewerField', 'intervieweeField'],
+                'list': ['authorField'],
+                'case-study': ['authorField', 'problemField', 'solutionField'],
+                'analysis': ['authorField', 'thesisField']
+            };
+            
+            if (validationRules[templateId]) {
+                validationRules[templateId].forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.setAttribute('required', 'required');
+                    }
+                });
+            }
+        }
+        
+        function showTemplateIndicator(templateId) {
+            const template = window.BlogTemplates.getTemplate(templateId);
+            if (!template) return;
+            
+            // Add visual indicator to active template fields
+            document.querySelectorAll(`.template-field[data-templates="${templateId}"]`).forEach(field => {
+                field.classList.add('highlight');
+                setTimeout(() => {
+                    field.classList.remove('highlight');
+                }, 2000);
+            });
+        }
+        
+        function preserveFormData() {
+            preservedData = {
+                description: document.getElementById('blogDescription').value,
+                audience: document.getElementById('blogAudience').value,
+                author: document.getElementById('authorField').value,
+                excerpt: document.getElementById('excerptField').value,
+                heroImage: document.getElementById('heroImageField')?.value || '',
+                pullQuotes: document.getElementById('pullQuotesField')?.value || '',
+                interviewer: document.getElementById('interviewerField')?.value || '',
+                interviewee: document.getElementById('intervieweeField')?.value || '',
+                problem: document.getElementById('problemField')?.value || '',
+                solution: document.getElementById('solutionField')?.value || '',
+                results: document.getElementById('resultsField')?.value || '',
+                thesis: document.getElementById('thesisField')?.value || '',
+                keyArguments: document.getElementById('keyArgumentsField')?.value || '',
+                conclusion: document.getElementById('conclusionField')?.value || '',
+                listItems: getListItems(),
+                numberingStyle: document.getElementById('numberingStyleField')?.value || 'numbered'
+            };
+        }
+        
+        function restoreFormData(templateId) {
+            // Restore common fields
+            document.getElementById('blogDescription').value = preservedData.description || '';
+            document.getElementById('blogAudience').value = preservedData.audience || '';
+            document.getElementById('authorField').value = preservedData.author || '';
+            document.getElementById('excerptField').value = preservedData.excerpt || '';
+            
+            // Restore template-specific fields if switching back
+            switch(templateId) {
+                case 'feature':
+                    if (preservedData.heroImage) document.getElementById('heroImageField').value = preservedData.heroImage;
+                    if (preservedData.pullQuotes) document.getElementById('pullQuotesField').value = preservedData.pullQuotes;
+                    break;
+                case 'interview':
+                    if (preservedData.interviewer) document.getElementById('interviewerField').value = preservedData.interviewer;
+                    if (preservedData.interviewee) document.getElementById('intervieweeField').value = preservedData.interviewee;
+                    // Try to extract interviewer from author field if empty
+                    if (!preservedData.interviewer && preservedData.author) {
+                        document.getElementById('interviewerField').value = preservedData.author;
+                    }
+                    break;
+                case 'list':
+                    if (preservedData.listItems && preservedData.listItems.length > 0) {
+                        restoreListItems(preservedData.listItems);
+                    }
+                    if (preservedData.numberingStyle) document.getElementById('numberingStyleField').value = preservedData.numberingStyle;
+                    break;
+                case 'case-study':
+                    if (preservedData.problem) document.getElementById('problemField').value = preservedData.problem;
+                    if (preservedData.solution) document.getElementById('solutionField').value = preservedData.solution;
+                    if (preservedData.results) document.getElementById('resultsField').value = preservedData.results;
+                    break;
+                case 'analysis':
+                    if (preservedData.thesis) document.getElementById('thesisField').value = preservedData.thesis;
+                    if (preservedData.keyArguments) document.getElementById('keyArgumentsField').value = preservedData.keyArguments;
+                    if (preservedData.conclusion) document.getElementById('conclusionField').value = preservedData.conclusion;
+                    break;
+            }
+        }
+        
+        // List item management functions
+        function addListItem() {
+            const container = document.getElementById('listItemsContainer');
+            const itemCount = container.querySelectorAll('.list-item-input').length;
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'list-item-input';
+            newItem.style.marginBottom = '0.5rem';
+            newItem.innerHTML = `
+                <input type="text" class="form-input list-item" placeholder="List item ${itemCount + 1}">
+                <button type="button" class="list-item-remove" onclick="removeListItem(this)">&times;</button>
+            `;
+            
+            container.appendChild(newItem);
+        }
+        
+        function removeListItem(button) {
+            button.parentElement.remove();
+            updateListItemPlaceholders();
+        }
+        
+        function updateListItemPlaceholders() {
+            const items = document.querySelectorAll('.list-item');
+            items.forEach((item, index) => {
+                item.placeholder = `List item ${index + 1}`;
+            });
+        }
+        
+        function getListItems() {
+            const items = [];
+            document.querySelectorAll('.list-item').forEach(item => {
+                if (item.value.trim()) {
+                    items.push(item.value.trim());
+                }
+            });
+            return items;
+        }
+        
+        function restoreListItems(items) {
+            const container = document.getElementById('listItemsContainer');
+            container.innerHTML = '';
+            
+            items.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'list-item-input';
+                itemDiv.style.marginBottom = '0.5rem';
+                itemDiv.innerHTML = `
+                    <input type="text" class="form-input list-item" placeholder="List item ${index + 1}" value="${escapeHtml(item)}">
+                    ${index > 0 ? '<button type="button" class="list-item-remove" onclick="removeListItem(this)">&times;</button>' : ''}
+                `;
+                container.appendChild(itemDiv);
+            });
+            
+            if (items.length === 0) {
+                addListItem();
+            }
         }
 
         // Load blog data
