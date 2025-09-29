@@ -2297,7 +2297,7 @@
                     }
                 }
                 
-                // Set colors if they exist in metadata
+                // Set colors and template data if they exist in metadata
                 if (blog.metadata) {
                     if (blog.metadata.primaryColor) {
                         document.getElementById('primaryColor').value = blog.metadata.primaryColor;
@@ -2307,6 +2307,11 @@
                     }
                     if (blog.metadata.backgroundColor) {
                         document.getElementById('backgroundColor').value = blog.metadata.backgroundColor;
+                    }
+                    
+                    // Load template-specific data
+                    if (blog.metadata.templateData) {
+                        loadTemplateData(blog.template_type || 'standard', blog.metadata.templateData);
                     }
                 }
                 
@@ -2322,14 +2327,26 @@
         async function saveBlog() {
             if (!currentBlogId) return;
             
+            const templateId = document.getElementById('selectedTemplate').value;
+            
+            // Validate required fields for current template
+            if (!validateTemplateFields(templateId)) {
+                showToast('Please fill in all required fields for this template', 'error');
+                return;
+            }
+            
+            // Gather template-specific data
+            const templateData = gatherTemplateData(templateId);
+            
             const updateData = {
                 description: document.getElementById('blogDescription').value,
                 target_audience: document.getElementById('blogAudience').value,
-                template_type: document.getElementById('selectedTemplate').value,
+                template_type: templateId,
                 metadata: {
                     primaryColor: document.getElementById('primaryColor').value,
                     accentColor: document.getElementById('accentColor').value,
-                    backgroundColor: document.getElementById('backgroundColor').value
+                    backgroundColor: document.getElementById('backgroundColor').value,
+                    templateData: templateData
                 },
                 updated_at: new Date().toISOString()
             };
@@ -2455,6 +2472,121 @@
                 case 'error': return '✕';
                 case 'warning': return '⚠';
                 default: return 'ℹ';
+            }
+        }
+        
+        // Validation and data gathering functions
+        function validateTemplateFields(templateId) {
+            const validationRules = {
+                'standard': ['authorField'],
+                'feature': ['authorField', 'heroImageField'],
+                'interview': ['interviewerField', 'intervieweeField'],
+                'list': ['authorField'],
+                'case-study': ['authorField', 'problemField', 'solutionField'],
+                'analysis': ['authorField', 'thesisField']
+            };
+            
+            const requiredFields = validationRules[templateId] || [];
+            let isValid = true;
+            
+            // Always validate description
+            if (!document.getElementById('blogDescription').value.trim()) {
+                document.getElementById('blogDescription').style.borderColor = '#dc3545';
+                isValid = false;
+            } else {
+                document.getElementById('blogDescription').style.borderColor = '';
+            }
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    if (!field.value.trim()) {
+                        field.style.borderColor = '#dc3545';
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '';
+                    }
+                }
+            });
+            
+            // Special validation for list template
+            if (templateId === 'list') {
+                const listItems = getListItems();
+                if (listItems.length < 3) {
+                    showToast('List articles should have at least 3 items', 'warning');
+                }
+            }
+            
+            return isValid;
+        }
+        
+        function gatherTemplateData(templateId) {
+            const data = {
+                author: document.getElementById('authorField').value,
+                excerpt: document.getElementById('excerptField').value
+            };
+            
+            switch(templateId) {
+                case 'feature':
+                    data.heroImage = document.getElementById('heroImageField').value;
+                    data.pullQuotes = document.getElementById('pullQuotesField').value;
+                    break;
+                case 'interview':
+                    data.interviewer = document.getElementById('interviewerField').value;
+                    data.interviewee = document.getElementById('intervieweeField').value;
+                    break;
+                case 'list':
+                    data.listItems = getListItems();
+                    data.numberingStyle = document.getElementById('numberingStyleField').value;
+                    break;
+                case 'case-study':
+                    data.problem = document.getElementById('problemField').value;
+                    data.solution = document.getElementById('solutionField').value;
+                    data.results = document.getElementById('resultsField').value;
+                    break;
+                case 'analysis':
+                    data.thesis = document.getElementById('thesisField').value;
+                    data.keyArguments = document.getElementById('keyArgumentsField').value;
+                    data.conclusion = document.getElementById('conclusionField').value;
+                    break;
+            }
+            
+            return data;
+        }
+        
+        function loadTemplateData(templateId, data) {
+            if (!data) return;
+            
+            // Load common fields
+            if (data.author) document.getElementById('authorField').value = data.author;
+            if (data.excerpt) document.getElementById('excerptField').value = data.excerpt;
+            
+            // Load template-specific fields
+            switch(templateId) {
+                case 'feature':
+                    if (data.heroImage) document.getElementById('heroImageField').value = data.heroImage;
+                    if (data.pullQuotes) document.getElementById('pullQuotesField').value = data.pullQuotes;
+                    break;
+                case 'interview':
+                    if (data.interviewer) document.getElementById('interviewerField').value = data.interviewer;
+                    if (data.interviewee) document.getElementById('intervieweeField').value = data.interviewee;
+                    break;
+                case 'list':
+                    if (data.listItems && data.listItems.length > 0) {
+                        restoreListItems(data.listItems);
+                    }
+                    if (data.numberingStyle) document.getElementById('numberingStyleField').value = data.numberingStyle;
+                    break;
+                case 'case-study':
+                    if (data.problem) document.getElementById('problemField').value = data.problem;
+                    if (data.solution) document.getElementById('solutionField').value = data.solution;
+                    if (data.results) document.getElementById('resultsField').value = data.results;
+                    break;
+                case 'analysis':
+                    if (data.thesis) document.getElementById('thesisField').value = data.thesis;
+                    if (data.keyArguments) document.getElementById('keyArgumentsField').value = data.keyArguments;
+                    if (data.conclusion) document.getElementById('conclusionField').value = data.conclusion;
+                    break;
             }
         }
     </script>
