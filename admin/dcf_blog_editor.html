@@ -1845,20 +1845,22 @@
                 return;
             }
             
-            // Load blog data
-            await loadBlog();
+            // Initialize template selector first
+            populateTemplateSelector();
+            setupTemplateEventListeners();
             
+            // Load blog data (which will set the template)
+            await loadBlog();
             
             // Load blog statistics
             await loadBlogStats();
             
-            // Initialize template selector
-            populateTemplateSelector();
-            setupTemplateEventListeners();
-            
-            // Set up initial template fields
-            const currentTemplate = document.getElementById('templateSelector').value || 'standard';
-            updateFormFieldsForTemplate(currentTemplate);
+            // If no template was loaded, set default
+            const currentTemplate = document.getElementById('selectedTemplate').value || 'standard';
+            if (currentTemplate === 'standard' && !currentBlogData?.template_type) {
+                console.log('No template type found, using default: standard');
+                updateFormFieldsForTemplate('standard');
+            }
         });
 
         // Template Selector Functions
@@ -2655,32 +2657,40 @@
         
         function gatherTemplateData(templateId) {
             const data = {
-                author: document.getElementById('authorField').value,
-                excerpt: document.getElementById('excerptField').value
+                template: templateId, // Store which template was used
+                author: document.getElementById('authorField')?.value || '',
+                excerpt: document.getElementById('excerptField')?.value || '',
+                savedAt: new Date().toISOString()
             };
             
             switch(templateId) {
                 case 'feature':
-                    data.heroImage = document.getElementById('heroImageField').value;
-                    data.pullQuotes = document.getElementById('pullQuotesField').value;
+                    data.heroImage = document.getElementById('heroImageField')?.value || '';
+                    data.pullQuotes = document.getElementById('pullQuotesField')?.value || '';
                     break;
                 case 'interview':
-                    data.interviewer = document.getElementById('interviewerField').value;
-                    data.interviewee = document.getElementById('intervieweeField').value;
+                    data.interviewer = document.getElementById('interviewerField')?.value || '';
+                    data.interviewee = document.getElementById('intervieweeField')?.value || '';
+                    // Store author as interviewer if not set
+                    if (!data.interviewer && data.author) {
+                        data.interviewer = data.author;
+                    }
                     break;
                 case 'list':
                     data.listItems = getListItems();
-                    data.numberingStyle = document.getElementById('numberingStyleField').value;
+                    data.numberingStyle = document.getElementById('numberingStyleField')?.value || 'numbered';
+                    data.listCount = data.listItems.length;
                     break;
                 case 'case-study':
-                    data.problem = document.getElementById('problemField').value;
-                    data.solution = document.getElementById('solutionField').value;
-                    data.results = document.getElementById('resultsField').value;
+                    data.problem = document.getElementById('problemField')?.value || '';
+                    data.solution = document.getElementById('solutionField')?.value || '';
+                    data.results = document.getElementById('resultsField')?.value || '';
+                    data.subject = document.getElementById('blogTitle')?.value || 'Case Study';
                     break;
                 case 'analysis':
-                    data.thesis = document.getElementById('thesisField').value;
-                    data.keyArguments = document.getElementById('keyArgumentsField').value;
-                    data.conclusion = document.getElementById('conclusionField').value;
+                    data.thesis = document.getElementById('thesisField')?.value || '';
+                    data.keyArguments = document.getElementById('keyArgumentsField')?.value || '';
+                    data.conclusion = document.getElementById('conclusionField')?.value || '';
                     break;
             }
             
@@ -2688,38 +2698,70 @@
         }
         
         function loadTemplateData(templateId, data) {
-            if (!data) return;
+            if (!data) {
+                console.log('No template data to load');
+                return;
+            }
             
-            // Load common fields
-            if (data.author) document.getElementById('authorField').value = data.author;
-            if (data.excerpt) document.getElementById('excerptField').value = data.excerpt;
+            console.log('Loading template data for:', templateId, data);
+            
+            // Load common fields with null checks
+            const authorField = document.getElementById('authorField');
+            const excerptField = document.getElementById('excerptField');
+            
+            if (authorField && data.author) {
+                authorField.value = data.author;
+            }
+            if (excerptField && data.excerpt) {
+                excerptField.value = data.excerpt;
+            }
             
             // Load template-specific fields
             switch(templateId) {
                 case 'feature':
-                    if (data.heroImage) document.getElementById('heroImageField').value = data.heroImage;
-                    if (data.pullQuotes) document.getElementById('pullQuotesField').value = data.pullQuotes;
+                    const heroField = document.getElementById('heroImageField');
+                    const pullQuotesField = document.getElementById('pullQuotesField');
+                    if (heroField && data.heroImage) heroField.value = data.heroImage;
+                    if (pullQuotesField && data.pullQuotes) pullQuotesField.value = data.pullQuotes;
                     break;
+                    
                 case 'interview':
-                    if (data.interviewer) document.getElementById('interviewerField').value = data.interviewer;
-                    if (data.interviewee) document.getElementById('intervieweeField').value = data.interviewee;
+                    const interviewerField = document.getElementById('interviewerField');
+                    const intervieweeField = document.getElementById('intervieweeField');
+                    if (interviewerField && data.interviewer) interviewerField.value = data.interviewer;
+                    if (intervieweeField && data.interviewee) intervieweeField.value = data.interviewee;
                     break;
+                    
                 case 'list':
-                    if (data.listItems && data.listItems.length > 0) {
+                    if (data.listItems && Array.isArray(data.listItems) && data.listItems.length > 0) {
                         restoreListItems(data.listItems);
                     }
-                    if (data.numberingStyle) document.getElementById('numberingStyleField').value = data.numberingStyle;
+                    const numberingField = document.getElementById('numberingStyleField');
+                    if (numberingField && data.numberingStyle) {
+                        numberingField.value = data.numberingStyle;
+                    }
                     break;
+                    
                 case 'case-study':
-                    if (data.problem) document.getElementById('problemField').value = data.problem;
-                    if (data.solution) document.getElementById('solutionField').value = data.solution;
-                    if (data.results) document.getElementById('resultsField').value = data.results;
+                    const problemField = document.getElementById('problemField');
+                    const solutionField = document.getElementById('solutionField');
+                    const resultsField = document.getElementById('resultsField');
+                    if (problemField && data.problem) problemField.value = data.problem;
+                    if (solutionField && data.solution) solutionField.value = data.solution;
+                    if (resultsField && data.results) resultsField.value = data.results;
                     break;
+                    
                 case 'analysis':
-                    if (data.thesis) document.getElementById('thesisField').value = data.thesis;
-                    if (data.keyArguments) document.getElementById('keyArgumentsField').value = data.keyArguments;
-                    if (data.conclusion) document.getElementById('conclusionField').value = data.conclusion;
+                    const thesisField = document.getElementById('thesisField');
+                    const keyArgsField = document.getElementById('keyArgumentsField');
+                    const conclusionField = document.getElementById('conclusionField');
+                    if (thesisField && data.thesis) thesisField.value = data.thesis;
+                    if (keyArgsField && data.keyArguments) keyArgsField.value = data.keyArguments;
+                    if (conclusionField && data.conclusion) conclusionField.value = data.conclusion;
                     break;
+                    
+                default:
+                    console.warn('Unknown template type for loading data:', templateId);
             }
         }
     </script>
