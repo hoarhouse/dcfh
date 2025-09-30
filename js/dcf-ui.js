@@ -76,7 +76,6 @@ const FULL_MENU = [
 const LAUNCH_PAGES = [
     // Main pages
     'index.html',
-    'blog/index.html',
     
     // Public pages
     'public/dcf_about.html',
@@ -84,14 +83,10 @@ const LAUNCH_PAGES = [
     'public/dcf_ai_resources.html',
     'public/dcf_ai_resource_view.html',
     
-    // Initiative pages
-    'initiatives/initiatives_home.html',
-    'initiatives/peace/initiative_peace.html',
-    'initiatives/education/initiative_education.html',
-    'initiatives/health/initiative_health.html',
-    'initiatives/research/initiative_research.html',
+    // ALL Initiative pages - matches any file in initiatives folder and subfolders
+    'initiatives/',  // This includes all 7 HTML files: initiatives_home, 4 initiative pages, and 2 nuclear disarmament pages
     
-    // Blog pages (any page in blog folder)
+    // ALL Blog pages - matches any file in blog folder
     'blog/',
     
     // Donation page
