@@ -2281,6 +2281,90 @@
         let heroImageFile = null;
         let existingHeroImageUrl = null;
 
+        // New UI Functions
+        function selectTemplate(templateId) {
+            // Update visual cards
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-template="${templateId}"]`).classList.add('selected');
+            
+            // Update hidden inputs
+            document.getElementById('selectedTemplate').value = templateId;
+            document.getElementById('templateSelector').value = templateId;
+            
+            // Update header badge
+            const templateNames = {
+                'standard': 'Standard Article',
+                'research': 'Research Paper',
+                'announcement': 'Announcement',
+                'feature': 'Feature Story'
+            };
+            document.getElementById('currentTemplateBadge').textContent = `Template: ${templateNames[templateId]}`;
+            
+            hasUnsavedChanges = true;
+        }
+        
+        // Color preview updates
+        function setupColorPreviews() {
+            const colorInputs = [
+                { input: 'primaryColor', preview: 'primaryPreview', hex: 'primaryHex' },
+                { input: 'accentColor', preview: 'accentPreview', hex: 'accentHex' },
+                { input: 'backgroundColor', preview: 'backgroundPreview', hex: 'backgroundHex' }
+            ];
+            
+            colorInputs.forEach(({ input, preview, hex }) => {
+                const inputEl = document.getElementById(input);
+                const previewEl = document.getElementById(preview);
+                const hexEl = document.getElementById(hex);
+                
+                if (inputEl && previewEl && hexEl) {
+                    inputEl.addEventListener('input', (e) => {
+                        const color = e.target.value;
+                        previewEl.style.backgroundColor = color;
+                        hexEl.textContent = color;
+                        hasUnsavedChanges = true;
+                    });
+                    
+                    // Initial setup
+                    previewEl.style.backgroundColor = inputEl.value;
+                    hexEl.textContent = inputEl.value;
+                }
+            });
+        }
+        
+        // Enhanced save with loading states
+        async function saveWithLoadingState() {
+            const saveBtn = document.getElementById('saveButton');
+            if (saveBtn) {
+                saveBtn.classList.add('btn-loading');
+                saveBtn.disabled = true;
+            }
+            
+            await saveBlog();
+            
+            if (saveBtn) {
+                saveBtn.classList.remove('btn-loading');
+                saveBtn.disabled = false;
+            }
+            
+            // Show success message
+            showSuccessMessage('✓ Blog settings saved successfully!');
+        }
+        
+        function showSuccessMessage(message) {
+            const successEl = document.createElement('div');
+            successEl.className = 'save-success';
+            successEl.innerHTML = `<span>✓</span> ${message}`;
+            document.body.appendChild(successEl);
+            
+            setTimeout(() => successEl.classList.add('show'), 100);
+            setTimeout(() => {
+                successEl.classList.remove('show');
+                setTimeout(() => successEl.remove(), 300);
+            }, 3000);
+        }
+        
         // Initialize on page load
         window.addEventListener('dcfReady', async () => {
             console.log('Blog editor initializing...');
@@ -2302,6 +2386,9 @@
                     console.log('Current user:', user.email);
                 }
             }
+            
+            // Setup color previews
+            setupColorPreviews();
             
             // Wait for Supabase to be ready
             let retries = 0;
@@ -2815,14 +2902,17 @@
                 
                 console.log(`Blog loaded with template: ${templateType}`);
                 
-                document.getElementById('editorTitle').textContent = `Edit: ${blog.name}`;
+                // Update UI elements
+                document.getElementById('currentBlogName').textContent = `Editing: ${blog.name}`;
+                
+                // Select the template card
+                selectTemplate(templateType);
                 
                 // Log final loaded state for debugging
                 console.log('Blog loaded successfully:', {
                     id: currentBlogId,
                     name: blog.name,
-                    template_type: templateType,
-                    hasTemplateData: !!blog.metadata?.templateData
+                    template_type: templateType
                 });
                 
             } catch (error) {
