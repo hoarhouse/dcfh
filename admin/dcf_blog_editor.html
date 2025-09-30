@@ -1867,11 +1867,6 @@
                     </div>
 
                     <!-- Feature Story Fields -->
-                    <div class="form-group template-field" data-templates="feature" style="display: none;">
-                        <label class="form-label">Hero Image URL <span class="required-indicator">*</span></label>
-                        <input type="text" id="heroImageField" class="form-input" placeholder="URL to hero image">
-                        <small class="form-hint">Large featured image for the story</small>
-                    </div>
 
                     <div class="form-group template-field" data-templates="feature" style="display: none;">
                         <label class="form-label">Pull Quotes</label>
@@ -2422,7 +2417,7 @@
             // Apply template-specific validation
             const validationRules = {
                 'standard': ['authorField'],
-                'feature': ['authorField', 'heroImageField'],
+                'feature': ['authorField'],
                 'interview': ['authorField', 'interviewerField', 'intervieweeField'],
                 'list': ['authorField'],
                 'case-study': ['authorField', 'problemField', 'solutionField'],
@@ -2458,7 +2453,6 @@
                 audience: document.getElementById('blogAudience').value,
                 author: document.getElementById('authorField').value,
                 excerpt: document.getElementById('excerptField').value,
-                heroImage: document.getElementById('heroImageField')?.value || '',
                 pullQuotes: document.getElementById('pullQuotesField')?.value || '',
                 interviewer: document.getElementById('interviewerField')?.value || '',
                 interviewee: document.getElementById('intervieweeField')?.value || '',
@@ -2483,7 +2477,6 @@
             // Restore template-specific fields if switching back
             switch(templateId) {
                 case 'feature':
-                    if (preservedData.heroImage) document.getElementById('heroImageField').value = preservedData.heroImage;
                     if (preservedData.pullQuotes) document.getElementById('pullQuotesField').value = preservedData.pullQuotes;
                     break;
                 case 'interview':
@@ -2817,42 +2810,42 @@
             // Generate unique filename
             const fileExt = file.name.split('.').pop().toLowerCase();
             const timestamp = Date.now();
-            const filename = `blog-hero-${currentBlogId}-${timestamp}.${fileExt}`;
+            const filename = `blog_hero_${currentBlogId}_${timestamp}.${fileExt}`;
             
-            // Upload to Supabase storage
+            // Upload to Supabase storage - using 'media' bucket
             const { data, error } = await window.dcfSupabase.storage
-                .from('blog-images')
-                .upload(`hero-images/${filename}`, file, {
+                .from('media')
+                .upload(filename, file, {
                     cacheControl: '3600',
                     upsert: false
                 });
             
             if (error) {
-                // If blog-images bucket doesn't exist, try avatars bucket
-                const { data: avatarData, error: avatarError } = await window.dcfSupabase.storage
-                    .from('avatars')
-                    .upload(`blog-hero/${filename}`, file, {
+                // If media bucket doesn't exist, try blog-images bucket as fallback
+                const { data: blogData, error: blogError } = await window.dcfSupabase.storage
+                    .from('blog-images')
+                    .upload(`hero-images/${filename}`, file, {
                         cacheControl: '3600',
                         upsert: false
                     });
                 
-                if (avatarError) {
-                    console.error('Upload error:', avatarError);
-                    throw avatarError;
+                if (blogError) {
+                    console.error('Upload error:', blogError);
+                    throw blogError;
                 }
                 
-                // Get public URL from avatars bucket
+                // Get public URL from blog-images bucket
                 const { data: urlData } = window.dcfSupabase.storage
-                    .from('avatars')
-                    .getPublicUrl(`blog-hero/${filename}`);
+                    .from('blog-images')
+                    .getPublicUrl(`hero-images/${filename}`);
                 
                 return urlData.publicUrl;
             }
             
-            // Get public URL from blog-images bucket
+            // Get public URL from media bucket
             const { data: urlData } = window.dcfSupabase.storage
-                .from('blog-images')
-                .getPublicUrl(`hero-images/${filename}`);
+                .from('media')
+                .getPublicUrl(filename);
             
             return urlData.publicUrl;
         }
@@ -3054,7 +3047,6 @@
             const templateId = document.getElementById('selectedTemplate').value;
             switch(templateId) {
                 case 'feature':
-                    data.heroImage = document.getElementById('heroImageField')?.value || '';
                     data.pullQuotes = document.getElementById('pullQuotesField')?.value || '';
                     break;
                 case 'interview':
@@ -3296,7 +3288,7 @@
         function validateTemplateFields(templateId) {
             const validationRules = {
                 'standard': ['authorField'],
-                'feature': ['authorField', 'heroImageField'],
+                'feature': ['authorField'],
                 'interview': ['interviewerField', 'intervieweeField'],
                 'list': ['authorField'],
                 'case-study': ['authorField', 'problemField', 'solutionField'],
@@ -3345,10 +3337,9 @@
                     messages: { authorField: 'Standard template requires an author name' }
                 },
                 'feature': {
-                    fields: ['authorField', 'heroImageField'],
+                    fields: ['authorField'],
                     messages: {
-                        authorField: 'Feature template requires an author name',
-                        heroImageField: 'Feature template requires a hero image URL'
+                        authorField: 'Feature template requires an author name'
                     }
                 },
                 'interview': {
@@ -3434,7 +3425,6 @@
             
             switch(templateId) {
                 case 'feature':
-                    data.heroImage = document.getElementById('heroImageField')?.value || '';
                     data.pullQuotes = document.getElementById('pullQuotesField')?.value || '';
                     break;
                 case 'interview':
@@ -3488,9 +3478,7 @@
             // Load template-specific fields
             switch(templateId) {
                 case 'feature':
-                    const heroField = document.getElementById('heroImageField');
                     const pullQuotesField = document.getElementById('pullQuotesField');
-                    if (heroField && data.heroImage) heroField.value = data.heroImage;
                     if (pullQuotesField && data.pullQuotes) pullQuotesField.value = data.pullQuotes;
                     break;
                     
