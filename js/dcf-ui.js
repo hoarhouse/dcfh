@@ -182,9 +182,9 @@ function populateDCFNavigation() {
                 border: 1px solid #e5e5e5;
                 border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                min-width: 200px;
+                min-width: 220px;
                 z-index: 1000;
-                margin-top: 0.5rem;
+                margin-top: 0;
                 padding: 0.5rem 0;
                 list-style: none;
             `;
@@ -197,10 +197,11 @@ function populateDCFNavigation() {
                 link.textContent = subItem.text;
                 link.style.cssText = `
                     display: block;
-                    padding: 0.5rem 1rem;
+                    padding: 0.75rem 1.25rem;
                     color: #333;
                     text-decoration: none;
                     transition: background 0.2s ease;
+                    white-space: nowrap;
                 `;
                 
                 // Add hover effect
@@ -217,11 +218,31 @@ function populateDCFNavigation() {
             
             li.appendChild(dropdownMenu);
             
-            // Show/hide dropdown on hover
+            // Improved hover handling with delay
+            let hoverTimeout;
+            
             li.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
                 dropdownMenu.style.display = 'block';
             });
-            li.addEventListener('mouseleave', () => {
+            
+            li.addEventListener('mouseleave', (e) => {
+                // Small delay to allow cursor to reach submenu
+                hoverTimeout = setTimeout(() => {
+                    // Check if mouse is still within the dropdown area
+                    if (!li.contains(e.relatedTarget)) {
+                        dropdownMenu.style.display = 'none';
+                    }
+                }, 50);
+            });
+            
+            // Keep menu open when hovering over it
+            dropdownMenu.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                dropdownMenu.style.display = 'block';
+            });
+            
+            dropdownMenu.addEventListener('mouseleave', () => {
                 dropdownMenu.style.display = 'none';
             });
             
@@ -351,10 +372,10 @@ function populateTopNavigationOld() {
                 border: 1px solid #e5e5e5;
                 border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                min-width: 180px;
+                min-width: 200px;
                 z-index: 1000;
                 padding: 0.5rem 0;
-                margin-top: 0.5rem;
+                margin-top: 0;
                 list-style: none;
             `;
             
@@ -398,10 +419,24 @@ function populateTopNavigationOld() {
                 submenu.style.display = 'block';
             });
             
-            li.addEventListener('mouseleave', () => {
+            li.addEventListener('mouseleave', (e) => {
+                // Small delay to allow cursor to reach submenu
                 hoverTimeout = setTimeout(() => {
-                    submenu.style.display = 'none';
-                }, 100);
+                    // Check if mouse is still within the dropdown area
+                    if (!li.contains(e.relatedTarget)) {
+                        submenu.style.display = 'none';
+                    }
+                }, 50);
+            });
+            
+            // Keep submenu open when hovering over it
+            submenu.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                submenu.style.display = 'block';
+            });
+            
+            submenu.addEventListener('mouseleave', () => {
+                submenu.style.display = 'none';
             });
             
         } else {
