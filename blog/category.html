@@ -805,15 +805,25 @@
             
             if (blog.hero_image_url) {
                 // Construct Supabase storage URL
-                const supabaseUrl = supabase.supabaseUrl || 'https://lwvvwafbprcihsdzqmuv.supabase.co';
+                const supabaseUrl = 'https://lwvvwafbprcihsdzqmuv.supabase.co';
                 let imageUrl;
                 
                 // Check if it's a full URL or just a path
                 if (blog.hero_image_url.startsWith('http')) {
                     imageUrl = blog.hero_image_url;
                 } else {
-                    // Construct URL for media bucket
-                    imageUrl = `${supabaseUrl}/storage/v1/object/public/media/${blog.hero_image_url}`;
+                    // Try media bucket first, then other buckets as fallback
+                    // Remove any leading slash
+                    const path = blog.hero_image_url.replace(/^\//, '');
+                    
+                    // Check which bucket the image is in
+                    if (path.includes('blog-hero') || path.includes('blog_hero')) {
+                        // Could be in blog-images or avatars bucket
+                        imageUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${path}`;
+                    } else {
+                        // Default to media bucket
+                        imageUrl = `${supabaseUrl}/storage/v1/object/public/media/${path}`;
+                    }
                 }
                 
                 heroSection.innerHTML = `
