@@ -100,19 +100,33 @@ function isLaunchPage() {
     
     // Check if current page is in launch pages list
     const isLaunch = LAUNCH_PAGES.some(page => {
-        // Handle folder matches (like blog/)
+        // Handle folder matches (like blog/, initiatives/)
         if (page.endsWith('/')) {
-            return currentPath.includes(page);
+            const matches = currentPath.includes(page);
+            if (matches) {
+                console.log(`📁 Folder match found: "${page}" in path "${currentPath}"`);
+            }
+            return matches;
         }
         // Handle exact filename matches
         return currentPath.includes(page) || filename === page;
     });
     
+    // Enhanced logging for blog pages
+    if (currentPath.includes('/blog/')) {
+        console.log('📝 Blog page detected:', {
+            path: currentPath,
+            file: filename,
+            recognized: isLaunch ? '✅ YES - Launch Page' : '❌ NO - Member Page'
+        });
+    }
+    
     console.log('🚀 Launch page check:', { 
         currentPath, 
         filename, 
         isLaunch,
-        menuType: isLaunch ? 'LAUNCH MENU' : 'FULL MENU'
+        menuType: isLaunch ? 'LAUNCH MENU' : 'FULL MENU',
+        matchedBy: isLaunch ? 'Matched by LAUNCH_PAGES' : 'Default to FULL_MENU'
     });
     
     return isLaunch;
