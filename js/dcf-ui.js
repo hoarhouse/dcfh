@@ -18,9 +18,9 @@ const LOGO_CONFIG = {
         imageUrl: null // or path to logo image if using image type
     },
     text: {
-        full: 'Domus Communis Foundation Hungary',
-        short: 'DCF Hungary',
-        abbrev: 'DCF'
+        full: 'Domus Communis',
+        short: 'Domus Communis',
+        abbrev: 'DC'
     },
     link: 'index.html', // Homepage link
     // Display mode based on page type
