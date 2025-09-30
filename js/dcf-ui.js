@@ -7,11 +7,241 @@
 console.log('🎨 DCF UI System Loading...');
 
 // =============================================================================
+// DUAL NAVIGATION SYSTEM - Launch Menu vs Full Menu
+// =============================================================================
+
+// LAUNCH MENU - Simplified public navigation for Phase 1
+const LAUNCH_MENU = [
+    { text: 'Home', href: 'index.html', dropdown: false },
+    { text: 'Blog', href: 'blog/index.html', dropdown: false },
+    { 
+        text: 'Initiatives', 
+        href: 'initiatives/initiatives_home.html', 
+        dropdown: true,
+        items: [
+            { text: 'Peace Initiative', href: 'initiatives/peace/initiative_peace.html' },
+            { text: 'Education Initiative', href: 'initiatives/education/initiative_education.html' },
+            { text: 'Health Initiative', href: 'initiatives/health/initiative_health.html' },
+            { text: 'Research Initiative', href: 'initiatives/research/initiative_research.html' }
+        ]
+    },
+    { 
+        text: 'About', 
+        href: 'public/dcf_about.html', 
+        dropdown: true,
+        items: [
+            { text: 'About Us', href: 'public/dcf_about.html' },
+            { text: 'Contact', href: 'public/dcf_contact.html' },
+            { text: 'Donate', href: 'members/dcf_donate.html' }
+        ]
+    },
+    { text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false }
+];
+
+// FULL MENU - Complete member navigation for Phase 2
+const FULL_MENU = [
+    { text: 'Home', href: 'members/dcf_member_home.html', dropdown: false },
+    { text: 'Members', href: 'members/dcf_members_directory.html', dropdown: false },
+    { text: 'Projects', href: 'public/dcf_projects_public.html', dropdown: false },
+    { text: 'Events', href: 'public/dcf_events_public.html', dropdown: false },
+    { text: 'Resources', href: 'public/dcf_resources_public.html', dropdown: false }
+];
+
+// List of pages that should show the LAUNCH_MENU
+const LAUNCH_PAGES = [
+    // Main pages
+    'index.html',
+    'blog/index.html',
+    
+    // Public pages
+    'public/dcf_about.html',
+    'public/dcf_contact.html',
+    'public/dcf_ai_resources.html',
+    'public/dcf_ai_resource_view.html',
+    
+    // Initiative pages
+    'initiatives/initiatives_home.html',
+    'initiatives/peace/initiative_peace.html',
+    'initiatives/education/initiative_education.html',
+    'initiatives/health/initiative_health.html',
+    'initiatives/research/initiative_research.html',
+    
+    // Blog pages (any page in blog folder)
+    'blog/',
+    
+    // Donation page
+    'members/dcf_donate.html'
+];
+
+// Function to detect if current page should use LAUNCH_MENU
+function isLaunchPage() {
+    const currentPath = window.location.pathname;
+    const filename = currentPath.split('/').pop();
+    
+    // Check if current page is in launch pages list
+    const isLaunch = LAUNCH_PAGES.some(page => {
+        // Handle folder matches (like blog/)
+        if (page.endsWith('/')) {
+            return currentPath.includes(page);
+        }
+        // Handle exact filename matches
+        return currentPath.includes(page) || filename === page;
+    });
+    
+    console.log('🚀 Launch page check:', { 
+        currentPath, 
+        filename, 
+        isLaunch,
+        menuType: isLaunch ? 'LAUNCH MENU' : 'FULL MENU'
+    });
+    
+    return isLaunch;
+}
+
+// =============================================================================
 // 1. NAVIGATION SYSTEM
 // =============================================================================
 
+function populateDCFNavigation() {
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) {
+        console.log('❌ Navigation menu element not found');
+        return;
+    }
+
+    // Determine which menu to use
+    const menuItems = isLaunchPage() ? LAUNCH_MENU : FULL_MENU;
+    const menuType = isLaunchPage() ? 'LAUNCH' : 'FULL';
+    
+    console.log(`🧭 Populating ${menuType} navigation menu with ${menuItems.length} items`);
+    
+    // Clear existing menu
+    navMenu.innerHTML = '';
+    
+    // Get base path for links
+    const basePath = window.getCorrectBasePath();
+    
+    // Build menu from config
+    menuItems.forEach(item => {
+        const li = document.createElement('li');
+        
+        if (item.dropdown && item.items) {
+            // Create dropdown container
+            li.className = 'nav-dropdown';
+            li.style.position = 'relative';
+            
+            // Create dropdown toggle link
+            const toggle = document.createElement('a');
+            toggle.href = basePath + item.href;
+            toggle.className = 'dropdown-toggle';
+            toggle.textContent = item.text;
+            
+            // Add dropdown arrow
+            const arrow = document.createElement('span');
+            arrow.textContent = ' ▼';
+            arrow.style.fontSize = '0.7em';
+            arrow.style.marginLeft = '3px';
+            toggle.appendChild(arrow);
+            
+            li.appendChild(toggle);
+            
+            // Create dropdown menu
+            const dropdownMenu = document.createElement('ul');
+            dropdownMenu.className = 'nav-submenu';
+            dropdownMenu.style.cssText = `
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: white;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                min-width: 200px;
+                z-index: 1000;
+                margin-top: 0.5rem;
+                padding: 0.5rem 0;
+                list-style: none;
+            `;
+            
+            // Add dropdown items
+            item.items.forEach(subItem => {
+                const subLi = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = basePath + subItem.href;
+                link.textContent = subItem.text;
+                link.style.cssText = `
+                    display: block;
+                    padding: 0.5rem 1rem;
+                    color: #333;
+                    text-decoration: none;
+                    transition: background 0.2s ease;
+                `;
+                
+                // Add hover effect
+                link.addEventListener('mouseenter', () => {
+                    link.style.background = '#f8f9fa';
+                });
+                link.addEventListener('mouseleave', () => {
+                    link.style.background = 'transparent';
+                });
+                
+                subLi.appendChild(link);
+                dropdownMenu.appendChild(subLi);
+            });
+            
+            li.appendChild(dropdownMenu);
+            
+            // Show/hide dropdown on hover
+            li.addEventListener('mouseenter', () => {
+                dropdownMenu.style.display = 'block';
+            });
+            li.addEventListener('mouseleave', () => {
+                dropdownMenu.style.display = 'none';
+            });
+            
+            // Keyboard accessibility
+            toggle.addEventListener('focus', () => {
+                dropdownMenu.style.display = 'block';
+            });
+            toggle.addEventListener('blur', (e) => {
+                // Check if focus moved to dropdown item
+                setTimeout(() => {
+                    if (!li.contains(document.activeElement)) {
+                        dropdownMenu.style.display = 'none';
+                    }
+                }, 100);
+            });
+            
+        } else {
+            // Create regular menu item
+            const link = document.createElement('a');
+            link.href = basePath + item.href;
+            link.textContent = item.text;
+            
+            // Highlight active page
+            if (window.location.pathname.includes(item.href)) {
+                link.className = 'active';
+            }
+            
+            li.appendChild(link);
+        }
+        
+        navMenu.appendChild(li);
+    });
+    
+    console.log(`✅ ${menuType} navigation populated with ${menuItems.length} items`);
+}
+
+// Keep the old function for backward compatibility
 function populateTopNavigation() {
-    console.log('🧭 Populating DCF navigation...');
+    console.log('🧭 Populating DCF navigation (legacy call)...');
+    populateDCFNavigation();
+}
+
+// Original navigation structure (preserved for reference)
+function populateTopNavigationOld() {
+    console.log('🧭 Populating DCF navigation (OLD VERSION)...');
     
     const navMenu = document.querySelector('.nav-menu');
     if (!navMenu) {
@@ -172,7 +402,7 @@ function updateUserInterface() {
     
     showLoggedOutState();
     updateLogoText();
-    populateTopNavigation();
+    populateDCFNavigation();  // Use new dual navigation system
     initializeFooter();
     
     console.log('✅ UI updated for logged-out state');
@@ -537,8 +767,10 @@ const dcfUI = {
     showConfirm,
     showPrompt,
     populateTopNavigation,
+    populateDCFNavigation,
     updateUserInterface,
-    showLoggedOutState
+    showLoggedOutState,
+    isLaunchPage
 };
 
 // Export to window for global access
@@ -547,5 +779,7 @@ window.showAlert = showAlert;
 window.showConfirm = showConfirm;
 window.showPrompt = showPrompt;
 window.closeAlert = closeAlert;
+window.populateDCFNavigation = populateDCFNavigation;
+window.isLaunchPage = isLaunchPage;
 
 console.log('✅ DCF UI system loaded');
