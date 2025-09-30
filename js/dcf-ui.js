@@ -405,6 +405,11 @@ function updateUserInterface() {
     populateDCFNavigation();  // Use new dual navigation system
     initializeFooter();
     
+    // Hide launch-specific elements after DOM is populated
+    setTimeout(() => {
+        hideLaunchPageElements();
+    }, 100);
+    
     console.log('✅ UI updated for logged-out state');
 }
 
@@ -419,10 +424,73 @@ function showLoggedOutState() {
     
     const basePath = window.getCorrectBasePath();
     
-    userMenu.innerHTML = `
-        <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
-        <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
-    `;
+    // Check if we're on a launch page
+    const onLaunchPage = isLaunchPage();
+    
+    if (onLaunchPage) {
+        // Launch pages: No login or join buttons
+        userMenu.innerHTML = '';
+        console.log('🚀 Launch page: Hidden login/join buttons in header');
+    } else {
+        // Member pages: Show both login and join buttons
+        userMenu.innerHTML = `
+            <a href="${basePath}auth/dcf_login_page.html" class="login-btn" style="color: #333; text-decoration: none; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Login</a>
+            <a href="${basePath}auth/dcf_profile_signup.html" class="join-btn" style="background: #000; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; font-size: 0.9rem; text-decoration: none; display: inline-block;">Join Us</a>
+        `;
+        console.log('👥 Member page: Showing login/join buttons');
+    }
+}
+
+function hideLaunchPageElements() {
+    // Only run on launch pages
+    if (!isLaunchPage()) {
+        console.log('ℹ️ Not a launch page, keeping all elements visible');
+        return;
+    }
+    
+    console.log('🚀 Launch page detected - hiding member/auth elements');
+    
+    // Hide "Join Us" buttons
+    const joinButtons = document.querySelectorAll('a[href*="signup"], a[href*="join"], .join-btn, .signup-btn, button.join-btn');
+    joinButtons.forEach(btn => {
+        const btnText = btn.textContent.toLowerCase();
+        if (btnText.includes('join') || 
+            btnText.includes('sign up') ||
+            btnText.includes('create account') ||
+            btnText.includes('register')) {
+            btn.style.display = 'none';
+            console.log('🔒 Hiding join/signup button:', btn.textContent.trim());
+        }
+    });
+    
+    // Hide signup prompts and links
+    const signupPrompts = document.querySelectorAll('p, div, span');
+    signupPrompts.forEach(element => {
+        const text = element.textContent.toLowerCase();
+        if ((text.includes('new to dcf') || 
+             text.includes('create an account') ||
+             text.includes('sign up today') ||
+             text.includes('join us today')) &&
+            element.querySelector('a[href*="signup"], a[href*="join"]')) {
+            element.style.display = 'none';
+            console.log('🔒 Hiding signup prompt:', element.textContent.substring(0, 50) + '...');
+        }
+    });
+    
+    // Hide any remaining signup links not caught above
+    const signupLinks = document.querySelectorAll('a[href*="dcf_profile_signup"], a[href*="signup"], a[href*="register"]');
+    signupLinks.forEach(link => {
+        // Don't hide if it's part of main navigation (already handled)
+        if (!link.closest('.nav-menu')) {
+            const linkText = link.textContent.toLowerCase();
+            if (linkText.includes('create') || linkText.includes('sign') || linkText.includes('join')) {
+                link.style.display = 'none';
+                console.log('🔒 Hiding signup link:', link.textContent.trim());
+            }
+        }
+    });
+    
+    console.log('✅ Launch page elements hidden');
 }
 
 function updateLogoText() {
@@ -770,7 +838,8 @@ const dcfUI = {
     populateDCFNavigation,
     updateUserInterface,
     showLoggedOutState,
-    isLaunchPage
+    isLaunchPage,
+    hideLaunchPageElements
 };
 
 // Export to window for global access
@@ -781,5 +850,6 @@ window.showPrompt = showPrompt;
 window.closeAlert = closeAlert;
 window.populateDCFNavigation = populateDCFNavigation;
 window.isLaunchPage = isLaunchPage;
+window.hideLaunchPageElements = hideLaunchPageElements;
 
 console.log('✅ DCF UI system loaded');
