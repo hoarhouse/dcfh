@@ -7,6 +7,31 @@
 console.log('🎨 DCF UI System Loading...');
 
 // =============================================================================
+// LOGO CONFIGURATION
+// =============================================================================
+
+const LOGO_CONFIG = {
+    icon: {
+        type: 'circle', // 'circle', 'image', or 'svg'
+        color: '#000', // black circle
+        size: '24px',
+        imageUrl: null // or path to logo image if using image type
+    },
+    text: {
+        full: 'Domus Communis Foundation Hungary',
+        short: 'DCF Hungary',
+        abbrev: 'DCF'
+    },
+    link: 'index.html', // Homepage link
+    // Display mode based on page type
+    displayMode: {
+        launch: 'full', // Show full name on launch pages
+        member: 'short', // Show short name on member pages
+        mobile: 'abbrev' // Show abbreviation on mobile
+    }
+};
+
+// =============================================================================
 // DUAL NAVIGATION SYSTEM - Launch Menu vs Full Menu
 // =============================================================================
 
@@ -401,8 +426,9 @@ function updateUserInterface() {
     console.log('🎨 Updating UI (logged out state)...');
     
     showLoggedOutState();
-    updateLogoText();
+    populateLogo();  // Use new logo generation system
     populateDCFNavigation();  // Use new dual navigation system
+    handleResponsiveLogo();  // Enable responsive logo behavior
     initializeFooter();
     
     // Hide launch-specific elements after DOM is populated
@@ -493,16 +519,165 @@ function hideLaunchPageElements() {
     console.log('✅ Launch page elements hidden');
 }
 
-function updateLogoText() {
-    console.log('🏷️ Updating logo text...');
+// =============================================================================
+// LOGO GENERATION SYSTEM
+// =============================================================================
+
+function generateLogo() {
+    const isLaunch = isLaunchPage();
+    const isMobile = window.innerWidth < 768;
     
-    // Update any navigation logo text
-    const logoElements = document.querySelectorAll('.logo, .logo-text, .brand-name, .site-title');
-    logoElements.forEach(element => {
-        if (element.textContent && element.textContent.includes('Domus Communis Foundation')) {
-            element.textContent = element.textContent.replace('Domus Communis Foundation', 'DCF');
-        }
+    // Determine which text to show
+    let logoText;
+    if (isMobile) {
+        logoText = LOGO_CONFIG.text.abbrev;
+    } else {
+        logoText = isLaunch ? LOGO_CONFIG.text.full : LOGO_CONFIG.text.short;
+    }
+    
+    const basePath = window.getCorrectBasePath();
+    
+    console.log('🏷️ Generating logo:', { 
+        pageType: isLaunch ? 'LAUNCH' : 'MEMBER',
+        isMobile,
+        text: logoText 
     });
+    
+    // Create logo container
+    const logoLink = document.createElement('a');
+    logoLink.href = basePath + LOGO_CONFIG.link;
+    logoLink.className = 'logo';
+    logoLink.style.cssText = `
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+        font-size: 1rem;
+    `;
+    
+    // Create logo icon
+    if (LOGO_CONFIG.icon.type === 'circle') {
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'logo-icon';
+        iconDiv.style.cssText = `
+            width: ${LOGO_CONFIG.icon.size};
+            height: ${LOGO_CONFIG.icon.size};
+            background: ${LOGO_CONFIG.icon.color};
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        `;
+        logoLink.appendChild(iconDiv);
+    } else if (LOGO_CONFIG.icon.type === 'image' && LOGO_CONFIG.icon.imageUrl) {
+        const iconImg = document.createElement('img');
+        iconImg.src = basePath + LOGO_CONFIG.icon.imageUrl;
+        iconImg.className = 'logo-icon';
+        iconImg.style.cssText = `
+            width: ${LOGO_CONFIG.icon.size};
+            height: ${LOGO_CONFIG.icon.size};
+            margin-right: 8px;
+            flex-shrink: 0;
+        `;
+        iconImg.alt = 'Logo';
+        logoLink.appendChild(iconImg);
+    }
+    
+    // Create logo text
+    const textSpan = document.createElement('span');
+    textSpan.className = 'logo-text';
+    textSpan.textContent = logoText;
+    textSpan.style.cssText = 'white-space: nowrap;';
+    logoLink.appendChild(textSpan);
+    
+    console.log('✅ Logo generated');
+    return logoLink;
+}
+
+function populateLogo() {
+    // Find logo container in navigation - try multiple selectors
+    let logoContainer = document.querySelector('.logo-container') || 
+                       document.querySelector('.nav-container > .logo') ||
+                       document.querySelector('.nav-container');
+    
+    if (!logoContainer) {
+        console.log('⚠️ Logo container not found');
+        return;
+    }
+    
+    console.log('🏷️ Populating logo...');
+    
+    // If we found nav-container, we'll prepend the logo to it
+    if (logoContainer.classList.contains('nav-container')) {
+        // Check if there's already a logo
+        const existingLogo = logoContainer.querySelector('.logo');
+        if (existingLogo) {
+            existingLogo.remove();
+        }
+        
+        // Generate and insert new logo at the beginning
+        const newLogo = generateLogo();
+        logoContainer.insertBefore(newLogo, logoContainer.firstChild);
+    } else if (logoContainer.classList.contains('logo')) {
+        // The container itself is the logo link - replace its content
+        const newLogo = generateLogo();
+        logoContainer.innerHTML = newLogo.innerHTML;
+        logoContainer.href = newLogo.href;
+        logoContainer.className = newLogo.className;
+        if (newLogo.style.cssText) {
+            logoContainer.style.cssText = newLogo.style.cssText;
+        }
+    } else if (logoContainer.classList.contains('logo-container')) {
+        // It's a dedicated logo container - replace content
+        logoContainer.innerHTML = '';
+        const newLogo = generateLogo();
+        logoContainer.appendChild(newLogo);
+    }
+    
+    console.log('✅ Logo populated');
+}
+
+function handleResponsiveLogo() {
+    console.log('📱 Setting up responsive logo handling...');
+    
+    // Update logo text based on screen width
+    function updateLogoResponsive() {
+        const logoText = document.querySelector('.logo-text');
+        if (!logoText) return;
+        
+        const isLaunch = isLaunchPage();
+        const width = window.innerWidth;
+        
+        if (width < 768) {
+            // Mobile: show abbreviation
+            logoText.textContent = LOGO_CONFIG.text.abbrev;
+        } else {
+            // Desktop: show full or short based on page type
+            logoText.textContent = isLaunch ? 
+                LOGO_CONFIG.text.full : 
+                LOGO_CONFIG.text.short;
+        }
+        
+        console.log('📱 Logo text updated:', logoText.textContent);
+    }
+    
+    // Update on load
+    updateLogoResponsive();
+    
+    // Debounce resize events for performance
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateLogoResponsive, 250);
+    });
+    
+    console.log('✅ Responsive logo handling enabled');
+}
+
+// Keep old function for backward compatibility
+function updateLogoText() {
+    console.log('🏷️ Updating logo text (legacy call - using populateLogo instead)...');
+    populateLogo();
 }
 
 // =============================================================================
@@ -839,7 +1014,10 @@ const dcfUI = {
     updateUserInterface,
     showLoggedOutState,
     isLaunchPage,
-    hideLaunchPageElements
+    hideLaunchPageElements,
+    generateLogo,
+    populateLogo,
+    handleResponsiveLogo
 };
 
 // Export to window for global access
@@ -851,5 +1029,9 @@ window.closeAlert = closeAlert;
 window.populateDCFNavigation = populateDCFNavigation;
 window.isLaunchPage = isLaunchPage;
 window.hideLaunchPageElements = hideLaunchPageElements;
+window.generateLogo = generateLogo;
+window.populateLogo = populateLogo;
+window.handleResponsiveLogo = handleResponsiveLogo;
+window.LOGO_CONFIG = LOGO_CONFIG; // Export config for easy access
 
 console.log('✅ DCF UI system loaded');

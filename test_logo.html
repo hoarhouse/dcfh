@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo System Test - DCF Hungary</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            margin: 0;
+            padding: 0;
+        }
+        .user-menu {
+            display: flex;
+            gap: 1rem;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .logo-preview {
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .test-controls button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-controls button:hover {
+            background: #0056b3;
+        }
+        .config-display {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 DCF Logo System Test</h1>
+    
+    <!-- Test Navigation Header -->
+    <header>
+        <nav class="nav-container">
+            <!-- Logo will be dynamically inserted here -->
+            <ul class="nav-menu">
+                <!-- Navigation populated by dcf-ui.js -->
+            </ul>
+            <div class="user-menu">
+                <!-- User menu populated by dcf-ui.js -->
+            </div>
+        </nav>
+    </header>
+    
+    <div class="test-section">
+        <h2>Logo Configuration</h2>
+        <div id="configDisplay" class="config-display">Loading configuration...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Current Logo Display</h2>
+        <p><strong>Page Type:</strong> <span id="pageType" class="status"></span></p>
+        <p><strong>Screen Size:</strong> <span id="screenSize"></span> (<span id="deviceType"></span>)</p>
+        <p><strong>Logo Text Shown:</strong> <span id="logoText" style="font-weight: bold;"></span></p>
+        
+        <div class="logo-preview" id="logoPreview">
+            <!-- Current logo preview will appear here -->
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Different Scenarios</h2>
+        
+        <div class="test-controls">
+            <button onclick="testLaunchPage()">Test Launch Page Logo</button>
+            <button onclick="testMemberPage()">Test Member Page Logo</button>
+            <button onclick="testMobileView()">Test Mobile Logo</button>
+            <button onclick="testDesktopView()">Test Desktop Logo</button>
+        </div>
+        
+        <div id="testResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Responsive Test</h2>
+        <p>Resize your browser window to see the logo adapt:</p>
+        <ul>
+            <li><strong>&lt; 768px:</strong> Shows "DCF" (abbreviation)</li>
+            <li><strong>&gt;= 768px + Launch Page:</strong> Shows "Domus Communis Foundation Hungary" (full)</li>
+            <li><strong>&gt;= 768px + Member Page:</strong> Shows "DCF Hungary" (short)</li>
+        </ul>
+        <p><strong>Current State:</strong> <span id="responsiveState"></span></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <p>Open browser console to see detailed logging:</p>
+        <ul>
+            <li>🏷️ Logo generation logs</li>
+            <li>📱 Responsive logo updates</li>
+            <li>✅ Success confirmations</li>
+        </ul>
+    </div>
+
+    <!-- Load DCF Modular System -->
+    <script src="js/dcf-core.js"></script>
+    <script src="js/dcf-ui.js"></script>
+    <script src="js/dcf-auth.js"></script>
+    <script src="js/dcf-init.js"></script>
+    
+    <script>
+        // Wait for DCF system to be ready
+        window.addEventListener('dcfReady', function() {
+            console.log('📋 Logo Test Page Ready');
+            
+            // Display configuration
+            if (window.LOGO_CONFIG) {
+                document.getElementById('configDisplay').textContent = JSON.stringify(window.LOGO_CONFIG, null, 2);
+            }
+            
+            // Update status displays
+            updateStatus();
+            
+            // Monitor window resize
+            window.addEventListener('resize', updateStatus);
+        });
+        
+        function updateStatus() {
+            // Page type
+            const isLaunch = window.isLaunchPage ? window.isLaunchPage() : false;
+            const pageTypeEl = document.getElementById('pageType');
+            pageTypeEl.textContent = isLaunch ? 'LAUNCH PAGE' : 'MEMBER PAGE';
+            pageTypeEl.className = 'status ' + (isLaunch ? 'success' : 'warning');
+            
+            // Screen size
+            const width = window.innerWidth;
+            document.getElementById('screenSize').textContent = width + 'px';
+            document.getElementById('deviceType').textContent = width < 768 ? 'Mobile' : 'Desktop';
+            
+            // Logo text
+            const logoTextEl = document.querySelector('.logo-text');
+            if (logoTextEl) {
+                document.getElementById('logoText').textContent = logoTextEl.textContent;
+            }
+            
+            // Logo preview
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                const previewContainer = document.getElementById('logoPreview');
+                const clonedLogo = logo.cloneNode(true);
+                clonedLogo.href = '#'; // Prevent navigation in preview
+                previewContainer.innerHTML = '';
+                previewContainer.appendChild(clonedLogo);
+            }
+            
+            // Responsive state
+            const responsiveStateEl = document.getElementById('responsiveState');
+            if (width < 768) {
+                responsiveStateEl.textContent = 'Mobile View - Showing: "DCF"';
+                responsiveStateEl.style.color = '#0066cc';
+            } else if (isLaunch) {
+                responsiveStateEl.textContent = 'Desktop + Launch Page - Showing: "Domus Communis Foundation Hungary"';
+                responsiveStateEl.style.color = '#28a745';
+            } else {
+                responsiveStateEl.textContent = 'Desktop + Member Page - Showing: "DCF Hungary"';
+                responsiveStateEl.style.color = '#ffc107';
+            }
+        }
+        
+        function testLaunchPage() {
+            // Temporarily override isLaunchPage to return true
+            const originalFunc = window.isLaunchPage;
+            window.isLaunchPage = () => true;
+            
+            // Regenerate logo
+            if (window.populateLogo) {
+                window.populateLogo();
+                window.handleResponsiveLogo();
+            }
+            
+            // Update display
+            updateStatus();
+            
+            // Show results
+            document.getElementById('testResults').innerHTML = 
+                '<div style="padding: 10px; background: #d4edda; color: #155724; border-radius: 4px; margin-top: 10px;">' +
+                '✅ Switched to Launch Page mode - Logo should show full organization name' +
+                '</div>';
+            
+            // Restore after 3 seconds
+            setTimeout(() => {
+                window.isLaunchPage = originalFunc;
+                window.populateLogo();
+                window.handleResponsiveLogo();
+                updateStatus();
+            }, 3000);
+        }
+        
+        function testMemberPage() {
+            // Temporarily override isLaunchPage to return false
+            const originalFunc = window.isLaunchPage;
+            window.isLaunchPage = () => false;
+            
+            // Regenerate logo
+            if (window.populateLogo) {
+                window.populateLogo();
+                window.handleResponsiveLogo();
+            }
+            
+            // Update display
+            updateStatus();
+            
+            // Show results
+            document.getElementById('testResults').innerHTML = 
+                '<div style="padding: 10px; background: #fff3cd; color: #856404; border-radius: 4px; margin-top: 10px;">' +
+                '✅ Switched to Member Page mode - Logo should show short name' +
+                '</div>';
+            
+            // Restore after 3 seconds
+            setTimeout(() => {
+                window.isLaunchPage = originalFunc;
+                window.populateLogo();
+                window.handleResponsiveLogo();
+                updateStatus();
+            }, 3000);
+        }
+        
+        function testMobileView() {
+            // Force mobile view by changing logo text
+            const logoText = document.querySelector('.logo-text');
+            if (logoText && window.LOGO_CONFIG) {
+                logoText.textContent = window.LOGO_CONFIG.text.abbrev;
+                updateStatus();
+                
+                document.getElementById('testResults').innerHTML = 
+                    '<div style="padding: 10px; background: #cce5ff; color: #004085; border-radius: 4px; margin-top: 10px;">' +
+                    '📱 Simulated Mobile View - Logo shows "DCF"' +
+                    '</div>';
+            }
+        }
+        
+        function testDesktopView() {
+            // Restore desktop view
+            if (window.handleResponsiveLogo) {
+                window.handleResponsiveLogo();
+                updateStatus();
+                
+                document.getElementById('testResults').innerHTML = 
+                    '<div style="padding: 10px; background: #d1ecf1; color: #0c5460; border-radius: 4px; margin-top: 10px;">' +
+                    '🖥️ Restored Desktop View - Logo shows appropriate text based on page type' +
+                    '</div>';
+            }
+        }
+        
+        // If DCF system doesn't load, show error
+        setTimeout(function() {
+            if (!window.dcfUI) {
+                console.error('❌ DCF UI System failed to load');
+                document.body.innerHTML += '<div style="background: #f8d7da; color: #721c24; padding: 20px; margin: 20px 0; border-radius: 8px;">⚠️ Error: DCF UI System failed to load. Check console for details.</div>';
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
