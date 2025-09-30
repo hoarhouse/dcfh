@@ -2500,28 +2500,53 @@
                     displayHeroImagePreview(blog.hero_image_url);
                 }
                 
-                // Handle template with backward compatibility
-                let templateType = blog.template_type || 'standard'; // Default to 'standard' for old posts
-                
-                // Validate template exists in config
-                if (window.BlogTemplates && !window.BlogTemplates.isValidTemplate(templateType)) {
-                    console.warn(`Invalid template type '${templateType}' found, defaulting to 'standard'`);
-                    templateType = 'standard';
+                // Load status
+                if (blog.status) {
+                    document.getElementById('blogStatus').value = blog.status;
                 }
                 
-                // Set template selector and update fields
+                // Load initiative
+                if (blog.initiative) {
+                    document.getElementById('blogInitiative').value = blog.initiative;
+                }
+                
+                // Handle template - map template_id back to template type
+                const reverseTemplateMapping = {
+                    'Standard Article': 'standard',
+                    'Research Paper': 'research',
+                    'Announcement': 'announcement',
+                    'Feature Story': 'feature'
+                };
+                
+                let templateType = 'standard'; // Default
+                if (blog.template_id) {
+                    templateType = reverseTemplateMapping[blog.template_id] || 'standard';
+                } else if (blog.template_type) {
+                    // Backward compatibility for old data
+                    templateType = blog.template_type;
+                }
+                
+                // Set template selector
                 const selector = document.getElementById('templateSelector');
                 const hiddenInput = document.getElementById('selectedTemplate');
                 if (selector && hiddenInput) {
                     selector.value = templateType;
                     hiddenInput.value = templateType;
-                    
-                    // Update form fields for the loaded template
-                    updateFormFieldsForTemplate(templateType);
                 }
                 
-                // Set colors if they exist in metadata
-                if (blog.metadata) {
+                // Load colors from theme_config
+                if (blog.theme_config) {
+                    if (blog.theme_config.primaryColor) {
+                        document.getElementById('primaryColor').value = blog.theme_config.primaryColor;
+                    }
+                    if (blog.theme_config.accentColor) {
+                        document.getElementById('accentColor').value = blog.theme_config.accentColor;
+                    }
+                    if (blog.theme_config.backgroundColor) {
+                        document.getElementById('backgroundColor').value = blog.theme_config.backgroundColor;
+                    }
+                } else if (blog.metadata) {
+                    // Backward compatibility - load from metadata if theme_config doesn't exist
                     if (blog.metadata.primaryColor) {
                         document.getElementById('primaryColor').value = blog.metadata.primaryColor;
                     }
@@ -2530,14 +2555,6 @@
                     }
                     if (blog.metadata.backgroundColor) {
                         document.getElementById('backgroundColor').value = blog.metadata.backgroundColor;
-                    }
-                    
-                    // Load template-specific data
-                    if (blog.metadata.templateData) {
-                        // Use setTimeout to ensure fields are visible before populating
-                        setTimeout(() => {
-                            loadTemplateData(templateType, blog.metadata.templateData);
-                        }, 100);
                     }
                 }
                 
