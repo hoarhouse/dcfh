@@ -760,7 +760,70 @@
             // Update breadcrumb
             document.getElementById('currentBlog').textContent = blog.name;
 
-            // Update blog header
+            // Apply theme colors if available
+            if (blog.theme_config) {
+                if (blog.theme_config.primaryColor) {
+                    document.documentElement.style.setProperty('--primary-color', blog.theme_config.primaryColor);
+                }
+                if (blog.theme_config.secondaryColor) {
+                    document.documentElement.style.setProperty('--secondary-color', blog.theme_config.secondaryColor);
+                }
+                if (blog.theme_config.accentColor) {
+                    document.documentElement.style.setProperty('--accent-color', blog.theme_config.accentColor);
+                }
+                if (blog.theme_config.backgroundColor) {
+                    document.documentElement.style.setProperty('--background-color', blog.theme_config.backgroundColor);
+                    document.body.style.backgroundColor = blog.theme_config.backgroundColor;
+                }
+            }
+
+            // Apply template-specific class to body
+            const templateMap = {
+                'Standard Article': 'standard',
+                'Research Paper': 'research',
+                'Announcement': 'announcement',
+                'Feature Story': 'feature'
+            };
+            const templateClass = templateMap[blog.template_id] || 'standard';
+            document.body.className = `template-${templateClass}`;
+
+            // Add hero image or simple header
+            const heroSection = document.getElementById('heroSection');
+            
+            if (blog.hero_image_url) {
+                // Construct Supabase storage URL
+                const supabaseUrl = supabase.supabaseUrl || 'https://lwvvwafbprcihsdzqmuv.supabase.co';
+                let imageUrl;
+                
+                // Check if it's a full URL or just a path
+                if (blog.hero_image_url.startsWith('http')) {
+                    imageUrl = blog.hero_image_url;
+                } else {
+                    // Construct URL for media bucket
+                    imageUrl = `${supabaseUrl}/storage/v1/object/public/media/${blog.hero_image_url}`;
+                }
+                
+                heroSection.innerHTML = `
+                    <div class="blog-hero" style="background-image: url('${imageUrl}')">
+                        <div class="hero-overlay">
+                            <h1 class="hero-title">${blog.name}</h1>
+                            <p class="hero-description">${blog.description || ''}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Simple header without hero image
+                heroSection.innerHTML = `
+                    <div class="simple-header">
+                        <div class="simple-header-content">
+                            <h1>${blog.name}</h1>
+                            <p>${blog.description || 'Explore our latest insights and perspectives.'}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update blog header info (now below hero)
             document.getElementById('blogTitle').textContent = blog.name;
             document.getElementById('blogDescription').textContent = blog.description || 'Explore our latest insights and perspectives.';
             
