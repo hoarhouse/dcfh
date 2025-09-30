@@ -2566,53 +2566,35 @@
         async function saveBlog() {
             if (!currentBlogId) return;
             
-            const templateId = document.getElementById('selectedTemplate').value || 'standard';
+            const selectedTemplate = document.getElementById('selectedTemplate').value || 'standard';
             
-            // Validate template exists
-            if (!window.BlogTemplates || !window.BlogTemplates.isValidTemplate(templateId)) {
-                console.error(`Invalid template '${templateId}', using 'standard'`);
-                templateId = 'standard';
-            }
+            // Map template names to template_id from blog_templates table
+            const templateMapping = {
+                'standard': 'Standard Article',
+                'research': 'Research Paper',
+                'announcement': 'Announcement',
+                'feature': 'Feature Story'
+            };
             
-            // Validate required fields for current template with specific messages
-            const validationResult = validateTemplateFieldsWithMessages(templateId);
-            if (!validationResult.isValid) {
-                showToast(validationResult.message, 'error');
-                return;
-            }
+            const templateId = templateMapping[selectedTemplate] || 'Standard Article';
             
-            // Get current user for author info if needed
-            let authorInfo = null;
-            if (typeof getCurrentUser === 'function') {
-                const user = getCurrentUser();
-                if (user) {
-                    authorInfo = {
-                        id: user.id,
-                        email: user.email
-                    };
-                }
-            }
-            
-            // Gather template-specific data
-            const templateData = gatherTemplateData(templateId);
-            
-            // Add author info if not already present
-            if (authorInfo && !templateData.authorId) {
-                templateData.authorId = authorInfo.id;
-                templateData.authorEmail = authorInfo.email;
-            }
+            // Build theme configuration
+            const themeConfig = {
+                primaryColor: document.getElementById('primaryColor').value,
+                secondaryColor: document.getElementById('accentColor').value,  // Using accentColor as secondaryColor
+                accentColor: document.getElementById('accentColor').value,
+                backgroundColor: document.getElementById('backgroundColor').value
+            };
             
             const updateData = {
                 description: document.getElementById('blogDescription').value,
                 target_audience: document.getElementById('blogAudience').value,
-                template_type: templateId, // Always save template_type
-                metadata: {
-                    primaryColor: document.getElementById('primaryColor').value,
-                    accentColor: document.getElementById('accentColor').value,
-                    backgroundColor: document.getElementById('backgroundColor').value,
-                    templateData: templateData,
-                    lastModifiedBy: authorInfo
-                },
+                template_id: templateId, // Using correct column name
+                theme_config: themeConfig,
+                theme_settings: {}, // Empty for now, can be expanded later
+                layout_config: {}, // Empty for now, can be expanded later
+                status: document.getElementById('blogStatus').value || 'active',
+                initiative: document.getElementById('blogInitiative').value || null,
                 updated_at: new Date().toISOString()
             };
             
@@ -2629,7 +2611,7 @@
                 }
             }
             
-            console.log('Saving blog with template:', templateId);
+            console.log('Saving blog with template_id:', templateId);
             
             try {
                 const { error } = await window.dcfSupabase
@@ -2639,7 +2621,7 @@
                 
                 if (error) throw error;
                 
-                showToast(`Blog saved successfully with ${window.BlogTemplates.getTemplate(templateId).name} template`, 'success');
+                showToast(`Blog saved successfully with ${templateId} template`, 'success');
                 hasUnsavedChanges = false;
                 
                 // Update current blog data
