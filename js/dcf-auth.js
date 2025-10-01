@@ -41,6 +41,25 @@ function initializeSupabaseClient() {
 async function initializeAuth() {
     console.log('🔍 Initializing authentication...');
     
+    // CRITICAL: Launch pages should NEVER have auth navigation
+    const LAUNCH_PAGES = [
+        'index.html',
+        '/public/',
+        '/initiatives/',
+        '/blog/',
+        'dcf_donate.html'
+    ];
+    
+    const currentPath = window.location.pathname;
+    const isLaunchPage = LAUNCH_PAGES.some(page => 
+        currentPath.includes(page) || currentPath.endsWith(page)
+    );
+    
+    if (isLaunchPage) {
+        console.log('🚀 Launch page detected - skipping auth navigation');
+        return; // EXIT IMMEDIATELY - don't run any auth code on launch pages
+    }
+    
     // Initialize Supabase client
     const supabaseReady = initializeSupabaseClient();
     if (!supabaseReady) {
@@ -150,6 +169,25 @@ async function loadUserProfile(session) {
 function updateUIForLoggedInState() {
     console.log('🎨 Updating UI for logged-in user');
     
+    // Check if we're on a launch page - they handle their own navigation
+    const LAUNCH_PAGES = [
+        'index.html',
+        '/public/',
+        '/initiatives/',
+        '/blog/',
+        'dcf_donate.html'
+    ];
+    
+    const currentPath = window.location.pathname;
+    const isLaunchPage = LAUNCH_PAGES.some(page => 
+        currentPath.includes(page) || currentPath.endsWith(page)
+    );
+    
+    if (isLaunchPage) {
+        console.log('🚀 Launch page - preserving public navigation');
+        return; // Don't modify navigation on launch pages
+    }
+    
     if (!window.dcfUI) {
         console.warn('⚠️ dcf-ui.js not available');
         return;
@@ -165,6 +203,25 @@ function updateUIForLoggedInState() {
 function updateUIForLoggedOutState() {
     console.log('📱 Updating UI for logged-out state');
     
+    // Launch pages handle their own navigation
+    const LAUNCH_PAGES = [
+        'index.html',
+        '/public/',
+        '/initiatives/',
+        '/blog/',
+        'dcf_donate.html'
+    ];
+    
+    const currentPath = window.location.pathname;
+    const isLaunchPage = LAUNCH_PAGES.some(page => 
+        currentPath.includes(page) || currentPath.endsWith(page)
+    );
+    
+    if (isLaunchPage) {
+        console.log('🚀 Launch page - preserving public navigation');
+        return; // Don't modify navigation on launch pages
+    }
+    
     if (window.dcfUI) {
         // Use the existing logged-out UI from dcf-ui.js
         window.dcfUI.showLoggedOutState();
@@ -172,6 +229,25 @@ function updateUIForLoggedOutState() {
 }
 
 function updateLoggedInNavigation() {
+    // Double-check we're not on a launch page
+    const LAUNCH_PAGES = [
+        'index.html',
+        '/public/',
+        '/initiatives/',
+        '/blog/',
+        'dcf_donate.html'
+    ];
+    
+    const currentPath = window.location.pathname;
+    const isLaunchPage = LAUNCH_PAGES.some(page => 
+        currentPath.includes(page) || currentPath.endsWith(page)
+    );
+    
+    if (isLaunchPage) {
+        console.log('🚀 Launch page detected in updateLoggedInNavigation - exiting');
+        return; // EXIT - don't modify navigation on launch pages
+    }
+    
     const navMenu = document.querySelector('.nav-menu');
     if (!navMenu) return;
     
@@ -300,6 +376,25 @@ function updateLoggedInNavigation() {
 }
 
 function updateUserMenu() {
+    // Don't modify user menu on launch pages
+    const LAUNCH_PAGES = [
+        'index.html',
+        '/public/',
+        '/initiatives/',
+        '/blog/',
+        'dcf_donate.html'
+    ];
+    
+    const currentPath = window.location.pathname;
+    const isLaunchPage = LAUNCH_PAGES.some(page => 
+        currentPath.includes(page) || currentPath.endsWith(page)
+    );
+    
+    if (isLaunchPage) {
+        console.log('🚀 Launch page - preserving public user menu');
+        return; // Don't modify user menu on launch pages
+    }
+    
     const userMenu = document.querySelector('.user-menu');
     if (!userMenu || !dcfUser.profile) return;
     
