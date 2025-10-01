@@ -652,6 +652,66 @@
             loadBlogAndPosts();
         }
 
+        // Dynamic template loading functions
+        async function loadBlogTemplate(templateId) {
+            if (!templateId) {
+                console.log('No template_id, using default');
+                return null;
+            }
+            
+            try {
+                const { data: template, error } = await supabase
+                    .from('blog_templates')
+                    .select('*')
+                    .eq('id', templateId)
+                    .single();
+                
+                if (error) {
+                    console.error('Error loading template:', error);
+                    return null;
+                }
+                
+                console.log('✅ Loaded template:', template.template_name);
+                return template;
+            } catch (err) {
+                console.error('Template loading failed:', err);
+                return null;
+            }
+        }
+
+        function injectTemplateCSS(template) {
+            if (!template || !template.css_styles) return;
+            
+            // Remove any existing template styles
+            const existingStyle = document.getElementById('blog-template-styles');
+            if (existingStyle) {
+                existingStyle.remove();
+            }
+            
+            // Create and inject new template styles
+            const styleElement = document.createElement('style');
+            styleElement.id = 'blog-template-styles';
+            styleElement.textContent = template.css_styles;
+            document.head.appendChild(styleElement);
+            
+            console.log(`✅ Injected CSS for template: ${template.template_name}`);
+        }
+
+        function applyTemplateClass(templateId) {
+            // Remove any existing template classes
+            document.body.className = document.body.className
+                .replace(/template-\w+/g, '')
+                .trim();
+            
+            // Add new template class
+            if (templateId) {
+                // Convert template ID to class-friendly format
+                const classId = templateId.toLowerCase().replace(/\s+/g, '-');
+                document.body.classList.add(`template-${classId}`);
+                console.log(`✅ Applied template class: template-${classId}`);
+            }
+        }
+
         async function loadBlogAndPosts() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
@@ -680,6 +740,18 @@
                     hero_image_url: blog.hero_image_url,
                     theme_config: blog.theme_config
                 });
+                
+                // Load and apply template dynamically
+                const template = await loadBlogTemplate(blog.template_id);
+                if (template) {
+                    injectTemplateCSS(template);
+                    applyTemplateClass(blog.template_id);
+                } else {
+                    // Fallback to standard if template not found
+                    console.log('Using default standard template');
+                    applyTemplateClass('standard-article');
+                }
+                
                 updatePageInfo(blog);
 
                 // Then get the posts with pagination
@@ -736,15 +808,8 @@
                 }
             }
 
-            // Apply template-specific class to body
-            const templateMap = {
-                'Standard Article': 'standard',
-                'Research Paper': 'research',
-                'Announcement': 'announcement',
-                'Feature Story': 'feature'
-            };
-            const templateClass = templateMap[blog.template_id] || 'standard';
-            document.body.className = `template-${templateClass}`;
+            // Template class is now applied dynamically in loadBlogAndPosts function
+            // No need for hardcoded templateMap anymore
 
             // Add hero image or simple header
             const heroSection = document.getElementById('heroSection');
