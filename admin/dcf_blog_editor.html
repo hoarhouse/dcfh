@@ -2973,8 +2973,9 @@
                 updated_at: new Date().toISOString()
             };
             
-            // Upload hero image if a new one was selected
+            // Handle hero image changes
             if (heroImageFile) {
+                // Upload new hero image
                 try {
                     const heroImageUrl = await uploadBlogHeroImage(heroImageFile);
                     if (heroImageUrl) {
@@ -2984,6 +2985,9 @@
                     console.error('Hero image upload failed:', uploadError);
                     showToast('Warning: Hero image upload failed, but blog settings were saved', 'error');
                 }
+            } else if (existingHeroImageUrl === null && currentBlogData?.hero_image_url) {
+                // Hero image was removed - set to null in database
+                updateData.hero_image_url = null;
             }
             
             console.log('Saving blog with template_id:', templateId);
@@ -3156,6 +3160,7 @@
         
         function removeBlogHeroImage() {
             heroImageFile = null;
+            existingHeroImageUrl = null; // Clear the existing image URL
             const preview = document.getElementById('blogHeroPreview');
             preview.classList.remove('has-image');
             preview.innerHTML = '<span class="placeholder-text">No hero image - click to upload</span>';
