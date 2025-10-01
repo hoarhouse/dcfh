@@ -1451,26 +1451,33 @@
 
         /* Color Preview */
         .color-input-group {
-            display: grid;
-            grid-template-columns: 120px 40px 40px auto;
+            display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            gap: 1rem;
         }
-
-        .color-preview {
+        
+        .color-input-group input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .color-input-group .color-preview {
             width: 40px;
             height: 40px;
-            border-radius: 8px;
-            border: 2px solid #e5e5e5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-
-        .color-hex {
+        
+        .color-input-group .color-hex {
             font-family: monospace;
             font-size: 0.9rem;
             color: #666;
             min-width: 80px;
         }
+
 
         /* Loading States */
         .btn-loading {
@@ -2120,6 +2127,39 @@
                             <small class="form-hint">Link to a specific program or initiative</small>
                         </div>
 
+                        <!-- Visual Theme Section -->
+                        <div class="section-header">
+                            <span class="section-icon">🎨</span>
+                            <h2 class="section-title">Visual Theme</h2>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Primary Color</label>
+                            <div class="color-input-group">
+                                <input type="color" id="primaryColor" name="primaryColor" value="#000000">
+                                <div class="color-preview" id="primaryColorPreview" style="background: #000000;"></div>
+                                <span class="color-hex" id="primaryColorHex">#000000</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Accent Color</label>
+                            <div class="color-input-group">
+                                <input type="color" id="accentColor" name="accentColor" value="#dc3545">
+                                <div class="color-preview" id="accentColorPreview" style="background: #dc3545;"></div>
+                                <span class="color-hex" id="accentColorHex">#dc3545</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Background Color</label>
+                            <div class="color-input-group">
+                                <input type="color" id="backgroundColor" name="backgroundColor" value="#f8f9fa">
+                                <div class="color-preview" id="backgroundColorPreview" style="background: #f8f9fa;"></div>
+                                <span class="color-hex" id="backgroundColorHex">#f8f9fa</span>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Right Column -->
@@ -2675,20 +2715,7 @@
         function preserveFormData() {
             preservedData = {
                 description: document.getElementById('blogDescription').value,
-                audience: document.getElementById('blogAudience').value,
-                author: document.getElementById('authorField').value,
-                excerpt: document.getElementById('excerptField').value,
-                pullQuotes: document.getElementById('pullQuotesField')?.value || '',
-                interviewer: document.getElementById('interviewerField')?.value || '',
-                interviewee: document.getElementById('intervieweeField')?.value || '',
-                problem: document.getElementById('problemField')?.value || '',
-                solution: document.getElementById('solutionField')?.value || '',
-                results: document.getElementById('resultsField')?.value || '',
-                thesis: document.getElementById('thesisField')?.value || '',
-                keyArguments: document.getElementById('keyArgumentsField')?.value || '',
-                conclusion: document.getElementById('conclusionField')?.value || '',
-                listItems: getListItems(),
-                numberingStyle: document.getElementById('numberingStyleField')?.value || 'numbered'
+                audience: document.getElementById('blogAudience').value
             };
         }
         
@@ -2696,98 +2723,8 @@
             // Restore common fields
             document.getElementById('blogDescription').value = preservedData.description || '';
             document.getElementById('blogAudience').value = preservedData.audience || '';
-            document.getElementById('authorField').value = preservedData.author || '';
-            document.getElementById('excerptField').value = preservedData.excerpt || '';
-            
-            // Restore template-specific fields if switching back
-            switch(templateId) {
-                case 'feature':
-                    if (preservedData.pullQuotes) document.getElementById('pullQuotesField').value = preservedData.pullQuotes;
-                    break;
-                case 'interview':
-                    if (preservedData.interviewer) document.getElementById('interviewerField').value = preservedData.interviewer;
-                    if (preservedData.interviewee) document.getElementById('intervieweeField').value = preservedData.interviewee;
-                    // Try to extract interviewer from author field if empty
-                    if (!preservedData.interviewer && preservedData.author) {
-                        document.getElementById('interviewerField').value = preservedData.author;
-                    }
-                    break;
-                case 'list':
-                    if (preservedData.listItems && preservedData.listItems.length > 0) {
-                        restoreListItems(preservedData.listItems);
-                    }
-                    if (preservedData.numberingStyle) document.getElementById('numberingStyleField').value = preservedData.numberingStyle;
-                    break;
-                case 'case-study':
-                    if (preservedData.problem) document.getElementById('problemField').value = preservedData.problem;
-                    if (preservedData.solution) document.getElementById('solutionField').value = preservedData.solution;
-                    if (preservedData.results) document.getElementById('resultsField').value = preservedData.results;
-                    break;
-                case 'analysis':
-                    if (preservedData.thesis) document.getElementById('thesisField').value = preservedData.thesis;
-                    if (preservedData.keyArguments) document.getElementById('keyArgumentsField').value = preservedData.keyArguments;
-                    if (preservedData.conclusion) document.getElementById('conclusionField').value = preservedData.conclusion;
-                    break;
-            }
         }
         
-        // List item management functions
-        function addListItem() {
-            const container = document.getElementById('listItemsContainer');
-            const itemCount = container.querySelectorAll('.list-item-input').length;
-            
-            const newItem = document.createElement('div');
-            newItem.className = 'list-item-input';
-            newItem.style.marginBottom = '0.5rem';
-            newItem.innerHTML = `
-                <input type="text" class="form-input list-item" placeholder="List item ${itemCount + 1}">
-                <button type="button" class="list-item-remove" onclick="removeListItem(this)">&times;</button>
-            `;
-            
-            container.appendChild(newItem);
-        }
-        
-        function removeListItem(button) {
-            button.parentElement.remove();
-            updateListItemPlaceholders();
-        }
-        
-        function updateListItemPlaceholders() {
-            const items = document.querySelectorAll('.list-item');
-            items.forEach((item, index) => {
-                item.placeholder = `List item ${index + 1}`;
-            });
-        }
-        
-        function getListItems() {
-            const items = [];
-            document.querySelectorAll('.list-item').forEach(item => {
-                if (item.value.trim()) {
-                    items.push(item.value.trim());
-                }
-            });
-            return items;
-        }
-        
-        function restoreListItems(items) {
-            const container = document.getElementById('listItemsContainer');
-            container.innerHTML = '';
-            
-            items.forEach((item, index) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'list-item-input';
-                itemDiv.style.marginBottom = '0.5rem';
-                itemDiv.innerHTML = `
-                    <input type="text" class="form-input list-item" placeholder="List item ${index + 1}" value="${escapeHtml(item)}">
-                    ${index > 0 ? '<button type="button" class="list-item-remove" onclick="removeListItem(this)">&times;</button>' : ''}
-                `;
-                container.appendChild(itemDiv);
-            });
-            
-            if (items.length === 0) {
-                addListItem();
-            }
-        }
 
         // Load blog data
         async function loadBlog() {
@@ -3140,6 +3077,31 @@
             const heroInput = document.getElementById('blogHeroInput');
             if (heroInput) {
                 heroInput.addEventListener('change', handleHeroImageSelect);
+            }
+            
+            // Color input listeners
+            const primaryColor = document.getElementById('primaryColor');
+            if (primaryColor) {
+                primaryColor.addEventListener('input', function(e) {
+                    document.getElementById('primaryColorPreview').style.background = e.target.value;
+                    document.getElementById('primaryColorHex').textContent = e.target.value;
+                });
+            }
+            
+            const accentColor = document.getElementById('accentColor');
+            if (accentColor) {
+                accentColor.addEventListener('input', function(e) {
+                    document.getElementById('accentColorPreview').style.background = e.target.value;
+                    document.getElementById('accentColorHex').textContent = e.target.value;
+                });
+            }
+            
+            const backgroundColor = document.getElementById('backgroundColor');
+            if (backgroundColor) {
+                backgroundColor.addEventListener('input', function(e) {
+                    document.getElementById('backgroundColorPreview').style.background = e.target.value;
+                    document.getElementById('backgroundColorHex').textContent = e.target.value;
+                });
             }
         })
 
