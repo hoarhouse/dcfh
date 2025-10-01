@@ -1137,23 +1137,37 @@
             const biContainer = document.createElement('div');
             biContainer.className = 'bi-container';
             
-            // Add the new header instead of hero card
+            // Add bold left-aligned blog header
             const headerSection = document.createElement('div');
             headerSection.innerHTML = createNewsLogHeader(blog.name, blog.description);
             biContainer.appendChild(headerSection);
             
-            // All posts in grid (no featured post)
+            // Add featured post as hero card (first post)
             if (posts.length > 0) {
-                const gridSection = document.createElement('div');
-                gridSection.className = 'bi-content-grid';
+                const featuredPost = posts[0];
+                const featuredSection = document.createElement('div');
+                featuredSection.innerHTML = createHeroCard(featuredPost);
+                biContainer.appendChild(featuredSection);
                 
-                // Include all posts in the grid
-                for (let i = 0; i < posts.length; i++) {
-                    const gridCard = createNewsCard(posts[i]);
-                    gridSection.appendChild(gridCard);
+                // Add section header for remaining posts
+                if (posts.length > 1) {
+                    const sectionHeader = document.createElement('div');
+                    sectionHeader.className = 'bi-section-header';
+                    sectionHeader.innerHTML = '<h2 class="bi-section-title">Latest Articles</h2>';
+                    biContainer.appendChild(sectionHeader);
+                    
+                    // Grid for remaining posts
+                    const gridSection = document.createElement('div');
+                    gridSection.className = 'bi-content-grid';
+                    
+                    // Start from index 1 (skip featured post)
+                    for (let i = 1; i < posts.length; i++) {
+                        const gridCard = createNewsCard(posts[i]);
+                        gridSection.appendChild(gridCard);
+                    }
+                    
+                    biContainer.appendChild(gridSection);
                 }
-                
-                biContainer.appendChild(gridSection);
             }
             
             newsWrapper.appendChild(biContainer);
@@ -1161,10 +1175,45 @@
         }
 
         function createNewsLogHeader(blogName, blogDescription) {
+            // Bold left-aligned blog header (Style 2)
+            const nameWithBreak = blogName.replace(' ', '<br>');
             return `
-                <div class="news-log-header">
-                    <h1 class="news-log-title">${escapeHtml(blogName)}</h1>
-                    <p class="news-log-description">${escapeHtml(blogDescription || 'Stay informed with our latest news and insights')}</p>
+                <div class="bi-hero-section">
+                    <h1 class="bi-hero-title">${nameWithBreak}</h1>
+                    <p class="bi-hero-description">${escapeHtml(blogDescription || 'Stay informed with our latest news and insights')}</p>
+                </div>
+            `;
+        }
+        
+        function createHeroCard(post) {
+            // Featured post hero card
+            const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            const imageUrl = post.featured_image_url || 'https://via.placeholder.com/800x500';
+            const excerpt = post.excerpt || truncateText(stripHtml(post.content), 150);
+            const category = post.category || 'FEATURED';
+            const authorName = post.author_name || 'Editorial Team';
+            const imagePosition = post.featured_image_position || 'center';
+            
+            return `
+                <div class="bi-featured-section">
+                    <div class="bi-hero-card" onclick="window.location.href='post.html?blog=${currentBlogSlug}&post=${post.slug}'">
+                        <div class="bi-hero-image" style="background-image: url('${imageUrl}'); background-position: ${imagePosition};">
+                            <span class="bi-category-badge">${category.toUpperCase()}</span>
+                        </div>
+                        <div class="bi-hero-content">
+                            <h1>${escapeHtml(post.title)}</h1>
+                            <p>${excerpt}</p>
+                            <div class="bi-meta">
+                                <span class="bi-author">${escapeHtml(authorName)}</span>
+                                <span>• ${publishedDate}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
