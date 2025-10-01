@@ -538,6 +538,48 @@
             }
         }
 
+        /* News Log Header Styles */
+        .news-log-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            padding: 3rem 2rem;
+            margin-bottom: 3rem;
+            text-align: left;
+        }
+
+        .news-log-title {
+            font-family: 'Arial Black', Arial, sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            text-transform: uppercase;
+            margin: 0 0 1rem 0;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .news-log-description {
+            font-family: Arial, sans-serif;
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0;
+            line-height: 1.4;
+            max-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .news-log-header {
+                padding: 2rem 1rem;
+            }
+            
+            .news-log-title {
+                font-size: 2rem;
+            }
+            
+            .news-log-description {
+                font-size: 1.1rem;
+            }
+        }
+
         .breadcrumb {
             background: white;
             padding: 1rem 0;
@@ -984,7 +1026,7 @@
                 }
 
                 // Display posts based on template
-                displayPosts(posts, template);
+                displayPosts(posts, template, blog);
 
             } catch (err) {
                 console.error('Error loading blog:', err);
@@ -1069,13 +1111,13 @@
 
         }
 
-        function displayPosts(posts, template) {
+        function displayPosts(posts, template, blog) {
             const container = document.getElementById('postsContainer');
             container.innerHTML = '';
 
             // Check if we should use News Blog layout
             if (template && template.id === 'news-blog') {
-                renderNewsLogLayout(posts, container);
+                renderNewsLogLayout(posts, container, blog);
             } else {
                 // Standard layout for other templates
                 posts.forEach(post => {
@@ -1085,7 +1127,7 @@
             }
         }
 
-        function renderNewsLogLayout(posts, container) {
+        function renderNewsLogLayout(posts, container, blog) {
             if (!posts || posts.length === 0) return;
 
             // Create News Blog structure
@@ -1095,27 +1137,18 @@
             const biContainer = document.createElement('div');
             biContainer.className = 'bi-container';
             
-            // First post as hero
-            const featuredPost = posts[0];
-            if (featuredPost) {
-                const heroSection = document.createElement('div');
-                heroSection.className = 'bi-featured-section';
-                heroSection.innerHTML = createHeroCard(featuredPost);
-                biContainer.appendChild(heroSection);
-            }
+            // Add the new header instead of hero card
+            const headerSection = document.createElement('div');
+            headerSection.innerHTML = createNewsLogHeader(blog.name, blog.description);
+            biContainer.appendChild(headerSection);
             
-            // Remaining posts in grid
-            if (posts.length > 1) {
-                // Add section header
-                const sectionHeader = document.createElement('div');
-                sectionHeader.className = 'bi-section-header';
-                sectionHeader.innerHTML = '<h2 class="bi-section-title">Latest Articles</h2>';
-                biContainer.appendChild(sectionHeader);
-                
+            // All posts in grid (no featured post)
+            if (posts.length > 0) {
                 const gridSection = document.createElement('div');
                 gridSection.className = 'bi-content-grid';
                 
-                for (let i = 1; i < posts.length; i++) {
+                // Include all posts in the grid
+                for (let i = 0; i < posts.length; i++) {
                     const gridCard = createNewsCard(posts[i]);
                     gridSection.appendChild(gridCard);
                 }
@@ -1127,31 +1160,11 @@
             container.appendChild(newsWrapper);
         }
 
-        function createHeroCard(post) {
-            const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            const imageUrl = post.featured_image_url || 'https://via.placeholder.com/1200x600';
-            const excerpt = post.excerpt || truncateText(stripHtml(post.content), 200);
-            const category = post.category || 'ARTICLE';
-            const authorName = post.author_name || 'Editorial Team';
-
+        function createNewsLogHeader(blogName, blogDescription) {
             return `
-                <div class="bi-hero-card">
-                    <div class="bi-hero-image" style="background-image: url('${imageUrl}'); background-position: ${post.featured_image_position || 'center'}" onclick="window.location.href='post.html?blog=${currentBlogSlug}&post=${post.slug}'">
-                        <div class="bi-category-badge">${category.toUpperCase()}</div>
-                    </div>
-                    <div class="bi-hero-content">
-                        <h1 class="bi-hero-title" onclick="window.location.href='post.html?blog=${currentBlogSlug}&post=${post.slug}'" style="cursor: pointer;">${escapeHtml(post.title)}</h1>
-                        <p class="bi-hero-excerpt">${escapeHtml(excerpt)}</p>
-                        <div class="bi-meta">
-                            <span class="bi-author">${authorName}</span>
-                            <span class="bi-date">${publishedDate}</span>
-                        </div>
-                    </div>
+                <div class="news-log-header">
+                    <h1 class="news-log-title">${escapeHtml(blogName)}</h1>
+                    <p class="news-log-description">${escapeHtml(blogDescription || 'Stay informed with our latest news and insights')}</p>
                 </div>
             `;
         }
