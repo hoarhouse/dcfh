@@ -1184,7 +1184,11 @@ const dcfUI = {
     hideLaunchPageElements,
     generateLogo,
     populateLogo,
-    handleResponsiveLogo
+    handleResponsiveLogo,
+    initializeMobileMenu,
+    toggleMobileMenu,
+    openMobileMenu,
+    closeMobileMenu
 };
 
 // Export to window for global access
@@ -1199,6 +1203,10 @@ window.hideLaunchPageElements = hideLaunchPageElements;
 window.generateLogo = generateLogo;
 window.populateLogo = populateLogo;
 window.handleResponsiveLogo = handleResponsiveLogo;
+window.initializeMobileMenu = initializeMobileMenu;
+window.toggleMobileMenu = toggleMobileMenu;
+window.openMobileMenu = openMobileMenu;
+window.closeMobileMenu = closeMobileMenu;
 window.LOGO_CONFIG = LOGO_CONFIG; // Export config for easy access
 
 console.log('✅ DCF UI system loaded');
