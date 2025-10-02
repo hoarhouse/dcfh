@@ -37,30 +37,32 @@ const LOGO_CONFIG = {
 
 // LAUNCH MENU - Simplified public navigation for Phase 1
 const LAUNCH_MENU = [
-    { text: 'Home', href: 'index.html', dropdown: false },
-    { text: 'Blog', href: 'blog/index.html', dropdown: false },
+    { id: 'home', text: 'Home', href: 'index.html', dropdown: false },
+    { id: 'blog', text: 'Blog', href: 'blog/index.html', dropdown: false },
     { 
+        id: 'initiatives',
         text: 'Initiatives', 
         href: 'initiatives/initiatives_home.html', 
         dropdown: true,
         items: [
-            { text: 'Peace Initiative', href: 'initiatives/peace/initiative_peace.html' },
-            { text: 'Education Initiative', href: 'initiatives/education/initiative_education.html' },
-            { text: 'Health Initiative', href: 'initiatives/health/initiative_health.html' },
-            { text: 'Research Initiative', href: 'initiatives/research/initiative_research.html' }
+            { id: 'peace', text: 'Peace Initiative', href: 'initiatives/peace/initiative_peace.html' },
+            { id: 'education', text: 'Education Initiative', href: 'initiatives/education/initiative_education.html' },
+            { id: 'health', text: 'Health Initiative', href: 'initiatives/health/initiative_health.html' },
+            { id: 'research', text: 'Research Initiative', href: 'initiatives/research/initiative_research.html' }
         ]
     },
     { 
+        id: 'about',
         text: 'About', 
         href: 'public/dcf_about.html', 
         dropdown: true,
         items: [
-            { text: 'About Us', href: 'public/dcf_about.html' },
-            { text: 'Contact', href: 'public/dcf_contact.html' },
-            { text: 'Donate', href: 'members/dcf_donate.html' }
+            { id: 'about_us', text: 'About Us', href: 'public/dcf_about.html' },
+            { id: 'contact', text: 'Contact', href: 'public/dcf_contact.html' },
+            { id: 'donate', text: 'Donate', href: 'members/dcf_donate.html' }
         ]
     },
-    { text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false }
+    { id: 'resources', text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false }
 ];
 
 // FULL MENU - Complete member navigation for Phase 2
@@ -168,7 +170,11 @@ function populateDCFNavigation() {
             const toggle = document.createElement('a');
             toggle.href = basePath + item.href;
             toggle.className = 'dropdown-toggle';
-            toggle.textContent = item.text;
+            // Use translation if available, otherwise fallback to item.text
+            const linkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage] 
+                ? t(`nav.${item.id}`) || item.text 
+                : item.text;
+            toggle.textContent = linkText;
             
             // Add dropdown arrow
             const arrow = document.createElement('span');
@@ -203,7 +209,11 @@ function populateDCFNavigation() {
                 const subLi = document.createElement('li');
                 const link = document.createElement('a');
                 link.href = basePath + subItem.href;
-                link.textContent = subItem.text;
+                // Use translation for sub-items
+                const subLinkText = isLaunchPage() && subItem.id && TRANSLATIONS[currentLanguage]
+                    ? t(`nav.${subItem.id}`) || subItem.text
+                    : subItem.text;
+                link.textContent = subLinkText;
                 link.style.cssText = `
                     display: block;
                     padding: 0.75rem 1.25rem;
@@ -272,7 +282,11 @@ function populateDCFNavigation() {
             // Create regular menu item
             const link = document.createElement('a');
             link.href = basePath + item.href;
-            link.textContent = item.text;
+            // Use translation for regular items
+            const regularLinkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage]
+                ? t(`nav.${item.id}`) || item.text
+                : item.text;
+            link.textContent = regularLinkText;
             
             // Highlight active page
             if (window.location.pathname.includes(item.href)) {
@@ -463,6 +477,215 @@ function populateTopNavigationOld() {
 }
 
 // =============================================================================
+// TRANSLATION SYSTEM
+// =============================================================================
+
+const TRANSLATIONS = {}; // Store loaded translations
+let currentLanguage = localStorage.getItem('dcf_preferred_language') || 'en';
+
+/**
+ * Load translation file for specified language
+ * @param {string} lang - Language code (en, it, es, hu)
+ */
+async function loadTranslations(lang) {
+    // Return cached translations if already loaded
+    if (TRANSLATIONS[lang]) {
+        console.log(`✅ Using cached translations for: ${lang}`);
+        return TRANSLATIONS[lang];
+    }
+
+    try {
+        const basePath = getCorrectBasePath();
+        const response = await fetch(`${basePath}translations/${lang}.json`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const translations = await response.json();
+        TRANSLATIONS[lang] = translations;
+        console.log(`✅ Loaded translations for: ${lang}`);
+        return translations;
+        
+    } catch (error) {
+        console.error(`❌ Failed to load translations for ${lang}:`, error);
+        
+        // Fallback to English if not already English
+        if (lang !== 'en' && TRANSLATIONS['en']) {
+            console.log('⚠️ Falling back to English translations');
+            return TRANSLATIONS['en'];
+        }
+        
+        return {};
+    }
+}
+
+/**
+ * Get translation by key (supports dot notation)
+ * @param {string} key - Translation key (e.g., "nav.home")
+ * @param {string} lang - Language code (optional, uses current language)
+ */
+function t(key, lang = currentLanguage) {
+    const translations = TRANSLATIONS[lang] || TRANSLATIONS['en'] || {};
+    const keys = key.split('.');
+    let value = translations;
+    
+    for (const k of keys) {
+        value = value?.[k];
+        if (value === undefined) break;
+    }
+    
+    // Fallback to English if translation not found
+    if (value === undefined && lang !== 'en' && TRANSLATIONS['en']) {
+        return t(key, 'en');
+    }
+    
+    return value || key; // Return key if no translation found
+}
+
+/**
+ * Apply translations to all elements with data-i18n attributes
+ */
+function applyTranslations() {
+    console.log(`🌍 Applying translations for: ${currentLanguage}`);
+    
+    // Translate text content
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            element.textContent = translation;
+        }
+    });
+    
+    // Translate placeholder attributes
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            element.placeholder = translation;
+        }
+    });
+    
+    // Translate title attributes
+    document.querySelectorAll('[data-i18n-title]').forEach(element => {
+        const key = element.getAttribute('data-i18n-title');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            element.title = translation;
+        }
+    });
+    
+    // Translate alt attributes
+    document.querySelectorAll('[data-i18n-alt]').forEach(element => {
+        const key = element.getAttribute('data-i18n-alt');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            element.alt = translation;
+        }
+    });
+    
+    console.log('✅ Translations applied');
+}
+
+/**
+ * Change language and apply translations
+ * @param {string} lang - Language code to switch to
+ */
+async function changeLanguage(lang) {
+    console.log(`🔄 Changing language to: ${lang}`);
+    
+    currentLanguage = lang;
+    localStorage.setItem('dcf_preferred_language', lang);
+    
+    // Load translations if not cached
+    await loadTranslations(lang);
+    
+    // Apply translations
+    applyTranslations();
+    
+    // Update language switcher UI
+    updateLanguageSwitcherUI();
+    
+    // Re-populate navigation with new language
+    populateDCFNavigation();
+    
+    console.log(`✅ Language changed to: ${lang}`);
+}
+
+/**
+ * Update language switcher button states
+ */
+function updateLanguageSwitcherUI() {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        const lang = btn.getAttribute('data-lang');
+        if (lang === currentLanguage) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Detect browser language and return supported language code
+ */
+function detectBrowserLanguage() {
+    const browserLang = navigator.language || navigator.userLanguage;
+    const langCode = browserLang.split('-')[0].toLowerCase();
+    
+    // Check if detected language is supported
+    const supportedLanguages = ['en', 'it', 'es', 'hu'];
+    if (supportedLanguages.includes(langCode)) {
+        console.log(`🌍 Detected browser language: ${langCode}`);
+        return langCode;
+    }
+    
+    console.log(`🌍 Browser language ${langCode} not supported, defaulting to English`);
+    return 'en';
+}
+
+/**
+ * Initialize translation system
+ */
+async function initializeTranslations() {
+    // Only run on launch pages
+    if (!isLaunchPage()) {
+        console.log('ℹ️ Skipping translations - not a launch page');
+        return;
+    }
+    
+    console.log('🚀 Initializing translation system...');
+    
+    // Determine which language to use
+    let savedLanguage = localStorage.getItem('dcf_preferred_language');
+    
+    if (!savedLanguage) {
+        // First visit - detect browser language
+        savedLanguage = detectBrowserLanguage();
+        localStorage.setItem('dcf_preferred_language', savedLanguage);
+    }
+    
+    currentLanguage = savedLanguage;
+    console.log(`📍 Using language: ${currentLanguage}`);
+    
+    // Load translations
+    await loadTranslations(currentLanguage);
+    
+    // Apply translations to page
+    applyTranslations();
+    
+    // Update language switcher UI
+    updateLanguageSwitcherUI();
+    
+    console.log('✅ Translation system initialized');
+}
+
+// =============================================================================
+// END TRANSLATION SYSTEM
+// =============================================================================
+
+// =============================================================================
 // 2. USER INTERFACE MANAGEMENT
 // =============================================================================
 
@@ -474,6 +697,10 @@ function updateUserInterface() {
     populateDCFNavigation();  // Use new dual navigation system
     handleResponsiveLogo();  // Enable responsive logo behavior
     initializeMobileMenu();  // Initialize mobile menu system
+    
+    // Initialize translations after navigation is built
+    initializeTranslations();
+    
     initializeFooter();
     
     // Hide launch-specific elements after DOM is populated
@@ -1705,6 +1932,20 @@ function openMobileMenu() {
         navMenu.classList.add('mobile-active');
         mobileToggle.innerHTML = '✕';
         mobileToggle.style.fontSize = '1.8rem';
+        
+        // Add language switcher to mobile menu (only on launch pages)
+        if (isLaunchPage() && !navMenu.querySelector('.language-switcher-mobile')) {
+            const langSwitcherMobile = document.createElement('div');
+            langSwitcherMobile.className = 'language-switcher-mobile';
+            langSwitcherMobile.innerHTML = `
+                <button class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" data-lang="en" onclick="changeLanguage('en')">EN</button>
+                <button class="lang-btn ${currentLanguage === 'it' ? 'active' : ''}" data-lang="it" onclick="changeLanguage('it')">IT</button>
+                <button class="lang-btn ${currentLanguage === 'es' ? 'active' : ''}" data-lang="es" onclick="changeLanguage('es')">ES</button>
+                <button class="lang-btn ${currentLanguage === 'hu' ? 'active' : ''}" data-lang="hu" onclick="changeLanguage('hu')">HU</button>
+            `;
+            navMenu.appendChild(langSwitcherMobile);
+        }
+        
         console.log('📱 Mobile menu opened');
     }
 }
@@ -1768,5 +2009,12 @@ window.toggleMobileMenu = toggleMobileMenu;
 window.openMobileMenu = openMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
 window.LOGO_CONFIG = LOGO_CONFIG; // Export config for easy access
+
+// Make translation functions globally available
+window.changeLanguage = changeLanguage;
+window.t = t;
+window.loadTranslations = loadTranslations;
+window.applyTranslations = applyTranslations;
+window.initializeTranslations = initializeTranslations;
 
 console.log('✅ DCF UI system loaded');
