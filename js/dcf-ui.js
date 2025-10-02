@@ -1026,17 +1026,474 @@ function addAlertCSS() {
 // 4. FOOTER SYSTEM
 // =============================================================================
 
+// Footer Configuration - Data-driven for easy maintenance
+const FOOTER_CONFIG = {
+    sections: [
+        {
+            title: 'Quick Links',
+            type: 'links',
+            items: [
+                { text: 'Home', href: 'index.html' },
+                { text: 'About', href: 'public/dcf_about.html' },
+                { text: 'Initiatives', href: 'initiatives/index.html' },
+                { text: 'Blog', href: 'blog/index.html' },
+                { text: 'Contact', href: 'public/dcf_contact.html' }
+            ]
+        },
+        {
+            title: 'Stay Updated',
+            type: 'newsletter',
+            description: 'Subscribe to our newsletter for the latest updates and insights.',
+            placeholder: 'Your email address',
+            buttonText: 'Subscribe'
+        },
+        {
+            title: 'Support Our Mission',
+            type: 'donation',
+            description: 'Help us continue our work in fostering democratic innovation and community development.',
+            buttonText: 'Make a Donation',
+            buttonLink: 'members/dcf_donate.html'
+        },
+        {
+            title: 'Connect With Us',
+            type: 'social',
+            links: [
+                {
+                    name: 'Twitter',
+                    title: 'Share on Twitter',
+                    icon: '<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+                    action: 'twitter'
+                },
+                {
+                    name: 'Facebook',
+                    title: 'Share on Facebook', 
+                    icon: '<svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+                    action: 'facebook'
+                },
+                {
+                    name: 'LinkedIn',
+                    title: 'Share on LinkedIn',
+                    icon: '<svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
+                    action: 'linkedin'
+                },
+                {
+                    name: 'Email',
+                    title: 'Share via Email',
+                    icon: '<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>',
+                    action: 'email'
+                }
+            ]
+        }
+    ],
+    bottom: {
+        copyright: '© 2024 Domus Communis Foundation Hungary. All rights reserved.',
+        legal: [
+            { text: 'Privacy Policy', href: '#' },
+            { text: 'Terms of Service', href: '#' }
+        ]
+    }
+};
+
 function initializeFooter() {
-    console.log('🦶 Initializing footer...');
+    console.log('🦶 Initializing DCF footer system...');
     
-    const footer = document.querySelector('footer, .site-footer');
-    if (!footer) {
-        console.log('Footer not found (normal for admin pages)');
+    // Only show footer on launch pages
+    if (!isLaunchPage()) {
+        console.log('📝 Not a launch page - skipping footer');
         return;
     }
     
-    // Basic footer functionality can be added here
-    console.log('✅ Footer initialized');
+    // Check if footer already exists
+    if (document.querySelector('.dcf-footer')) {
+        console.log('🦶 Footer already exists');
+        return;
+    }
+    
+    // Create footer HTML
+    const footerHTML = generateFooterHTML();
+    
+    // Insert footer before closing body tag
+    document.body.insertAdjacentHTML('beforeend', footerHTML);
+    
+    // Add footer CSS if not already added
+    if (!document.querySelector('#dcf-footer-styles')) {
+        injectFooterCSS();
+    }
+    
+    // Initialize footer functionality
+    initializeFooterHandlers();
+    
+    console.log('✅ DCF footer initialized');
+}
+
+function generateFooterHTML() {
+    const basePath = window.getCorrectBasePath();
+    
+    let sectionsHTML = '';
+    
+    // Generate each footer section based on config
+    FOOTER_CONFIG.sections.forEach(section => {
+        sectionsHTML += '<div class="footer-section">';
+        sectionsHTML += `<h4 class="footer-title">${section.title}</h4>`;
+        
+        switch(section.type) {
+            case 'links':
+                sectionsHTML += '<ul class="footer-links">';
+                section.items.forEach(item => {
+                    sectionsHTML += `<li><a href="${basePath}${item.href}">${item.text}</a></li>`;
+                });
+                sectionsHTML += '</ul>';
+                break;
+                
+            case 'newsletter':
+                sectionsHTML += `
+                    <p class="footer-text">${section.description}</p>
+                    <form class="newsletter-form" id="footerNewsletterForm">
+                        <input type="email" placeholder="${section.placeholder}" class="newsletter-input" required>
+                        <button type="submit" class="newsletter-btn">${section.buttonText}</button>
+                    </form>
+                `;
+                break;
+                
+            case 'donation':
+                sectionsHTML += `
+                    <p class="footer-text">${section.description}</p>
+                    <a href="${basePath}${section.buttonLink}" class="donate-btn">${section.buttonText}</a>
+                `;
+                break;
+                
+            case 'social':
+                sectionsHTML += '<div class="social-links">';
+                section.links.forEach(link => {
+                    sectionsHTML += `
+                        <a href="#" class="social-link" title="${link.title}" data-action="${link.action}">
+                            ${link.icon}
+                        </a>
+                    `;
+                });
+                sectionsHTML += '</div>';
+                break;
+        }
+        
+        sectionsHTML += '</div>';
+    });
+    
+    // Generate footer bottom with legal links
+    let legalHTML = '';
+    FOOTER_CONFIG.bottom.legal.forEach((link, index) => {
+        if (index > 0) legalHTML += '<span class="separator">•</span>';
+        legalHTML += `<a href="${link.href}">${link.text}</a>`;
+    });
+    
+    return `
+        <footer class="dcf-footer">
+            <div class="footer-container">
+                <div class="footer-content">
+                    ${sectionsHTML}
+                </div>
+                <div class="footer-bottom">
+                    <p>${FOOTER_CONFIG.bottom.copyright}</p>
+                    <div class="footer-legal">
+                        ${legalHTML}
+                    </div>
+                </div>
+            </div>
+        </footer>
+    `;
+}
+
+function injectFooterCSS() {
+    const style = document.createElement('style');
+    style.id = 'dcf-footer-styles';
+    style.textContent = `
+        .dcf-footer {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 4rem 0 2rem;
+            margin-top: 5rem;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section {
+            min-width: 0;
+        }
+
+        .footer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: white;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            color: #b0b0b0;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            color: #b0b0b0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        /* Newsletter Form */
+        .newsletter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .newsletter-input {
+            padding: 0.75rem 1rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .newsletter-input::placeholder {
+            color: #666;
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            border-color: #555;
+            background: #333;
+        }
+
+        .newsletter-btn {
+            padding: 0.75rem 1.5rem;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-btn:hover {
+            background: #444;
+            transform: translateY(-1px);
+        }
+
+        /* Donation Button */
+        .donate-btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .donate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Social Links */
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2a2a2a;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            color: #b0b0b0;
+        }
+
+        .social-link:hover {
+            background: #333;
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .social-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Footer Bottom */
+        .footer-bottom {
+            padding-top: 2rem;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-bottom p {
+            font-size: 0.85rem;
+            color: #808080;
+            margin: 0;
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .footer-legal a {
+            color: #808080;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-legal a:hover {
+            color: #b0b0b0;
+        }
+
+        .footer-legal .separator {
+            color: #555;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .dcf-footer {
+                padding: 3rem 0 1.5rem;
+                margin-top: 3rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-legal {
+                justify-content: center;
+            }
+
+            .social-links {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .footer-container {
+                padding: 0 1rem;
+            }
+
+            .footer-title {
+                font-size: 1rem;
+            }
+
+            .newsletter-form {
+                margin-top: 0.5rem;
+            }
+
+            .donate-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function initializeFooterHandlers() {
+    // Newsletter form handler
+    const newsletterForm = document.getElementById('footerNewsletterForm');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            
+            // Use the existing showAlert function from dcf-ui
+            if (window.showAlert) {
+                window.showAlert(`Thank you for subscribing with email: ${email}`, 'success', 'Subscribed!');
+            } else {
+                alert(`Thank you for subscribing with email: ${email}`);
+            }
+            
+            this.reset();
+        });
+    }
+    
+    // Social share handlers
+    const socialLinks = document.querySelectorAll('.dcf-footer .social-link');
+    socialLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const action = this.dataset.action;
+            handleSocialShare(action);
+        });
+    });
+}
+
+function handleSocialShare(action) {
+    const url = window.location.href;
+    const title = 'Domus Communis Foundation Hungary';
+    const text = 'Check out Domus Communis Foundation Hungary';
+    
+    switch(action) {
+        case 'twitter':
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+            break;
+        case 'facebook':
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+            break;
+        case 'linkedin':
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
+            break;
+        case 'email':
+            const subject = `Check out ${title}`;
+            const body = `I thought you might find this interesting: ${url}`;
+            window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            break;
+    }
 }
 
 // =============================================================================
