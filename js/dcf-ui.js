@@ -1506,10 +1506,83 @@ function handleSocialShare(action) {
         case 'linkedin':
             window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
             break;
+        case 'reddit':
+            window.open(`https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
+            break;
+        case 'whatsapp':
+            window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+            break;
         case 'email':
-            const subject = `Check out ${title}`;
-            const body = `I thought you might find this interesting: ${url}`;
+            const subject = `Check out: ${title}`;
+            const body = `I thought you might find this interesting:\n\n${title}\n\n${url}`;
             window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            break;
+        case 'copy':
+            // Copy URL to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    // Show success message
+                    if (window.showAlert) {
+                        window.showAlert('Link copied to clipboard!', 'success', 'Success');
+                    } else {
+                        // Fallback: create temporary success message
+                        const successMsg = document.createElement('div');
+                        successMsg.textContent = 'Link copied to clipboard!';
+                        successMsg.style.cssText = `
+                            position: fixed;
+                            bottom: 20px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            background: #28a745;
+                            color: white;
+                            padding: 12px 24px;
+                            border-radius: 4px;
+                            z-index: 10000;
+                            animation: slideUp 0.3s ease;
+                        `;
+                        document.body.appendChild(successMsg);
+                        setTimeout(() => successMsg.remove(), 3000);
+                    }
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        if (window.showAlert) {
+                            window.showAlert('Link copied to clipboard!', 'success', 'Success');
+                        }
+                    } catch (err) {
+                        if (window.showAlert) {
+                            window.showAlert('Failed to copy link', 'error', 'Error');
+                        }
+                    }
+                    document.body.removeChild(textArea);
+                });
+            } else {
+                // Very old browser fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    if (window.showAlert) {
+                        window.showAlert('Link copied to clipboard!', 'success', 'Success');
+                    }
+                } catch (err) {
+                    if (window.showAlert) {
+                        window.showAlert('Failed to copy link', 'error', 'Error');
+                    }
+                }
+                document.body.removeChild(textArea);
+            }
             break;
     }
 }
