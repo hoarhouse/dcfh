@@ -981,6 +981,139 @@
             div.textContent = text || '';
             return div.innerHTML;
         }
+        // Social Share Functions
+        function initializeSocialShare() {
+            // Show sidebar on scroll
+            let scrollTimer;
+            window.addEventListener('scroll', () => {
+                const sidebar = document.querySelector('.share-sidebar');
+                if (sidebar) {
+                    clearTimeout(scrollTimer);
+                    if (window.scrollY > 200) {
+                        sidebar.classList.add('visible');
+                    } else {
+                        sidebar.classList.remove('visible');
+                    }
+                }
+            });
+
+            // Initialize share buttons
+            setupShareButtons();
+        }
+
+        function setupShareButtons() {
+            const shareButtons = document.querySelectorAll('.share-btn');
+            shareButtons.forEach(btn => {
+                btn.addEventListener('click', handleShare);
+            });
+        }
+
+        function handleShare(e) {
+            e.preventDefault();
+            
+            const btn = e.currentTarget;
+            const platform = Array.from(btn.classList).find(c => 
+                ['twitter', 'facebook', 'linkedin', 'reddit', 'whatsapp', 'email', 'copy'].includes(c)
+            );
+            
+            const url = window.location.href;
+            const title = document.querySelector('h1').textContent;
+            const text = `Check out this article: ${title}`;
+            
+            switch(platform) {
+                case 'twitter':
+                    shareTwitter(url, text);
+                    break;
+                case 'facebook':
+                    shareFacebook(url);
+                    break;
+                case 'linkedin':
+                    shareLinkedIn(url, title);
+                    break;
+                case 'reddit':
+                    shareReddit(url, title);
+                    break;
+                case 'whatsapp':
+                    shareWhatsApp(url, text);
+                    break;
+                case 'email':
+                    shareEmail(title, url);
+                    break;
+                case 'copy':
+                    copyLink(url);
+                    break;
+            }
+        }
+
+        function shareTwitter(url, text) {
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(twitterUrl, '_blank', 'width=600,height=400');
+        }
+
+        function shareFacebook(url) {
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+            window.open(facebookUrl, '_blank', 'width=600,height=400');
+        }
+
+        function shareLinkedIn(url, title) {
+            const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+            window.open(linkedInUrl, '_blank', 'width=600,height=400');
+        }
+
+        function shareReddit(url, title) {
+            const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+            window.open(redditUrl, '_blank', 'width=600,height=400');
+        }
+
+        function shareWhatsApp(url, text) {
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function shareEmail(title, url) {
+            const subject = encodeURIComponent(`Check out: ${title}`);
+            const body = encodeURIComponent(`I thought you might find this interesting:\n\n${title}\n\n${url}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showCopySuccess();
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopySuccess();
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function showCopySuccess() {
+            const existing = document.querySelector('.copy-success');
+            if (existing) {
+                existing.remove();
+            }
+            
+            const message = document.createElement('div');
+            message.className = 'copy-success';
+            message.textContent = 'Link copied to clipboard!';
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
     </script>
 </body>
 </html>
