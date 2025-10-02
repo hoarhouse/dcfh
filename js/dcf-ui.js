@@ -1457,6 +1457,18 @@ function injectFooterCSS() {
                 text-align: center;
             }
         }
+
+        /* Copy success animation */
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
     `;
     document.head.appendChild(style);
 }
