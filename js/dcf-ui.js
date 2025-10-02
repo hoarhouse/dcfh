@@ -473,6 +473,7 @@ function updateUserInterface() {
     populateLogo();  // Use new logo generation system
     populateDCFNavigation();  // Use new dual navigation system
     handleResponsiveLogo();  // Enable responsive logo behavior
+    initializeMobileMenu();  // Initialize mobile menu system
     initializeFooter();
     
     // Hide launch-specific elements after DOM is populated
@@ -1039,7 +1040,129 @@ function initializeFooter() {
 }
 
 // =============================================================================
-// 5. MAIN UI OBJECT
+// 5. MOBILE MENU SYSTEM
+// =============================================================================
+
+function initializeMobileMenu() {
+    console.log('📱 Initializing mobile menu system...');
+    
+    // Create mobile menu toggle button
+    const navContainer = document.querySelector('.nav-container');
+    if (!navContainer) {
+        console.log('❌ Nav container not found for mobile menu');
+        return;
+    }
+    
+    // Check if mobile menu toggle already exists
+    if (document.querySelector('.mobile-menu-toggle')) {
+        console.log('📱 Mobile menu toggle already exists');
+        return;
+    }
+    
+    // Create the hamburger button
+    const mobileToggle = document.createElement('button');
+    mobileToggle.className = 'mobile-menu-toggle';
+    mobileToggle.innerHTML = '☰';
+    mobileToggle.setAttribute('aria-label', 'Toggle navigation menu');
+    mobileToggle.style.cssText = `
+        display: none;
+        background: none;
+        border: 2px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #333;
+        transition: all 0.3s ease;
+        margin-left: auto;
+        margin-right: 1rem;
+    `;
+    
+    // Insert button between logo and user-menu
+    const userMenu = navContainer.querySelector('.user-menu');
+    if (userMenu) {
+        navContainer.insertBefore(mobileToggle, userMenu);
+    } else {
+        navContainer.appendChild(mobileToggle);
+    }
+    
+    // Add click handler
+    mobileToggle.addEventListener('click', toggleMobileMenu);
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const navMenu = document.querySelector('.nav-menu');
+        if (navMenu && navMenu.classList.contains('mobile-active')) {
+            if (!e.target.closest('.nav-menu') && !e.target.closest('.mobile-menu-toggle')) {
+                closeMobileMenu();
+            }
+        }
+    });
+    
+    // Close menu when window resizes above 768px
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
+            }
+        }, 250);
+    });
+    
+    // Close menu when clicking nav links
+    const navMenu = document.querySelector('.nav-menu');
+    if (navMenu) {
+        navMenu.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A' && window.innerWidth <= 768) {
+                // Small delay to allow navigation to start
+                setTimeout(() => closeMobileMenu(), 100);
+            }
+        });
+    }
+    
+    console.log('✅ Mobile menu system initialized');
+}
+
+function toggleMobileMenu() {
+    const navMenu = document.querySelector('.nav-menu');
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (!navMenu || !mobileToggle) return;
+    
+    if (navMenu.classList.contains('mobile-active')) {
+        closeMobileMenu();
+    } else {
+        openMobileMenu();
+    }
+}
+
+function openMobileMenu() {
+    const navMenu = document.querySelector('.nav-menu');
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (navMenu && mobileToggle) {
+        navMenu.classList.add('mobile-active');
+        mobileToggle.innerHTML = '✕';
+        mobileToggle.style.fontSize = '1.8rem';
+        console.log('📱 Mobile menu opened');
+    }
+}
+
+function closeMobileMenu() {
+    const navMenu = document.querySelector('.nav-menu');
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (navMenu && mobileToggle) {
+        navMenu.classList.remove('mobile-active');
+        mobileToggle.innerHTML = '☰';
+        mobileToggle.style.fontSize = '1.5rem';
+        console.log('📱 Mobile menu closed');
+    }
+}
+
+// =============================================================================
+// 6. MAIN UI OBJECT
 // =============================================================================
 
 const dcfUI = {
