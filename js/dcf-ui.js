@@ -170,11 +170,12 @@ function populateDCFNavigation() {
             const toggle = document.createElement('a');
             toggle.href = basePath + item.href;
             toggle.className = 'dropdown-toggle';
-            // Use translation if available, otherwise fallback to item.text
-            const linkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage] 
-                ? t(item.id) || item.text 
-                : item.text;
-            toggle.textContent = linkText;
+            // Set English text as fallback
+            toggle.textContent = item.text;
+            // Add data-i18n attribute for translation
+            if (item.id) {
+                toggle.setAttribute('data-i18n', item.id);
+            }
             
             // Add dropdown arrow
             const arrow = document.createElement('span');
@@ -209,11 +210,12 @@ function populateDCFNavigation() {
                 const subLi = document.createElement('li');
                 const link = document.createElement('a');
                 link.href = basePath + subItem.href;
-                // Use translation for sub-items
-                const subLinkText = isLaunchPage() && subItem.id && TRANSLATIONS[currentLanguage]
-                    ? t(subItem.id) || subItem.text
-                    : subItem.text;
-                link.textContent = subLinkText;
+                // Set English text as fallback
+                link.textContent = subItem.text;
+                // Add data-i18n attribute for translation
+                if (subItem.id) {
+                    link.setAttribute('data-i18n', subItem.id);
+                }
                 link.style.cssText = `
                     display: block;
                     padding: 0.75rem 1.25rem;
@@ -282,11 +284,12 @@ function populateDCFNavigation() {
             // Create regular menu item
             const link = document.createElement('a');
             link.href = basePath + item.href;
-            // Use translation for regular items
-            const regularLinkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage]
-                ? t(item.id) || item.text
-                : item.text;
-            link.textContent = regularLinkText;
+            // Set English text as fallback
+            link.textContent = item.text;
+            // Add data-i18n attribute for translation
+            if (item.id) {
+                link.setAttribute('data-i18n', item.id);
+            }
             
             // Highlight active page
             if (window.location.pathname.includes(item.href)) {
@@ -554,7 +557,19 @@ function applyTranslations() {
         const key = element.getAttribute('data-i18n');
         const translation = t(key);
         if (translation && translation !== key) {
-            element.textContent = translation;
+            // Check if element has child nodes (like dropdown arrow)
+            if (element.childNodes.length > 1 || (element.childNodes.length === 1 && element.childNodes[0].nodeType !== Node.TEXT_NODE)) {
+                // Preserve child elements, only update first text node
+                if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+                    element.firstChild.textContent = translation;
+                } else {
+                    // Insert text node before other children
+                    element.insertBefore(document.createTextNode(translation), element.firstChild);
+                }
+            } else {
+                // Simple case: just update text content
+                element.textContent = translation;
+            }
         }
     });
     
@@ -601,14 +616,11 @@ async function changeLanguage(lang) {
     // Load translations if not cached
     await loadTranslations(lang);
     
-    // Apply translations
+    // Apply translations (this will now update nav items via data-i18n attributes)
     applyTranslations();
     
     // Update language switcher UI
     updateLanguageSwitcherUI();
-    
-    // Re-populate navigation with new language
-    populateDCFNavigation();
     
     console.log(`✅ Language changed to: ${lang}`);
 }
@@ -689,18 +701,17 @@ async function initializeTranslations() {
 // 2. USER INTERFACE MANAGEMENT
 // =============================================================================
 
-async function updateUserInterface() {
+function updateUserInterface() {
     console.log('🎨 Updating UI (logged out state)...');
     
     showLoggedOutState();
     populateLogo();  // Use new logo generation system
-    
-    // Initialize translations BEFORE navigation is built
-    await initializeTranslations();
-    
-    populateDCFNavigation();  // Use new dual navigation system - now translations are loaded
+    populateDCFNavigation();  // Use new dual navigation system
     handleResponsiveLogo();  // Enable responsive logo behavior
     initializeMobileMenu();  // Initialize mobile menu system
+    
+    // Initialize translations after navigation is built
+    initializeTranslations();
     
     initializeFooter();
     
