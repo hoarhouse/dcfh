@@ -626,25 +626,17 @@ function applyTranslations() {
 }
 
 /**
- * Change language and apply translations
+ * Change language and reload the page
  * @param {string} lang - Language code to switch to
  */
-async function changeLanguage(lang) {
+function changeLanguage(lang) {
     console.log(`🔄 Changing language to: ${lang}`);
     
-    currentLanguage = lang;
+    // Save language preference
     localStorage.setItem('dcf_preferred_language', lang);
     
-    // Load translations if not cached
-    await loadTranslations(lang);
-    
-    // Apply translations (this will now update nav items via data-i18n attributes)
-    applyTranslations();
-    
-    // Update language switcher UI
-    updateLanguageSwitcherUI();
-    
-    console.log(`✅ Language changed to: ${lang}`);
+    // Force page reload to ensure all content (static + dynamic) loads in new language
+    location.reload();
 }
 
 /**
