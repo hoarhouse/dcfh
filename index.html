@@ -319,6 +319,60 @@
             border-color: #333;
         }
 
+        /* Initiatives Carousel Styles */
+        #initiativesCarousel {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        #initiativesCarousel .carousel-container {
+            overflow: hidden;
+            padding: 0 50px; /* Space for arrows */
+        }
+
+        #initiativesCarousel .carousel-track {
+            display: flex;
+            gap: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        #initiativesCarousel .classic-institutional {
+            flex: 0 0 calc(25% - 15px); /* 4 cards on desktop */
+            min-width: 280px;
+            max-width: 320px;
+        }
+
+        /* Responsive breakpoints for Initiatives Carousel */
+        @media (max-width: 1200px) {
+            #initiativesCarousel .classic-institutional {
+                flex: 0 0 calc(33.333% - 13.33px); /* 3 cards */
+                min-width: 260px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #initiativesCarousel .classic-institutional {
+                flex: 0 0 calc(50% - 10px); /* 2 cards on mobile */
+                min-width: 240px;
+                max-width: 300px;
+            }
+            
+            #initiativesCarousel .carousel-container {
+                padding: 0 40px; /* Smaller padding on mobile */
+            }
+        }
+
+        @media (max-width: 480px) {
+            #initiativesCarousel .classic-institutional {
+                min-width: 220px;
+                max-width: 280px;
+            }
+            
+            #initiativesCarousel .carousel-container {
+                padding: 0 35px;
+            }
+        }
+
         /* Loading and Error States */
         .dcf-news-loading {
             display: flex;
@@ -4826,6 +4880,97 @@
         if (document.getElementById('changeMakersCarousel').style.display !== 'none') {
             updateChangeMakersCarouselPosition();
             updateChangeMakersArrowStates();
+        }
+    });
+
+    // ============= INITIATIVES CAROUSEL MANAGEMENT =============
+    let initiativesCurrentIndex = 0;
+
+    function initializeInitiativesCarousel() {
+        const track = document.getElementById('initiativesTrack');
+        const cards = track.querySelectorAll('.classic-institutional');
+        
+        if (!cards.length) return;
+        
+        // Reset to start
+        initiativesCurrentIndex = 0;
+        updateInitiativesCarouselPosition();
+        updateInitiativesArrowStates();
+    }
+
+    function scrollInitiativesCarousel(direction) {
+        const track = document.getElementById('initiativesTrack');
+        const cards = track.querySelectorAll('.classic-institutional');
+        
+        if (!cards.length) return;
+        
+        // Calculate how many cards are visible (2 on mobile, 4 on desktop)
+        const containerWidth = track.parentElement.offsetWidth;
+        const cardWidth = cards[0].offsetWidth;
+        const gap = 20; // Match the gap from CSS
+        const cardsVisible = Math.floor(containerWidth / (cardWidth + gap));
+        
+        if (direction === 'left') {
+            initiativesCurrentIndex = Math.max(0, initiativesCurrentIndex - cardsVisible);
+        } else {
+            const maxIndex = Math.max(0, cards.length - cardsVisible);
+            initiativesCurrentIndex = Math.min(maxIndex, initiativesCurrentIndex + cardsVisible);
+        }
+        
+        updateInitiativesCarouselPosition();
+        updateInitiativesArrowStates();
+    }
+
+    function updateInitiativesCarouselPosition() {
+        const track = document.getElementById('initiativesTrack');
+        const cards = track.querySelectorAll('.classic-institutional');
+        
+        if (!cards.length) return;
+        
+        const cardWidth = cards[0].offsetWidth;
+        const gap = 20;
+        const translateX = -initiativesCurrentIndex * (cardWidth + gap);
+        
+        track.style.transform = `translateX(${translateX}px)`;
+    }
+
+    function updateInitiativesArrowStates() {
+        const track = document.getElementById('initiativesTrack');
+        const cards = track.querySelectorAll('.classic-institutional');
+        const leftArrow = document.getElementById('initiativesLeftArrow');
+        const rightArrow = document.getElementById('initiativesRightArrow');
+        
+        if (!cards.length) return;
+        
+        // Calculate visible cards
+        const containerWidth = track.parentElement.offsetWidth;
+        const cardWidth = cards[0].offsetWidth;
+        const gap = 20;
+        const cardsVisible = Math.floor(containerWidth / (cardWidth + gap));
+        
+        // Update arrow states
+        if (leftArrow) {
+            leftArrow.style.opacity = initiativesCurrentIndex === 0 ? '0.3' : '1';
+            leftArrow.style.cursor = initiativesCurrentIndex === 0 ? 'default' : 'pointer';
+        }
+        
+        if (rightArrow) {
+            const maxIndex = Math.max(0, cards.length - cardsVisible);
+            rightArrow.style.opacity = initiativesCurrentIndex >= maxIndex ? '0.3' : '1';
+            rightArrow.style.cursor = initiativesCurrentIndex >= maxIndex ? 'default' : 'pointer';
+        }
+    }
+
+    // Initialize Initiatives carousel on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeInitiativesCarousel();
+    });
+
+    // Handle window resize for Initiatives carousel
+    window.addEventListener('resize', () => {
+        if (document.getElementById('initiativesCarousel')) {
+            updateInitiativesCarouselPosition();
+            updateInitiativesArrowStates();
         }
     });
 
