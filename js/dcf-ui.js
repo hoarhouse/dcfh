@@ -696,6 +696,28 @@ function initializeLanguageSwitcher() {
 }
 
 /**
+ * Initialize mobile language switcher
+ */
+function initializeMobileLanguageSwitcher() {
+    const mobileSwitcher = document.querySelector('.language-switcher-mobile');
+    if (!mobileSwitcher) return;
+    
+    const languages = {
+        'en': 'EN',
+        'it': 'IT',
+        'es': 'ES',
+        'hu': 'HU'
+    };
+    
+    // Create mobile language buttons (simpler for mobile)
+    mobileSwitcher.innerHTML = Object.entries(languages).map(([code, label]) => 
+        `<button class="mobile-lang-btn ${code === currentLanguage ? 'active' : ''}" 
+                 data-lang="${code}" 
+                 onclick="changeLanguage('${code}')">${label}</button>`
+    ).join('');
+}
+
+/**
  * Toggle language dropdown visibility
  */
 function toggleLanguageDropdown(switcher) {
@@ -2081,13 +2103,10 @@ function openMobileMenu() {
         if (isLaunchPage() && !navMenu.querySelector('.language-switcher-mobile')) {
             const langSwitcherMobile = document.createElement('div');
             langSwitcherMobile.className = 'language-switcher-mobile';
-            langSwitcherMobile.innerHTML = `
-                <button class="lang-btn ${currentLanguage === 'en' ? 'active' : ''}" data-lang="en" onclick="changeLanguage('en')">EN</button>
-                <button class="lang-btn ${currentLanguage === 'it' ? 'active' : ''}" data-lang="it" onclick="changeLanguage('it')">IT</button>
-                <button class="lang-btn ${currentLanguage === 'es' ? 'active' : ''}" data-lang="es" onclick="changeLanguage('es')">ES</button>
-                <button class="lang-btn ${currentLanguage === 'hu' ? 'active' : ''}" data-lang="hu" onclick="changeLanguage('hu')">HU</button>
-            `;
             navMenu.appendChild(langSwitcherMobile);
+            
+            // Initialize mobile language switcher
+            initializeMobileLanguageSwitcher();
         }
         
         console.log('📱 Mobile menu opened');
