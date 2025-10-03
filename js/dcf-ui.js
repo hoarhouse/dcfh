@@ -58,11 +58,11 @@ const LAUNCH_MENU = [
         dropdown: true,
         items: [
             { id: 'about_us', text: 'About Us', href: 'public/dcf_about.html' },
-            { id: 'contact', text: 'Contact', href: 'public/dcf_contact.html' },
-            { id: 'donate', text: 'Donate', href: 'members/dcf_donate.html' }
+            { id: 'contact', text: 'Contact', href: 'public/dcf_contact.html' }
         ]
     },
-    { id: 'resources', text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false }
+    { id: 'resources', text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false },
+    { id: 'donate', text: 'Donate', href: 'members/dcf_donate.html', dropdown: false, type: 'cta' }
 ];
 
 // FULL MENU - Complete member navigation for Phase 2
