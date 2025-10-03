@@ -755,6 +755,19 @@ function closeAllLanguageDropdowns() {
 }
 
 /**
+ * Update simple language buttons UI
+ */
+function updateLanguageButtonsUI() {
+    const buttons = document.querySelectorAll('.lang-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase() === currentLanguage) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+/**
  * Update language switcher UI
  */
 function updateLanguageSwitcherUI() {
@@ -807,13 +820,10 @@ async function initializeTranslations() {
     currentLanguage = savedLanguage;
     console.log(`📍 Using language: ${currentLanguage}`);
     
-    // Initialize language switcher dropdown on launch pages - TEMPORARILY DISABLED
-    // if (isLaunchPage()) {
-    //     initializeLanguageSwitcher();
-    // }
-    
-    // Always update language switcher UI on all pages - TEMPORARILY DISABLED
-    // updateLanguageSwitcherUI();
+    // Initialize simple language buttons on launch pages
+    if (isLaunchPage()) {
+        updateLanguageButtonsUI();
+    }
     
     // Only load and apply translations on launch pages
     if (!isLaunchPage()) {
