@@ -553,9 +553,16 @@ function applyTranslations() {
     console.log(`🌍 Applying translations for: ${currentLanguage}`);
     
     // Translate text content
-    document.querySelectorAll('[data-i18n]').forEach(element => {
+    const elements = document.querySelectorAll('[data-i18n]');
+    console.log(`📊 Found ${elements.length} elements with data-i18n attributes`);
+    
+    elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
         const translation = t(key);
+        // Debug: Log keys that fail to translate
+        if (translation === key && key.includes('.')) {
+            console.warn(`⚠️ No translation found for key: "${key}" (returns same as key)`);
+        }
         if (translation && translation !== key) {
             // Check if element has child nodes (like dropdown arrow)
             if (element.childNodes.length > 1 || (element.childNodes.length === 1 && element.childNodes[0].nodeType !== Node.TEXT_NODE)) {
