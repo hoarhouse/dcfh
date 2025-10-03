@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Google Translate API configuration
-const API_KEY = 'AIzaSyDQIDAjqFevGSBLdO6JsPmLyU1bk0nY7bg';
+const API_KEY = 'AIzaSyCEmkwxwJhw1Gcq_CIi0OBekHyuNCC-32U';
 const TRANSLATE_API_URL = 'https://translation.googleapis.com/language/translate/v2';
 
 // Target languages
