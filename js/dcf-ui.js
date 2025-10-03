@@ -238,32 +238,39 @@ function populateDCFNavigation() {
             });
             
             li.appendChild(dropdownMenu);
+            console.log('✅ Created dropdown for:', toggle.textContent, 'with', item.items.length, 'items'); // DEBUG LOG
             
             // Improved hover handling with delay
             let hoverTimeout;
             
             li.addEventListener('mouseenter', () => {
+                console.log('🔵 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
                 clearTimeout(hoverTimeout);
                 dropdownMenu.style.display = 'block';
+                console.log('🔵 Set display to block, current:', dropdownMenu.style.display); // DEBUG LOG
             });
             
             li.addEventListener('mouseleave', (e) => {
+                console.log('🔴 HOVER LEAVE from LI:', toggle.textContent); // DEBUG LOG
                 // Small delay to allow cursor to reach submenu
                 hoverTimeout = setTimeout(() => {
                     // Check if mouse is still within the dropdown area
                     if (!li.contains(e.relatedTarget)) {
                         dropdownMenu.style.display = 'none';
+                        console.log('🔴 Set display to none after delay'); // DEBUG LOG
                     }
                 }, 50);
             });
             
             // Keep menu open when hovering over it
             dropdownMenu.addEventListener('mouseenter', () => {
+                console.log('🟢 HOVER ENTER on SUBMENU'); // DEBUG LOG
                 clearTimeout(hoverTimeout);
                 dropdownMenu.style.display = 'block';
             });
             
             dropdownMenu.addEventListener('mouseleave', () => {
+                console.log('🟡 HOVER LEAVE from SUBMENU'); // DEBUG LOG
                 dropdownMenu.style.display = 'none';
             });
             
