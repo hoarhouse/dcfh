@@ -795,6 +795,7 @@
                         published_at,
                         created_at,
                         author_id,
+                        translations,
                         blogs!inner(
                             id,
                             name,
@@ -805,6 +806,18 @@
                     .order('published_at', { ascending: false });
 
                 if (queryError) throw queryError;
+
+                // Apply translations if available
+                const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                if (lang !== 'en' && posts) {
+                    posts.forEach(post => {
+                        if (post.translations && post.translations[lang]) {
+                            post.title = post.translations[lang].title || post.title;
+                            post.excerpt = post.translations[lang].excerpt || post.excerpt;
+                            post.content = post.translations[lang].content || post.content;
+                        }
+                    });
+                }
 
                 loading.style.display = 'none';
 

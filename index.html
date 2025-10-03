@@ -3983,7 +3983,7 @@
             console.log('5️⃣ Executing database query with .in() filter for slugs...');
             const { data: blogPosts, error: postsError } = await supabase
                 .from('blog_posts')
-                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug), translations')
                 .in('slug', slugsToFetch)
                 .eq('status', 'published')
                 .order('published_at', { ascending: false })
@@ -3993,6 +3993,18 @@
                 console.warn('Posts query error, showing fallback content:', postsError);
                 showFallbackCards(dcfNewsCards);
                 return;
+            }
+
+            // Apply translations if available
+            const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+            if (lang !== 'en' && blogPosts) {
+                blogPosts.forEach(post => {
+                    if (post.translations && post.translations[lang]) {
+                        post.title = post.translations[lang].title || post.title;
+                        post.excerpt = post.translations[lang].excerpt || post.excerpt;
+                        // Note: content field is not fetched in this query, so no need to translate it here
+                    }
+                });
             }
 
             console.log('6️⃣ Blog posts returned from query:', blogPosts);
@@ -4389,7 +4401,7 @@
             // Fetch all Change Makers blog posts
             const { data: blogPosts, error: postsError } = await supabase
                 .from('blog_posts')
-                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug)')
+                .select('id, title, slug, excerpt, featured_image_url, created_at, published_at, blog_id, blogs(slug), translations')
                 .in('slug', slugsToFetch)
                 .eq('status', 'published')
                 .order('published_at', { ascending: false })
@@ -4400,6 +4412,18 @@
                 clearTimeout(loadingTimeout);
                 showFallbackChangeMakers();
                 return;
+            }
+
+            // Apply translations if available
+            const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+            if (lang !== 'en' && blogPosts) {
+                blogPosts.forEach(post => {
+                    if (post.translations && post.translations[lang]) {
+                        post.title = post.translations[lang].title || post.title;
+                        post.excerpt = post.translations[lang].excerpt || post.excerpt;
+                        // Note: content field is not fetched in this query, so no need to translate it here
+                    }
+                });
             }
 
             // Create a map of posts by slug for easy lookup

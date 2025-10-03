@@ -4089,6 +4089,14 @@
                     }
                     
                     if (resource) {
+                        // Apply translations if available
+                        const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                        if (lang !== 'en' && resource.translations && resource.translations[lang]) {
+                            resource.title = resource.translations[lang].title || resource.title;
+                            resource.description = resource.translations[lang].description || resource.description;
+                            resource.content = resource.translations[lang].content || resource.content;
+                        }
+                        
                         currentResource = resource;
                         console.log('Loaded resource:', resource.title);
                         console.log('Resource category:', resource.category);
@@ -5358,13 +5366,22 @@
                 if (window.dcfSupabase && currentResource) {
                     const { data, error } = await window.dcfSupabase
                         .from('resources')
-                        .select('slug, title, type, author_name, download_count, rating_average')
+                        .select('slug, title, type, author_name, download_count, rating_average, translations')
                         .eq('status', 'approved')
                         .neq('slug', resourceSlug)
                         .limit(3)
                         .order('created_at', { ascending: false });
                     
                     if (!error && data) {
+                        // Apply translations if available
+                        const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                        if (lang !== 'en') {
+                            data.forEach(resource => {
+                                if (resource.translations && resource.translations[lang]) {
+                                    resource.title = resource.translations[lang].title || resource.title;
+                                }
+                            });
+                        }
                         relatedResources = data;
                     }
                 }
