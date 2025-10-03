@@ -238,6 +238,7 @@ function populateDCFNavigation() {
             
             li.appendChild(dropdownMenu);
             console.log('✅ Created dropdown for:', toggle.textContent, 'with', item.items.length, 'items'); // DEBUG LOG
+            console.log('🔍 DROPDOWN HTML:', li.outerHTML); // FULL HTML DEBUG
             
             // Improved hover handling with delay
             let hoverTimeout;
