@@ -189,21 +189,6 @@ function populateDCFNavigation() {
             // Create dropdown menu
             const dropdownMenu = document.createElement('ul');
             dropdownMenu.className = 'nav-submenu';
-            dropdownMenu.style.cssText = `
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                background: white;
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                min-width: 220px;
-                z-index: 1000;
-                margin-top: 0;
-                padding: 0.5rem 0;
-                list-style: none;
-            `;
             
             // Add dropdown items
             item.items.forEach(subItem => {
