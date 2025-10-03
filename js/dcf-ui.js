@@ -242,6 +242,7 @@ function populateDCFNavigation() {
             // Improved hover handling with delay
             let hoverTimeout;
             
+            console.log('🎯 ATTACHING HOVER LISTENERS TO:', toggle.textContent, 'dropdown'); // CRITICAL DEBUG
             li.addEventListener('mouseenter', () => {
                 console.log('🔵 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
                 clearTimeout(hoverTimeout);
