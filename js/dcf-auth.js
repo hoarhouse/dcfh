@@ -390,10 +390,13 @@ function updateUserMenu() {
         currentPath.includes(page) || currentPath.endsWith(page)
     );
     
+    console.log('🔍 updateUserMenu() called - currentPath:', currentPath, 'isLaunchPage:', isLaunchPage);
     if (isLaunchPage) {
         console.log('🚀 Launch page - preserving public user menu');
         return; // Don't modify user menu on launch pages
     }
+    
+    console.log('❌ NOT A LAUNCH PAGE - OVERWRITING USER MENU!');
     
     const userMenu = document.querySelector('.user-menu');
     if (!userMenu || !dcfUser.profile) return;
