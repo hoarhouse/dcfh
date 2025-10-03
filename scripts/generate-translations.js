@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 // Google Cloud Translation API
 const GOOGLE_TRANSLATE_API = 'https://translation.googleapis.com/language/translate/v2';
-const API_KEY = 'AIzaSyCEmkwxwJhw1Gcq_CIi0OBekHyuNCC-32URE'; // Chris will replace this
+const API_KEY = 'AIzaSyCEmkwxwJhw1Gcq_CIi0OBekHyuNCC-32U'; // Chris will replace this
 
 const LANGUAGES = {
     it: 'Italian',
