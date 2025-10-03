@@ -2374,7 +2374,7 @@
             try {
                 const { data: relatedProjects, error } = await window.dcfSupabase
                     .from('projects')
-                    .select('id, title, brief_description, full_description')
+                    .select('id, title, brief_description, full_description, translations')
                     .eq('author_id', authorId)
                     .neq('id', currentProjectId)
                     .limit(2);  // Changed from 3 to 2
@@ -2385,6 +2385,20 @@
                 if (error || !relatedProjects || relatedProjects.length === 0) {
                     container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No other projects by this author</div>';
                     return;
+                }
+                
+                // Apply translations if available
+                const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                if (lang !== 'en') {
+                    relatedProjects.forEach(project => {
+                        if (project.translations && project.translations[lang]) {
+                            project.title = project.translations[lang].title || project.title;
+                            if (project.translations[lang].description) {
+                                project.brief_description = project.translations[lang].description || project.brief_description;
+                                project.full_description = project.translations[lang].description || project.full_description;
+                            }
+                        }
+                    });
                 }
                 
                 container.innerHTML = relatedProjects.map(project => {
