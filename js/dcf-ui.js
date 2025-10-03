@@ -640,16 +640,112 @@ function changeLanguage(lang) {
 }
 
 /**
- * Update language switcher button states
+ * Initialize language switcher dropdown
+ */
+function initializeLanguageSwitcher() {
+    const switchers = document.querySelectorAll('.language-switcher');
+    const languages = {
+        'en': 'EN',
+        'it': 'IT',
+        'es': 'ES',
+        'hu': 'HU'
+    };
+    
+    switchers.forEach(switcher => {
+        // Clear existing content
+        switcher.innerHTML = '';
+        
+        // Create dropdown button
+        const dropdownBtn = document.createElement('button');
+        dropdownBtn.className = 'lang-dropdown-btn';
+        dropdownBtn.innerHTML = `${languages[currentLanguage]} <span class="dropdown-arrow">▼</span>`;
+        dropdownBtn.setAttribute('aria-label', 'Select language');
+        
+        // Create dropdown menu
+        const dropdownMenu = document.createElement('div');
+        dropdownMenu.className = 'lang-dropdown-menu';
+        
+        // Add language options
+        Object.entries(languages).forEach(([code, label]) => {
+            if (code !== currentLanguage) {
+                const option = document.createElement('button');
+                option.className = 'lang-option';
+                option.textContent = label;
+                option.setAttribute('data-lang', code);
+                option.onclick = () => {
+                    changeLanguage(code);
+                    closeLanguageDropdown();
+                };
+                dropdownMenu.appendChild(option);
+            }
+        });
+        
+        // Add to switcher
+        switcher.appendChild(dropdownBtn);
+        switcher.appendChild(dropdownMenu);
+        
+        // Toggle dropdown on button click
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLanguageDropdown(switcher);
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', closeAllLanguageDropdowns);
+}
+
+/**
+ * Toggle language dropdown visibility
+ */
+function toggleLanguageDropdown(switcher) {
+    const menu = switcher.querySelector('.lang-dropdown-menu');
+    const btn = switcher.querySelector('.lang-dropdown-btn');
+    const isOpen = menu.classList.contains('active');
+    
+    // Close all other dropdowns first
+    closeAllLanguageDropdowns();
+    
+    if (!isOpen) {
+        menu.classList.add('active');
+        btn.classList.add('active');
+    }
+}
+
+/**
+ * Close language dropdown
+ */
+function closeLanguageDropdown() {
+    const menus = document.querySelectorAll('.lang-dropdown-menu');
+    const btns = document.querySelectorAll('.lang-dropdown-btn');
+    menus.forEach(menu => menu.classList.remove('active'));
+    btns.forEach(btn => btn.classList.remove('active'));
+}
+
+/**
+ * Close all language dropdowns
+ */
+function closeAllLanguageDropdowns() {
+    const menus = document.querySelectorAll('.lang-dropdown-menu');
+    const btns = document.querySelectorAll('.lang-dropdown-btn');
+    menus.forEach(menu => menu.classList.remove('active'));
+    btns.forEach(btn => btn.classList.remove('active'));
+}
+
+/**
+ * Update language switcher UI
  */
 function updateLanguageSwitcherUI() {
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        const lang = btn.getAttribute('data-lang');
-        if (lang === currentLanguage) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+    const languages = {
+        'en': 'EN',
+        'it': 'IT',
+        'es': 'ES',
+        'hu': 'HU'
+    };
+    
+    // Update dropdown button text
+    document.querySelectorAll('.lang-dropdown-btn').forEach(btn => {
+        btn.innerHTML = `${languages[currentLanguage]} <span class="dropdown-arrow">▼</span>`;
     });
 }
 
@@ -688,6 +784,11 @@ async function initializeTranslations() {
     
     currentLanguage = savedLanguage;
     console.log(`📍 Using language: ${currentLanguage}`);
+    
+    // Initialize language switcher dropdown on launch pages
+    if (isLaunchPage()) {
+        initializeLanguageSwitcher();
+    }
     
     // Always update language switcher UI on all pages
     updateLanguageSwitcherUI();
