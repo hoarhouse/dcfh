@@ -543,12 +543,6 @@ function t(key, lang = currentLanguage) {
         return t(key, 'en');
     }
     
-    // Ensure we never return an object - always return a string
-    if (typeof value === 'object' && value !== null) {
-        console.warn(`Translation key "${key}" returned an object instead of a string`, value);
-        return key; // Return the key as fallback
-    }
-    
     return value || key; // Return key if no translation found
 }
 
