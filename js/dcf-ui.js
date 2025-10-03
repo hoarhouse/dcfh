@@ -172,7 +172,7 @@ function populateDCFNavigation() {
             toggle.className = 'dropdown-toggle';
             // Use translation if available, otherwise fallback to item.text
             const linkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage] 
-                ? t(`nav.${item.id}`) || item.text 
+                ? t(item.id) || item.text 
                 : item.text;
             toggle.textContent = linkText;
             
@@ -211,7 +211,7 @@ function populateDCFNavigation() {
                 link.href = basePath + subItem.href;
                 // Use translation for sub-items
                 const subLinkText = isLaunchPage() && subItem.id && TRANSLATIONS[currentLanguage]
-                    ? t(`nav.${subItem.id}`) || subItem.text
+                    ? t(subItem.id) || subItem.text
                     : subItem.text;
                 link.textContent = subLinkText;
                 link.style.cssText = `
@@ -284,7 +284,7 @@ function populateDCFNavigation() {
             link.href = basePath + item.href;
             // Use translation for regular items
             const regularLinkText = isLaunchPage() && item.id && TRANSLATIONS[currentLanguage]
-                ? t(`nav.${item.id}`) || item.text
+                ? t(item.id) || item.text
                 : item.text;
             link.textContent = regularLinkText;
             
