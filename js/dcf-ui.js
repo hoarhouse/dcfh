@@ -250,6 +250,8 @@ function populateDCFNavigation() {
                 console.log('🟢 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
                 clearTimeout(hoverTimeout);
                 dropdownMenu.style.display = 'block';
+                dropdownMenu.style.visibility = 'visible';
+                dropdownMenu.style.opacity = '1';
             });
             
             li.addEventListener('mouseleave', (e) => {
