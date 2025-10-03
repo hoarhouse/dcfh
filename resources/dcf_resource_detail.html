@@ -185,6 +185,14 @@
                 if (error) throw error;
                 if (!resource) throw new Error('Resource not found');
 
+                // Apply translations if available
+                const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                if (lang !== 'en' && resource.translations && resource.translations[lang]) {
+                    resource.title = resource.translations[lang].title || resource.title;
+                    resource.description = resource.translations[lang].description || resource.description;
+                    resource.content = resource.translations[lang].content || resource.content;
+                }
+
                 currentResource = resource;
                 console.log('✅ Resource loaded:', resource.title);
                 
@@ -2005,12 +2013,22 @@
             try {
                 const { data: related, error } = await supabase
                     .from('resources')
-                    .select('id, title, type, author_name, author_email, download_count')
+                    .select('id, title, type, author_name, author_email, download_count, translations')
                     .eq('status', 'approved')
                     .neq('id', resourceId)
                     .limit(5);
 
                 if (error) throw error;
+
+                // Apply translations if available
+                const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                if (lang !== 'en' && related) {
+                    related.forEach(resource => {
+                        if (resource.translations && resource.translations[lang]) {
+                            resource.title = resource.translations[lang].title || resource.title;
+                        }
+                    });
+                }
 
                 await displayRelatedResources(related || []);
 

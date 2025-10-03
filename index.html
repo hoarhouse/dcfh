@@ -5026,7 +5026,7 @@
             console.log('🔄 DEBUG: Querying resources table for slugs:', slugsToFetch);
             const { data: resources, error: resourcesError } = await supabase
                 .from('resources')
-                .select('id, title, slug, description, excerpt, featured_image_url, file_url, type, file_type, tags, author_name, status, created_at, published_at')
+                .select('id, title, slug, description, excerpt, featured_image_url, file_url, type, file_type, tags, author_name, status, created_at, published_at, translations')
                 .in('slug', slugsToFetch)
                 .eq('status', 'approved');
 
@@ -5040,6 +5040,18 @@
                 resourcesTrack.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Resources temporarily unavailable</div>';
                 resourcesCarousel.style.display = 'block';
                 return;
+            }
+
+            // Apply translations if available
+            const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+            if (lang !== 'en' && resources) {
+                resources.forEach(resource => {
+                    if (resource.translations && resource.translations[lang]) {
+                        resource.title = resource.translations[lang].title || resource.title;
+                        resource.description = resource.translations[lang].description || resource.description;
+                        resource.excerpt = resource.translations[lang].excerpt || resource.excerpt;
+                    }
+                });
             }
 
             if (!resources || resources.length === 0) {
