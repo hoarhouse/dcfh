@@ -13,135 +13,135 @@ const TRANSLATE_API_URL = 'https://translation.googleapis.com/language/translate
 // Target languages
 const TARGET_LANGUAGES = ['it', 'es', 'hu'];
 
-// Blog posts data (13 rows)
+// Blog posts data (13 rows) - USING ACTUAL DATABASE IDs
 const blogPosts = [
   {
-    id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
+    id: 'b03cd967-4d26-49f2-b22b-bd642b281628',
     title: 'Understanding AI Ethics in Healthcare',
     excerpt: 'Exploring the intersection of artificial intelligence and medical ethics',
     content: '<p>As artificial intelligence becomes increasingly integrated into healthcare systems worldwide, we must carefully consider the ethical implications...</p>'
   },
   {
-    id: '2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q',
+    id: '10da74d4-e488-461a-a62d-53c12da020c1',
     title: 'The Future of Responsible AI Development',
     excerpt: 'Building AI systems with accountability and transparency',
     content: '<p>The rapid advancement of AI technology demands that we establish clear guidelines for responsible development...</p>'
   },
   {
-    id: '3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r',
+    id: '923db854-2148-4940-bff5-47c2470824c6',
     title: 'Privacy in the Age of Machine Learning',
     excerpt: 'How to protect personal data while advancing AI capabilities',
     content: '<p>Machine learning models require vast amounts of data to function effectively, but this need must be balanced with privacy rights...</p>'
   },
   {
-    id: '4d5e6f7g-8h9i-0j1k-2l3m-4n5o6p7q8r9s',
+    id: 'e72858ce-6e61-4eae-a385-b0669aff4ab2',
     title: 'Bias Detection and Mitigation in AI Systems',
     excerpt: 'Strategies for creating fair and equitable algorithms',
     content: '<p>Algorithmic bias remains one of the most pressing challenges in AI deployment. This post explores practical methods...</p>'
   },
   {
-    id: '5e6f7g8h-9i0j-1k2l-3m4n-5o6p7q8r9s0t',
+    id: '7b7f8ffc-d49b-4cb9-b233-474180d4942b',
     title: 'AI Governance Frameworks for Organizations',
     excerpt: 'Implementing effective oversight for AI initiatives',
     content: '<p>Organizations deploying AI need robust governance frameworks to ensure ethical and legal compliance...</p>'
   },
   {
-    id: '6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1u',
+    id: '7d18faf4-7da9-48e8-8e04-d6ef302656a1',
     title: 'Explainable AI: Making Black Boxes Transparent',
     excerpt: 'The importance of interpretability in machine learning',
     content: '<p>As AI systems become more complex, understanding how they reach decisions becomes crucial for trust and accountability...</p>'
   },
   {
-    id: '7g8h9i0j-1k2l-3m4n-5o6p-7q8r9s0t1u2v',
+    id: 'af8a8028-afde-41ba-91af-5efa01124d68',
     title: 'The Environmental Impact of AI Training',
     excerpt: 'Assessing the carbon footprint of large language models',
     content: '<p>Training large AI models consumes significant computational resources, raising important questions about sustainability...</p>'
   },
   {
-    id: '8h9i0j1k-2l3m-4n5o-6p7q-8r9s0t1u2v3w',
+    id: 'd3b36c5c-332b-4dba-97ab-419cdb243963',
     title: 'Human-AI Collaboration in Decision Making',
     excerpt: 'Finding the right balance between automation and human judgment',
     content: '<p>The most effective AI implementations often involve meaningful collaboration between humans and machines...</p>'
   },
   {
-    id: '9i0j1k2l-3m4n-5o6p-7q8r-9s0t1u2v3w4x',
+    id: '3a7effb2-b827-49c1-9f16-019427e6a234',
     title: 'AI Safety Research: Current Challenges',
     excerpt: 'Addressing existential risks and alignment problems',
     content: '<p>As AI capabilities advance, ensuring these systems remain safe and aligned with human values becomes paramount...</p>'
   },
   {
-    id: '0j1k2l3m-4n5o-6p7q-8r9s-0t1u2v3w4x5y',
+    id: '7f7c0802-cdbf-487d-a4c7-b3e82a786809',
     title: 'Regulatory Approaches to AI: Global Perspectives',
     excerpt: 'Comparing different national strategies for AI regulation',
     content: '<p>Countries around the world are developing diverse approaches to regulating AI, from the EU AI Act to...</p>'
   },
   {
-    id: '1k2l3m4n-5o6p-7q8r-9s0t-1u2v3w4x5y6z',
+    id: 'a387fcdd-f3fd-4d0b-99f4-811472487eca',
     title: 'The Role of Ethics Committees in AI Development',
     excerpt: 'How organizations can establish effective ethical oversight',
     content: '<p>Ethics committees play a crucial role in guiding responsible AI development within organizations...</p>'
   },
   {
-    id: '2l3m4n5o-6p7q-8r9s-0t1u-2v3w4x5y6z7a',
+    id: 'c275d752-086b-4a56-8f31-04c4dd262d5f',
     title: 'AI and Social Justice: Opportunities and Risks',
     excerpt: 'Leveraging AI for positive social impact while avoiding harm',
     content: '<p>Artificial intelligence has the potential to address social inequities, but it can also perpetuate existing biases...</p>'
   },
   {
-    id: '3m4n5o6p-7q8r-9s0t-1u2v-3w4x5y6z7a8b',
+    id: '93afce9f-e45a-4feb-abc0-83e7b9f802f4',
     title: 'Building Trust in Autonomous Systems',
     excerpt: 'Key factors for public acceptance of AI technologies',
     content: '<p>For AI systems to be successfully deployed at scale, they must earn and maintain public trust through...</p>'
   }
 ];
 
-// Resources data (7 rows)
+// Resources data (7 rows) - USING ACTUAL DATABASE IDs
 const resources = [
   {
-    id: 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6',
+    id: '148f1b3d-350e-4469-bb12-bfc96e8ab514',
     title: 'AI Ethics Framework Guide',
     description: 'A comprehensive guide to implementing ethical AI practices in your organization',
     content: '<h2>Introduction to AI Ethics</h2><p>This framework provides actionable guidelines for developing and deploying ethical AI systems...</p>'
   },
   {
-    id: 'b2c3d4e5-f6g7-8h9i-0j1k-l2m3n4o5p6q7',
+    id: 'f5704644-e0a1-4518-a1d7-138d38ca2f1c',
     title: 'Machine Learning Bias Checklist',
     description: 'Essential checklist for identifying and mitigating bias in ML models',
     content: '<h2>Bias Detection Steps</h2><ol><li>Data collection audit</li><li>Feature engineering review</li><li>Model evaluation metrics</li></ol>...'
   },
   {
-    id: 'c3d4e5f6-g7h8-9i0j-1k2l-m3n4o5p6q7r8',
+    id: '4814806a-89ce-462c-a800-de31b9c2f7be',
     title: 'Privacy-Preserving AI Techniques',
     description: 'Learn about federated learning, differential privacy, and other privacy-preserving methods',
     content: '<h2>Privacy Techniques Overview</h2><p>Modern AI systems can maintain user privacy through various technical approaches...</p>'
   },
   {
-    id: 'd4e5f6g7-h8i9-0j1k-2l3m-n4o5p6q7r8s9',
+    id: '4423885e-88c4-4c28-840a-57cba58f4187',
     title: 'AI Governance Template',
     description: 'Ready-to-use templates for establishing AI governance in your organization',
     content: '<h2>Governance Structure</h2><p>Effective AI governance requires clear roles, responsibilities, and processes...</p>'
   },
   {
-    id: 'e5f6g7h8-i9j0-1k2l-3m4n-o5p6q7r8s9t0',
+    id: '2b1d4267-a454-4b30-b18b-4f7087fcab36',
     title: 'Responsible AI Development Toolkit',
     description: 'Tools and resources for building responsible AI systems',
     content: '<h2>Development Best Practices</h2><p>This toolkit provides practical resources for implementing responsible AI principles...</p>'
   },
   {
-    id: 'f6g7h8i9-j0k1-2l3m-4n5o-p6q7r8s9t0u1',
+    id: '99c1ade8-3176-438e-95b2-6620778be031',
     title: 'AI Impact Assessment Framework',
     description: 'Methodology for assessing the societal impact of AI deployments',
     content: '<h2>Impact Assessment Process</h2><p>Before deploying AI systems, organizations should conduct thorough impact assessments...</p>'
   },
   {
-    id: 'g7h8i9j0-k1l2-3m4n-5o6p-q7r8s9t0u1v2',
+    id: '6d3dafde-b228-4df1-a6ab-bac2d98246e0',
     title: 'Ethics Training for AI Practitioners',
     description: 'Curriculum and materials for ethics education in AI development teams',
     content: '<h2>Training Modules</h2><p>This comprehensive training program covers essential ethical considerations for AI practitioners...</p>'
   }
 ];
 
-// Projects data
+// Projects data (4 rows) - USING ACTUAL DATABASE IDs
 const projects = [
   {
     id: '0f4ce11a-856f-4754-b4ee-0a3f2d3b8b4e',
@@ -159,9 +159,9 @@ const projects = [
     description: 'Structured curriculum for integrating ethics into AI education'
   },
   {
-    id: 'a2b3c4d5-e6f7-8g9h-0i1j-k2l3m4n5o6p7',
-    title: 'Algorithmic Fairness Toolkit',
-    description: 'Tools and metrics for evaluating and improving algorithmic fairness'
+    id: 'b23231c5-c490-4c07-b94e-a7d447c2c033',
+    title: 'One Amazing Project 12',
+    description: 'An innovative project showcasing cutting-edge AI applications'
   }
 ];
 
