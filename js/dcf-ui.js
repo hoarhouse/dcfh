@@ -1273,11 +1273,11 @@ const FOOTER_CONFIG = {
             titleKey: 'footer_quick_links',
             type: 'links',
             items: [
-                { text: 'Home', href: 'index.html' },
-                { text: 'About', href: 'public/dcf_about.html' },
-                { text: 'Initiatives', href: 'initiatives/index.html' },
-                { text: 'Blog', href: 'blog/index.html' },
-                { text: 'Contact', href: 'public/dcf_contact.html' }
+                { text: 'Home', id: 'home', href: 'index.html' },
+                { text: 'About', id: 'about', href: 'public/dcf_about.html' },
+                { text: 'Initiatives', id: 'initiatives', href: 'initiatives/index.html' },
+                { text: 'Blog', id: 'blog', href: 'blog/index.html' },
+                { text: 'Contact', id: 'contact', href: 'public/dcf_contact.html' }
             ]
         },
         {
@@ -1408,31 +1408,31 @@ function generateFooterHTML() {
     // Generate each footer section based on config
     FOOTER_CONFIG.sections.forEach(section => {
         sectionsHTML += '<div class="footer-section">';
-        sectionsHTML += `<h4 class="footer-title">${section.title}</h4>`;
+        sectionsHTML += `<h4 class="footer-title" ${section.titleKey ? `data-i18n="${section.titleKey}"` : ''}>${section.title}</h4>`;
         
         switch(section.type) {
             case 'links':
                 sectionsHTML += '<ul class="footer-links">';
                 section.items.forEach(item => {
-                    sectionsHTML += `<li><a href="${basePath}${item.href}">${item.text}</a></li>`;
+                    sectionsHTML += `<li><a href="${basePath}${item.href}" ${item.id ? `data-i18n="${item.id}"` : ''}>${item.text}</a></li>`;
                 });
                 sectionsHTML += '</ul>';
                 break;
                 
             case 'newsletter':
                 sectionsHTML += `
-                    <p class="footer-text">${section.description}</p>
+                    <p class="footer-text" ${section.descriptionKey ? `data-i18n="${section.descriptionKey}"` : ''}>${section.description}</p>
                     <form class="newsletter-form" id="footerNewsletterForm">
-                        <input type="email" placeholder="${section.placeholder}" class="newsletter-input" required>
-                        <button type="submit" class="newsletter-btn">${section.buttonText}</button>
+                        <input type="email" placeholder="${section.placeholder}" ${section.placeholderKey ? `data-i18n-placeholder="${section.placeholderKey}"` : ''} class="newsletter-input" required>
+                        <button type="submit" class="newsletter-btn" ${section.buttonKey ? `data-i18n="${section.buttonKey}"` : ''}>${section.buttonText}</button>
                     </form>
                 `;
                 break;
                 
             case 'donation':
                 sectionsHTML += `
-                    <p class="footer-text">${section.description}</p>
-                    <a href="${basePath}${section.buttonLink}" class="donate-btn">${section.buttonText}</a>
+                    <p class="footer-text" ${section.descriptionKey ? `data-i18n="${section.descriptionKey}"` : ''}>${section.description}</p>
+                    <a href="${basePath}${section.buttonLink}" class="donate-btn" ${section.buttonKey ? `data-i18n="${section.buttonKey}"` : ''}>${section.buttonText}</a>
                 `;
                 break;
                 
@@ -1440,7 +1440,7 @@ function generateFooterHTML() {
                 sectionsHTML += '<div class="social-links">';
                 section.links.forEach(link => {
                     sectionsHTML += `
-                        <a href="#" class="social-link" title="${link.title}" data-action="${link.action}">
+                        <a href="#" class="social-link" title="${link.title}" ${link.titleKey ? `data-i18n-title="${link.titleKey}"` : ''} data-action="${link.action}">
                             ${link.icon}
                         </a>
                     `;
@@ -1456,7 +1456,7 @@ function generateFooterHTML() {
     let legalHTML = '';
     FOOTER_CONFIG.bottom.legal.forEach((link, index) => {
         if (index > 0) legalHTML += '<span class="separator">•</span>';
-        legalHTML += `<a href="${link.href}">${link.text}</a>`;
+        legalHTML += `<a href="${link.href}" ${link.textKey ? `data-i18n="${link.textKey}"` : ''}>${link.text}</a>`;
     });
     
     return `
@@ -1466,7 +1466,7 @@ function generateFooterHTML() {
                     ${sectionsHTML}
                 </div>
                 <div class="footer-bottom">
-                    <p>${FOOTER_CONFIG.bottom.copyright}</p>
+                    <p ${FOOTER_CONFIG.bottom.copyrightKey ? `data-i18n="${FOOTER_CONFIG.bottom.copyrightKey}"` : ''}>${FOOTER_CONFIG.bottom.copyright}</p>
                     <div class="footer-legal">
                         ${legalHTML}
                     </div>
