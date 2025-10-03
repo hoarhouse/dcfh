@@ -61,8 +61,7 @@ const LAUNCH_MENU = [
             { id: 'contact', text: 'Contact', href: 'public/dcf_contact.html' }
         ]
     },
-    { id: 'resources', text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false },
-    { id: 'donate', text: 'Donate', href: 'members/dcf_donate.html', dropdown: false, type: 'cta' }
+    { id: 'resources', text: 'Resources', href: 'public/dcf_ai_resources.html', dropdown: false }
 ];
 
 // FULL MENU - Complete member navigation for Phase 2
@@ -298,31 +297,9 @@ function populateDCFNavigation() {
                 link.setAttribute('data-i18n', item.id);
             }
             
-            // Check if this is the donate button (CTA)
-            if (item.type === 'cta' || item.id === 'donate') {
-                link.className = 'nav-donate-btn';
-                // Add inline styles for the donate button
-                link.style.cssText = `
-                    background: #000;
-                    color: white !important;
-                    padding: 0.5rem 1.25rem;
-                    border-radius: 6px;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                    margin-left: 0.5rem;
-                `;
-                // Add hover effect
-                link.addEventListener('mouseenter', () => {
-                    link.style.background = '#333';
-                });
-                link.addEventListener('mouseleave', () => {
-                    link.style.background = '#000';
-                });
-            } else {
-                // Highlight active page for non-donate items
-                if (window.location.pathname.includes(item.href)) {
-                    link.className = 'active';
-                }
+            // Highlight active page
+            if (window.location.pathname.includes(item.href)) {
+                link.className = 'active';
             }
             
             li.appendChild(link);
