@@ -649,12 +649,6 @@ function detectBrowserLanguage() {
  * Initialize translation system
  */
 async function initializeTranslations() {
-    // Only run on launch pages
-    if (!isLaunchPage()) {
-        console.log('ℹ️ Skipping translations - not a launch page');
-        return;
-    }
-    
     console.log('🚀 Initializing translation system...');
     
     // Determine which language to use
@@ -669,14 +663,20 @@ async function initializeTranslations() {
     currentLanguage = savedLanguage;
     console.log(`📍 Using language: ${currentLanguage}`);
     
+    // Always update language switcher UI on all pages
+    updateLanguageSwitcherUI();
+    
+    // Only load and apply translations on launch pages
+    if (!isLaunchPage()) {
+        console.log('ℹ️ Skipping translation loading - not a launch page');
+        return;
+    }
+    
     // Load translations
     await loadTranslations(currentLanguage);
     
     // Apply translations to page
     applyTranslations();
-    
-    // Update language switcher UI
-    updateLanguageSwitcherUI();
     
     console.log('✅ Translation system initialized');
 }
