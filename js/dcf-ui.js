@@ -189,6 +189,21 @@ function populateDCFNavigation() {
             // Create dropdown menu
             const dropdownMenu = document.createElement('ul');
             dropdownMenu.className = 'nav-submenu';
+            dropdownMenu.style.cssText = `
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: white;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                min-width: 220px;
+                z-index: 1000;
+                margin-top: 0;
+                padding: 0.5rem 0;
+                list-style: none;
+            `;
             
             // Add dropdown items
             item.items.forEach(subItem => {
@@ -201,7 +216,22 @@ function populateDCFNavigation() {
                 if (subItem.id) {
                     link.setAttribute('data-i18n', subItem.id);
                 }
-                // CSS handles all styling now
+                link.style.cssText = `
+                    display: block;
+                    padding: 0.75rem 1.25rem;
+                    color: #333;
+                    text-decoration: none;
+                    transition: background 0.2s ease;
+                    white-space: nowrap;
+                `;
+                
+                // Add hover effect
+                link.addEventListener('mouseenter', () => {
+                    link.style.background = '#f8f9fa';
+                });
+                link.addEventListener('mouseleave', () => {
+                    link.style.background = 'transparent';
+                });
                 
                 subLi.appendChild(link);
                 dropdownMenu.appendChild(subLi);
