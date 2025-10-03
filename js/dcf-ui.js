@@ -247,37 +247,9 @@ function populateDCFNavigation() {
             
             console.log('🎯 ATTACHING HOVER LISTENERS TO:', toggle.textContent, 'dropdown'); // CRITICAL DEBUG
             li.addEventListener('mouseenter', () => {
-                console.log('🔵 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
+                console.log('🟢 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
                 clearTimeout(hoverTimeout);
-                
-                // FORCE VISIBLE WITH EXTREME MEASURES
-                dropdownMenu.style.display = 'block !important';
-                dropdownMenu.style.visibility = 'visible !important';
-                dropdownMenu.style.opacity = '1 !important';
-                dropdownMenu.style.position = 'absolute';
-                dropdownMenu.style.top = '100%';
-                dropdownMenu.style.left = '0';
-                dropdownMenu.style.zIndex = '99999';
-                dropdownMenu.style.background = 'red';
-                dropdownMenu.style.border = '5px solid blue';
-                dropdownMenu.style.width = '300px';
-                dropdownMenu.style.height = '200px';
-                
-                console.log('🔵 FORCED VISIBLE WITH EXTREME STYLING');
-                
-                // DEBUG: Check computed styles
-                const computedStyle = window.getComputedStyle(dropdownMenu);
-                console.log('🔍 COMPUTED STYLES:', {
-                    display: computedStyle.display,
-                    opacity: computedStyle.opacity,
-                    visibility: computedStyle.visibility,
-                    position: computedStyle.position,
-                    top: computedStyle.top,
-                    left: computedStyle.left,
-                    zIndex: computedStyle.zIndex,
-                    width: computedStyle.width,
-                    height: computedStyle.height
-                });
+                dropdownMenu.style.display = 'block';
             });
             
             li.addEventListener('mouseleave', (e) => {
