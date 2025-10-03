@@ -807,13 +807,13 @@ async function initializeTranslations() {
     currentLanguage = savedLanguage;
     console.log(`📍 Using language: ${currentLanguage}`);
     
-    // Initialize language switcher dropdown on launch pages
-    if (isLaunchPage()) {
-        initializeLanguageSwitcher();
-    }
+    // Initialize language switcher dropdown on launch pages - TEMPORARILY DISABLED
+    // if (isLaunchPage()) {
+    //     initializeLanguageSwitcher();
+    // }
     
-    // Always update language switcher UI on all pages
-    updateLanguageSwitcherUI();
+    // Always update language switcher UI on all pages - TEMPORARILY DISABLED
+    // updateLanguageSwitcherUI();
     
     // Only load and apply translations on launch pages
     if (!isLaunchPage()) {
