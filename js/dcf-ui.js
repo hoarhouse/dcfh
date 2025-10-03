@@ -2057,7 +2057,7 @@ function initializeMobileMenu() {
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            if (window.innerWidth > 768) {
+            if (window.innerWidth > 1024) {
                 closeMobileMenu();
             }
         }, 250);
@@ -2067,7 +2067,7 @@ function initializeMobileMenu() {
     const navMenu = document.querySelector('.nav-menu');
     if (navMenu) {
         navMenu.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A' && window.innerWidth <= 768) {
+            if (e.target.tagName === 'A' && window.innerWidth <= 1024) {
                 // Small delay to allow navigation to start
                 setTimeout(() => closeMobileMenu(), 100);
             }
