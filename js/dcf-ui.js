@@ -888,9 +888,23 @@ function showLoggedOutState() {
     const onLaunchPage = isLaunchPage();
     
     if (onLaunchPage) {
-        // Launch pages: No login or join buttons
+        // Launch pages: No login or join buttons but preserve language buttons
+        const languageButtons = userMenu.querySelector('.language-buttons');
+        const userDropdown = userMenu.querySelector('.user-dropdown');
+        
         userMenu.innerHTML = '';
-        console.log('🚀 Launch page: Hidden login/join buttons in header');
+        
+        // Re-add language buttons if they existed
+        if (languageButtons) {
+            userMenu.appendChild(languageButtons);
+        }
+        
+        // Re-add user dropdown if it existed
+        if (userDropdown) {
+            userMenu.appendChild(userDropdown);
+        }
+        
+        console.log('🚀 Launch page: Hidden login/join buttons, preserved language buttons');
     } else {
         // Member pages: Show both login and join buttons
         userMenu.innerHTML = `
