@@ -877,7 +877,6 @@ function showLoggedOutState() {
     if (onLaunchPage) {
         // Launch pages: No login or join buttons but preserve language buttons
         const languageButtons = userMenu.querySelector('.language-buttons');
-        const userDropdown = userMenu.querySelector('.user-dropdown');
         
         userMenu.innerHTML = '';
         
@@ -886,12 +885,8 @@ function showLoggedOutState() {
             userMenu.appendChild(languageButtons);
         }
         
-        // Re-add user dropdown if it existed
-        if (userDropdown) {
-            userMenu.appendChild(userDropdown);
-        }
-        
-        console.log('🚀 Launch page: Hidden login/join buttons, preserved language buttons');
+        // DO NOT add user dropdown on launch pages
+        console.log('🚀 Launch page: Hidden login/join buttons and user avatar, preserved language buttons');
     } else {
         // Member pages: Show both login and join buttons
         userMenu.innerHTML = `
