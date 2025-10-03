@@ -247,10 +247,13 @@ function populateDCFNavigation() {
             li.addEventListener('mouseenter', () => {
                 console.log('🔵 HOVER ENTER on LI:', toggle.textContent); // DEBUG LOG
                 clearTimeout(hoverTimeout);
-                dropdownMenu.style.display = 'block';
-                dropdownMenu.style.backgroundColor = 'red'; // TEMP DEBUG - MAKE VISIBLE
+                dropdownMenu.style.display = 'block !important';
+                dropdownMenu.style.visibility = 'visible !important';
+                dropdownMenu.style.opacity = '1 !important';
+                dropdownMenu.style.backgroundColor = 'red'; // TEMP DEBUG
                 dropdownMenu.style.border = '3px solid blue'; // TEMP DEBUG
-                console.log('🔵 Set display to block, current:', dropdownMenu.style.display); // DEBUG LOG
+                dropdownMenu.style.zIndex = '9999'; // FORCE ON TOP
+                console.log('🔵 FORCED VISIBLE with !important overrides'); // DEBUG LOG
                 
                 // DEBUG: Check computed styles
                 const computedStyle = window.getComputedStyle(dropdownMenu);
