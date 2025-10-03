@@ -275,12 +275,16 @@ async function translateBatch(texts, targetLang) {
 // Function to escape SQL strings
 function escapeSQLString(str) {
   if (str === null || str === undefined) return 'NULL';
-  return "'" + str.replace(/'/g, "''").replace(/\\/g, '\\\\') + "'";
+  // For PostgreSQL, only escape single quotes by doubling them
+  // Don't escape backslashes as they're part of the JSON
+  return "'" + str.replace(/'/g, "''") + "'";
 }
 
 // Function to generate SQL UPDATE statement
 function generateUpdateSQL(table, id, translations) {
+  // Use JSON.stringify to properly escape JSON content
   const jsonb = JSON.stringify(translations);
+  // Only escape single quotes for SQL
   const escapedJsonb = escapeSQLString(jsonb);
   return `UPDATE ${table} SET translations = ${escapedJsonb}::jsonb WHERE id = '${id}';`;
 }
