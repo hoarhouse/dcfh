@@ -239,15 +239,43 @@ function populateDCFNavigation() {
             
             li.appendChild(dropdownMenu);
             
-            // Keyboard accessibility - toggle visibility class instead of display
+            // Improved hover handling with delay
+            let hoverTimeout;
+            
+            li.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                dropdownMenu.style.display = 'block';
+            });
+            
+            li.addEventListener('mouseleave', (e) => {
+                // Small delay to allow cursor to reach submenu
+                hoverTimeout = setTimeout(() => {
+                    // Check if mouse is still within the dropdown area
+                    if (!li.contains(e.relatedTarget)) {
+                        dropdownMenu.style.display = 'none';
+                    }
+                }, 50);
+            });
+            
+            // Keep menu open when hovering over it
+            dropdownMenu.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+                dropdownMenu.style.display = 'block';
+            });
+            
+            dropdownMenu.addEventListener('mouseleave', () => {
+                dropdownMenu.style.display = 'none';
+            });
+            
+            // Keyboard accessibility
             toggle.addEventListener('focus', () => {
-                dropdownMenu.classList.add('show');
+                dropdownMenu.style.display = 'block';
             });
             toggle.addEventListener('blur', (e) => {
                 // Check if focus moved to dropdown item
                 setTimeout(() => {
                     if (!li.contains(document.activeElement)) {
-                        dropdownMenu.classList.remove('show');
+                        dropdownMenu.style.display = 'none';
                     }
                 }, 100);
             });
