@@ -201,22 +201,7 @@ function populateDCFNavigation() {
                 if (subItem.id) {
                     link.setAttribute('data-i18n', subItem.id);
                 }
-                link.style.cssText = `
-                    display: block;
-                    padding: 0.75rem 1.25rem;
-                    color: #333;
-                    text-decoration: none;
-                    transition: background 0.2s ease;
-                    white-space: nowrap;
-                `;
-                
-                // Add hover effect
-                link.addEventListener('mouseenter', () => {
-                    link.style.background = '#f8f9fa';
-                });
-                link.addEventListener('mouseleave', () => {
-                    link.style.background = 'transparent';
-                });
+                // CSS handles all styling now
                 
                 subLi.appendChild(link);
                 dropdownMenu.appendChild(subLi);
@@ -224,43 +209,15 @@ function populateDCFNavigation() {
             
             li.appendChild(dropdownMenu);
             
-            // Improved hover handling with delay
-            let hoverTimeout;
-            
-            li.addEventListener('mouseenter', () => {
-                clearTimeout(hoverTimeout);
-                dropdownMenu.style.display = 'block';
-            });
-            
-            li.addEventListener('mouseleave', (e) => {
-                // Small delay to allow cursor to reach submenu
-                hoverTimeout = setTimeout(() => {
-                    // Check if mouse is still within the dropdown area
-                    if (!li.contains(e.relatedTarget)) {
-                        dropdownMenu.style.display = 'none';
-                    }
-                }, 50);
-            });
-            
-            // Keep menu open when hovering over it
-            dropdownMenu.addEventListener('mouseenter', () => {
-                clearTimeout(hoverTimeout);
-                dropdownMenu.style.display = 'block';
-            });
-            
-            dropdownMenu.addEventListener('mouseleave', () => {
-                dropdownMenu.style.display = 'none';
-            });
-            
-            // Keyboard accessibility
+            // Keyboard accessibility - toggle visibility class instead of display
             toggle.addEventListener('focus', () => {
-                dropdownMenu.style.display = 'block';
+                dropdownMenu.classList.add('show');
             });
             toggle.addEventListener('blur', (e) => {
                 // Check if focus moved to dropdown item
                 setTimeout(() => {
                     if (!li.contains(document.activeElement)) {
-                        dropdownMenu.style.display = 'none';
+                        dropdownMenu.classList.remove('show');
                     }
                 }, 100);
             });
