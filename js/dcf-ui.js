@@ -556,8 +556,7 @@ function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         const translation = t(key);
-        // Make sure translation is a string, not an object
-        if (translation && translation !== key && typeof translation === 'string') {
+        if (translation && translation !== key) {
             // Check if element has child nodes (like dropdown arrow)
             if (element.childNodes.length > 1 || (element.childNodes.length === 1 && element.childNodes[0].nodeType !== Node.TEXT_NODE)) {
                 // Preserve child elements, only update first text node
