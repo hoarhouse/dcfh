@@ -946,7 +946,7 @@ function hideLaunchPageElements() {
 
 function generateLogo() {
     const isLaunch = isLaunchPage();
-    const isMobile = window.innerWidth < 768;
+    const isMobile = window.innerWidth < 1024;
     
     // Determine which text to show
     let logoText;
