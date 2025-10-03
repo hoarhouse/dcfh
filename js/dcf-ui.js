@@ -689,17 +689,18 @@ async function initializeTranslations() {
 // 2. USER INTERFACE MANAGEMENT
 // =============================================================================
 
-function updateUserInterface() {
+async function updateUserInterface() {
     console.log('🎨 Updating UI (logged out state)...');
     
     showLoggedOutState();
     populateLogo();  // Use new logo generation system
-    populateDCFNavigation();  // Use new dual navigation system
+    
+    // Initialize translations BEFORE navigation is built
+    await initializeTranslations();
+    
+    populateDCFNavigation();  // Use new dual navigation system - now translations are loaded
     handleResponsiveLogo();  // Enable responsive logo behavior
     initializeMobileMenu();  // Initialize mobile menu system
-    
-    // Initialize translations after navigation is built
-    initializeTranslations();
     
     initializeFooter();
     
