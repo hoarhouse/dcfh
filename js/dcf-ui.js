@@ -249,6 +249,20 @@ function populateDCFNavigation() {
                 clearTimeout(hoverTimeout);
                 dropdownMenu.style.display = 'block';
                 console.log('🔵 Set display to block, current:', dropdownMenu.style.display); // DEBUG LOG
+                
+                // DEBUG: Check computed styles
+                const computedStyle = window.getComputedStyle(dropdownMenu);
+                console.log('🔍 COMPUTED STYLES:', {
+                    display: computedStyle.display,
+                    opacity: computedStyle.opacity,
+                    visibility: computedStyle.visibility,
+                    position: computedStyle.position,
+                    top: computedStyle.top,
+                    left: computedStyle.left,
+                    zIndex: computedStyle.zIndex,
+                    width: computedStyle.width,
+                    height: computedStyle.height
+                });
             });
             
             li.addEventListener('mouseleave', (e) => {
