@@ -152,11 +152,13 @@ function populateDCFNavigation() {
     
     // Clear existing menu
     navMenu.innerHTML = '';
+    console.log('🔥 CLEARED NAV MENU, NOW ADDING ITEMS...');
     
     // Get base path for links
     const basePath = window.getCorrectBasePath();
     
     // Build menu from config
+    console.log('🔥 USER MENU HTML BEFORE:', document.querySelector('.user-menu')?.outerHTML);
     menuItems.forEach(item => {
         const li = document.createElement('li');
         
@@ -325,6 +327,7 @@ function populateDCFNavigation() {
     });
     
     console.log(`✅ ${menuType} navigation populated with ${menuItems.length} items`);
+    console.log('🔥 USER MENU HTML AFTER:', document.querySelector('.user-menu')?.outerHTML);
 }
 
 // Keep the old function for backward compatibility
