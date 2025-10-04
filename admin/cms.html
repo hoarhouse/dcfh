@@ -3948,8 +3948,23 @@
                 const statusEl = document.getElementById('heroStatusText');
                 
                 if (heroSetting.enabled && heroSetting.post_id) {
-                    statusEl.textContent = `Active - Post ID: ${heroSetting.post_id}`;
-                    statusEl.style.color = '#28a745';
+                    // Load the blog post details to show title and slug
+                    const { data: post, error: postError } = await supabase
+                        .from('blog_posts')
+                        .select('title, slug')
+                        .eq('id', heroSetting.post_id)
+                        .single();
+
+                    if (postError || !post) {
+                        statusEl.textContent = `Active but post not found (ID: ${heroSetting.post_id})`;
+                        statusEl.style.color = '#dc3545';
+                    } else {
+                        statusEl.textContent = `Active: "${post.title}" (slug: ${post.slug})`;
+                        statusEl.style.color = '#28a745';
+                        
+                        // Auto-fill the slug input field
+                        document.getElementById('heroPostSlug').value = post.slug;
+                    }
                 } else {
                     statusEl.textContent = 'No featured hero post set (using default static content)';
                     statusEl.style.color = '#6c757d';
