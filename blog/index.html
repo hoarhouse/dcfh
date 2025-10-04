@@ -638,11 +638,25 @@
                 .toUpperCase()
                 .substring(0, 3);
 
-            // Format creation date
-            const createdDate = new Date(blog.created_at).toLocaleDateString('en-US', {
+            // Get current language for date formatting
+            const currentLang = localStorage.getItem('dcf_preferred_language') || 'en';
+            const langLocaleMap = {
+                'en': 'en-US',
+                'es': 'es-ES', 
+                'it': 'it-IT',
+                'hu': 'hu-HU'
+            };
+
+            // Format creation date in current language
+            const createdDate = new Date(blog.created_at).toLocaleDateString(langLocaleMap[currentLang], {
                 year: 'numeric',
                 month: 'short'
             });
+
+            // Get translated text using the global translation function
+            const defaultDesc = window.t ? window.t('blog_default_description') : 'Explore our latest insights and perspectives.';
+            const createdText = window.t ? window.t('blog_created') : 'Created';
+            const postsText = window.t ? window.t('blog_posts') : 'posts';
 
             card.innerHTML = `
                 <div class="blog-image">
@@ -651,12 +665,12 @@
                 <div class="blog-content">
                     <h2 class="blog-title">${escapeHtml(blog.name)}</h2>
                     <p class="blog-description">
-                        ${escapeHtml(blog.description || 'Explore our latest insights and perspectives.')}
+                        ${escapeHtml(blog.description || defaultDesc)}
                     </p>
                     <div class="blog-meta">
-                        <span>Created ${createdDate}</span>
+                        <span>${createdText} ${createdDate}</span>
                         <span class="blog-posts-count">
-                            ${blog.post_count || 0} posts
+                            ${blog.post_count || 0} ${postsText}
                         </span>
                     </div>
                 </div>
