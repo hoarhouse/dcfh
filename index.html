@@ -5293,6 +5293,7 @@
 
     // Dynamic Hero Content Loading
     async function loadDynamicHeroContent() {
+        console.log('🎯 [INDEX] Loading dynamic hero content...');
         try {
             // Check if we have a featured hero post
             const { data: setting, error: settingError } = await supabase
@@ -5301,16 +5302,24 @@
                 .eq('setting_key', 'featured_hero_post')
                 .single();
 
-            if (settingError || !setting?.setting_value?.enabled || !setting?.setting_value?.post_id) {
-                console.log('No featured hero post set, using default content');
+            // Parse JSON if needed (same as CMS)
+            let heroSetting = setting?.setting_value;
+            if (typeof heroSetting === 'string') {
+                heroSetting = JSON.parse(heroSetting);
+            }
+            
+            if (settingError || !heroSetting?.enabled || !heroSetting?.post_id) {
+                console.log('🎯 [INDEX] No featured hero post set, using default content');
                 return; // Keep current static content
             }
+            
+            console.log('🎯 [INDEX] Found featured hero post:', heroSetting.post_id);
 
             // Load the featured blog post
             const { data: post, error: postError } = await supabase
                 .from('blog_posts')
                 .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
-                .eq('id', setting.setting_value.post_id)
+                .eq('id', heroSetting.post_id)
                 .eq('status', 'published')
                 .single();
 
