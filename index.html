@@ -5402,7 +5402,7 @@
             // Load the featured blog post
             const { data: post, error: postError } = await supabaseClient
                 .from('blog_posts')
-                .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
+                .select('id, title, slug, excerpt, hero_image_url, featured_image_url, blog_id, blogs(slug), translations')
                 .eq('id', heroSetting.post_id)
                 .eq('status', 'published')
                 .single();
@@ -5446,9 +5446,13 @@
             }
 
             // Update "Read Full Story" button to link to the featured post
-            if (readStoryBtn && post.id) {
-                readStoryBtn.href = `blog/post.html?id=${post.id}`;
+            if (readStoryBtn && post.slug && post.blogs?.slug) {
+                readStoryBtn.href = `blog/post.html?blog=${post.blogs.slug}&post=${post.slug}`;
                 console.log('🎯 [INDEX] Updated Read Full Story link to:', readStoryBtn.href);
+            } else if (readStoryBtn && post.id) {
+                // Fallback to ID-based URL if slugs aren't available
+                readStoryBtn.href = `blog/post.html?id=${post.id}`;
+                console.log('🎯 [INDEX] Updated Read Full Story link (fallback) to:', readStoryBtn.href);
             }
 
             // Update background image if available
