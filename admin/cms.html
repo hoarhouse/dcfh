@@ -3936,20 +3936,37 @@
         // Load current hero status when page loads
         async function loadCurrentHeroStatus() {
             try {
-                const { data, error } = await supabase
+                console.log('🎯 Loading hero status - checking supabase availability...');
+                
+                // Get the Supabase client
+                const supabaseClient = window.supabase || window.dcfSupabase;
+                if (!supabaseClient) {
+                    console.error('❌ Supabase client not available');
+                    document.getElementById('heroStatusText').textContent = 'Error: Supabase not available';
+                    return;
+                }
+                
+                console.log('✅ Supabase client found, querying database...');
+                const { data, error } = await supabaseClient
                     .from('site_settings')
                     .select('setting_value')
                     .eq('setting_key', 'featured_hero_post')
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Database error:', error);
+                    throw error;
+                }
 
+                console.log('✅ Raw database response:', data);
                 const heroSetting = data.setting_value;
+                console.log('✅ Hero setting parsed:', heroSetting);
                 const statusEl = document.getElementById('heroStatusText');
                 
                 if (heroSetting.enabled && heroSetting.post_id) {
+                    console.log('✅ Found enabled hero setting with post_id:', heroSetting.post_id);
                     // Load the blog post details to show title and slug
-                    const { data: post, error: postError } = await supabase
+                    const { data: post, error: postError } = await supabaseClient
                         .from('blog_posts')
                         .select('title, slug')
                         .eq('id', heroSetting.post_id)
