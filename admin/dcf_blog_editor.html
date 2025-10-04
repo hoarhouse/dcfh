@@ -2101,12 +2101,23 @@
                             <small class="form-hint">This appears at the top of your blog and in listings</small>
                         </div>
 
-                        <!-- Card Image URL -->
+                        <!-- Card Image Upload -->
                         <div class="form-group">
                             <label class="form-label">Blog Card Image (Optional)</label>
-                            <input type="url" id="blogCardImage" class="form-input" 
-                                   placeholder="https://example.com/blog-thumbnail.jpg">
-                            <small class="form-hint">Image displayed on the blog directory page. If not provided, blog initials will be shown instead.</small>
+                            <p class="form-help-text">Thumbnail image that appears on the blog directory page</p>
+                            <div class="image-upload-container">
+                                <div class="hero-image-preview" id="blogCardPreview" onclick="document.getElementById('blogCardInput').click()" style="height: 150px;">
+                                    <span class="placeholder-text">No card image - click to upload</span>
+                                </div>
+                                <input type="file" id="blogCardInput" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('blogCardInput').click()">
+                                    📷 Upload Card Image
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="removeCardBtn" style="display: none;" onclick="removeBlogCardImage()">
+                                    ❌ Remove Image
+                                </button>
+                            </div>
+                            <small class="form-text">Recommended: 400x300px • JPG or PNG • Max 2MB</small>
                         </div>
 
                         <!-- Target Audience -->
@@ -2299,6 +2310,8 @@
         let currentBlogData = null;
         let heroImageFile = null;
         let existingHeroImageUrl = null;
+        let cardImageFile = null;
+        let existingCardImageUrl = null;
 
         // New UI Functions
         function selectTemplate(templateId) {
@@ -2723,7 +2736,6 @@
         function preserveFormData() {
             preservedData = {
                 description: document.getElementById('blogDescription').value,
-                cardImage: document.getElementById('blogCardImage').value,
                 audience: document.getElementById('blogAudience').value
             };
         }
@@ -2731,7 +2743,6 @@
         function restoreFormData(templateId) {
             // Restore common fields
             document.getElementById('blogDescription').value = preservedData.description || '';
-            document.getElementById('blogCardImage').value = preservedData.cardImage || '';
             document.getElementById('blogAudience').value = preservedData.audience || '';
         }
         
@@ -2753,13 +2764,18 @@
                 document.getElementById('blogTitle').value = blog.name || '';
                 document.getElementById('blogSlug').value = blog.slug || '';
                 document.getElementById('blogDescription').value = blog.description || '';
-                document.getElementById('blogCardImage').value = blog.card_image_url || '';
                 document.getElementById('blogAudience').value = blog.target_audience || '';
                 
                 // Load hero image if exists
                 if (blog.hero_image_url) {
                     existingHeroImageUrl = blog.hero_image_url;
                     displayHeroImagePreview(blog.hero_image_url);
+                }
+                
+                // Load card image if exists
+                if (blog.card_image_url) {
+                    existingCardImageUrl = blog.card_image_url;
+                    displayCardImagePreview(blog.card_image_url);
                 }
                 
                 // Load status
@@ -2872,7 +2888,6 @@
             
             const updateData = {
                 description: document.getElementById('blogDescription').value,
-                card_image_url: document.getElementById('blogCardImage').value || null,
                 target_audience: document.getElementById('blogAudience').value,
                 template_id: templateId, // Using correct column name
                 theme_config: themeConfig,
