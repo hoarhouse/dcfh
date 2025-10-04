@@ -3929,6 +3929,162 @@
                 resSelectedTemplateInput.value = defaultResTemplate.dataset.template;
             }
         });
+
+        // Featured Hero Post Management Functions
+        let currentHeroPost = null;
+
+        // Load current hero status when page loads
+        async function loadCurrentHeroStatus() {
+            try {
+                const { data, error } = await supabase
+                    .from('site_settings')
+                    .select('setting_value')
+                    .eq('setting_key', 'featured_hero_post')
+                    .single();
+
+                if (error) throw error;
+
+                const heroSetting = data.setting_value;
+                const statusEl = document.getElementById('heroStatusText');
+                
+                if (heroSetting.enabled && heroSetting.post_id) {
+                    statusEl.textContent = `Active - Post ID: ${heroSetting.post_id}`;
+                    statusEl.style.color = '#28a745';
+                } else {
+                    statusEl.textContent = 'No featured hero post set (using default static content)';
+                    statusEl.style.color = '#6c757d';
+                }
+            } catch (error) {
+                console.error('Error loading hero status:', error);
+                document.getElementById('heroStatusText').textContent = 'Error loading status';
+            }
+        }
+
+        // Load blog post preview
+        async function loadHeroPreview() {
+            const slug = document.getElementById('heroPostSlug').value.trim();
+            const previewContainer = document.getElementById('heroPreviewContainer');
+            const previewDiv = document.getElementById('heroPreview');
+
+            if (!slug) {
+                alert('Please enter a blog post slug');
+                return;
+            }
+
+            previewDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading preview...</div>';
+            previewContainer.style.display = 'block';
+
+            try {
+                const { data: post, error } = await supabase
+                    .from('blog_posts')
+                    .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
+                    .eq('slug', slug)
+                    .eq('status', 'published')
+                    .single();
+
+                if (error) {
+                    previewDiv.innerHTML = `<div style="color: #dc3545; text-align: center; padding: 2rem;">❌ Blog post not found or not published</div>`;
+                    return;
+                }
+
+                currentHeroPost = post;
+
+                // Create preview
+                const imageUrl = post.hero_image_url || post.featured_image_url || '';
+                const imageHtml = imageUrl ? 
+                    `<img src="${imageUrl}" alt="Hero Image" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">` :
+                    `<div style="width: 100%; height: 200px; background: #e9ecef; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: #6c757d;">No Hero Image Available</div>`;
+
+                previewDiv.innerHTML = `
+                    <div style="border: 2px solid #007bff; border-radius: 12px; overflow: hidden;">
+                        ${imageHtml}
+                        <div style="padding: 1rem;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; color: #333;">${post.title}</h3>
+                            <p style="margin: 0; color: #666; line-height: 1.5;">${post.excerpt || 'No excerpt available'}</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: #d4edda; border-radius: 8px; color: #155724;">
+                        ✅ Preview loaded successfully! This is how the hero section will look on the homepage.
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading preview:', error);
+                previewDiv.innerHTML = `<div style="color: #dc3545; text-align: center; padding: 2rem;">❌ Error loading blog post</div>`;
+            }
+        }
+
+        // Set featured hero post
+        async function setFeaturedHeroPost() {
+            if (!currentHeroPost) {
+                alert('Please load a preview first');
+                return;
+            }
+
+            const confirmed = confirm(`Set "${currentHeroPost.title}" as the featured hero post? This will replace the current homepage hero content.`);
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabase
+                    .from('site_settings')
+                    .update({
+                        setting_value: {
+                            post_id: currentHeroPost.id,
+                            enabled: true
+                        },
+                        updated_by: 'admin'
+                    })
+                    .eq('setting_key', 'featured_hero_post');
+
+                if (error) throw error;
+
+                alert('✅ Featured hero post set successfully!');
+                loadCurrentHeroStatus();
+
+            } catch (error) {
+                console.error('Error setting featured hero:', error);
+                alert('❌ Error setting featured hero post');
+            }
+        }
+
+        // Clear featured hero post
+        async function clearFeaturedHeroPost() {
+            const confirmed = confirm('Clear the featured hero post? This will restore the default static hero content.');
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabase
+                    .from('site_settings')
+                    .update({
+                        setting_value: {
+                            post_id: null,
+                            enabled: false
+                        },
+                        updated_by: 'admin'
+                    })
+                    .eq('setting_key', 'featured_hero_post');
+
+                if (error) throw error;
+
+                alert('✅ Featured hero post cleared! Default static content restored.');
+                loadCurrentHeroStatus();
+                
+                // Clear preview
+                document.getElementById('heroPreviewContainer').style.display = 'none';
+                document.getElementById('heroPostSlug').value = '';
+                currentHeroPost = null;
+
+            } catch (error) {
+                console.error('Error clearing featured hero:', error);
+                alert('❌ Error clearing featured hero post');
+            }
+        }
+
+        // Load status when page loads
+        window.addEventListener('dcfReady', function() {
+            loadCurrentHeroStatus();
+        });
+
     </script>
     <script>
 // dcf-init.js handles everything automatically
