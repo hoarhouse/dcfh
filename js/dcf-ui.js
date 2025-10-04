@@ -633,6 +633,11 @@ function changeLanguage(lang) {
  * Initialize language switcher dropdown
  */
 function initializeLanguageSwitcher() {
+    // Add CSS for language switcher if not already added
+    if (!document.querySelector('#language-switcher-css')) {
+        addLanguageSwitcherCSS();
+    }
+    
     const switchers = document.querySelectorAll('.language-switcher');
     const languages = {
         'en': 'EN',
@@ -683,6 +688,114 @@ function initializeLanguageSwitcher() {
     
     // Close dropdown when clicking outside
     document.addEventListener('click', closeAllLanguageDropdowns);
+}
+
+function addLanguageSwitcherCSS() {
+    const style = document.createElement('style');
+    style.id = 'language-switcher-css';
+    style.textContent = `
+        .language-switcher {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .lang-dropdown-btn {
+            background: transparent;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            min-width: 60px;
+            justify-content: center;
+        }
+        
+        .lang-dropdown-btn:hover {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+        
+        .lang-dropdown-btn.active {
+            border-color: #333;
+            background: #f8f9fa;
+        }
+        
+        .dropdown-arrow {
+            font-size: 0.7em;
+            transition: transform 0.2s ease;
+        }
+        
+        .lang-dropdown-btn.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .lang-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 100px;
+            z-index: 1000;
+            margin-top: 4px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+        
+        .lang-dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .lang-option {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .lang-option:hover {
+            background: #f8f9fa;
+        }
+        
+        .lang-option:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .lang-option:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .language-switcher {
+                margin-left: 1rem;
+            }
+            
+            .lang-dropdown-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+                min-width: 50px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 /**
@@ -875,18 +988,18 @@ function showLoggedOutState() {
     const onLaunchPage = isLaunchPage();
     
     if (onLaunchPage) {
-        // Launch pages: No login or join buttons but preserve language buttons
-        const languageButtons = userMenu.querySelector('.language-buttons');
-        
+        // Launch pages: No login or join buttons but ensure language switcher is present
         userMenu.innerHTML = '';
         
-        // Re-add language buttons if they existed
-        if (languageButtons) {
-            userMenu.appendChild(languageButtons);
-        }
+        // Create language switcher container
+        const languageSwitcher = document.createElement('div');
+        languageSwitcher.className = 'language-switcher';
+        userMenu.appendChild(languageSwitcher);
         
-        // DO NOT add user dropdown on launch pages
-        console.log('🚀 Launch page: Hidden login/join buttons and user avatar, preserved language buttons');
+        // Initialize the language switcher
+        initializeLanguageSwitcher();
+        
+        console.log('🚀 Launch page: Hidden login/join buttons, added language switcher');
     } else {
         // Member pages: Show both login and join buttons
         userMenu.innerHTML = `
