@@ -5295,8 +5295,14 @@
     async function loadDynamicHeroContent() {
         console.log('🎯 [INDEX] Loading dynamic hero content...');
         try {
+            // Check if Supabase is available
+            if (!window.supabase) {
+                console.log('🎯 [INDEX] Supabase not yet available, skipping dynamic content');
+                return;
+            }
+            
             // Check if we have a featured hero post
-            const { data: setting, error: settingError } = await supabase
+            const { data: setting, error: settingError } = await window.supabase
                 .from('site_settings')
                 .select('setting_value')
                 .eq('setting_key', 'featured_hero_post')
@@ -5316,7 +5322,7 @@
             console.log('🎯 [INDEX] Found featured hero post:', heroSetting.post_id);
 
             // Load the featured blog post
-            const { data: post, error: postError } = await supabase
+            const { data: post, error: postError } = await window.supabase
                 .from('blog_posts')
                 .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
                 .eq('id', heroSetting.post_id)
@@ -5369,12 +5375,20 @@
 
     // Load dynamic content when page is ready
     window.addEventListener('dcfReady', function() {
-        loadDynamicHeroContent();
+        console.log('🎯 [INDEX] dcfReady event triggered');
+        setTimeout(loadDynamicHeroContent, 1000); // Wait 1 second for Supabase
     });
 
     // Also load on language change
     window.addEventListener('dcfLanguageChanged', function() {
+        console.log('🎯 [INDEX] Language changed');
         loadDynamicHeroContent();
+    });
+
+    // Fallback: try loading after page load
+    window.addEventListener('load', function() {
+        console.log('🎯 [INDEX] Window load event');
+        setTimeout(loadDynamicHeroContent, 2000); // Wait 2 seconds
     });
 
     </script>
