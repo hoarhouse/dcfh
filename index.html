@@ -424,11 +424,27 @@
             font-size: 1.2rem;
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
+            z-index: 2;
         }
 
         .hero-loading.hidden {
             opacity: 0;
             pointer-events: none;
+        }
+
+        /* Ensure consistent hero height to prevent layout shift */
+        .hero {
+            min-height: 89.6vh;
+            position: relative;
+        }
+
+        /* Prevent content flash on initial load */
+        .hero-text:not(.loaded) {
+            visibility: hidden;
+        }
+
+        .hero-text.loaded {
+            visibility: visible;
         }
         
         /* Remove max-width constraint for title */
@@ -3393,7 +3409,7 @@
     <!-- HERO SECTION -->
     <section class="hero">
         <div class="hero-loading" id="heroLoading">
-            <div>Loading...</div>
+            <div style="opacity: 0.8; font-weight: 300;">●</div>
         </div>
         <div class="hero-text" id="heroText">
             <h1 class="hero-title" data-i18n="hero_title">DCF Prepares to Launch Ethical AI Portal</h1>
@@ -5457,22 +5473,52 @@
         }
     }
 
-    // Load dynamic content when page is ready
-    window.addEventListener('dcfReady', function() {
-        console.log('🎯 [INDEX] dcfReady event triggered');
-        setTimeout(loadDynamicHeroContent, 1000); // Wait 1 second for Supabase
-    });
+    // Load dynamic content as early as possible
+    function initializeHeroContent() {
+        console.log('🎯 [INDEX] Initializing hero content...');
+        
+        // Try to load immediately if Supabase is available
+        if (typeof supabase !== 'undefined' || window.dcfSupabase) {
+            loadDynamicHeroContent();
+        } else {
+            // If no Supabase yet, wait a short time and try again
+            setTimeout(() => {
+                if (typeof supabase !== 'undefined' || window.dcfSupabase) {
+                    loadDynamicHeroContent();
+                } else {
+                    // Still no Supabase, show static content
+                    console.log('🎯 [INDEX] No Supabase available, showing static content');
+                    const heroLoading = document.getElementById('heroLoading');
+                    const heroText = document.getElementById('heroText');
+                    if (heroLoading) heroLoading.classList.add('hidden');
+                    if (heroText) heroText.classList.add('loaded');
+                }
+            }, 500); // Much shorter wait
+        }
+    }
 
+    // Initialize immediately when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeHeroContent);
+    } else {
+        // DOM already ready
+        initializeHeroContent();
+    }
+    
     // Also load on language change
     window.addEventListener('dcfLanguageChanged', function() {
         console.log('🎯 [INDEX] Language changed');
         loadDynamicHeroContent();
     });
-
-    // Fallback: try loading after page load
-    window.addEventListener('load', function() {
-        console.log('🎯 [INDEX] Window load event');
-        setTimeout(loadDynamicHeroContent, 2000); // Wait 2 seconds
+    
+    // Backup: ensure content shows after dcfReady
+    window.addEventListener('dcfReady', function() {
+        console.log('🎯 [INDEX] dcfReady event triggered');
+        // Only reload if content isn't showing yet
+        const heroText = document.getElementById('heroText');
+        if (heroText && !heroText.classList.contains('loaded')) {
+            loadDynamicHeroContent();
+        }
     });
 
     </script>
