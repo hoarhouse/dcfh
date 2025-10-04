@@ -5290,6 +5290,84 @@
             }
         });
     });
+
+    // Dynamic Hero Content Loading
+    async function loadDynamicHeroContent() {
+        try {
+            // Check if we have a featured hero post
+            const { data: setting, error: settingError } = await supabase
+                .from('site_settings')
+                .select('setting_value')
+                .eq('setting_key', 'featured_hero_post')
+                .single();
+
+            if (settingError || !setting?.setting_value?.enabled || !setting?.setting_value?.post_id) {
+                console.log('No featured hero post set, using default content');
+                return; // Keep current static content
+            }
+
+            // Load the featured blog post
+            const { data: post, error: postError } = await supabase
+                .from('blog_posts')
+                .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
+                .eq('id', setting.setting_value.post_id)
+                .eq('status', 'published')
+                .single();
+
+            if (postError || !post) {
+                console.error('Featured hero post not found or not published:', postError);
+                return; // Keep static content
+            }
+
+            // Apply translations if available
+            const currentLang = localStorage.getItem('dcf_preferred_language') || 'en';
+            let heroTitle = post.title;
+            let heroDescription = post.excerpt;
+
+            if (currentLang !== 'en' && post.translations && post.translations[currentLang]) {
+                heroTitle = post.translations[currentLang].title || post.title;
+                heroDescription = post.translations[currentLang].excerpt || post.excerpt;
+            }
+
+            // Update hero content
+            const heroTitleEl = document.querySelector('.hero-title');
+            const heroSummaryEl = document.querySelector('.hero-summary');
+            const heroSectionEl = document.querySelector('.hero');
+
+            if (heroTitleEl) {
+                heroTitleEl.textContent = heroTitle;
+                heroTitleEl.removeAttribute('data-i18n'); // Remove static translation
+            }
+
+            if (heroSummaryEl) {
+                heroSummaryEl.textContent = heroDescription || 'No excerpt available';
+                heroSummaryEl.removeAttribute('data-i18n'); // Remove static translation
+            }
+
+            // Update background image if available
+            if (heroSectionEl && (post.hero_image_url || post.featured_image_url)) {
+                const imageUrl = post.hero_image_url || post.featured_image_url;
+                heroSectionEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${imageUrl}')`;
+            }
+
+            console.log('Dynamic hero content loaded successfully:', heroTitle);
+
+        } catch (error) {
+            console.error('Error loading dynamic hero content:', error);
+            // Keep static content on error
+        }
+    }
+
+    // Load dynamic content when page is ready
+    window.addEventListener('dcfReady', function() {
+        loadDynamicHeroContent();
+    });
+
+    // Also load on language change
+    window.addEventListener('dcfLanguageChanged', function() {
+        loadDynamicHeroContent();
+    });
+
     </script>
 </body>
 </html>
