@@ -3115,12 +3115,127 @@
             
             hasUnsavedChanges = true;
         }
+
+        // Card Image Upload Functions
+        async function uploadBlogCardImage(file) {
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                throw new Error('Please select an image file');
+            }
+            
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('Image size should be less than 2MB');
+            }
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `card-image-${Date.now()}.${fileExt}`;
+            
+            try {
+                // First try uploading to media bucket
+                const { data, error } = await window.dcfSupabase.storage
+                    .from('media')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (error) {
+                    // If media bucket doesn't exist, try blog-images bucket as fallback
+                    const { data: blogData, error: blogError } = await window.dcfSupabase.storage
+                        .from('blog-images')
+                        .upload(`card-images/${fileName}`, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (blogError) {
+                        console.error('Upload error:', blogError);
+                        throw blogError;
+                    }
+                    
+                    // Get public URL from blog-images bucket
+                    const { data: urlData } = window.dcfSupabase.storage
+                        .from('blog-images')
+                        .getPublicUrl(`card-images/${fileName}`);
+                    
+                    return urlData.publicUrl;
+                }
+                
+                // Get public URL from media bucket
+                const { data: urlData } = window.dcfSupabase.storage
+                    .from('media')
+                    .getPublicUrl(fileName);
+                
+                return urlData.publicUrl;
+            } catch (error) {
+                console.error('Card image upload error:', error);
+                throw error;
+            }
+        }
+
+        function handleCardImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image size should be less than 2MB', 'error');
+                return;
+            }
+            
+            cardImageFile = file;
+            hasUnsavedChanges = true;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                displayCardImagePreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayCardImagePreview(imageUrl) {
+            const preview = document.getElementById('blogCardPreview');
+            preview.classList.add('has-image');
+            preview.innerHTML = `<img src="${imageUrl}" alt="Card Image Preview">`;
+            
+            // Show remove button
+            document.getElementById('removeCardBtn').style.display = 'inline-block';
+        }
+
+        function removeBlogCardImage() {
+            cardImageFile = null;
+            existingCardImageUrl = null; // Clear the existing image URL
+            const preview = document.getElementById('blogCardPreview');
+            preview.classList.remove('has-image');
+            preview.innerHTML = '<span class="placeholder-text">No card image - click to upload</span>';
+            
+            // Hide remove button
+            document.getElementById('removeCardBtn').style.display = 'none';
+            
+            // Clear file input
+            document.getElementById('blogCardInput').value = '';
+            
+            hasUnsavedChanges = true;
+        }
         
         // Attach file input listener after DOM loads
         window.addEventListener('DOMContentLoaded', function() {
             const heroInput = document.getElementById('blogHeroInput');
             if (heroInput) {
                 heroInput.addEventListener('change', handleHeroImageSelect);
+            }
+            
+            const cardInput = document.getElementById('blogCardInput');
+            if (cardInput) {
+                cardInput.addEventListener('change', handleCardImageSelect);
             }
             
             // Color input listeners
