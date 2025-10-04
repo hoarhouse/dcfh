@@ -5295,14 +5295,28 @@
     async function loadDynamicHeroContent() {
         console.log('🎯 [INDEX] Loading dynamic hero content...');
         try {
-            // Check if Supabase is available
-            if (typeof supabase === 'undefined') {
-                console.log('🎯 [INDEX] Supabase not yet available, skipping dynamic content');
+            // Get Supabase client (same pattern as CMS)
+            let supabaseClient;
+            
+            // Try multiple ways to get the client
+            if (window.dcfSupabase && typeof window.dcfSupabase.from === 'function') {
+                supabaseClient = window.dcfSupabase;
+                console.log('🎯 [INDEX] Using window.dcfSupabase');
+            } else if (typeof supabase !== 'undefined' && typeof supabase.from === 'function') {
+                supabaseClient = supabase;
+                console.log('🎯 [INDEX] Using global supabase');
+            } else {
+                console.log('🎯 [INDEX] No valid Supabase client found, skipping dynamic content');
+                console.log('🎯 [INDEX] Available:', {
+                    supabase: typeof supabase,
+                    windowSupabase: typeof window.supabase,
+                    dcfSupabase: typeof window.dcfSupabase
+                });
                 return;
             }
             
             // Check if we have a featured hero post
-            const { data: setting, error: settingError } = await supabase
+            const { data: setting, error: settingError } = await supabaseClient
                 .from('site_settings')
                 .select('setting_value')
                 .eq('setting_key', 'featured_hero_post')
@@ -5322,7 +5336,7 @@
             console.log('🎯 [INDEX] Found featured hero post:', heroSetting.post_id);
 
             // Load the featured blog post
-            const { data: post, error: postError } = await supabase
+            const { data: post, error: postError } = await supabaseClient
                 .from('blog_posts')
                 .select('id, title, excerpt, hero_image_url, featured_image_url, translations')
                 .eq('id', heroSetting.post_id)
