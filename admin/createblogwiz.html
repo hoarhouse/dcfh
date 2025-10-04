@@ -909,6 +909,9 @@
             document.getElementById('targetAudience').addEventListener('change', updatePreview);
             document.getElementById('initiative').addEventListener('change', updatePreview);
             document.getElementById('blogStatus').addEventListener('change', updatePreview);
+            
+            // Card image upload
+            document.getElementById('blogCardImageInput').addEventListener('change', handleCardImageSelect);
         }
 
         function updatePreview() {
@@ -1067,6 +1070,96 @@
                 .substring(0, 80);
             
             return await ensureUniqueBlogSlug(baseSlug);
+        }
+
+        async function uploadCardImage(file) {
+            if (!file) return null;
+            
+            // Validate file
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                throw new Error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+            }
+            
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                throw new Error('Image file must be less than 2MB');
+            }
+            
+            try {
+                const fileName = `card-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${file.name.split('.').pop()}`;
+                
+                // Upload to media bucket, fallback to blog-images
+                let { data, error } = await supabase.storage
+                    .from('media')
+                    .upload(fileName, file);
+                
+                if (error) {
+                    // Try blog-images bucket as fallback
+                    const uploadResult = await supabase.storage
+                        .from('blog-images')
+                        .upload(fileName, file);
+                    
+                    if (uploadResult.error) {
+                        throw uploadResult.error;
+                    }
+                    data = uploadResult.data;
+                }
+                
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                    .from(error ? 'blog-images' : 'media')
+                    .getPublicUrl(data.path);
+                
+                return urlData.publicUrl;
+            } catch (error) {
+                console.error('Upload error:', error);
+                throw new Error('Failed to upload image: ' + error.message);
+            }
+        }
+
+        function handleCardImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+                return;
+            }
+            
+            // Validate file size (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image file must be less than 2MB', 'error');
+                return;
+            }
+            
+            cardImageFile = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                displayCardImagePreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayCardImagePreview(imageUrl) {
+            const preview = document.getElementById('cardImagePreview');
+            const img = document.getElementById('cardImageImg');
+            const uploadText = document.querySelector('.image-upload-area .upload-text');
+            
+            img.src = imageUrl;
+            preview.style.display = 'block';
+            if (uploadText) uploadText.style.display = 'none';
+        }
+
+        function removeCardImage() {
+            cardImageFile = null;
+            document.getElementById('blogCardImageInput').value = '';
+            document.getElementById('cardImagePreview').style.display = 'none';
+            const uploadText = document.querySelector('.image-upload-area .upload-text');
+            if (uploadText) uploadText.style.display = 'block';
         }
 
         async function createBlog() {
