@@ -584,7 +584,7 @@
             const blogsGrid = document.getElementById('blogsGrid');
 
             try {
-                // Query active blogs with post counts
+                // Query active blogs with post counts and translations
                 const { data: blogs, error: queryError } = await supabase
                     .from('blogs')
                     .select(`
@@ -595,12 +595,24 @@
                         target_audience,
                         initiative,
                         post_count,
-                        created_at
+                        created_at,
+                        translations
                     `)
                     .eq('status', 'active')
                     .order('name');
 
                 if (queryError) throw queryError;
+
+                // Apply translations if available
+                const lang = localStorage.getItem('dcf_preferred_language') || 'en';
+                if (lang !== 'en' && blogs) {
+                    blogs.forEach(blog => {
+                        if (blog.translations && blog.translations[lang]) {
+                            blog.name = blog.translations[lang].name || blog.name;
+                            blog.description = blog.translations[lang].description || blog.description;
+                        }
+                    });
+                }
 
                 loading.style.display = 'none';
 
