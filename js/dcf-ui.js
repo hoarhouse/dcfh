@@ -355,12 +355,13 @@ function populateTopNavigationOld() {
         { href: basePath + 'people/index.html', text: 'People' },
         { 
             href: basePath + 'public/dcf_values.html', 
-            text: 'About',
+            text: 'Values',
+            id: 'values',
             dropdown: true,
             submenu: [
-                { href: basePath + 'public/dcf_values.html', text: 'Values' },
-                { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report' },
-                { href: basePath + 'public/dcf_contact.html', text: 'Contact' }
+                { href: basePath + 'public/dcf_values.html', text: 'Values', id: 'values' },
+                { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report', id: 'impact_report' },
+                { href: basePath + 'public/dcf_contact.html', text: 'Contact', id: 'contact' }
             ]
         },
         { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
