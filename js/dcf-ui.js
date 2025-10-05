@@ -52,12 +52,12 @@ const LAUNCH_MENU = [
         ]
     },
     { 
-        id: 'about',
-        text: 'About', 
-        href: 'public/dcf_about.html', 
+        id: 'values',
+        text: 'Values', 
+        href: 'public/dcf_values.html', 
         dropdown: true,
         items: [
-            { id: 'about_us', text: 'About Us', href: 'public/dcf_about.html' },
+            { id: 'values', text: 'Values', href: 'public/dcf_values.html' },
             { id: 'contact', text: 'Contact', href: 'public/dcf_contact.html' }
         ]
     },
@@ -79,7 +79,7 @@ const LAUNCH_PAGES = [
     'index.html',
     
     // Public pages
-    'public/dcf_about.html',
+    'public/dcf_values.html',
     'public/dcf_contact.html',
     'public/dcf_ai_resources.html',
     'public/dcf_ai_resource_view.html',
@@ -354,11 +354,11 @@ function populateTopNavigationOld() {
         { href: basePath + 'blog/index.html', text: 'Blog' },
         { href: basePath + 'people/index.html', text: 'People' },
         { 
-            href: basePath + 'public/dcf_about.html', 
+            href: basePath + 'public/dcf_values.html', 
             text: 'About',
             dropdown: true,
             submenu: [
-                { href: basePath + 'public/dcf_about.html', text: 'About DCF' },
+                { href: basePath + 'public/dcf_values.html', text: 'Values' },
                 { href: basePath + 'public/dcf_impact_report.html', text: 'Impact Report' },
                 { href: basePath + 'public/dcf_contact.html', text: 'Contact' }
             ]
@@ -1533,7 +1533,7 @@ const FOOTER_CONFIG = {
             type: 'links',
             items: [
                 { text: 'Home', id: 'home', href: 'index.html' },
-                { text: 'About', id: 'about', href: 'public/dcf_about.html' },
+                { text: 'Values', id: 'values', href: 'public/dcf_values.html' },
                 { text: 'Initiatives', id: 'initiatives', href: 'initiatives/index.html' },
                 { text: 'Blog', id: 'blog', href: 'blog/index.html' },
                 { text: 'Contact', id: 'contact', href: 'public/dcf_contact.html' }
