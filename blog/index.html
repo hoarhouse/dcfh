@@ -585,7 +585,7 @@
             const blogsGrid = document.getElementById('blogsGrid');
 
             try {
-                // Query active blogs with post counts and translations
+                // Query active blogs
                 const { data: blogs, error: queryError } = await supabase
                     .from('blogs')
                     .select(`
@@ -595,7 +595,6 @@
                         description,
                         target_audience,
                         initiative,
-                        post_count,
                         created_at,
                         card_image_url,
                         translations
@@ -604,6 +603,24 @@
                     .order('name');
 
                 if (queryError) throw queryError;
+
+                // Get actual post counts for each blog
+                if (blogs && blogs.length > 0) {
+                    for (const blog of blogs) {
+                        const { count, error: countError } = await supabase
+                            .from('blog_posts')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('blog_id', blog.id)
+                            .eq('status', 'published');
+                        
+                        if (!countError) {
+                            blog.post_count = count || 0;
+                        } else {
+                            console.warn(`Could not get post count for blog ${blog.slug}:`, countError);
+                            blog.post_count = 0;
+                        }
+                    }
+                }
 
                 // Apply translations if available
                 const lang = localStorage.getItem('dcf_preferred_language') || 'en';
