@@ -43,16 +43,22 @@
                 </div>
             </div>`,
         detailView: `
-            <article class="article-detail">
-                <header class="article-header">
-                    <h1 class="article-title">{{title}}</h1>
-                    <div class="article-meta">
-                        <span>By {{author}}</span>
-                        <span>{{date}}</span>
-                        <span>{{read_time}} min read</span>
+            <article class="article-detail" style="max-width: 1200px; margin: 0 auto; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <header class="article-header-compact" style="background: #dc3545; padding: 1.5rem 3rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+                    <div>
+                        <h1 class="article-title" style="font-family: -apple-system, sans-serif; font-size: 1.75rem; font-weight: 700; color: white; margin: 0; letter-spacing: -0.5px;">
+                            {{title}}
+                        </h1>
+                        <div class="article-meta" style="font-family: -apple-system, sans-serif; font-size: 0.9rem; color: rgba(255,255,255,0.9); margin: 0.25rem 0 0 0;">
+                            <span>By {{author}}</span>
+                            <span style="margin: 0 0.5rem;">•</span>
+                            <span>{{date}}</span>
+                            <span style="margin: 0 0.5rem;">•</span>
+                            <span>{{read_time}} min read</span>
+                        </div>
                     </div>
                 </header>
-                <div class="article-content">
+                <div class="article-content" style="padding: 3rem; font-size: 1rem; line-height: 1.7; color: #333;">
                     {{content}}
                 </div>
             </article>`
