@@ -90,6 +90,9 @@ const LAUNCH_PAGES = [
     // ALL Blog pages - matches any file in blog folder
     'blog/',
     
+    // Vatican resource pages
+    'vatican-resources/',
+    
     // Donation page
     'members/dcf_donate.html'
 ];
