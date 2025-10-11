@@ -1645,11 +1645,357 @@
             });
         }
 
+
+        function generateStaticHTML(postData, blogData) {
+            const blogSlug = blogData.slug;
+            const postSlug = postData.slug;
+            const postId = postData.id;
+            
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${postData.title} - ${blogData.name} - DCF Hungary</title>
+    <meta name="description" content="${postData.excerpt || ''}">
+    <meta property="og:title" content="${postData.title}">
+    <meta property="og:description" content="${postData.excerpt || ''}">
+    <meta property="og:image" content="${postData.featured_image_url || ''}">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="../../css/blog-post.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../js/dcf-core.js"></script>
+    <script src="../../js/dcf-ui.js"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container" id="dcf-nav">
+            <a href="../../index.html" class="logo">
+                <div class="logo-icon"></div>
+                <span class="logo-text">Domus Communis Foundation Hungary</span>
+            </a>
+            <ul class="nav-menu" id="navMenu"></ul>
+            <div class="user-menu" id="userMenu"></div>
+        </nav>
+    </header>
+
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="../../index.html">Home</a>
+            <span>›</span>
+            <a href="../index.html">Blog</a>
+            <span>›</span>
+            <a href="../category.html?blog=${blogSlug}">${blogData.name}</a>
+            <span>›</span>
+            <span>${postData.title}</span>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        <article>
+            <div class="post-header">
+                ${postData.featured_image_url ? `
+                <div class="post-featured-media">
+                    <img src="${postData.featured_image_url}" alt="${postData.title}">
+                </div>` : ''}
+                <div class="post-header-content">
+                    <div class="post-meta">
+                        <span>${new Date(postData.published_at || postData.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                        <span>${blogData.name}</span>
+                        <span id="viewCount">${postData.view_count || 0} views</span>
+                    </div>
+                    <h1 class="post-title">${postData.title}</h1>
+                    ${postData.excerpt ? `<div class="post-excerpt">${postData.excerpt}</div>` : ''}
+                </div>
+            </div>
+
+            <div class="post-content">
+                <div class="post-body">
+                    ${postData.content}
+                </div>
+            </div>
+
+            <div class="post-footer">
+                <div class="post-stats">
+                    <span>Views: <strong id="footerViewCount">${postData.view_count || 0}</strong></span>
+                    <span>Published: <strong>${new Date(postData.published_at || postData.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</strong></span>
+                </div>
+                <a href="../category.html?blog=${blogSlug}" class="back-to-blog">← Back to Blog</a>
+            </div>
+        </article>
+    </main>
+
+    <script>
+        const postId = '${postId}';
+        
+        async function trackView() {
+            if (!window.dcfSupabase) return;
+            try {
+                const { data: currentPost } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('view_count')
+                    .eq('id', postId)
+                    .single();
+                
+                const newViewCount = (currentPost?.view_count || 0) + 1;
+                
+                await window.dcfSupabase
+                    .from('blog_posts')
+                    .update({ view_count: newViewCount })
+                    .eq('id', postId);
+                
+                console.log('✅ View tracked');
+            } catch (err) {
+                console.warn('View tracking error:', err);
+            }
+        }
+
+        async function loadStats() {
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+            
+            if (!window.dcfSupabase) return;
+            
+            try {
+                const { data } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('view_count')
+                    .eq('id', postId)
+                    .single();
+                
+                if (data) {
+                    document.getElementById('viewCount').textContent = \`\${data.view_count || 0} views\`;
+                    document.getElementById('footerViewCount').textContent = data.view_count || 0;
+                }
+            } catch (err) {
+                console.warn('Stats error:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            trackView();
+            setTimeout(loadStats, 1000);
+        });
+    </script>
+</body>
+</html>`;
+
+            // Create download link
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = \`\${postSlug}.html\`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Show instructions
+            const instructions = document.createElement('div');
+            instructions.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 10000; max-width: 500px;';
+            instructions.innerHTML = \`
+                <h3 style="margin-bottom: 1rem;">HTML File Downloaded!</h3>
+                <p style="margin-bottom: 1rem;">Next steps:</p>
+                <ol style="margin-left: 1.5rem; line-height: 1.8;">
+                    <li>Find the file <code>\${postSlug}.html</code> in your Downloads</li>
+                    <li>Move it to: <code>~/Desktop/dcfh/blog/\${blogSlug}/</code></li>
+                    <li>Run these commands:</li>
+                </ol>
+                <pre style="background: #f5f5f5; padding: 1rem; border-radius: 6px; margin: 1rem 0; overflow-x: auto;">cd ~/Desktop/dcfh
+git add blog/\${blogSlug}/\${postSlug}.html
+git commit -m "Add new post: \${postData.title}"
+git push origin main</pre>
+                <button onclick="this.parentElement.remove()" style="background: #333; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; width: 100%;">Got it!</button>
+            \`;
+            document.body.appendChild(instructions);
+        }
+
+
+        function generateStaticHTML(postData, blogData) {
+            const blogSlug = blogData.slug;
+            const postSlug = postData.slug;
+            const postId = postData.id;
+            
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${postData.title} - ${blogData.name} - DCF Hungary</title>
+    <meta name="description" content="${postData.excerpt || ''}">
+    <meta property="og:title" content="${postData.title}">
+    <meta property="og:description" content="${postData.excerpt || ''}">
+    <meta property="og:image" content="${postData.featured_image_url || ''}">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="../../css/blog-post.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../js/dcf-core.js"></script>
+    <script src="../../js/dcf-ui.js"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container" id="dcf-nav">
+            <a href="../../index.html" class="logo">
+                <div class="logo-icon"></div>
+                <span class="logo-text">Domus Communis Foundation Hungary</span>
+            </a>
+            <ul class="nav-menu" id="navMenu"></ul>
+            <div class="user-menu" id="userMenu"></div>
+        </nav>
+    </header>
+
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="../../index.html">Home</a>
+            <span>›</span>
+            <a href="../index.html">Blog</a>
+            <span>›</span>
+            <a href="../category.html?blog=${blogSlug}">${blogData.name}</a>
+            <span>›</span>
+            <span>${postData.title}</span>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        <article>
+            <div class="post-header">
+                ${postData.featured_image_url ? `
+                <div class="post-featured-media">
+                    <img src="${postData.featured_image_url}" alt="${postData.title}">
+                </div>` : ''}
+                <div class="post-header-content">
+                    <div class="post-meta">
+                        <span>${new Date(postData.published_at || postData.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                        <span>${blogData.name}</span>
+                        <span id="viewCount">${postData.view_count || 0} views</span>
+                    </div>
+                    <h1 class="post-title">${postData.title}</h1>
+                    ${postData.excerpt ? `<div class="post-excerpt">${postData.excerpt}</div>` : ''}
+                </div>
+            </div>
+
+            <div class="post-content">
+                <div class="post-body">
+                    ${postData.content}
+                </div>
+            </div>
+
+            <div class="post-footer">
+                <div class="post-stats">
+                    <span>Views: <strong id="footerViewCount">${postData.view_count || 0}</strong></span>
+                    <span>Published: <strong>${new Date(postData.published_at || postData.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</strong></span>
+                </div>
+                <a href="../category.html?blog=${blogSlug}" class="back-to-blog">← Back to Blog</a>
+            </div>
+        </article>
+    </main>
+
+    <script>
+        const postId = '${postId}';
+        
+        async function trackView() {
+            if (!window.dcfSupabase) return;
+            try {
+                const { data: currentPost } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('view_count')
+                    .eq('id', postId)
+                    .single();
+                
+                const newViewCount = (currentPost?.view_count || 0) + 1;
+                
+                await window.dcfSupabase
+                    .from('blog_posts')
+                    .update({ view_count: newViewCount })
+                    .eq('id', postId);
+                
+                console.log('✅ View tracked');
+            } catch (err) {
+                console.warn('View tracking error:', err);
+            }
+        }
+
+        async function loadStats() {
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+            
+            if (!window.dcfSupabase) return;
+            
+            try {
+                const { data } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('view_count')
+                    .eq('id', postId)
+                    .single();
+                
+                if (data) {
+                    document.getElementById('viewCount').textContent = \`\${data.view_count || 0} views\`;
+                    document.getElementById('footerViewCount').textContent = data.view_count || 0;
+                }
+            } catch (err) {
+                console.warn('Stats error:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            trackView();
+            setTimeout(loadStats, 1000);
+        });
+    </script>
+</body>
+</html>`;
+
+            // Create download link
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = \`\${postSlug}.html\`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Show instructions
+            const instructions = document.createElement('div');
+            instructions.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 10000; max-width: 500px;';
+            instructions.innerHTML = \`
+                <h3 style="margin-bottom: 1rem;">HTML File Downloaded!</h3>
+                <p style="margin-bottom: 1rem;">Next steps:</p>
+                <ol style="margin-left: 1.5rem; line-height: 1.8;">
+                    <li>Find the file <code>\${postSlug}.html</code> in your Downloads</li>
+                    <li>Move it to: <code>~/Desktop/dcfh/blog/\${blogSlug}/</code></li>
+                    <li>Run these commands:</li>
+                </ol>
+                <pre style="background: #f5f5f5; padding: 1rem; border-radius: 6px; margin: 1rem 0; overflow-x: auto;">cd ~/Desktop/dcfh
+git add blog/\${blogSlug}/\${postSlug}.html
+git commit -m "Add new post: \${postData.title}"
+git push origin main</pre>
+                <button onclick="this.parentElement.remove()" style="background: #333; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; width: 100%;">Got it!</button>
+            \`;
+            document.body.appendChild(instructions);
+        }
+
         function showSuccess(postUrl, postData) {
             document.getElementById('loadingStep').classList.remove('active');
             document.getElementById('successStep').classList.add('active');
             document.getElementById('postUrl').textContent = postUrl;
             window.newPostData = { postUrl: postUrl };
+            
+            // Generate and download static HTML file
+            generateStaticHTML(postData, selectedBlog);
+        };
+            
+            // Generate and download static HTML file
+            generateStaticHTML(postData, selectedBlog);
+        };
         }
 
         function viewPost() {
