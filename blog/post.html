@@ -1010,12 +1010,27 @@
             loadPost();
         });
 
+
         async function loadPost() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const content = document.getElementById('content');
 
+            // REDIRECT TO STATIC HTML IF IT EXISTS
+            const staticUrl = `${window.location.origin}/dcfh/blog/${currentBlogSlug}/${currentPostSlug}.html`;
             try {
+                const checkResponse = await fetch(staticUrl, { method: 'HEAD' });
+                if (checkResponse.ok) {
+                    console.log('Static version exists, redirecting...');
+                    window.location.replace(staticUrl);
+                    return;
+                }
+            } catch (err) {
+                console.log('No static version, loading dynamic...');
+            }
+
+            try {
+
                 // Get blog info first
                 const { data: blog, error: blogError } = await supabase
                     .from('blogs')
