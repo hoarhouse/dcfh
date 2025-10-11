@@ -113,9 +113,9 @@ def generate_static_html(post, blog):
         
         // Initialize DCF UI - wait for it to be available
         function initDCFUI() {{
-            if (window.dcfUI && typeof window.dcfUI.init === 'function') {{
-                console.log('🚀 Calling dcfUI.init()');
-                window.dcfUI.init();
+            if (window.dcfUI && typeof window.dcfUI.initialize === 'function') {{
+                console.log('🚀 Calling dcfUI.initialize()');
+                window.dcfUI.initialize();
             }} else {{
                 console.log('⏳ Waiting for dcfUI...');
                 setTimeout(initDCFUI, 100);
