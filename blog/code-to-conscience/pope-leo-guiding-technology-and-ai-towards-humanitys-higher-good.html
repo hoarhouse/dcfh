@@ -453,7 +453,20 @@
         async function trackView() {
             if (!window.dcfSupabase) return;
             try {
-                await window.dcfSupabase.rpc('increment_blog_view', { blog_id: postId });
+                // Get current view count
+                const { data: currentPost } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('view_count')
+                    .eq('id', postId)
+                    .single();
+                
+                const newViewCount = (currentPost?.view_count || 0) + 1;
+                
+                // Update view count
+                await window.dcfSupabase
+                    .from('blog_posts')
+                    .update({ view_count: newViewCount })
+                    .eq('id', postId);
                 console.log('✅ View tracked');
             } catch (err) {
                 console.warn('View tracking error:', err);
