@@ -1620,6 +1620,71 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 Vatican Resource Page Loaded: lv-world-day-of-peace-2022-dialogue-between-generations-education-and-work-tools-for-building-lastin');
         });
+    
+        // Track page view
+        async function trackResourceView() {
+            try {
+                const resourceId = '3af588d3-41ef-4dbf-8fe1-42274fcf47d5';
+                const resourceSlug = 'lv-world-day-of-peace-2022-dialogue-between-generations-education-and-work-tools-for-building-lastin';
+                
+                // Increment view count in database
+                const { data, error } = await supabase
+                    .rpc('increment_resource_view', { 
+                        resource_id: resourceId 
+                    });
+                
+                if (error) {
+                    console.warn('Failed to track view:', error);
+                } else {
+                    console.log('✅ Resource view tracked');
+                }
+                
+                // Also track in analytics system if available
+                if (window.dcfAnalytics && window.dcfAnalytics.trackPageView) {
+                    window.dcfAnalytics.trackPageView({
+                        page: 'resource_detail',
+                        resource_id: resourceId,
+                        resource_slug: resourceSlug,
+                        resource_type: 'Vatican Documents'
+                    });
+                }
+            } catch (err) {
+                console.warn('Analytics error:', err);
+            }
+        }
+        
+        // Track download
+        async function trackResourceDownload() {
+            try {
+                const resourceId = '3af588d3-41ef-4dbf-8fe1-42274fcf47d5';
+                
+                // Increment download count
+                const { data, error } = await supabase
+                    .rpc('increment_resource_download', { 
+                        resource_id: resourceId 
+                    });
+                
+                if (error) {
+                    console.warn('Failed to track download:', error);
+                } else {
+                    console.log('✅ Download tracked');
+                }
+            } catch (err) {
+                console.warn('Download tracking error:', err);
+            }
+        }
+        
+        // Initialize tracking on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            trackResourceView();
+            
+            // Add download tracking to download buttons
+            const downloadBtns = document.querySelectorAll('a[download], a.btn:not(.btn-secondary)');
+            downloadBtns.forEach(btn => {
+                btn.addEventListener('click', trackResourceDownload);
+            });
+        });
+
     </script>
 </body>
 </html>
