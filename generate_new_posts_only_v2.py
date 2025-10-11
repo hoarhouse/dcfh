@@ -27,7 +27,7 @@ def generate_static_html(post, blog):
     
     # Escape content for HTML
     title = post['title'].replace('"', '&quot;')
-    excerpt = post.get('excerpt', '').replace('"', '&quot;')
+    excerpt = (post.get('excerpt') or '').replace('"', '&quot;')
     
     # Generate HTML content
     html_content = f'''<!DOCTYPE html>
@@ -111,16 +111,19 @@ def generate_static_html(post, blog):
     <script>
         const postId = '{post_id}';
         
-        // Initialize DCF UI when page loads
+        // Initialize DCF UI - wait for it to be available
+        function initDCFUI() {{
+            if (window.dcfUI && typeof window.dcfUI.init === 'function') {{
+                console.log('🚀 Calling dcfUI.init()');
+                window.dcfUI.init();
+            }} else {{
+                console.log('⏳ Waiting for dcfUI...');
+                setTimeout(initDCFUI, 100);
+            }}
+        }}
+        
         window.addEventListener('load', function() {{
-            setTimeout(function() {{
-                if (window.dcfUI && typeof window.dcfUI.init === 'function') {{
-                    console.log('🚀 Calling dcfUI.init()');
-                    window.dcfUI.init();
-                }} else {{
-                    console.error('❌ dcfUI not available');
-                }}
-            }}, 200);
+            setTimeout(initDCFUI, 100);
         }});
         
         async function trackView() {{
