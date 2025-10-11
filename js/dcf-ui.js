@@ -747,7 +747,7 @@ function addLanguageSwitcherCSS() {
             border: 1px solid #e5e5e5;
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            min-width: 100px;
+            width: 100%;
             z-index: 1000;
             margin-top: 4px;
             opacity: 0;
