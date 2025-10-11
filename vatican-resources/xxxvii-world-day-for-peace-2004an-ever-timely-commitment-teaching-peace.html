@@ -1622,6 +1622,8 @@
         });
     
         // Track page view
+        
+        // Resource tracking with proper timing
         async function trackResourceView() {
             const resourceId = '3e6efc6a-8d97-4bfe-a38c-399f68d7b4f3';
             
@@ -1654,44 +1656,22 @@
             } catch (err) {
                 console.warn('View tracking error:', err);
             }
-        await window.dcfSupabase.rpc('increment_resource_view', { 
-                        resource_id: resourceId 
-                    });
-                
-                if (error) {
-                    console.warn('Failed to track view:', error);
-                } else {
-                    console.log('✅ Resource view tracked');
-                }
-                
-                // Also track in analytics system if available
-                if (window.dcfAnalytics && window.dcfAnalytics.trackPageView) {
-                    window.dcfAnalytics.trackPageView({
-                        page: 'resource_detail',
-                        resource_id: resourceId,
-                        resource_slug: resourceSlug,
-                        resource_type: 'Vatican Documents'
-                    });
-                }
-            } catch (err) {
-                console.warn('Analytics error:', err);
-            }
         }
         
-        // Track download
         async function trackResourceDownload() {
+            const resourceId = '3e6efc6a-8d97-4bfe-a38c-399f68d7b4f3';
+            
+            if (!window.dcfSupabase) return;
+            
             try {
-                const resourceId = '3e6efc6a-8d97-4bfe-a38c-399f68d7b4f3';
-                
-                // Increment download count
-                const { data, error } = await window.dcfSupabase.rpc('increment_resource_download', { 
-                        resource_id: resourceId 
-                    });
+                const { error } = await window.dcfSupabase.rpc('increment_resource_download', {
+                    resource_id: resourceId
+                });
                 
                 if (error) {
-                    console.warn('Failed to track download:', error);
+                    console.error('❌ Error tracking download:', error);
                 } else {
-                    console.log('✅ Download tracked');
+                    console.log('✅ Resource download tracked');
                 }
             } catch (err) {
                 console.warn('Download tracking error:', err);
@@ -1708,6 +1688,7 @@
                 btn.addEventListener('click', trackResourceDownload);
             });
         });
+
 
     
         // Load and update live stats
