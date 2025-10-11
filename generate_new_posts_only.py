@@ -166,6 +166,11 @@ def generate_static_html(post, blog):
         }}
 
         document.addEventListener('DOMContentLoaded', () => {{
+            // Initialize DCF UI System
+            if (window.dcfUI && typeof window.dcfUI.init === 'function') {{
+                window.dcfUI.init();
+            }}
+            
             trackView();
             setTimeout(loadStats, 1000);
         }});
