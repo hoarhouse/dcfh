@@ -897,8 +897,17 @@
         let blogData = {};
 
         function setupEventListeners() {
+            console.log('[DEBUG] setupEventListeners called');
+            
             // Blog name input
-            document.getElementById('blogName').addEventListener('input', function() {
+            const blogNameInput = document.getElementById('blogName');
+            if (!blogNameInput) {
+                console.error('[ERROR] blogName input not found!');
+                return;
+            }
+            
+            blogNameInput.addEventListener('input', function() {
+                console.log('[DEBUG] Blog name input event fired, value:', this.value);
                 const name = this.value;
                 document.getElementById('step1Next').disabled = !name.trim();
                 updatePreview();
@@ -1274,16 +1283,34 @@
             }, 3000);
         }
         
-        // Fallback initialization if dcfReady doesn't fire
-        setTimeout(() => {
+        // Immediate initialization when DOM is ready
+        function initializeWizard() {
             const nameInput = document.getElementById('blogName');
             if (nameInput && !nameInput.hasAttribute('data-initialized')) {
-                console.log('[DEBUG] Fallback initialization - dcfReady may not have fired');
+                console.log('[DEBUG] Initializing wizard event listeners');
                 setupEventListeners();
                 // Mark as initialized
                 nameInput.setAttribute('data-initialized', 'true');
+                
+                // Also check if there's already content in the name field
+                if (nameInput.value.trim()) {
+                    document.getElementById('step1Next').disabled = false;
+                }
             }
-        }, 2000);
+        }
+        
+        // Try to initialize immediately if DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeWizard);
+        } else {
+            // DOM is already loaded, initialize now
+            initializeWizard();
+        }
+        
+        // Also keep fallback in case something fails
+        setTimeout(() => {
+            initializeWizard();
+        }, 1000);
 
     </script>
 </body>
