@@ -1692,10 +1692,22 @@
     
         // Load and update live stats
         async function loadLiveStats() {
+            // Wait for Supabase client
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.dcfSupabase) {
+                console.warn('Supabase not available for stats');
+                return;
+            }
+            
             try {
                 const { data, error } = await window.dcfSupabase.from('resources')
                     .select('view_count, download_count, bookmark_count, rating_average')
-                    .eq('id', 'f056074a-5510-4814-9924-af5dea3faa53')
+                    .eq('id', resourceId)
                     .single();
                 
                 if (error) throw error;
@@ -1707,18 +1719,18 @@
                 if (statItems[2]) statItems[2].querySelector('.stat-number').textContent = data.bookmark_count || 0;
                 if (statItems[3]) statItems[3].querySelector('.stat-number').textContent = (data.rating_average || 0).toFixed(1) + '★';
                 
-                console.log('✅ Live stats loaded');
+                console.log('✅ Live stats loaded:', data);
             } catch (err) {
                 console.warn('Failed to load stats:', err);
             }
         }
+        }
         
         // Load stats when Supabase is ready
-        if (typeof supabase !== 'undefined') {
-            loadLiveStats();
-        } else {
-            window.addEventListener('dcfReady', loadLiveStats);
-        }
+        // Load stats when page is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadLiveStats, 1000);
+        });
 
     </script>
 </body>
