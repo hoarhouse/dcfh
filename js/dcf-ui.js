@@ -657,7 +657,7 @@ function initializeLanguageSwitcher() {
         // Create dropdown button
         const dropdownBtn = document.createElement('button');
         dropdownBtn.className = 'lang-dropdown-btn';
-        dropdownBtn.innerHTML = `${languages[currentLanguage]} <span class="dropdown-arrow">▼</span>`;
+        dropdownBtn.innerHTML = `${languages[currentLanguage]} `;
         dropdownBtn.setAttribute('aria-label', 'Select language');
         
         // Create dropdown menu
@@ -887,7 +887,7 @@ function updateLanguageSwitcherUI() {
     
     // Update dropdown button text
     document.querySelectorAll('.lang-dropdown-btn').forEach(btn => {
-        btn.innerHTML = `${languages[currentLanguage]} <span class="dropdown-arrow">▼</span>`;
+        btn.innerHTML = `${languages[currentLanguage]} `;
     });
 }
 
