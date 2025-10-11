@@ -1623,12 +1623,38 @@
     
         // Track page view
         async function trackResourceView() {
+            const resourceId = 'b2a2521a-4c60-4b4e-82fc-8e36f76bde88';
+            
+            // Wait for Supabase client to be ready
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.dcfSupabase) {
+                console.error('❌ Supabase client not available');
+                return;
+            }
+            
             try {
-                const resourceId = 'b2a2521a-4c60-4b4e-82fc-8e36f76bde88';
-                const resourceSlug = 'lviii-world-day-of-peace-2025-forgive-us-our-trespasses-grant-us-your-peace';
+                const { error } = await window.dcfSupabase.rpc('increment_resource_view', {
+                    resource_id: resourceId
+                });
                 
-                // Increment view count in database
-                const { data, error } = await window.dcfSupabase.rpc('increment_resource_view', { 
+                if (error) {
+                    console.error('❌ Error tracking view:', error);
+                } else {
+                    console.log('✅ Resource view tracked');
+                }
+                
+                if (window.dcfAnalytics?.trackPageView) {
+                    window.dcfAnalytics.trackPageView('vatican-resource');
+                }
+            } catch (err) {
+                console.warn('View tracking error:', err);
+            }
+        } = await window.dcfSupabase.rpc('increment_resource_view', { 
                         resource_id: resourceId 
                     });
                 
@@ -1674,7 +1700,7 @@
         
         // Initialize tracking on page load
         document.addEventListener('DOMContentLoaded', function() {
-            if (window.dcfSupabase) { trackResourceView(); } else { setTimeout(() => { if (window.dcfSupabase) trackResourceView(); }, 1000); }
+            trackResourceView();
             
             // Add download tracking to download buttons
             const downloadBtns = document.querySelectorAll('a[download], a.btn:not(.btn-secondary)');
