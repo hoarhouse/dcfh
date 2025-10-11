@@ -659,7 +659,6 @@
         function createBlogCard(blog) {
             const card = document.createElement('div');
             card.className = 'blog-card';
-            card.onclick = () => window.location.href = `category.html?blog=${blog.slug}`;
 
             // Generate initials for blog image
             const initials = blog.name
@@ -694,16 +693,27 @@
                 ? `<img src="${escapeHtml(blog.card_image_url)}" alt="${escapeHtml(blog.name)}" style="width: 100%; height: 100%; object-fit: cover;">`
                 : initials;
 
+            // Process description - truncate to first 40 words
+            const fullDescription = blog.description || defaultDesc;
+            const words = fullDescription.split(' ');
+            const truncated = words.length > 40;
+            const shortDescription = truncated ? words.slice(0, 40).join(' ') : fullDescription;
+            
+            // Create unique ID for this card's description
+            const descId = `desc-${blog.id || Math.random().toString(36).substr(2, 9)}`;
+
             card.innerHTML = `
-                <div class="blog-image">
+                <div class="blog-image" onclick="window.location.href='category.html?blog=${blog.slug}'">
                     ${imageContent}
                 </div>
                 <div class="blog-content">
-                    <h2 class="blog-title">${escapeHtml(blog.name)}</h2>
-                    <p class="blog-description">
-                        ${escapeHtml(blog.description || defaultDesc)}
+                    <h2 class="blog-title" onclick="window.location.href='category.html?blog=${blog.slug}'">${escapeHtml(blog.name)}</h2>
+                    <p class="blog-description" id="${descId}">
+                        <span class="blog-desc-short">${escapeHtml(shortDescription)}${truncated ? '...' : ''}</span>
+                        ${truncated ? `<span class="blog-desc-full" style="display: none;">${escapeHtml(fullDescription)}</span>` : ''}
+                        ${truncated ? `<a href="#" class="blog-desc-toggle" onclick="event.preventDefault(); event.stopPropagation(); toggleDescription('${descId}');" style="color: #007bff; text-decoration: none; font-weight: 500;"> more...</a>` : ''}
                     </p>
-                    <div class="blog-meta">
+                    <div class="blog-meta" onclick="window.location.href='category.html?blog=${blog.slug}'">
                         <span>${createdText} ${createdDate}</span>
                         <span class="blog-posts-count">
                             ${blog.post_count || 0} ${postsText}
@@ -713,6 +723,29 @@
             `;
 
             return card;
+        }
+        
+        function toggleDescription(descId) {
+            const descElement = document.getElementById(descId);
+            if (!descElement) return;
+            
+            const shortSpan = descElement.querySelector('.blog-desc-short');
+            const fullSpan = descElement.querySelector('.blog-desc-full');
+            const toggleLink = descElement.querySelector('.blog-desc-toggle');
+            
+            if (!fullSpan) return;
+            
+            if (fullSpan.style.display === 'none') {
+                // Show full description
+                shortSpan.style.display = 'none';
+                fullSpan.style.display = 'inline';
+                toggleLink.textContent = ' less';
+            } else {
+                // Show short description
+                shortSpan.style.display = 'inline';
+                fullSpan.style.display = 'none';
+                toggleLink.textContent = ' more...';
+            }
         }
 
         function escapeHtml(text) {
