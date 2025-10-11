@@ -1685,6 +1685,38 @@
             });
         });
 
+    
+        // Load and update live stats
+        async function loadLiveStats() {
+            try {
+                const { data, error } = await supabase
+                    .from('resources')
+                    .select('view_count, download_count, bookmark_count, rating_average')
+                    .eq('id', '1eccb7f5-f5a0-4916-9820-63af1bb283eb')
+                    .single();
+                
+                if (error) throw error;
+                
+                // Update stat numbers in the DOM
+                const statItems = document.querySelectorAll('.stat-item');
+                if (statItems[0]) statItems[0].querySelector('.stat-number').textContent = data.view_count || 0;
+                if (statItems[1]) statItems[1].querySelector('.stat-number').textContent = data.download_count || 0;
+                if (statItems[2]) statItems[2].querySelector('.stat-number').textContent = data.bookmark_count || 0;
+                if (statItems[3]) statItems[3].querySelector('.stat-number').textContent = (data.rating_average || 0).toFixed(1) + '★';
+                
+                console.log('✅ Live stats loaded');
+            } catch (err) {
+                console.warn('Failed to load stats:', err);
+            }
+        }
+        
+        // Load stats when Supabase is ready
+        if (typeof supabase !== 'undefined') {
+            loadLiveStats();
+        } else {
+            window.addEventListener('dcfReady', loadLiveStats);
+        }
+
     </script>
 </body>
 </html>
