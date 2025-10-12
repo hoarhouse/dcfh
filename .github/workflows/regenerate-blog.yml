@@ -1,0 +1,34 @@
+name: Regenerate Blog Posts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install supabase
+    
+    - name: Regenerate blog posts
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        python3 generate_new_posts_only_v2.py
+    
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add blog/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Regenerate blog posts" && git push)
