@@ -24,6 +24,7 @@ def generate_blog_post_html(post, blog_name, blog_slug):
     excerpt = post['excerpt'] or ""
     meta_description = excerpt[:160] if excerpt else title[:160]
     published_date = post['published_at'][:10] if post['published_at'] else datetime.now().strftime('%Y-%m-%d')
+    updated_date = post.get("updated_at", post["published_at"])[:10] if post.get("updated_at") or post.get("published_at") else datetime.now().strftime("%Y-%m-%d")
     featured_image = post.get('hero_image_url') or post.get('featured_image_url')
     
     try:
@@ -285,6 +286,7 @@ def generate_blog_post_html(post, blog_name, blog_slug):
         "description": "{meta_description}",
         {f'"image": "{featured_image}",' if featured_image else ''}
         "datePublished": "{published_date}",
+        "dateModified": "{updated_date}",
         "author": {{
             "@type": "Organization",
             "name": "Domus Communis Foundation Hungary"
