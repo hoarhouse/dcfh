@@ -221,6 +221,12 @@ function createAndInjectShareBar() {
         return;
     }
     
+    // Don't show share bar on initiatives pages
+    if (window.location.pathname.includes('/initiatives/')) {
+        console.log('🚫 Initiatives page - skipping share bar');
+        return;
+    }
+    
     const pageUrl = encodeURIComponent(window.location.href);
     const pageTitle = encodeURIComponent(document.title);
     
