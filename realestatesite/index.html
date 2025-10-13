@@ -1137,6 +1137,66 @@
             this.reset();
         });
 
+        // Carousel Navigation
+        const carouselContainer = document.getElementById('carouselContainer');
+        const prevBtn = document.querySelector('.carousel-arrow.prev');
+        const nextBtn = document.querySelector('.carousel-arrow.next');
+        const carouselItems = document.querySelectorAll('.carousel-item');
+        
+        // Calculate scroll amount (item width + gap)
+        const getScrollAmount = () => {
+            if (carouselItems.length > 0) {
+                const itemWidth = carouselItems[0].offsetWidth;
+                const gap = 24; // 1.5rem gap
+                return itemWidth + gap;
+            }
+            return 424; // fallback: 400px + 24px gap
+        };
+
+        // Update arrow states based on scroll position
+        const updateArrowStates = () => {
+            const scrollLeft = carouselContainer.scrollLeft;
+            const scrollWidth = carouselContainer.scrollWidth;
+            const clientWidth = carouselContainer.clientWidth;
+            
+            // Disable prev button at start
+            prevBtn.disabled = scrollLeft <= 0;
+            
+            // Disable next button at end
+            nextBtn.disabled = scrollLeft >= scrollWidth - clientWidth - 1;
+        };
+
+        // Smooth scroll function
+        const scrollCarousel = (direction) => {
+            const scrollAmount = getScrollAmount();
+            const currentScroll = carouselContainer.scrollLeft;
+            
+            if (direction === 'prev') {
+                carouselContainer.scrollTo({
+                    left: Math.max(0, currentScroll - scrollAmount),
+                    behavior: 'smooth'
+                });
+            } else {
+                carouselContainer.scrollTo({
+                    left: currentScroll + scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
+        };
+
+        // Arrow click handlers
+        prevBtn.addEventListener('click', () => scrollCarousel('prev'));
+        nextBtn.addEventListener('click', () => scrollCarousel('next'));
+
+        // Update arrow states on scroll
+        carouselContainer.addEventListener('scroll', updateArrowStates);
+
+        // Initialize arrow states
+        updateArrowStates();
+
+        // Update on window resize
+        window.addEventListener('resize', updateArrowStates);
+
         // Modal functionality
         const mapModal = document.getElementById('mapModal');
         const imageModal = document.getElementById('imageModal');
