@@ -29,6 +29,10 @@ def generate_blog_post_html(post, blog_name, blog_slug):
     try:
         date_obj = datetime.strptime(published_date, '%Y-%m-%d')
         display_date = date_obj.strftime('%B %d, %Y')
+        
+        # Calculate reading time (assuming 200 words per minute)
+        word_count = len(post.get("content", "").split())
+        reading_time = max(1, round(word_count / 200))
     except:
         display_date = published_date
     
