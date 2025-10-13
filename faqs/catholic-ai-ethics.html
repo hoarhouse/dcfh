@@ -266,6 +266,19 @@
                 padding: 2rem;
             }
         }
+
+        .view-counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .view-counter span {
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +289,10 @@
         <div class="page-header">
             <h1 class="page-title">Catholic AI Ethics: Complete FAQ</h1>
             <p class="page-subtitle">Your comprehensive guide to understanding the Vatican's teaching on artificial intelligence, technology ethics, and the Rome Call for AI Ethics.</p>
+            <div class="view-counter">
+                <span>👁️</span>
+                <span id="viewCount">Loading views...</span>
+            </div>
         </div>
 
         <!-- Table of Contents -->
@@ -547,5 +564,48 @@
     <script src="../js/dcf-auth.js"></script>
     <script src="../js/dcf-analytics.js"></script>
     <script src="../js/dcf-init.js"></script>
+
+    <script>
+        // Display view count for FAQ pages
+        async function displayViewCount() {
+            try {
+                if (!window.dcfSupabase) {
+                    console.log('Supabase not available for view count');
+                    return;
+                }
+                
+                const currentPath = window.location.pathname;
+                const contentId = currentPath.split('/').pop().replace('.html', '');
+                
+                // Get view count from analytics
+                const { data, error } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .select('*', { count: 'exact', head: false })
+                    .eq('content_id', contentId);
+                
+                if (error) {
+                    console.log('Error fetching view count:', error);
+                    document.getElementById('viewCount').textContent = '-- views';
+                    return;
+                }
+                
+                const viewCount = data ? data.length : 0;
+                document.getElementById('viewCount').textContent = `${viewCount.toLocaleString()} view${viewCount !== 1 ? 's' : ''}`;
+                
+            } catch (err) {
+                console.log('View count display error:', err);
+                document.getElementById('viewCount').textContent = '-- views';
+            }
+        }
+        
+        // Wait for Supabase to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(displayViewCount, 1000);
+            });
+        } else {
+            setTimeout(displayViewCount, 1000);
+        }
+    </script>
 </body>
 </html>
