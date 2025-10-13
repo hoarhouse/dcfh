@@ -128,6 +128,8 @@ def generate_blog_post_html(post, blog_name, blog_slug):
                 
                 if (data) {
                     document.getElementById('viewCount').textContent = `${data.view_count || 0} views`;
+                    const topViewCount = document.getElementById('topViewCount');
+                    if (topViewCount) topViewCount.textContent = `${data.view_count || 0} views`;
                 }
             } catch (err) {
                 console.warn('Stats error:', err);
@@ -626,6 +628,8 @@ def generate_blog_post_html(post, blog_name, blog_slug):
                 <div class="post-meta">
                     <span>📅 {display_date}</span>
                     <span>📚 {blog_name or "Blog"}</span>
+                    <span>📖 <span id="readingTime">{reading_time} min read</span></span>
+                    <span>👁️ <span id="topViewCount">-- views</span></span>
                 </div>
                 <h1 class="post-title">{title}</h1>
                 {f'<p class="post-excerpt">{excerpt}</p>' if excerpt else ''}
