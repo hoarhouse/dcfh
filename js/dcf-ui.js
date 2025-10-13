@@ -1427,14 +1427,9 @@ function populateLogo() {
         const newLogo = generateLogo();
         logoContainer.insertBefore(newLogo, logoContainer.firstChild);
     } else if (logoContainer.classList.contains('logo')) {
-        // The container itself is the logo link - replace its content
+        // The container itself is the logo link - replace it entirely
         const newLogo = generateLogo();
-        logoContainer.innerHTML = newLogo.innerHTML;
-        logoContainer.href = newLogo.href;
-        logoContainer.className = newLogo.className;
-        if (newLogo.style.cssText) {
-            logoContainer.style.cssText = newLogo.style.cssText;
-        }
+        logoContainer.parentNode.replaceChild(newLogo, logoContainer);
     } else if (logoContainer.classList.contains('logo-container')) {
         // It's a dedicated logo container - replace content
         logoContainer.innerHTML = '';
