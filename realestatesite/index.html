@@ -1055,6 +1055,98 @@
             alert('Thank you for your message! We\'ll contact you within 24 hours.');
             this.reset();
         });
+
+        // Modal functionality
+        const mapModal = document.getElementById('mapModal');
+        const imageModal = document.getElementById('imageModal');
+        const mapFrame = document.getElementById('mapFrame');
+        const modalImage = document.getElementById('modalImage');
+        const mapModalTitle = document.getElementById('mapModalTitle');
+
+        // Helper function to open modal
+        function openModal(modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Helper function to close modal
+        function closeModal(modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            // Clear iframe src to stop loading
+            if (modal === mapModal) {
+                mapFrame.src = '';
+            }
+        }
+
+        // Location pin click handlers
+        document.querySelectorAll('.location-pin').forEach(pin => {
+            pin.addEventListener('click', function(e) {
+                e.preventDefault();
+                const address = this.getAttribute('data-address');
+                const encodedAddress = encodeURIComponent(address);
+                
+                // Set iframe src with Google Maps embed
+                mapFrame.src = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}&zoom=15`;
+                
+                // Update modal title with address
+                mapModalTitle.textContent = address;
+                
+                // Open map modal
+                openModal(mapModal);
+            });
+        });
+
+        // Image click handlers
+        document.querySelectorAll('.carousel-image').forEach(img => {
+            img.addEventListener('click', function(e) {
+                e.preventDefault();
+                const imageSrc = this.src || this.getAttribute('src');
+                const imageAlt = this.alt || this.getAttribute('alt');
+                
+                // Set modal image src
+                modalImage.src = imageSrc;
+                modalImage.alt = imageAlt;
+                
+                // Open image modal
+                openModal(imageModal);
+            });
+        });
+
+        // Close button handlers
+        document.querySelectorAll('.modal-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                closeModal(modal);
+            });
+        });
+
+        // Overlay click handlers
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                closeModal(modal);
+            });
+        });
+
+        // ESC key handler
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (mapModal.classList.contains('active')) {
+                    closeModal(mapModal);
+                }
+                if (imageModal.classList.contains('active')) {
+                    closeModal(imageModal);
+                }
+            }
+        });
+
+        // Prevent scroll when modal is open
+        document.querySelectorAll('.modal-content').forEach(content => {
+            content.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     </script>
 </body>
 </html>
