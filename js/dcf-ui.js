@@ -182,7 +182,9 @@ function createAndInjectNavigation() {
                 <span class="logo-text">Domus Communis Foundation Hungary</span>
             </a>
             <ul class="nav-menu"></ul>
-            <div class="user-menu"></div>
+            <div class="user-menu">
+                <div class="language-switcher" id="languageSwitcher"></div>
+            </div>
         </nav>
     `;
     
@@ -191,6 +193,10 @@ function createAndInjectNavigation() {
     
     // Now populate the menu items - KEEP ORIGINAL CALL
     populateDCFNavigation();
+    
+    // Initialize language switcher dropdown
+    initializeLanguageSwitcher();
+    console.log('✅ Language switcher initialized');
     
     return true;
 }
