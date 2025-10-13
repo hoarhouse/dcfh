@@ -11,6 +11,66 @@ SUPABASE_URL = "https://atzommnkkwzgbktuzjti.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em9tbW5ra3d6Z2JrdHV6anRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzAyMzIsImV4cCI6MjA2ODk0NjIzMn0.9mh2A5A5mLbo408S9g7k76VRzSJE0QWdiYTTOPLEiks"
 BASE_URL = "https://hoarhouse.github.io/dcfh"
 
+
+def extract_faqs_from_content(content_html):
+    """Extract FAQ questions and answers from article content"""
+    import re
+    
+    # Check if there's an FAQ section
+    if 'Frequently Asked Questions' not in content_html:
+        return []
+    
+    # Extract FAQ section
+    faq_section = re.search(r'<h2>Frequently Asked Questions</h2>(.*?)(?:<h2>|<p><strong>|$)', content_html, re.DOTALL)
+    
+    if not faq_section:
+        return []
+    
+    faq_html = faq_section.group(1)
+    
+    # Extract Q&A pairs
+    faqs = []
+    qa_pattern = r'<h3>(.*?)</h3>\s*<p>(.*?)</p>'
+    matches = re.findall(qa_pattern, faq_html, re.DOTALL)
+    
+    for question, answer in matches:
+        # Clean up HTML tags from answer but preserve text
+        clean_answer = re.sub(r'<[^>]+>', '', answer)
+        clean_answer = clean_answer.replace('\n', ' ').strip()
+        
+        faqs.append({
+            'question': question.strip(),
+            'answer': clean_answer
+        })
+    
+    return faqs
+
+def generate_faq_schema_json(faqs):
+    """Generate FAQ schema JSON-LD"""
+    import json
+    
+    if not faqs:
+        return ""
+    
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": []
+    }
+    
+    for faq in faqs:
+        schema["mainEntity"].append({
+            "@type": "Question",
+            "name": faq['question'],
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq['answer']
+            }
+        })
+    
+    return json.dumps(schema, indent=2)
+
+
 def slugify_blog_name(blog_slug):
     if not blog_slug:
         return "uncategorized"
@@ -34,6 +94,12 @@ def generate_blog_post_html(post, blog_name, blog_slug):
         # Calculate reading time (assuming 200 words per minute)
         word_count = len(post.get("content", "").split())
         reading_time = max(1, round(word_count / 200))
+        
+        # Generate FAQ schema if FAQs exist in content
+        faqs = extract_faqs_from_content(post.get('content', ''))
+        faq_schema_json = generate_faq_schema_json(faqs)
+        faq_schema = f'\n    <script type="application/ld+json">\n    {faq_schema_json}\n    </script>' if faq_schema_json else ''
+
     except:
         display_date = published_date
     
@@ -605,6 +671,7 @@ def generate_blog_post_html(post, blog_name, blog_slug):
             }}
         }}
     </style>
+{faq_schema}
 </head>
 <body>
     <header class="header">
