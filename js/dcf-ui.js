@@ -175,9 +175,12 @@ function createAndInjectNavigation() {
     const basePath = window.getCorrectBasePath();
     
     // Create full nav structure
+    // Use absolute paths for GitHub Pages
+    const siteRoot = window.location.hostname === 'localhost' ? '/' : '/dcfh/';
+    
     const navHTML = `
         <nav class="nav-container">
-            <a href="${basePath}index.html" class="logo">
+            <a href="${siteRoot}index.html" class="logo">
                 <div class="logo-icon"></div>
                 <span class="logo-text">Domus Communis Foundation Hungary</span>
             </a>
@@ -342,6 +345,7 @@ function populateDCFNavigation() {
     const basePath = window.getCorrectBasePath();
     
     // Build menu from config
+    const siteRoot = window.location.hostname === 'localhost' ? '/' : '/dcfh/';
     console.log('🔥 USER MENU HTML BEFORE:', document.querySelector('.user-menu')?.outerHTML);
     menuItems.forEach(item => {
         const li = document.createElement('li');
@@ -353,7 +357,7 @@ function populateDCFNavigation() {
             
             // Create dropdown toggle link
             const toggle = document.createElement('a');
-            toggle.href = basePath + item.href;
+            toggle.href = siteRoot + item.href;
             toggle.className = 'dropdown-toggle';
             // Set English text as fallback
             toggle.textContent = item.text;
@@ -394,7 +398,7 @@ function populateDCFNavigation() {
             item.items.forEach(subItem => {
                 const subLi = document.createElement('li');
                 const link = document.createElement('a');
-                link.href = basePath + subItem.href;
+                link.href = siteRoot + subItem.href;
                 // Set English text as fallback
                 link.textContent = subItem.text;
                 // Add data-i18n attribute for translation
@@ -478,7 +482,7 @@ function populateDCFNavigation() {
         } else {
             // Create regular menu item
             const link = document.createElement('a');
-            link.href = basePath + item.href;
+            link.href = siteRoot + item.href;
             // Set English text as fallback
             link.textContent = item.text;
             // Add data-i18n attribute for translation
