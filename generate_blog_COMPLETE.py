@@ -614,7 +614,7 @@ def generate_blog_post_html(post, blog_name, blog_slug):
     <div class="breadcrumb">
         <div class="breadcrumb-container">
             <a href="../../index.html">Home</a> <span>/</span>
-            <a href="../">{blog_name or "Blog"}</a> <span>/</span>
+            <a href="../../category.html?blog={blog_folder}">{blog_name or "Blog"}</a> <span>/</span>
             <span>{title}</span>
         </div>
     </div>
@@ -642,7 +642,7 @@ def generate_blog_post_html(post, blog_name, blog_slug):
             <div class="post-stats">
                 <span id="viewCount">-- views</span>
             </div>
-            <a href="../" class="back-to-blog">← Back to {blog_name or "Blog"}</a>
+            <a href="../../category.html?blog={blog_folder}" class="back-to-blog">← Back to {blog_name or "Blog"}</a>
         </div>
     </main>
 
