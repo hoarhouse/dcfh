@@ -69,7 +69,7 @@ const LAUNCH_MENU = [
         items: [
             { id: 'ai_resources', text: 'AI Resources', href: 'public/dcf_ai_resources.html' },
             { id: 'vatican_docs', text: 'Vatican Documents', href: 'vatican-resources/index.html' },
-            { id: 'faqs', text: 'FAQs', href: 'faqs/catholic-ai-ethics.html' }
+            { id: 'faqs', text: 'FAQs', href: 'faqs/index.html' }
         ]
     }
 ];
