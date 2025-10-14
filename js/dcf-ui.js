@@ -159,7 +159,7 @@ function isLaunchPage() {
 // =============================================================================
 
 function createAndInjectNavigation() {
-    const header = document.getElementById('main-header');
+    const header = document.getElementById('main-header') || document.querySelector('.header');
     if (!header) {
         console.log('❌ Header container #main-header not found');
         return false;
@@ -1220,8 +1220,8 @@ function updateUserInterface() {
     console.log('🎨 Updating UI (logged out state)...');
 
 showLoggedOutState();
-createAndInjectNavigation();  // Create nav structure FIRST
-populateLogo();  // THEN populate the logo
+createAndInjectNavigation();  // Use new dual navigation system
+populateLogo();  // Use new logo generation system
 handleResponsiveLogo();  // Enable responsive logo behavior
 initializeMobileMenu();  // Initialize mobile menu system
 
