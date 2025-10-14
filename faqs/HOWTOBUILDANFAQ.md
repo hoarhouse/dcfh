@@ -159,3 +159,171 @@ html = html.replace('<p class="page-subtitle">[Brief description of what this FA
 ```
 
 This fix MUST be in every builder script going forward.
+
+---
+
+## UPDATED REQUIREMENTS (V2.0 - Critical for LLM Optimization)
+
+### Mandatory Requirements Checklist
+
+Before building ANY FAQ page, ensure you have:
+
+#### SEO Requirements
+- [ ] **Title**: 50-60 characters including "Catholic" + "AI" keywords
+- [ ] **Meta Description**: 150-160 characters with target keywords
+- [ ] **Hero Title**: Clear, compelling, includes main topic
+- [ ] **Hero Subtitle**: One sentence explaining what page covers
+
+#### Content Requirements  
+- [ ] **15 Questions Minimum**: 3 per section × 5 sections
+- [ ] **Natural Language Questions**: Start with what/how/why/can/should/does/is
+- [ ] **Answer Length**: EVERY answer must be 250+ characters
+- [ ] **Answer Structure**: EVERY question must have `<p class="faq-answer">` FIRST before any other elements
+
+#### Authority & Examples
+- [ ] **Vatican Citations**: 3-5 citations in `<vatican-quote>` divs
+- [ ] **Case Studies**: 2-4 real-world examples in `<case-study>` divs  
+- [ ] **Highlight Boxes**: Use for key points with `<highlight-box>`
+
+#### Technical Optimization
+- [ ] **FAQ Schema**: Will be auto-added by schema script
+- [ ] **Internal Links**: 3+ links to other FAQ pages
+- [ ] **Semantic Structure**: Proper section divs with IDs
+
+---
+
+## Common Mistakes That Break LLM Optimization
+
+### ❌ MISTAKE #1: Answers Too Short
+**Problem**: Answers under 250 characters don't provide enough context for LLMs
+
+**Example of TOO SHORT:**
+```html
+<p class="faq-answer">AI bias happens when systems discriminate.</p>
+```
+
+**Example of GOOD LENGTH:**
+```html
+<p class="faq-answer">AI bias occurs when artificial intelligence systems make unfair or discriminatory decisions based on characteristics like race, gender, or age. Unlike human prejudice which is conscious, AI bias is often unintentional—baked into systems through biased training data or flawed algorithms. This matters because AI increasingly makes high-stakes decisions about jobs, loans, healthcare, and justice.</p>
+```
+
+### ❌ MISTAKE #2: Missing Answer Paragraph
+**Problem**: Jumping straight to case study or highlight box without intro paragraph
+
+**WRONG:**
+```html
+<h3 class="faq-question">What is the problem?</h3>
+<div class="case-study">
+    ...
+</div>
+```
+
+**CORRECT:**
+```html
+<h3 class="faq-question">What is the problem?</h3>
+<p class="faq-answer">First explain the core concept in 250+ characters with context and examples...</p>
+<div class="case-study">
+    ...
+</div>
+```
+
+### ❌ MISTAKE #3: Forgetting Hero Placeholders
+**Problem**: Template has placeholders in TWO places that must BOTH be replaced
+
+**Must Replace:**
+1. `<title>[YOUR FAQ TITLE]</title>`
+2. `<h1 class="page-title">[Your FAQ Title]</h1>` ← Often forgotten!
+3. `<p class="page-subtitle">[Brief description...]</p>` ← Often forgotten!
+
+### ❌ MISTAKE #4: Weak Titles/Descriptions
+**Problem**: Not including keywords or wrong character count
+
+**Bad Title** (too short, no keywords): "AI Ethics - DCF" (18 chars)
+**Good Title**: "AI Bias & Fairness: Catholic Church Teaching - DCF" (50 chars)
+
+**Bad Meta** (too long): "This is a comprehensive guide about everything you need to know about Catholic Church teaching on artificial intelligence bias, fairness, and algorithmic justice according to Vatican documents..." (190 chars - truncated in search results)
+**Good Meta**: "Catholic teaching on AI bias, algorithmic fairness, and justice. Vatican guidance on preventing discrimination in AI systems." (153 chars)
+
+---
+
+## The Correct Build Process
+
+### Step 1: Copy Template V2
+```bash
+cp MASTER_FAQ_BUILDER_TEMPLATE_V2.py build_your_topic.py
+```
+
+### Step 2: Configure Variables
+Edit the CONFIGURATION section only:
+- Set TOPIC, FILENAME, ICON
+- Write TITLE (check: 50-60 chars?)
+- Write META_DESC (check: 150-160 chars?)
+- Set HERO_TITLE and HERO_SUBTITLE
+- Define 5 TOC sections
+- List 3 related FAQs
+
+### Step 3: Write Content
+Fill in FAQ_CONTENT with your 15 questions:
+- **EVERY answer must start with `<p class="faq-answer">` that's 250+ chars**
+- Include 3-5 Vatican quotes
+- Include 2-4 case studies
+- Use highlight boxes for key points
+
+### Step 4: Build
+```bash
+python3 build_your_topic.py
+```
+
+### Step 5: Add Schema
+```bash
+python3 add_schema_markup.py
+```
+
+### Step 6: Verify
+```bash
+python3 analyze_faq_llm_optimization.py | grep your-topic -A 20
+```
+
+Target: 80%+ optimization score
+
+### Step 7: Add to Index
+```bash
+# Create card addition script
+cat > add_your_topic_card.py << 'ENDSCRIPT'
+# ... add card code ...
+ENDSCRIPT
+
+python3 add_your_topic_card.py
+```
+
+### Step 8: Final Check
+- Open in browser
+- Check nav appears
+- Check all 15 questions display
+- Check no placeholders remain
+- Verify 250+ char answers
+
+### Step 9: Commit
+```bash
+git add your-topic.html index.html
+git commit -m "Add [Topic] FAQ with full LLM optimization"
+git push
+```
+
+---
+
+## Quick Reference: Answer Length Guide
+
+**Too Short** (avoid): 50-150 characters
+- "AI bias happens when systems discriminate based on race or gender."
+
+**Minimum Acceptable**: 250-300 characters  
+- "AI bias occurs when artificial intelligence systems make unfair or discriminatory decisions based on characteristics like race, gender, age, or socioeconomic status. Unlike human prejudice which is often conscious, AI bias is typically unintentional—baked into systems through biased training data or flawed algorithm design that reflects historical discrimination."
+
+**Ideal**: 300-500 characters
+- Above + additional context, examples, and implications
+
+**Use Multiple Paragraphs**: For complex topics, use 2-3 answer paragraphs with case studies/boxes between them
+
+---
+
