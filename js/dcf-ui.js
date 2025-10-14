@@ -1218,15 +1218,15 @@ async function initializeTranslations() {
 
 function updateUserInterface() {
     console.log('🎨 Updating UI (logged out state)...');
-    
-    showLoggedOutState();
-    populateLogo();  // Use new logo generation system
-    createAndInjectNavigation();  // Use new dual navigation system
-    handleResponsiveLogo();  // Enable responsive logo behavior
-    initializeMobileMenu();  // Initialize mobile menu system
-    
-    // Initialize translations after navigation is built
-    initializeTranslations();
+
+showLoggedOutState();
+createAndInjectNavigation();  // Create nav structure FIRST
+populateLogo();  // THEN populate the logo
+handleResponsiveLogo();  // Enable responsive logo behavior
+initializeMobileMenu();  // Initialize mobile menu system
+
+// Initialize translations after navigation is built
+initializeTranslations();
     
     initializeFooter();
     
