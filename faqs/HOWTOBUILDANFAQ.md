@@ -113,3 +113,49 @@ diff _FAQ_TEMPLATE.html your-file.html | head -100
 
 # Should only show content changes, not structure
 ```
+# CRITICAL ADDITION TO BUILDER SCRIPTS
+
+## The Hero Section Bug Fix
+
+The template has TWO places where title/subtitle appear:
+1. In the `<title>` tag (gets replaced correctly)
+2. In the `<h1 class="page-title">` section (NEEDS explicit replacement)
+
+## Updated Builder Script Template
+
+Add these lines to EVERY builder script after the hero icon replacement:
+```python
+# === FIX HERO SECTION (CRITICAL) ===
+html = html.replace('<h1 class="page-title">[Your FAQ Title]</h1>', 
+                   '<h1 class="page-title">Your Actual Page Title</h1>')
+
+html = html.replace('<p class="page-subtitle">[Brief description of what this FAQ covers - keep compelling and scannable]</p>',
+                   '<p class="page-subtitle">Your actual subtitle here</p>')
+```
+
+## Full Correct Builder Pattern
+```python
+#!/usr/bin/env python3
+
+with open('_FAQ_TEMPLATE.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+
+# === METADATA ===
+html = html.replace('[YOUR FAQ TITLE]', 'Catholic Church on [Topic]')
+html = html.replace('[150-160 character description with target keywords]', 'Your SEO description')
+
+# === HERO SECTION ===
+html = html.replace('🤖', '⚖️')  # Icon
+html = html.replace('Catholic Church on [Topic]', 'Your Display Title')
+html = html.replace('Comprehensive answers about Catholic teaching on [topic description]', 'Your subtitle')
+
+# === FIX HERO PAGE-TITLE/SUBTITLE (CRITICAL) ===
+html = html.replace('<h1 class="page-title">[Your FAQ Title]</h1>', 
+                   '<h1 class="page-title">Your Display Title</h1>')
+html = html.replace('<p class="page-subtitle">[Brief description of what this FAQ covers - keep compelling and scannable]</p>',
+                   '<p class="page-subtitle">Your subtitle</p>')
+
+# ... rest of script
+```
+
+This fix MUST be in every builder script going forward.
