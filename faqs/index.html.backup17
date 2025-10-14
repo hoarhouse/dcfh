@@ -267,20 +267,21 @@
 
     <script>
         // Display view count for FAQ pages
-        // Display total view count for all FAQ pages
         async function displayViewCount() {
             try {
                 if (!window.dcfSupabase) {
                     console.log('Supabase not available for view count');
-                    document.getElementById('viewCount').textContent = 'Views unavailable';
                     return;
                 }
                 
-                // Get total view count from ALL FAQ pages
-                const { count, error } = await window.dcfSupabase
+                const currentPath = window.location.pathname;
+                const contentId = currentPath.split('/').pop().replace('.html', '');
+                
+                // Get view count from analytics
+                const { data, error } = await window.dcfSupabase
                     .from('universal_analytics')
-                    .select('*', { count: 'exact', head: true })
-                    .like('page_url', '%/faqs/%');
+                    .select('*', { count: 'exact', head: false })
+                    .eq('content_id', contentId);
                 
                 if (error) {
                     console.log('Error fetching view count:', error);
@@ -288,8 +289,8 @@
                     return;
                 }
                 
-                const viewCount = count || 0;
-                document.getElementById('viewCount').textContent = `${viewCount.toLocaleString()} total view${viewCount !== 1 ? 's' : ''}`;
+                const viewCount = data ? data.length : 0;
+                document.getElementById('viewCount').textContent = `${viewCount.toLocaleString()} view${viewCount !== 1 ? 's' : ''}`;
                 
             } catch (err) {
                 console.log('View count display error:', err);
@@ -297,9 +298,14 @@
             }
         }
         
-        // Call on page load
+        // Wait for Supabase to be ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', displayViewCount);
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(displayViewCount, 1000);
+            });
         } else {
-            displayViewCount();
+            setTimeout(displayViewCount, 1000);
         }
+    </script>
+</body>
+</html>
