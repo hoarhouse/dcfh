@@ -1,380 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catholic Church on Deepfakes & Misinformation - DCF Hungary</title>
-    <meta name="description" content="Catholic teaching on AI deepfakes, misinformation, and protecting truth. Vatican guidance on recognizing deception and defending reality.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+#!/usr/bin/env python3
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f8f9fa;
-        }
+# Read template
+with open('deepfakes-misinformation.html', 'r', encoding='utf-8') as f:
+    html = f.read()
 
-        .header {
-            background: white;
-            border-bottom: 1px solid #e5e5e5;
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+# 1. Replace title
+html = html.replace('[YOUR FAQ TITLE]', 'Catholic Church on Deepfakes & Misinformation')
 
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 2rem;
-        }
+# 2. Replace meta description
+html = html.replace('[150-160 character description with target keywords]', 
+    'Catholic teaching on AI deepfakes, misinformation, and protecting truth. Vatican guidance on recognizing deception and defending reality.')
 
-        .logo {
-            display: flex;
-            align-items: center;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-        }
+# 3. Replace hero section
+html = html.replace('🤖', '🎭')
+html = html.replace('Catholic Church on [Topic]', 'Deepfakes, Misinformation & Truth')
+html = html.replace('Comprehensive answers about Catholic teaching on [topic description]', 
+    'Catholic response to AI deception and protecting reality in the digital age')
 
-        .logo-text {
-            font-size: 0.95rem;
-        }
+# 4. Replace Table of Contents
+old_toc = '''                <li><a href="#section1">Section 1: Topic Name (X questions)</a></li>
+                <li><a href="#section2">Section 2: Topic Name (X questions)</a></li>
+                <li><a href="#section3">Section 3: Topic Name (X questions)</a></li>
+                <!-- Add more sections as needed -->'''
 
-        .logo-icon {
-            width: 24px;
-            height: 24px;
-            background: #333;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-menu a {
-            text-decoration: none;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .nav-menu a:hover {
-            color: #333;
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .language-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .lang-btn {
-            padding: 0.4rem 0.8rem;
-            background: transparent;
-            border: 1px solid #e5e5e5;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .lang-btn:hover {
-            border-color: #333;
-            color: #333;
-        }
-
-        .lang-btn.active {
-            background: #000;
-            color: white;
-            border-color: #000;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-        }
-
-        .btn-primary {
-            background: #000;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #333;
-        }
-
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-        }
-
-        /* Main Container */
-        .main-container {
-            max-width: 900px;
-            margin: 3rem auto;
-            padding: 0 2rem;
-        }
-
-        /* Page Header - White Card */
-        .page-header {
-            background: white;
-            border-radius: 16px;
-            padding: 3rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .page-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-        }
-
-        .page-subtitle {
-            font-size: 1.25rem;
-            color: #666;
-            margin-bottom: 2rem;
-        }
-
-        .view-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-        }
-
-        .view-counter span {
-            font-weight: 600;
-        }
-
-        /* Table of Contents */
-        .toc {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .toc h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        .toc ul {
-            list-style: none;
-        }
-
-        .toc li {
-            margin-bottom: 0.5rem;
-        }
-
-        .toc a {
-            color: #0066cc;
-            text-decoration: none;
-            font-size: 1.1rem;
-        }
-
-        .toc a:hover {
-            text-decoration: underline;
-        }
-
-        /* FAQ Sections */
-        .faq-section {
-            background: white;
-            border-radius: 16px;
-            padding: 3rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .faq-section h2 {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e5e5e5;
-        }
-
-        .faq-item {
-            margin-bottom: 2.5rem;
-        }
-
-        .faq-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .faq-question {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 1rem;
-        }
-
-        .faq-answer {
-            font-size: 1.1rem;
-            color: #555;
-            line-height: 1.8;
-        }
-
-        /* Special Containers */
-        .highlight-box {
-            background: #fff9e6;
-            border-left: 4px solid #ffc107;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .case-study {
-            background: #f0f7ff;
-            border-left: 4px solid #0066cc;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .case-study h3 {
-            color: #0066cc;
-            margin-bottom: 1rem;
-        }
-
-        .vatican-quote {
-            background: #f8f9fa;
-            border-left: 4px solid #6c757d;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            font-style: italic;
-            border-radius: 4px;
-        }
-
-        .vatican-quote cite {
-            display: block;
-            margin-top: 1rem;
-            font-style: normal;
-            font-weight: 600;
-            color: #6c757d;
-        }
-
-        /* Lists */
-        .faq-answer ul, .faq-answer ol {
-            margin: 1rem 0 1rem 2rem;
-        }
-
-        .faq-answer li {
-            margin-bottom: 0.5rem;
-            line-height: 1.7;
-        }
-
-        /* Bold emphasis */
-        strong {
-            color: #000;
-            font-weight: 600;
-        }
-
-        /* Back Link */
-        .back-link {
-            display: inline-block;
-            margin-top: 3rem;
-            padding: 1rem 2rem;
-            background: #000;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-
-        .back-link:hover {
-            background: #333;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .page-title {
-                font-size: 2rem;
-            }
-            
-            .main-container {
-                padding: 0 1rem;
-            }
-            
-            .page-header, .faq-section {
-                padding: 2rem;
-            }
-
-            .faq-question {
-                font-size: 1.2rem;
-            }
-
-            .faq-answer {
-                font-size: 1rem;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Navigation injected by dcf-ui.js -->
-    <header class="header" id="main-header"></header>
-
-    <main class="main-container">
-        <!-- Page Header - White Card -->
-        <div class="page-header">
-            <h1 class="page-title">[Your FAQ Title]</h1>
-            <p class="page-subtitle">[Brief description of what this FAQ covers - keep compelling and scannable]</p>
-            <div class="view-counter">
-                <span>👁️</span>
-                <span id="viewCount">Loading views...</span>
-            </div>
-        </div>
-
-        <!-- Table of Contents -->
-        <div class="toc">
-            <h2>📋 Table of Contents</h2>
-            <ul>
-                <li><a href="#section1">Understanding AI Deception (3 questions)</a></li>
+new_toc = '''                <li><a href="#section1">Understanding AI Deception (3 questions)</a></li>
                 <li><a href="#section2">Catholic Teaching on Truth (3 questions)</a></li>
                 <li><a href="#section3">Real-World Impact (3 questions)</a></li>
                 <li><a href="#section4">Protecting Yourself & Others (3 questions)</a></li>
-                <li><a href="#section5">The Catholic Response (3 questions)</a></li>
-            </ul>
-        </div>
+                <li><a href="#section5">The Catholic Response (3 questions)</a></li>'''
 
-        <!-- FAQ Section 1 -->
+html = html.replace(old_toc, new_toc)
+
+# 5. Find where to insert content - between the TOC and Related FAQs
+insert_point = html.find('        <!-- FAQ Section 1 -->')
+end_point = html.find('        <!-- Related FAQs Section -->')
+
+# 6. The complete FAQ content
+faq_content = '''        <!-- FAQ Section 1 -->
         <div class="faq-section" id="section1">
             <h2>Understanding AI Deception</h2>
 
@@ -568,78 +230,13 @@
             </div>
         </div>
 
+'''
 
-        <!-- Related FAQs Section -->
-        <div class="faq-section" id="related">
-            <h2>Related FAQs</h2>
-            <p class="faq-answer">Explore these related topics to deepen your understanding:</p>
-            
-            <ul class="faq-answer">
-                <li><a href="[faq-url-1.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 1]</a> - Brief description of what this FAQ covers</li>
-                <li><a href="[faq-url-2.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 2]</a> - Brief description of what this FAQ covers</li>
-                <li><a href="[faq-url-3.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 3]</a> - Brief description of what this FAQ covers</li>
-            </ul>
-        </div>
+# Replace everything between the markers
+html = html[:insert_point] + faq_content + '\n' + html[end_point:]
 
-        <!-- Back Link -->
-        <div class="faq-section">
-            <a href="https://hoarhouse.github.io/dcfh/faqs/index.html" class="back-link">← Back to All FAQs</a>
-        </div>
-    </main>
+# Write output
+with open('deepfakes-misinformation.html', 'w', encoding='utf-8') as f:
+    f.write(html)
 
-    <!-- Footer injected by dcf-ui.js -->
-    <footer id="main-footer"></footer>
-
-    <!-- Scripts - Load in this exact order -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-core.js"></script>
-    <script src="../js/dcf-ui.js"></script>
-    <script src="../js/dcf-auth.js"></script>
-    <script src="../js/dcf-analytics.js"></script>
-    <script src="../js/dcf-init.js"></script>
-    <script src="../js/faq-components.js"></script>
-
-    <script>
-        // Display view count for FAQ pages
-        async function displayViewCount() {
-            try {
-                if (!window.dcfSupabase) {
-                    console.log('Supabase not available for view count');
-                    return;
-                }
-                
-                const currentPath = window.location.pathname;
-                const contentId = currentPath.split('/').pop().replace('.html', '');
-                
-                // Get view count from analytics
-                const { data, error } = await window.dcfSupabase
-                    .from('universal_analytics')
-                    .select('*', { count: 'exact', head: false })
-                    .eq('content_id', contentId);
-                
-                if (error) {
-                    console.log('Error fetching view count:', error);
-                    document.getElementById('viewCount').textContent = '-- views';
-                    return;
-                }
-                
-                const viewCount = data ? data.length : 0;
-                document.getElementById('viewCount').textContent = `${viewCount.toLocaleString()} view${viewCount !== 1 ? 's' : ''}`;
-                
-            } catch (err) {
-                console.log('View count display error:', err);
-                document.getElementById('viewCount').textContent = '-- views';
-            }
-        }
-        
-        // Wait for Supabase to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(displayViewCount, 1000);
-            });
-        } else {
-            setTimeout(displayViewCount, 1000);
-        }
-    </script>
-</body>
-</html>
+print("✅ Deepfakes FAQ built correctly from template")
