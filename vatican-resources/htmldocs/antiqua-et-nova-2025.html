@@ -3023,104 +3023,55 @@
     <a href="#" class="back-to-top" id="backToTop">↑ Top</a>
     </main>
 
-    <script>
-        // Back to top button
-        const backToTop = document.getElementById('backToTop');
-        
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                backToTop.classList.add('visible');
-            } else {
-                backToTop.classList.remove('visible');
-            }
-        });
-
-        backToTop.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        // Smooth scroll for TOC links
-        document.querySelectorAll('.htmldoc-toc a').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        });
-    </script>
-
-    <!-- Footer dynamically populated by dcf-ui.js -->
-
-    <div class="copy-success" id="copySuccess">✅ Link copied to clipboard!</div>
-
-    <!-- DCF System Scripts - EXACT SAME ORDER AS INDEX.HTML -->
-    <script src="../../js/dcf-core.js"></script>
-    <script src="../../js/dcf-ui.js"></script>
-    <script src="../../js/dcf-auth.js"></script>
-    <script src="../../js/dcf-analytics.js"></script>
-    <script src="../../js/dcf-init.js"></script>
     
-    <script>
-        function copyLink() {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                const notification = document.getElementById('copySuccess');
-                notification.style.display = 'block';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 3000);
-            });
-        }
 
-        // Resource page initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Vatican Resource Page Loaded: lvii-world-day-of-peace-2024-artificial-intelligence-and-peace');
-        });
-    </script>
-        
-        // Track page view
-        async function trackView() {
+
+    <script>
+        // Resource tracking with proper timing
+        async function trackResourceView() {
+            const resourceId = 'f9fd315b-f6a8-4a54-aecf-b11150e19c80';
+            
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
             if (!window.dcfSupabase) return;
             
             try {
-                await window.dcfSupabase.rpc('increment_resource_view', {
+                const { error } = await window.dcfSupabase.rpc('increment_resource_view', {
                     resource_id: resourceId
                 });
-                console.log('✅ View tracked');
+                
+                if (error) {
+                    console.error('❌ Error tracking view:', error);
+                } else {
+                    console.log('✅ Resource view tracked');
+                }
             } catch (err) {
-                console.warn('Failed to track view:', err);
+                console.warn('View tracking error:', err);
             }
         }
         
-        // Track download (when clicking external links)
-        async function trackDownload() {
-            if (!window.dcfSupabase) return;
-            
-            try {
-                await window.dcfSupabase.rpc('increment_resource_download', {
-                    resource_id: resourceId
-                });
-                console.log('✅ Download tracked');
-            } catch (err) {
-                console.warn('Failed to track download:', err);
-            }
-        }
-        
-        // Load live stats
         async function loadLiveStats() {
+            let attempts = 0;
+            while (!window.dcfSupabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
             if (!window.dcfSupabase) return;
             
             try {
                 const { data, error } = await window.dcfSupabase.from('resources')
                     .select('view_count, download_count, bookmark_count, rating_average')
-                    .eq('id', resourceId)
+                    .eq('id', 'f9fd315b-f6a8-4a54-aecf-b11150e19c80')
                     .single();
                 
                 if (error) throw error;
                 
-                // Update stat numbers in the DOM (using inline styles)
-                const statNumbers = document.querySelectorAll('.htmldoc-sidebar [style*="font-size: 1.5rem"]');
+                const statNumbers = document.querySelectorAll('[style*="font-size: 1.5rem"]');
                 if (statNumbers[0]) statNumbers[0].textContent = data.view_count || 0;
                 if (statNumbers[1]) statNumbers[1].textContent = data.download_count || 0;
                 if (statNumbers[2]) statNumbers[2].textContent = data.bookmark_count || 0;
@@ -3132,10 +3083,9 @@
             }
         }
         
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
-                trackView();
+                trackResourceView();
                 loadLiveStats();
             }, 1000);
         });
