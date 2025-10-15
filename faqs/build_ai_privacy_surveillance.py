@@ -7,10 +7,9 @@ with open('_FAQ_TEMPLATE.html', 'r', encoding='utf-8') as f:
     html = f.read()
 
 # === METADATA ===
-html = html.replace('[YOUR FAQ TITLE]', 'AI Privacy & Surveillance: Catholic Church Teaching - DCF')
+html = html.replace('[YOUR FAQ TITLE]', 'AI Privacy & Surveillance: Catholic Teaching - DCF')
 html = html.replace('[150-160 character description with target keywords]', 
-    'Catholic Church teaching on AI privacy, surveillance, and data ethics. Vatican guidance on protecting human dignity in the digital age.')
-
+'Catholic Church teaching on AI privacy, surveillance, and data ethics. Vatican guidance on protecting human dignity and privacy rights in the digital age.')    
 # === HERO SECTION ===
 html = html.replace('🤖', '👁️')
 html = html.replace('<h1 class="page-title">[Your FAQ Title]</h1>', 
