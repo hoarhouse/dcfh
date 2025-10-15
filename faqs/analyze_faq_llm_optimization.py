@@ -168,7 +168,8 @@ def main():
         'ai-jobs-catholic-teaching.html',
         'catholic-ai-ethics.html',
         'deepfakes-misinformation.html',
-        'ai-warfare-weapons.html'
+        'ai-warfare-weapons.html',
+        'ai-privacy-surveillance.html'
     ]
     
     results = {}
