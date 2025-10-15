@@ -107,6 +107,28 @@ function getCorrectBasePath() {
         }
     }
     
+    // Check if we're in the blog folder or its subfolders
+    if (pathname.includes('/blog/')) {
+        // Count the depth from blog folder
+        const blogIndex = pathParts.indexOf('blog');
+        if (blogIndex !== -1) {
+            // Calculate depth: blog/file = 1 level, blog/subfolder/file = 2 levels
+            const depthFromBlog = pathParts.length - blogIndex - 1;
+            
+            console.log('DEBUG PATH - In blog folder, depth:', depthFromBlog);
+            
+            if (depthFromBlog === 1) {
+                // We're directly in blog folder (e.g., blog/index.html)
+                console.log('DEBUG PATH - returning: ../');
+                return '../';
+            } else if (depthFromBlog === 2) {
+                // We're in a blog subfolder (e.g., blog/the-wisdom-brief/article.html)
+                console.log('DEBUG PATH - returning: ../../');
+                return '../../';
+            }
+        }
+    }
+    
     // Check if we're in other known folders
     const knownFolders = ['members', 'projects', 'events', 'resources', 'vatican-resources', 'auth', 'admin', 'public', 'news', 'blog', 'people'];
     

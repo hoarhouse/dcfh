@@ -130,7 +130,7 @@ function getCorrectBasePath() {
     }
     
     // Check if we're in other known folders
-    const knownFolders = ['members', 'projects', 'events', 'resources', 'vatican-resources', 'auth', 'admin', 'public', 'news', 'blog', 'people'];
+    const knownFolders = ['members', 'projects', 'events', 'resources', 'vatican-resources', 'auth', 'admin', 'public', 'news', 'blog', 'people', 'faqs'];
     
     // Find the current folder
     let currentFolder = null;
