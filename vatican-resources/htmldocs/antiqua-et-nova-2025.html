@@ -3191,5 +3191,72 @@
         });
 
     </script>
+
+    <script>
+        // Resource tracking
+        const resourceId = 'f9fd315b-f6a8-4a54-aecf-b11150e19c80';
+        
+        // Track page view
+        async function trackView() {
+            if (!window.dcfSupabase) return;
+            
+            try {
+                await window.dcfSupabase.rpc('increment_view_count', {
+                    resource_id: resourceId
+                });
+                console.log('✅ View tracked');
+            } catch (err) {
+                console.warn('Failed to track view:', err);
+            }
+        }
+        
+        // Track download (when clicking external links)
+        async function trackDownload() {
+            if (!window.dcfSupabase) return;
+            
+            try {
+                await window.dcfSupabase.rpc('increment_download_count', {
+                    resource_id: resourceId
+                });
+                console.log('✅ Download tracked');
+            } catch (err) {
+                console.warn('Failed to track download:', err);
+            }
+        }
+        
+        // Load live stats
+        async function loadLiveStats() {
+            if (!window.dcfSupabase) return;
+            
+            try {
+                const { data, error } = await window.dcfSupabase.from('resources')
+                    .select('view_count, download_count, bookmark_count, rating_average')
+                    .eq('id', resourceId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Update stat numbers in the DOM (using inline styles)
+                const statNumbers = document.querySelectorAll('.htmldoc-sidebar [style*="font-size: 1.5rem"]');
+                if (statNumbers[0]) statNumbers[0].textContent = data.view_count || 0;
+                if (statNumbers[1]) statNumbers[1].textContent = data.download_count || 0;
+                if (statNumbers[2]) statNumbers[2].textContent = data.bookmark_count || 0;
+                if (statNumbers[3]) statNumbers[3].textContent = (data.rating_average || 0).toFixed(1) + '★';
+                
+                console.log('✅ Live stats loaded:', data);
+            } catch (err) {
+                console.warn('Failed to load stats:', err);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                trackView();
+                loadLiveStats();
+            }, 1000);
+        });
+    </script>
+
 </body>
 </html>
