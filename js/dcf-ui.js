@@ -68,7 +68,6 @@ const LAUNCH_MENU = [
         dropdown: true,
         items: [
             { id: 'ai_resources', text: 'AI Resources', href: 'public/dcf_ai_resources.html' },
-            { id: 'vatican_docs', text: 'Vatican Documents', href: 'vatican-resources/index.html' },
             { id: 'faqs', text: 'FAQs', href: 'faqs/index.html' }
         ]
     }
