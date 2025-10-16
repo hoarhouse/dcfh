@@ -49,6 +49,7 @@ async function initializeAuth() {
         '/blog/',
         '/faqs/',
         '/vatican-resources/',
+        '/resources/',
         'dcf_donate.html'
     ];
     
@@ -179,6 +180,7 @@ function updateUIForLoggedInState() {
         '/blog/',
         '/faqs/',
         '/vatican-resources/',
+        '/resources/',
         'dcf_donate.html'
     ];
     
@@ -215,6 +217,7 @@ function updateUIForLoggedOutState() {
         '/blog/',
         '/faqs/',
         '/vatican-resources/',
+        '/resources/',
         'dcf_donate.html'
     ];
     
@@ -243,6 +246,7 @@ function updateLoggedInNavigation() {
         '/blog/',
         '/faqs/',
         '/vatican-resources/',
+        '/resources/',
         'dcf_donate.html'
     ];
     
@@ -392,6 +396,7 @@ function updateUserMenu() {
         '/blog/',
         '/faqs/',
         '/vatican-resources/',
+        '/resources/',
         'dcf_donate.html'
     ];
     

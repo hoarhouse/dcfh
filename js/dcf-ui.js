@@ -106,6 +106,9 @@ const LAUNCH_PAGES = [
     // Vatican resource pages
     'vatican-resources/',
     
+    // Resources pages
+    'resources/',
+    
     // Donation page
     'members/dcf_donate.html'
 ];
