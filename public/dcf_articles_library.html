@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles Library - DCF Hungary</title>
+    <meta name="description" content="Complete library of articles, research, and thought leadership on AI ethics, Catholic Social Teaching, and technology.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        /* Nav CSS */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Page Header - Card Style */
+        .page-header {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            font-size: 1.25rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 50px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        /* Filters */
+        .filters {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1.5rem;
+            border: 2px solid #e5e5e5;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover {
+            border-color: #333;
+        }
+
+        .filter-btn.active {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        /* Articles Grid */
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            background: #e1f5fe;
+            color: #01579b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .article-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .article-excerpt {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .article-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .article-date {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .article-read-time {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #666;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: #666;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-subtitle {
+                font-size: 1rem;
+            }
+            
+            .articles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .page-header {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-analytics.js"></script>
+</head>
+<body>
+    <header class="header" id="main-header"></header>
+
+    <main class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Articles Library</h1>
+            <p class="page-subtitle">Explore our complete collection of research, analysis, and thought leadership on AI ethics</p>
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search articles by title, author, or topic...">
+                <span class="search-icon">🔍</span>
+            </div>
+        </div>
+
+        <div class="filters">
+            <label class="filter-label">Filter by Category:</label>
+            <div class="filter-group" id="categoryFilters">
+                <button class="filter-btn active" data-category="all">All Articles</button>
+                <button class="filter-btn" data-category="the-wisdom-brief">The Wisdom Brief</button>
+                <button class="filter-btn" data-category="code-to-conscience">Code to Conscience</button>
+                <button class="filter-btn" data-category="ethical-ai-educational-materials">Educational Materials</button>
+                <button class="filter-btn" data-category="domus-communis-foundation">Domus Communis</button>
+                <button class="filter-btn" data-category="ai-weapons-systems">AI & Weapons</button>
+                <button class="filter-btn" data-category="dcf-nuclear-disarmament-blog">Disarmament</button>
+            </div>
+        </div>
+
+        <div id="articlesGrid" class="articles-grid">
+            <div class="loading">Loading articles from database...</div>
+        </div>
+    </main>
+
+    <footer id="dcf-footer"></footer>
+
+    <script>
+        let allArticles = [];
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.updateUserInterface) {
+                window.updateUserInterface();
+            }
+            
+            // Load articles
+            loadArticles();
+
+            // Setup filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.category;
+                    filterArticles();
+                });
+            });
+
+            // Setup search
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                searchArticles(e.target.value);
+            });
+        });
+
+        async function loadArticles() {
+            try {
+                if (!window.dcfSupabase) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data, error } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select(`
+                        *,
+                        blogs (
+                            name,
+                            slug
+                        )
+                    `)
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allArticles = data;
+                console.log(`✅ Loaded ${allArticles.length} articles`);
+                renderArticles(allArticles);
+
+            } catch (error) {
+                console.error('Error loading articles:', error);
+                document.getElementById('articlesGrid').innerHTML = `
+                    <div class="empty-state">
+                        <h3>Unable to load articles</h3>
+                        <p>Please try refreshing the page</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderArticles(articles) {
+            const grid = document.getElementById('articlesGrid');
+            
+            if (articles.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No articles found</h3>
+                        <p>Try adjusting your filters or search</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = articles.map(article => {
+                const blogSlug = article.blogs?.slug || 'uncategorized';
+                const blogName = article.blogs?.name || 'Blog';
+                const url = `../blog/${blogSlug}/${article.slug}.html`;
+                const date = new Date(article.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="article-card" onclick="window.location.href='${url}'">
+                        <div class="article-meta">
+                            <span class="meta-badge">${blogName}</span>
+                        </div>
+                        <h2 class="article-title">${article.title}</h2>
+                        <p class="article-excerpt">${article.excerpt || 'Read more about this topic...'}</p>
+                        <div class="article-footer">
+                            <span class="article-date">${date}</span>
+                            <span class="article-read-time">📖 ${article.read_time || '5'} min read</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterArticles() {
+            if (currentFilter === 'all') {
+                renderArticles(allArticles);
+            } else {
+                const filtered = allArticles.filter(article => {
+                    return article.blogs?.slug === currentFilter;
+                });
+                renderArticles(filtered);
+            }
+        }
+
+        function searchArticles(query) {
+            if (!query.trim()) {
+                filterArticles();
+                return;
+            }
+
+            const searchTerm = query.toLowerCase();
+            const filtered = allArticles.filter(article => {
+                return article.title.toLowerCase().includes(searchTerm) ||
+                       (article.excerpt && article.excerpt.toLowerCase().includes(searchTerm)) ||
+                       (article.blogs?.name && article.blogs.name.toLowerCase().includes(searchTerm));
+            });
+
+            renderArticles(filtered);
+        }
+    </script>
+</body>
+</html>
