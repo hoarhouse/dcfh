@@ -559,7 +559,7 @@ function populateTopNavigationOld() {
         },
         { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
         { href: basePath + 'public/dcf_ai_resources.html', text: 'Library' },
-            href: basePath + 'news/dcf_news.html', 
+        { href: basePath + 'news/dcf_news.html', 
             text: 'News',
             dropdown: true,
             submenu: [
