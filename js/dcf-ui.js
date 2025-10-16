@@ -65,9 +65,11 @@ const LAUNCH_MENU = [
         id: 'resources',
         text: 'Library', 
         href: 'public/dcf_ai_resources.html', 
-    items: [
+    dropdown: true,
+        items: [
             { id: 'library', text: 'Library', href: 'public/dcf_ai_resources.html' },
-    ]
+            { id: 'faqs', text: 'FAQs', href: 'faqs/index.html' }
+        ]
     }
 ];
 
