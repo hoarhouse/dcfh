@@ -65,9 +65,9 @@ const LAUNCH_MENU = [
         id: 'resources',
         text: 'Library', 
         href: 'public/dcf_ai_resources.html', 
-        items: [
+    'public/dcf_articles_library.html',        items: [
             { id: 'library', text: 'Library', href: 'public/dcf_ai_resources.html' },
-        ]
+    'public/dcf_articles_library.html',        ]
     }
 ];
 
@@ -89,7 +89,7 @@ const LAUNCH_PAGES = [
     'public/dcf_values.html',
     'public/dcf_contact.html',
     'public/dcf_ai_resources.html',
-    
+    'public/dcf_articles_library.html',    
     // ALL Initiative pages - matches any file in initiatives folder and subfolders
     'initiatives/',  // This includes all 7 HTML files: initiatives_home, 4 initiative pages, and 2 nuclear disarmament pages
     
@@ -559,7 +559,7 @@ function populateTopNavigationOld() {
         },
         { href: basePath + 'public/dcf_projects_public.html', text: 'Projects' },
         { href: basePath + 'public/dcf_ai_resources.html', text: 'Library' },
-        { href: basePath + 'news/dcf_news.html', 
+    'public/dcf_articles_library.html',        { href: basePath + 'news/dcf_news.html', 
             text: 'News',
             dropdown: true,
             submenu: [
