@@ -93,6 +93,11 @@ const LAUNCH_PAGES = [
     'public/dcf_ai_resources.html',
     'public/dcf_articles_library.html',
     'public/test-nav-footer.html',
+    'public/1.html',
+    'public/2.html',
+    'public/3.html',
+    'public/4.html',
+    'public/5.html',
     'public/ai-ethics-philosophy.html',
     
     // ALL Initiative pages - matches any file in initiatives folder and subfolders
