@@ -395,7 +395,7 @@ def build_page(config):
 
                 const {{ data: blogPosts, error: blogError }} = await window.dcfSupabase
                     .from('blog_posts')
-                    .select('id, title, excerpt, slug, created_at, blog_post_tags!inner(blog_tags!inner(slug))')
+                    .select('id, title, excerpt, slug, created_at, featured_image_url, blog_post_tags!inner(blog_tags!inner(slug))')
                     .eq('status', 'published')
                     .eq('blog_post_tags.blog_tags.slug', '{config['tag_slug']}')
                     .order('created_at', {{ ascending: false }});
