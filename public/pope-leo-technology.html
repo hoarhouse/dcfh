@@ -99,10 +99,10 @@
         let allResources = [], currentSort = 'newest';
         async function loadResources() {
             try {
-                const {data: vaticanDocs} = await window.dcfSupabase.from('resources').select('id, title, description, tags, page_url, created_at').contains('tags', ['pope-leo']).in('status', ['published', 'approved']).order('created_at', {ascending: false});
-                const {data: blogPosts} = await window.dcfSupabase.from('blog_posts').select('id, title, excerpt, slug, created_at, featured_image_url, blog_post_tags!inner(blog_tags!inner(slug))').eq('status', 'published').eq('blog_post_tags.blog_tags.slug', 'pope-leo').order('created_at', {ascending: false});
+                const {data: vaticanDocs} = await window.dcfSupabase.from('resources').select('id, title, description, tags, page_url, created_at').or('title.ilike.%pope leo%,title.ilike.%antiqua%').in('status', ['published', 'approved']).order('created_at', {ascending: false});
+                const {data: blogPosts} = await window.dcfSupabase.from('blog_posts').select('id, title, excerpt, slug, created_at, featured_image_url, blog_post_tags!inner(blog_tags!inner(slug))').eq('status', 'published').eq('blog_post_tags.blog_tags.slug', 'CUSTOM2').order('created_at', {ascending: false});
                 const formattedVatican = (vaticanDocs || []).map(doc => ({id: doc.id, title: doc.title, description: doc.description, tags: doc.tags || [], url: doc.page_url, type: 'document', created_at: doc.created_at}));
-                const formattedBlogs = (blogPosts || []).map(post => ({id: post.id, title: post.title, description: post.excerpt, tags: ['pope-leo'], url: `../blog/pope-leo/${post.slug}.html`, type: 'article', created_at: post.created_at, featured_image_url: post.featured_image_url}));
+                const formattedBlogs = (blogPosts || []).map(post => ({id: post.id, title: post.title, description: post.excerpt, tags: ['CUSTOM2'], url: `../blog/pope-leo/${post.slug}.html`, type: 'article', created_at: post.created_at, featured_image_url: post.featured_image_url}));
                 allResources = [...formattedVatican, ...formattedBlogs];
                 document.getElementById('totalCount').textContent = allResources.length;
                 document.getElementById('documentCount').textContent = formattedVatican.length;
