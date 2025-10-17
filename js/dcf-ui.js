@@ -99,6 +99,10 @@ const LAUNCH_PAGES = [
     'public/4.html',
     'public/5.html',
     'public/ai-ethics-philosophy.html',
+    'public/pope-francis-technology.html',
+    'public/pope-leo-technology.html',
+    'public/warfare-security.html',
+    'public/work-economy.html',
     
     // ALL Initiative pages - matches any file in initiatives folder and subfolders
     'initiatives/',  // This includes all 7 HTML files: initiatives_home, 4 initiative pages, and 2 nuclear disarmament pages
