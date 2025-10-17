@@ -193,7 +193,7 @@ function createAndInjectNavigation() {
     
     const navHTML = `
         <nav class="nav-container">
-            <a href="${siteRoot}index.html" class="logo">
+            <a href="${basePath}index.html" class="logo">
                 <div class="logo-icon"></div>
                 <span class="logo-text">Domus Communis Foundation Hungary</span>
             </a>
