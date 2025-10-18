@@ -1417,19 +1417,35 @@
                     .contains('tags', ['ai-ethics-philosophy'])
                     .in('status', ['published', 'approved']);
                 
-                // Count Warfare, Security & Disarmament
-                const { count: warfareCount } = await window.dcfSupabase
+                // Count Warfare, Security & Disarmament (resources + blogs)
+                const { count: warfareResourceCount } = await window.dcfSupabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .contains('tags', ['warfare-security'])
                     .in('status', ['published', 'approved']);
                 
-                // Count Work, Economy & Human Dignity  
-                const { count: workCount } = await window.dcfSupabase
+                const { count: warfareBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'warfare-security');
+                
+                const warfareCount = (warfareResourceCount || 0) + (warfareBlogCount || 0);
+                
+                // Count Work, Economy & Human Dignity (resources + blogs)
+                const { count: workResourceCount } = await window.dcfSupabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .contains('tags', ['work-economy'])
                     .in('status', ['published', 'approved']);
+                
+                const { count: workBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'work-economy');
+                
+                const workCount = (workResourceCount || 0) + (workBlogCount || 0);
                 
                 // Count Key Vatican Documents
                 const { count: vaticanDocsCount } = await window.dcfSupabase
