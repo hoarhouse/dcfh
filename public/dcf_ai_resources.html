@@ -1308,8 +1308,71 @@
             `).join('');
         }
 
+        // Load Popular FAQs
+        async function loadPopularFAQs() {
+            try {
+                // Get 3 most recent FAQs
+                const { data: faqs, error } = await window.dcfSupabase
+                    .from('faqs')
+                    .select('*')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+                
+                if (error) throw error;
+                
+                // Get total count for "View All" link
+                const { count: totalFaqs } = await window.dcfSupabase
+                    .from('faqs')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                // Update View All link with count
+                const viewAllLink = document.getElementById('faqsViewAllLink');
+                if (viewAllLink && totalFaqs) {
+                    viewAllLink.textContent = `View All ${totalFaqs} FAQs →`;
+                }
+                
+                // Render FAQ cards
+                const faqsGrid = document.getElementById('popularFaqsGrid');
+                if (!faqs || faqs.length === 0) {
+                    faqsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #666;">No FAQs available</div>';
+                    return;
+                }
+                
+                faqsGrid.innerHTML = faqs.map(faq => {
+                    // Truncate answer to 150 characters
+                    const answerExcerpt = faq.answer && faq.answer.length > 150 
+                        ? faq.answer.substring(0, 150) + '...'
+                        : faq.answer || '';
+                    
+                    // Determine the FAQ detail page URL
+                    const faqUrl = faq.slug 
+                        ? `../faqs/${faq.slug}.html`
+                        : `../faqs/index.html#faq-${faq.id}`;
+                    
+                    return `
+                        <div class="resource-card-no-image" onclick="window.location.href='${faqUrl}'">
+                            <div class="resource-meta">
+                                <span class="meta-badge">FAQ</span>
+                                ${faq.category ? `<span class="meta-badge">${faq.category}</span>` : ''}
+                            </div>
+                            <h3 class="resource-title">${faq.question}</h3>
+                            <p class="resource-description">${answerExcerpt}</p>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading FAQs:', error);
+                document.getElementById('popularFaqsGrid').innerHTML = 
+                    '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #666;">Error loading FAQs</div>';
+            }
+        }
+
         // Call on page load
         document.addEventListener('DOMContentLoaded', function() {
+            loadPopularFAQs();
             loadCuratedSections();
         });
 </script>
