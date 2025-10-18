@@ -101,6 +101,7 @@ const LAUNCH_PAGES = [
     'public/ai-ethics-philosophy.html',
     'public/pope-francis-technology.html',
     'public/pope-leo-technology.html',
+    'public/search-results.html',
     'public/warfare-security.html',
     'public/work-economy.html',
     
