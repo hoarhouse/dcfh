@@ -1410,12 +1410,20 @@
                 });
                 
                 
-                // Count AI Ethics & Philosophy
-                const { count: aiEthicsCount } = await window.dcfSupabase
+                // Count AI Ethics & Philosophy (resources + blogs)
+                const { count: aiEthicsResourceCount } = await window.dcfSupabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .contains('tags', ['ai-ethics-philosophy'])
                     .in('status', ['published', 'approved']);
+                
+                const { count: aiEthicsBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'ai-ethics-philosophy');
+                
+                const aiEthicsCount = (aiEthicsResourceCount || 0) + (aiEthicsBlogCount || 0);
                 
                 // Count Warfare, Security & Disarmament (resources + blogs)
                 const { count: warfareResourceCount } = await window.dcfSupabase
@@ -1447,12 +1455,20 @@
                 
                 const workCount = (workResourceCount || 0) + (workBlogCount || 0);
                 
-                // Count Key Vatican Documents
-                const { count: vaticanDocsCount } = await window.dcfSupabase
+                // Count Key Vatican Documents (resources + blogs)
+                const { count: vaticanResourceCount } = await window.dcfSupabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .contains('tags', ['official-church-documents'])
                     .in('status', ['published', 'approved']);
+                
+                const { count: vaticanBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'vatican-documents');
+                
+                const vaticanDocsCount = (vaticanResourceCount || 0) + (vaticanBlogCount || 0);
                 
                 // Update the links
                 document.querySelectorAll('a[href="ai-ethics-philosophy.html"]').forEach(link => {
