@@ -1,380 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artificial Intelligence and Wisdom: Vatican Teaching on AI and Human Knowledge - FAQ - DCF Hungary</title>
-    <meta name="description" content="Complete FAQ on Vatican teaching about AI and wisdom. Dicastery for Culture on intelligence vs wisdom, education, and human learning in the AI age.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc3545'/></svg>">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+#!/usr/bin/env python3
+"""
+Builder script for Vatican AI and Wisdom FAQ
+Creates: vatican-ai-wisdom-faq.html
+"""
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f8f9fa;
-        }
+# Read template
+with open('_FAQ_TEMPLATE.html', 'r', encoding='utf-8') as f:
+    html = f.read()
 
-        .header {
-            background: white;
-            border-bottom: 1px solid #e5e5e5;
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+# === METADATA ===
+html = html.replace('[YOUR FAQ TITLE]', 'Artificial Intelligence and Wisdom: Vatican Teaching on AI and Human Knowledge - FAQ')
+html = html.replace('[150-160 character description with target keywords]', 
+    'Complete FAQ on Vatican teaching about AI and wisdom. Dicastery for Culture on intelligence vs wisdom, education, and human learning in the AI age.')
 
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 2rem;
-        }
+# === HERO SECTION ===
+html = html.replace('[Your FAQ Title]', 'Artificial Intelligence and Wisdom')
+html = html.replace('[Brief description of what this FAQ covers - keep compelling and scannable]', 
+    'Understanding the Vatican\'s teaching on the relationship between AI and human wisdom. Essential for educators, students, philosophers, and anyone exploring how AI affects learning, knowledge, and the cultivation of wisdom.')
 
-        .logo {
-            display: flex;
-            align-items: center;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-        }
+# === TABLE OF CONTENTS ===
+old_toc = """                <li><a href="#section1">Section 1: Topic Name (X questions)</a></li>
+                <li><a href="#section2">Section 2: Topic Name (X questions)</a></li>
+                <li><a href="#section3">Section 3: Topic Name (X questions)</a></li>
+                <!-- Add more sections as needed -->"""
 
-        .logo-text {
-            font-size: 0.95rem;
-        }
-
-        .logo-icon {
-            width: 24px;
-            height: 24px;
-            background: #333;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-menu a {
-            text-decoration: none;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .nav-menu a:hover {
-            color: #333;
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .language-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .lang-btn {
-            padding: 0.4rem 0.8rem;
-            background: transparent;
-            border: 1px solid #e5e5e5;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .lang-btn:hover {
-            border-color: #333;
-            color: #333;
-        }
-
-        .lang-btn.active {
-            background: #000;
-            color: white;
-            border-color: #000;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-        }
-
-        .btn-primary {
-            background: #000;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #333;
-        }
-
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-        }
-
-        /* Main Container */
-        .main-container {
-            max-width: 900px;
-            margin: 3rem auto;
-            padding: 0 2rem;
-        }
-
-        /* Page Header - White Card */
-        .page-header {
-            background: white;
-            border-radius: 16px;
-            padding: 3rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .page-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-        }
-
-        .page-subtitle {
-            font-size: 1.25rem;
-            color: #666;
-            margin-bottom: 2rem;
-        }
-
-        .view-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-        }
-
-        .view-counter span {
-            font-weight: 600;
-        }
-
-        /* Table of Contents */
-        .toc {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .toc h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        .toc ul {
-            list-style: none;
-        }
-
-        .toc li {
-            margin-bottom: 0.5rem;
-        }
-
-        .toc a {
-            color: #0066cc;
-            text-decoration: none;
-            font-size: 1.1rem;
-        }
-
-        .toc a:hover {
-            text-decoration: underline;
-        }
-
-        /* FAQ Sections */
-        .faq-section {
-            background: white;
-            border-radius: 16px;
-            padding: 3rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .faq-section h2 {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e5e5e5;
-        }
-
-        .faq-item {
-            margin-bottom: 2.5rem;
-        }
-
-        .faq-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .faq-question {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 1rem;
-        }
-
-        .faq-answer {
-            font-size: 1.1rem;
-            color: #555;
-            line-height: 1.8;
-        }
-
-        /* Special Containers */
-        .highlight-box {
-            background: #fff9e6;
-            border-left: 4px solid #ffc107;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .case-study {
-            background: #f0f7ff;
-            border-left: 4px solid #0066cc;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .case-study h3 {
-            color: #0066cc;
-            margin-bottom: 1rem;
-        }
-
-        .vatican-quote {
-            background: #f8f9fa;
-            border-left: 4px solid #6c757d;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            font-style: italic;
-            border-radius: 4px;
-        }
-
-        .vatican-quote cite {
-            display: block;
-            margin-top: 1rem;
-            font-style: normal;
-            font-weight: 600;
-            color: #6c757d;
-        }
-
-        /* Lists */
-        .faq-answer ul, .faq-answer ol {
-            margin: 1rem 0 1rem 2rem;
-        }
-
-        .faq-answer li {
-            margin-bottom: 0.5rem;
-            line-height: 1.7;
-        }
-
-        /* Bold emphasis */
-        strong {
-            color: #000;
-            font-weight: 600;
-        }
-
-        /* Back Link */
-        .back-link {
-            display: inline-block;
-            margin-top: 3rem;
-            padding: 1rem 2rem;
-            background: #000;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-
-        .back-link:hover {
-            background: #333;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .page-title {
-                font-size: 2rem;
-            }
-            
-            .main-container {
-                padding: 0 1rem;
-            }
-            
-            .page-header, .faq-section {
-                padding: 2rem;
-            }
-
-            .faq-question {
-                font-size: 1.2rem;
-            }
-
-            .faq-answer {
-                font-size: 1rem;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Navigation injected by dcf-ui.js -->
-    <header class="header" id="main-header"></header>
-
-    <main class="main-container">
-        <!-- Page Header - White Card -->
-        <div class="page-header">
-            <h1 class="page-title">Artificial Intelligence and Wisdom</h1>
-            <p class="page-subtitle">Understanding the Vatican's teaching on the relationship between AI and human wisdom. Essential for educators, students, philosophers, and anyone exploring how AI affects learning, knowledge, and the cultivation of wisdom.</p>
-            <div class="view-counter">
-                <span>👁️</span>
-                <span id="viewCount">Loading views...</span>
-            </div>
-        </div>
-
-        <!-- Table of Contents -->
-        <div class="toc">
-            <h2>📋 Table of Contents</h2>
-            <ul>
-                <li><a href="#understanding">Understanding Intelligence vs Wisdom (3 questions)</a></li>
+new_toc = """                <li><a href="#understanding">Understanding Intelligence vs Wisdom (3 questions)</a></li>
                 <li><a href="#education">AI and Education (4 questions)</a></li>
                 <li><a href="#guidance">Wisdom Guiding Technology (3 questions)</a></li>
                 <li><a href="#cultivation">Cultivating Wisdom (3 questions)</a></li>
-                <li><a href="#related">Related Vatican Teaching (2 questions)</a></li>
-            </ul>
-        </div>
+                <li><a href="#related">Related Vatican Teaching (2 questions)</a></li>"""
 
-        <!-- Understanding Intelligence vs Wisdom -->
+html = html.replace(old_toc, new_toc)
+
+# === FAQ CONTENT ===
+insert_point = html.find('        <!-- FAQ Section 1 -->')
+end_point = html.find('        <!-- Related FAQs Section -->')
+
+faq_content = """        <!-- Understanding Intelligence vs Wisdom -->
         <div class="faq-section" id="understanding">
             <h2>Understanding Intelligence vs Wisdom</h2>
 
@@ -497,78 +159,27 @@
                 <p class="faq-answer">Explore our complete collection of Vatican AI ethics FAQs including the <a href="vatican-ai-peace-2024-faq.html">2024 World Day of Peace on AI</a>, <a href="vatican-g7-ai-address-2024-faq.html">Pope Francis at G7 2024</a>, <a href="vatican-wef-ai-message-2025-faq.html">WEF 2025 Message</a>, <a href="vatican-communications-ai-wisdom-2024-faq.html">AI and Wisdom of the Heart</a>, and <a href="vatican-child-dignity-digital-world-2019-faq.html">Child Dignity in the Digital World</a>. These documents together provide comprehensive Catholic teaching on technology, human dignity, and the common good.</p>
             </div>
         </div>
+"""
 
-        <!-- Related FAQs Section -->
-        <div class="faq-section" id="related">
-            <h2>Related FAQs</h2>
-            <p class="faq-answer">Explore these related topics to deepen your understanding:</p>
-            
-            <ul class="faq-answer">
+# Replace content
+html = html[:insert_point] + faq_content + '\n' + html[end_point:]
+
+# === RELATED FAQS ===
+related_faqs = """            <ul class="faq-answer">
                 <li><a href="vatican-communications-ai-wisdom-2024-faq.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">AI and Wisdom of the Heart</a> - Pope Francis's 2024 World Communications Day message on AI and wisdom</li>
                 <li><a href="ai-consciousness-souls.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">Is AI Conscious? Can Machines Have Souls?</a> - Catholic teaching on AI consciousness and personhood</li>
                 <li><a href="catholic-ai-ethics.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">Catholic AI Ethics: Complete FAQ</a> - Comprehensive guide to Catholic teaching on artificial intelligence</li>
-            </ul>
-        </div>
+            </ul>"""
 
-        <!-- Back Link -->
-        <div class="faq-section">
-            <a href="https://hoarhouse.github.io/dcfh/faqs/index.html" class="back-link">← Back to All FAQs</a>
-        </div>
-    </main>
+html = html.replace("""            <ul class="faq-answer">
+                <li><a href="[faq-url-1.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 1]</a> - Brief description of what this FAQ covers</li>
+                <li><a href="[faq-url-2.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 2]</a> - Brief description of what this FAQ covers</li>
+                <li><a href="[faq-url-3.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 3]</a> - Brief description of what this FAQ covers</li>
+            </ul>""", related_faqs)
 
-    <!-- Footer injected by dcf-ui.js -->
-    <footer id="main-footer"></footer>
+# Write output file
+with open('vatican-ai-wisdom-faq.html', 'w', encoding='utf-8') as f:
+    f.write(html)
 
-    <!-- Scripts - Load in this exact order -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/dcf-core.js"></script>
-    <script src="../js/dcf-ui.js"></script>
-    <script src="../js/dcf-auth.js"></script>
-    <script src="../js/dcf-analytics.js"></script>
-    <script src="../js/dcf-init.js"></script>
-    <script src="../js/faq-components.js"></script>
-
-    <script>
-        // Display view count for FAQ pages
-        async function displayViewCount() {
-            try {
-                if (!window.dcfSupabase) {
-                    console.log('Supabase not available for view count');
-                    return;
-                }
-                
-                const currentPath = window.location.pathname;
-                const contentId = currentPath.split('/').pop().replace('.html', '');
-                
-                // Get view count from analytics
-                const { data, error } = await window.dcfSupabase
-                    .from('universal_analytics')
-                    .select('*', { count: 'exact', head: false })
-                    .eq('content_id', contentId);
-                
-                if (error) {
-                    console.log('Error fetching view count:', error);
-                    document.getElementById('viewCount').textContent = '-- views';
-                    return;
-                }
-                
-                const viewCount = data ? data.length : 0;
-                document.getElementById('viewCount').textContent = `${viewCount.toLocaleString()} view${viewCount !== 1 ? 's' : ''}`;
-                
-            } catch (err) {
-                console.log('View count display error:', err);
-                document.getElementById('viewCount').textContent = '-- views';
-            }
-        }
-        
-        // Wait for Supabase to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(displayViewCount, 1000);
-            });
-        } else {
-            setTimeout(displayViewCount, 1000);
-        }
-    </script>
-</body>
-</html>
+print("✅ Vatican AI and Wisdom FAQ created: vatican-ai-wisdom-faq.html")
+print("📊 Stats: 15 questions, 5 sections, mixed vatican-resources and FAQ links")
