@@ -1283,10 +1283,15 @@
         // Load Featured Articles
         async function loadFeaturedArticles() {
             try {
-                // Fetch ALL published articles
+                // Fetch ALL published articles with blog information
                 const { data: allArticles, error } = await window.dcfSupabase
                     .from('blog_posts')
-                    .select('*')
+                    .select(`
+                        *,
+                        blogs!blog_posts_blog_id_fkey (
+                            slug
+                        )
+                    `)
                     .eq('status', 'published');
                 
                 if (error) throw error;
@@ -1315,7 +1320,8 @@
                 }
                 
                 articlesGrid.innerHTML = articles.map(article => {
-                    const articleUrl = `../blog/${article.category_slug}/${article.slug}.html`;
+                    const blogSlug = article.blogs?.slug || 'blog';
+                    const articleUrl = `../blog/${blogSlug}/${article.slug}.html`;
                     const imageUrl = article.featured_image_url || article.hero_image_url || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f0f0f0" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-family="Arial" font-size="18"%3EDCF Article%3C/text%3E%3C/svg%3E';
                     const categoryName = article.category_name || article.category_slug || 'Article';
                     
