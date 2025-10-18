@@ -1336,5 +1336,47 @@
             loadCuratedSections();
         });
 </script>
+
+    <script>
+        // Update section counts dynamically
+        async function updateSectionCounts() {
+            if (!window.dcfSupabase) return;
+            
+            try {
+                // Count Pope Leo resources
+                const { count: leoResourceCount } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .contains('tags', ['pope-leo'])
+                    .in('status', ['published', 'approved']);
+                
+                // Count Pope Leo blog posts
+                const { count: leoBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'pope-leo');
+                
+                const totalLeo = (leoResourceCount || 0) + (leoBlogCount || 0);
+                
+                // Update the link
+                document.querySelectorAll('a[href="pope-leo-technology.html"]').forEach(link => {
+                    if (link.textContent.includes('View All')) {
+                        link.textContent = `View All (${totalLeo}) →`;
+                    }
+                });
+                
+                console.log('✅ Pope Leo count:', totalLeo, '(resources:', leoResourceCount, 'blogs:', leoBlogCount, ')');
+            } catch (err) {
+                console.error('Error updating counts:', err);
+            }
+        }
+
+        // Call after Supabase loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateSectionCounts, 2000);
+        });
+    </script>
+
 </body>
 </html>
