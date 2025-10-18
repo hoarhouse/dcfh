@@ -533,7 +533,12 @@
     <main class="main-container">
         <div class="page-header">
             <h1 class="page-title">DCF Library</h1>
-            <p class="page-subtitle">Your comprehensive resource center for AI ethics, Vatican documents, research, and educational materials</p>
+                    <div style="background: white; padding: 1rem 2rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+            <div style="font-size: 2rem; font-weight: 700; color: #333;" id="totalResourceCount">Loading...</div>
+            <div style="color: #666; font-size: 0.9rem;">Total AI Resources & Documents</div>
+        </div>
+
+        <p class="page-subtitle" style="display:none;">Your comprehensive resource center for AI ethics, Vatican documents, research, and educational materials</p>
             <div class="search-bar">
                 <input type="text" class="search-input" placeholder="Search resources, articles, documents...">
                 <span class="search-icon">🔍</span>
@@ -1343,6 +1348,21 @@
             if (!window.dcfSupabase) return;
             
             try {
+                
+                // Count total resources
+                const { count: totalResources } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .in('status', ['published', 'approved']);
+                
+                const { count: totalBlogs } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                const grandTotal = (totalResources || 0) + (totalBlogs || 0);
+                document.getElementById('totalResourceCount').textContent = grandTotal;
+
                 // Count Pope Leo resources
                 const { count: leoResourceCount } = await window.dcfSupabase
                     .from('resources')
