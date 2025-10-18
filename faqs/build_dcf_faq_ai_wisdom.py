@@ -1,0 +1,640 @@
+#!/usr/bin/env python3
+"""
+DCF Hungary - FAQ Page Builder #6
+Creates: dcf_faq_ai_wisdom.html
+Topic: Artificial Intelligence and Wisdom
+"""
+
+def create_faq_page():
+    html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artificial Intelligence and Wisdom - DCF Hungary FAQ</title>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- DCF Unified Auth System -->
+    <script src="../js/dcf-unified-auth.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .nav-menu a:hover {
+            color: #333;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e5e5;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #000, #333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .dropdown-info {
+            flex: 1;
+        }
+
+        .dropdown-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .dropdown-email {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .logout-btn {
+            color: #dc3545 !important;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn:hover {
+            background: #fee !important;
+        }
+
+        .main-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: #666;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: #333;
+        }
+
+        .faq-header {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-category {
+            display: inline-block;
+            background: #000;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .faq-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .faq-meta {
+            display: flex;
+            gap: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .faq-content {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-intro {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .faq-item {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .faq-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .faq-question {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .faq-question::before {
+            content: "Q:";
+            color: #000;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .faq-answer {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: #555;
+            padding-left: 2.5rem;
+        }
+
+        .faq-answer p {
+            margin-bottom: 1rem;
+        }
+
+        .faq-answer ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .faq-answer li {
+            margin-bottom: 0.5rem;
+        }
+
+        .faq-footer {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-footer h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .faq-footer p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #000;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #333;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .faq-header, .faq-content {
+                padding: 1.5rem;
+            }
+
+            .faq-title {
+                font-size: 1.8rem;
+            }
+
+            .faq-question {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon"></div>
+                Domus Communis Foundation Hungary
+            </a>
+            <ul class="nav-menu">
+                <li><a href="../dcf_member_home.html">Home</a></li>
+                <li><a href="../dcf_members_directory.html">Members</a></li>
+                <li><a href="../dcf_projects_home.html">Projects</a></li>
+                <li><a href="../dcf_events_calendar.html">Events</a></li>
+                <li><a href="../dcf_resources_library.html">Resources</a></li>
+            </ul>
+            <div class="user-menu">
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="toggleUserMenu()" id="userAvatar">SJ</div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar">SJ</div>
+                            <div class="dropdown-info">
+                                <div class="dropdown-name" id="dropdownUserName">Dr. Sarah Johnson</div>
+                                <div class="dropdown-email" id="dropdownUserEmail">sarah.johnson@dcfhungary.org</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="../dcf_member_profile.html" class="dropdown-item">
+                            <span>👤</span> View Profile
+                        </a>
+                        <a href="../dcf_settings.html" class="dropdown-item">
+                            <span>⚙️</span> Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <button onclick="handleLogout()" class="dropdown-item logout-btn">
+                            <span>🚪</span> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="breadcrumb">
+            <a href="../dcf_resources_library.html">Resources</a>
+            <span>→</span>
+            <a href="../dcf_resources_library.html#vatican-documents">Vatican AI Documents</a>
+            <span>→</span>
+            <span>Artificial Intelligence and Wisdom</span>
+        </div>
+
+        <div class="faq-header">
+            <span class="faq-category">Vatican AI Ethics Document</span>
+            <h1 class="faq-title">Artificial Intelligence and Wisdom</h1>
+            <div class="faq-meta">
+                <span>📅 Dicastery for Culture and Education</span>
+                <span>📖 12 Questions & Answers</span>
+                <span>⏱️ 8 min read</span>
+            </div>
+        </div>
+
+        <div class="faq-content">
+            <div class="faq-intro">
+                The Dicastery for Culture and Education explores the profound relationship between artificial intelligence and human wisdom. This document examines how AI challenges our understanding of knowledge, learning, and the cultivation of wisdom in the digital age. It addresses fundamental questions about whether machines can truly be wise, how AI affects human learning and education, and what role human wisdom plays in guiding technological development.
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What is the difference between knowledge, intelligence, and wisdom?</h2>
+                <div class="faq-answer">
+                    <p>Knowledge refers to the accumulation of information and facts. Intelligence is the ability to process information, solve problems, and adapt to new situations. Wisdom, however, transcends both—it is the capacity to apply knowledge and intelligence with prudence, moral judgment, and understanding of deeper human values.</p>
+                    <p>AI excels at knowledge storage and certain forms of intelligence, but wisdom requires lived experience, moral reasoning, empathy, and understanding of ultimate meaning—qualities that remain distinctively human.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">Can artificial intelligence be wise?</h2>
+                <div class="faq-answer">
+                    <p>No. While AI can process vast amounts of information and even simulate decision-making patterns, it lacks the essential elements of wisdom: consciousness, moral agency, experiential understanding, and the ability to grasp ultimate meaning and purpose.</p>
+                    <p>Wisdom involves integration of knowledge with virtue, lived experience, and understanding of the human condition—dimensions that AI systems fundamentally lack.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">How does AI affect human learning and education?</h2>
+                <div class="faq-answer">
+                    <p>AI presents both opportunities and challenges for education:</p>
+                    <p><strong>Opportunities:</strong></p>
+                    <ul>
+                        <li>Personalized learning experiences adapted to individual needs</li>
+                        <li>Access to vast educational resources</li>
+                        <li>Tools for teachers to better understand student progress</li>
+                        <li>New forms of interactive and engaging learning</li>
+                    </ul>
+                    <p><strong>Challenges:</strong></p>
+                    <ul>
+                        <li>Risk of reducing education to information transfer</li>
+                        <li>Potential erosion of critical thinking skills</li>
+                        <li>Loss of human relationship essential to learning</li>
+                        <li>Narrowing of education to measurable outcomes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What role should wisdom play in AI development?</h2>
+                <div class="faq-answer">
+                    <p>Human wisdom must guide every stage of AI development—from initial design decisions to deployment and governance. This requires:</p>
+                    <ul>
+                        <li>Asking fundamental questions about purpose and human flourishing</li>
+                        <li>Incorporating ethical reflection throughout the development process</li>
+                        <li>Including diverse perspectives, especially from humanities and ethics</li>
+                        <li>Considering long-term consequences for human dignity and society</li>
+                        <li>Maintaining human responsibility and accountability</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">How does AI challenge traditional concepts of education?</h2>
+                <div class="faq-answer">
+                    <p>AI challenges education to distinguish between its essential and non-essential elements. True education is not merely information transfer but formation of the whole person—intellectual, moral, social, and spiritual.</p>
+                    <p>The presence of AI highlights the irreplaceable value of human relationships in education: the mentorship, inspiration, and moral formation that can only occur through human interaction and example.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What is the relationship between wisdom and technology?</h2>
+                <div class="faq-answer">
+                    <p>Technology extends human capabilities but cannot replace wisdom. Throughout history, technology has been a tool for human purposes—wisdom determines whether those purposes serve authentic human flourishing.</p>
+                    <p>The relationship should be hierarchical: wisdom guides technology, not vice versa. When technology drives human decisions without wisdom's guidance, it risks reducing humans to mere functions or data points.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">How can we cultivate wisdom in a technological age?</h2>
+                <div class="faq-answer">
+                    <p>Cultivating wisdom requires:</p>
+                    <ul>
+                        <li>Maintaining spaces for contemplation and reflection</li>
+                        <li>Engaging with classical sources of wisdom—philosophy, theology, literature</li>
+                        <li>Practicing discernment in technology use</li>
+                        <li>Forming authentic human relationships</li>
+                        <li>Developing moral character alongside technical skills</li>
+                        <li>Asking ultimate questions about meaning and purpose</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What does wisdom require that AI cannot provide?</h2>
+                <div class="faq-answer">
+                    <p>Wisdom requires several capacities beyond AI's reach:</p>
+                    <ul>
+                        <li><strong>Existential understanding:</strong> Grasping questions of meaning, purpose, and ultimate value</li>
+                        <li><strong>Moral agency:</strong> Taking responsibility for choices with ethical weight</li>
+                        <li><strong>Empathy and compassion:</strong> Understanding others' experiences from within</li>
+                        <li><strong>Holistic judgment:</strong> Integrating multiple dimensions of human experience</li>
+                        <li><strong>Self-awareness:</strong> Understanding one's own limitations and biases</li>
+                        <li><strong>Lived experience:</strong> Learning through personal encounter with reality</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">How should educational institutions respond to AI?</h2>
+                <div class="faq-answer">
+                    <p>Educational institutions should:</p>
+                    <ul>
+                        <li>Use AI as a tool while preserving human-centered learning</li>
+                        <li>Emphasize capabilities AI cannot replicate: creativity, moral reasoning, wisdom</li>
+                        <li>Teach critical evaluation of AI outputs and limitations</li>
+                        <li>Maintain the centrality of human relationships in education</li>
+                        <li>Focus on formation of character, not just skills transmission</li>
+                        <li>Cultivate humanistic education alongside technical training</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What is the danger of confusing AI intelligence with human wisdom?</h2>
+                <div class="faq-answer">
+                    <p>Confusing AI intelligence with wisdom risks:</p>
+                    <ul>
+                        <li>Delegating moral decisions to systems incapable of moral reasoning</li>
+                        <li>Erosion of human responsibility and agency</li>
+                        <li>Reducing complex human questions to technical problems</li>
+                        <li>Loss of appreciation for dimensions of life AI cannot measure</li>
+                        <li>Creating dependence on systems that cannot understand human flourishing</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">How can religious and philosophical traditions contribute to AI wisdom?</h2>
+                <div class="faq-answer">
+                    <p>Religious and philosophical traditions offer:</p>
+                    <ul>
+                        <li>Centuries of reflection on human nature, purpose, and flourishing</li>
+                        <li>Frameworks for moral reasoning and ethical decision-making</li>
+                        <li>Understanding of transcendent dimensions of human experience</li>
+                        <li>Wisdom about technology's proper relationship to human life</li>
+                        <li>Vision of authentic human development beyond material progress</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h2 class="faq-question">What future relationship between AI and human wisdom should we seek?</h2>
+                <div class="faq-answer">
+                    <p>The ideal future maintains clear hierarchy: human wisdom guides AI development and deployment. This means:</p>
+                    <ul>
+                        <li>AI serves human purposes defined by wisdom</li>
+                        <li>Critical decisions remain under human judgment and responsibility</li>
+                        <li>Technology enhances rather than replaces human capacities for wisdom</li>
+                        <li>Education cultivates wisdom alongside technical competence</li>
+                        <li>Society values and cultivates wisdom as essential for navigating technological change</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-footer">
+            <h3>Have More Questions?</h3>
+            <p>Explore our complete collection of Vatican AI ethics documents and resources.</p>
+            <a href="../dcf_resources_library.html" class="btn">Browse All Resources</a>
+        </div>
+    </main>
+
+    <script>
+        // User menu functionality
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const userDropdown = document.querySelector('.user-dropdown');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (userDropdown && !userDropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Initialize auth on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof initializeDCF === 'function') {
+                initializeDCF();
+            }
+        });
+    </script>
+</body>
+</html>'''
+    
+    with open('dcf_faq_ai_wisdom.html', 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    print("✅ FAQ #6 created: dcf_faq_ai_wisdom.html")
+    print("📄 Artificial Intelligence and Wisdom FAQ page ready!")
+
+if __name__ == "__main__":
+    create_faq_page()
