@@ -1343,12 +1343,12 @@
 </script>
 
     <script>
+        
         // Update section counts dynamically
         async function updateSectionCounts() {
             if (!window.dcfSupabase) return;
             
             try {
-                
                 // Count total resources
                 const { count: totalResources } = await window.dcfSupabase
                     .from('resources')
@@ -1361,16 +1361,17 @@
                     .eq('status', 'published');
                 
                 const grandTotal = (totalResources || 0) + (totalBlogs || 0);
-                document.getElementById('totalResourceCount').textContent = grandTotal;
-
-                // Count Pope Leo resources
+                if (document.getElementById('totalResourceCount')) {
+                    document.getElementById('totalResourceCount').textContent = grandTotal;
+                }
+                
+                // Count Pope Leo resources + blogs
                 const { count: leoResourceCount } = await window.dcfSupabase
                     .from('resources')
                     .select('*', { count: 'exact', head: true })
                     .contains('tags', ['pope-leo'])
                     .in('status', ['published', 'approved']);
                 
-                // Count Pope Leo blog posts
                 const { count: leoBlogCount } = await window.dcfSupabase
                     .from('blog_posts')
                     .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
@@ -1379,24 +1380,42 @@
                 
                 const totalLeo = (leoResourceCount || 0) + (leoBlogCount || 0);
                 
-                // Update the link
+                // Count Pope Francis resources + blogs  
+                const { count: francisResourceCount } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .contains('tags', ['pope-francis'])
+                    .in('status', ['published', 'approved']);
+                
+                const { count: francisBlogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*, blog_post_tags!inner(blog_tags!inner(slug))', { count: 'exact', head: true })
+                    .eq('status', 'published')
+                    .eq('blog_post_tags.blog_tags.slug', 'pope-francis');
+                
+                const totalFrancis = (francisResourceCount || 0) + (francisBlogCount || 0);
+                
+                // Update Pope Leo link
                 document.querySelectorAll('a[href="pope-leo-technology.html"]').forEach(link => {
                     if (link.textContent.includes('View All')) {
                         link.textContent = `View All (${totalLeo}) →`;
                     }
                 });
                 
-                console.log('✅ Pope Leo count:', totalLeo, '(resources:', leoResourceCount, 'blogs:', leoBlogCount, ')');
+                // Update Pope Francis link
+                document.querySelectorAll('a[href="pope-francis-technology.html"]').forEach(link => {
+                    if (link.textContent.includes('View All')) {
+                        link.textContent = `View All (${totalFrancis}) →`;
+                    }
+                });
+                
+                console.log('✅ Counts - Total:', grandTotal, 'Leo:', totalLeo, 'Francis:', totalFrancis);
             } catch (err) {
                 console.error('Error updating counts:', err);
             }
         }
 
-        // Call after Supabase loads
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(updateSectionCounts, 2000);
-        });
-    </script>
+        </script>
 
 </body>
 </html>
