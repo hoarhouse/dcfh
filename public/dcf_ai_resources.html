@@ -1338,6 +1338,72 @@
             }
         }
 
+        // Load Resource Stats
+        async function loadResourceStats() {
+            try {
+                // Get blog posts count
+                const { count: blogCount } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                // Get Vatican documents count
+                const { count: vaticanCount } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .contains('tags', ['official-church-documents'])
+                    .in('status', ['published', 'approved']);
+                
+                // Get videos count (resources with video file_type or video tags)
+                const { count: videoCount } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .or('file_type.eq.video,tags.cs.{video,youtube,Video}')
+                    .in('status', ['published', 'approved']);
+                
+                // Fixed FAQs count (hardcoded as they're static HTML pages)
+                const faqCount = 8;
+                
+                // Calculate total
+                const totalCount = (blogCount || 0) + (vaticanCount || 0) + (videoCount || 0) + faqCount;
+                
+                // Update UI with animation effect
+                const animateCount = (elementId, targetValue) => {
+                    const element = document.getElementById(elementId);
+                    if (!element) return;
+                    
+                    let current = 0;
+                    const increment = Math.ceil(targetValue / 20);
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= targetValue) {
+                            current = targetValue;
+                            clearInterval(timer);
+                        }
+                        element.textContent = current;
+                    }, 50);
+                };
+                
+                // Animate the counts
+                setTimeout(() => {
+                    animateCount('blogPostsCount', blogCount || 0);
+                    animateCount('vaticanDocsCount', vaticanCount || 0);
+                    animateCount('videosCount', videoCount || 0);
+                    animateCount('faqsCount', faqCount);
+                    animateCount('totalResourceCount', totalCount);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error loading resource stats:', error);
+                // Set default values on error
+                document.getElementById('blogPostsCount').textContent = '0';
+                document.getElementById('vaticanDocsCount').textContent = '0';
+                document.getElementById('videosCount').textContent = '0';
+                document.getElementById('faqsCount').textContent = '8';
+                document.getElementById('totalResourceCount').textContent = '8';
+            }
+        }
+
         // Load Vatican Documents
         async function loadVaticanDocuments() {
             try {
