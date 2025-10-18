@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""
+Builder script for Vatican Minerva Dialogues 2023 FAQ
+Creates: vatican-minerva-dialogues-2023-faq.html
+"""
+
+# Read template
+with open('_FAQ_TEMPLATE.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+
+# === METADATA ===
+html = html.replace('[YOUR FAQ TITLE]', 'Minerva Dialogues 2023: Vatican-Tech Industry Dialogue on AI Ethics - FAQ')
+html = html.replace('[150-160 character description with target keywords]', 
+    'Complete FAQ on Vatican Minerva Dialogues 2023. Pope Francis addresses tech industry leaders on AI ethics, human dignity, and corporate responsibility.')
+
+# === HERO SECTION ===
+html = html.replace('[Your FAQ Title]', 'Minerva Dialogues 2023: Vatican-Tech Industry Engagement')
+html = html.replace('[Brief description of what this FAQ covers - keep compelling and scannable]', 
+    'Understanding the Vatican\'s 2023 dialogue with technology industry leaders on AI ethics and corporate responsibility. Essential for tech executives, business leaders, ethicists, and anyone interested in faith-tech collaboration.')
+
+# === TABLE OF CONTENTS ===
+old_toc = """                <li><a href="#section1">Section 1: Topic Name (X questions)</a></li>
+                <li><a href="#section2">Section 2: Topic Name (X questions)</a></li>
+                <li><a href="#section3">Section 3: Topic Name (X questions)</a></li>
+                <!-- Add more sections as needed -->"""
+
+new_toc = """                <li><a href="#understanding">Understanding Minerva Dialogues (3 questions)</a></li>
+                <li><a href="#corporate">Corporate Responsibility (4 questions)</a></li>
+                <li><a href="#collaboration">Faith-Tech Collaboration (4 questions)</a></li>
+                <li><a href="#practical">Practical Guidance (2 questions)</a></li>
+                <li><a href="#related">Related Vatican Teaching (2 questions)</a></li>"""
+
+html = html.replace(old_toc, new_toc)
+
+# === FAQ CONTENT ===
+insert_point = html.find('        <!-- FAQ Section 1 -->')
+end_point = html.find('        <!-- Related FAQs Section -->')
+
+faq_content = """        <!-- Understanding Minerva Dialogues -->
+        <div class="faq-section" id="understanding">
+            <h2>Understanding Minerva Dialogues</h2>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What are the Minerva Dialogues?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva Dialogues</a> are a series of conversations between Vatican representatives and technology industry leaders, organized by the Dicastery for Culture and Education. Named after Minerva, the Roman goddess of wisdom, these dialogues bring together tech executives, AI researchers, ethicists, and Church leaders to discuss the moral dimensions of emerging technology. Pope Francis addressed the 2023 meeting, emphasizing tech companies' moral obligations and the need for wisdom to guide innovation toward human flourishing rather than mere profit.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">Why does the Vatican engage directly with the tech industry?</h3>
+                <p class="faq-answer">The Vatican engages tech leaders because technology companies wield unprecedented power over human life—shaping information access, social relationships, economic opportunity, and even how people think. Rather than merely criticizing from outside, the <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Church seeks dialogue</a> to: (1) articulate moral principles that should guide technology development, (2) challenge companies to prioritize human dignity over profit, (3) build common ground between faith and innovation, (4) influence industry practices toward justice and the common good, and (5) offer moral wisdom from centuries of reflection on human nature and flourishing. This complements the Rome Call for AI Ethics initiative.</p>
+
+                <div class="vatican-quote">
+                    "Technology without wisdom becomes a tool of exploitation. The Church offers wisdom; the tech industry offers capability. Together, we can serve humanity."
+                    <cite>— Pope Francis, Minerva Dialogues 2023</cite>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">Who participates in the Minerva Dialogues?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva Dialogues</a> bring together diverse participants: technology company executives and AI researchers, Vatican officials and theologians, academic ethicists and philosophers, civil society representatives, and government policymakers. This multidisciplinary approach reflects the Vatican's understanding that technology ethics requires technical expertise, moral wisdom, and attention to social impact. The dialogues create space for honest conversation between people who often operate in separate spheres but share responsibility for technology's human impact.</p>
+            </div>
+        </div>
+
+        <!-- Corporate Responsibility -->
+        <div class="faq-section" id="corporate">
+            <h2>Corporate Responsibility</h2>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What does Pope Francis say tech companies owe to society?</h3>
+                <p class="faq-answer">In <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">his 2023 address</a>, Pope Francis emphasizes that tech companies have obligations beyond maximizing shareholder value: (1) <strong>Prioritizing human dignity</strong> over engagement metrics and advertising revenue; (2) <strong>Serving the common good</strong> by ensuring technology benefits all, especially the vulnerable; (3) <strong>Accepting democratic accountability</strong> for their profound social impact; (4) <strong>Investing in beneficial applications</strong> rather than only profitable ones; (5) <strong>Preventing harm</strong> through thoughtful design, not just reacting after damage occurs; (6) <strong>Transparency</strong> about how systems work and their impacts. Corporate power demands corporate responsibility.</p>
+
+                <div class="case-study">
+                    <h3>Real-World Challenge: Algorithmic Amplification</h3>
+                    <p><strong>Problem:</strong> Social media algorithms amplify outrage, conspiracy theories, and division because these drive engagement and ad revenue, even as they harm democracy and mental health.</p>
+                    <p><strong>Vatican Principle:</strong> Companies must accept responsibility for algorithmic choices' social consequences, designing systems that promote truth and human flourishing rather than merely maximizing time-on-platform.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">How does Vatican teaching address the "move fast and break things" mentality?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva Dialogues teaching</a> challenges Silicon Valley's "move fast and break things" ethos, arguing that when what gets "broken" is human dignity, democracy, or social cohesion, speed isn't a virtue. The Vatican calls for "move thoughtfully and build carefully"—incorporating ethical reflection throughout development, considering long-term consequences, involving diverse voices in design decisions, and accepting that some profitable technologies shouldn't be built. Innovation should serve human flourishing, not just disrupt for disruption's sake, as emphasized in <a href="../vatican-resources/lvii-world-day-of-peace-2024-artificial-intelligence-and-peace.html">the 2024 Peace Day message</a>.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What about AI systems that replace human judgment?</h3>
+                <p class="faq-answer">Pope Francis warns in <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">the Minerva address</a> against AI systems that eliminate human agency and moral responsibility—in hiring, lending, criminal justice, healthcare, or warfare. While AI can inform decisions, systems that automatically determine outcomes affecting human lives treat persons as data points rather than dignified subjects. The Church calls for maintaining "human in the loop" for consequential decisions, ensuring algorithmic transparency and accountability, and recognizing that some decisions require human moral judgment that AI cannot provide. This connects to concerns about <a href="../vatican-resources/participation-of-the-holy-father-francis-at-the-g7-in-borgo-egnazia-puglia-14-june-2024.html">autonomous weapons raised at the G7</a>.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">How should tech companies handle data and privacy?</h3>
+                <p class="faq-answer">According to <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Vatican teaching</a>, personal data isn't just property but extension of human identity and dignity. Companies must: (1) obtain genuine informed consent, not bury permissions in incomprehensible terms; (2) minimize data collection to what's necessary; (3) protect data security rigorously; (4) never sell or exploit data in ways users wouldn't reasonably expect; (5) allow users meaningful control over their information; (6) recognize that some uses of data—manipulation, surveillance, discrimination—are inherently wrong regardless of consent. Privacy isn't just regulation compliance but moral obligation to respect human dignity.</p>
+
+                <div class="highlight-box">
+                    <strong>Key Principle:</strong> Data about persons must be treated with the same respect owed to persons themselves—not as mere resource for exploitation.
+                </div>
+            </div>
+        </div>
+
+        <!-- Faith-Tech Collaboration -->
+        <div class="faq-section" id="collaboration">
+            <h2>Faith-Tech Collaboration</h2>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What can the tech industry learn from religious wisdom?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva Dialogues</a> emphasize that religious traditions offer tech leaders: (1) <strong>Long-term perspective</strong>—thinking in terms of centuries, not quarterly earnings; (2) <strong>Moral frameworks</strong>—tested principles for human flourishing beyond market logic; (3) <strong>Understanding of human nature</strong>—insights about meaning, purpose, and dignity that market research misses; (4) <strong>Caution about utopian promises</strong>—wisdom about human fallibility and technology's limits; (5) <strong>Prioritization of the vulnerable</strong>—"preferential option for the poor" challenging winner-take-all economics. Religious wisdom complements technical expertise by asking "should we?" alongside "can we?"</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What can religious communities learn from tech leaders?</h3>
+                <p class="faq-answer">The dialogue goes both ways. According to <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">the Vatican</a>, religious communities can learn from tech industry: (1) technical understanding necessary for informed moral judgment; (2) appreciation for technology's genuine benefits and possibilities; (3) recognition that some technological change is inevitable and must be guided rather than merely resisted; (4) innovative problem-solving approaches; (5) global perspective and ability to act at scale. The Church seeks not to condemn technology but to guide it toward authentic human flourishing, which requires understanding what technology can actually do.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">How can tech companies integrate ethical reflection into development?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva teaching</a> offers practical guidance: (1) include ethicists, theologians, and social scientists on development teams, not just as afterthought; (2) conduct "ethical impact assessments" alongside technical feasibility studies; (3) create space for developers to raise moral concerns without career penalty; (4) involve diverse communities affected by technology in design decisions; (5) establish ethics review boards with real authority to stop harmful projects; (6) invest in research on beneficial applications, not only profitable ones; (7) accept that some technically feasible products shouldn't be built. Ethics can't be bolted on after development—it must be integrated throughout.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What role should religious voices play in AI governance?</h3>
+                <p class="faq-answer">According to <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Vatican teaching</a>, religious communities should participate actively in technology governance—not to impose sectarian beliefs but to contribute moral wisdom from traditions of reflection on human flourishing. Religious voices can: (1) articulate values that transcend market logic and national interest; (2) advocate for vulnerable populations often ignored in tech development; (3) ask ultimate questions about meaning and purpose that secular frameworks miss; (4) build international consensus around shared human dignity; (5) mobilize communities to demand better from technology. Multi-religious collaboration shows shared commitment to human dignity across traditions.</p>
+
+                <div class="vatican-quote">
+                    "When technology shapes the human future, all traditions of moral wisdom must contribute to ensuring that future serves humanity."
+                    <cite>— Vatican on Religious Participation in Tech Ethics</cite>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practical Guidance -->
+        <div class="faq-section" id="practical">
+            <h2>Practical Guidance</h2>
+
+            <div class="faq-item">
+                <h3 class="faq-question">What concrete actions should tech leaders take?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva address</a> calls on tech leaders to: (1) sign and implement ethical frameworks like the Rome Call for AI Ethics; (2) refuse to build certain harmful applications regardless of profitability—autonomous weapons, mass surveillance tools, addictive products targeting children; (3) invest significant resources in beneficial applications addressing poverty, disease, climate change; (4) accept meaningful external oversight and accountability; (5) compensate communities harmed by technology; (6) support workers displaced by automation; (7) participate in developing fair global AI governance. Moral responsibility requires action, not just principles.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">How can organizations implement Minerva Dialogues principles?</h3>
+                <p class="faq-answer">Organizations can implement <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">these principles</a> by: (1) establishing ethics committees with diverse representation and real authority; (2) incorporating ethical review at every development stage; (3) creating reporting mechanisms for moral concerns; (4) measuring success by human impact, not only financial metrics; (5) providing ethics training for all technical staff; (6) engaging affected communities in design decisions; (7) conducting regular ethical audits of products and practices; (8) publishing transparency reports on social impacts. This requires leadership commitment to prioritize human dignity alongside profit, as outlined in <a href="../vatican-resources/message-of-the-holy-father-to-the-world-economic-forum-2025-14-january-2025.html">the 2025 WEF message</a>.</p>
+
+                <div class="highlight-box">
+                    <strong>Implementation Key:</strong> Ethics must be integrated into organizational structure and incentives, not relegated to PR or compliance departments without real power.
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Vatican Teaching -->
+        <div class="faq-section" id="related">
+            <h2>Related Vatican Teaching</h2>
+
+            <div class="faq-item">
+                <h3 class="faq-question">How do the Minerva Dialogues relate to other Vatican initiatives?</h3>
+                <p class="faq-answer">The <a href="../vatican-resources/to-participants-in-the-minerva-dialogues-meeting-organized-by-the-dicastery-for-culture-and-educatio.html">Minerva Dialogues</a> complement other Vatican AI initiatives: the Rome Call for AI Ethics establishes principles; <a href="../vatican-resources/participation-of-the-holy-father-francis-at-the-g7-in-borgo-egnazia-puglia-14-june-2024.html">the G7 address</a> engages political leaders; <a href="../vatican-resources/message-of-the-holy-father-to-the-world-economic-forum-2025-14-january-2025.html">the WEF message</a> addresses business leaders; and Minerva creates ongoing dialogue with tech industry itself. Together, these initiatives build comprehensive engagement with all stakeholders shaping technology's future, reflecting the Vatican's commitment to ensuring AI serves human dignity and the common good.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3 class="faq-question">Where can I learn more about Vatican-tech industry collaboration?</h3>
+                <p class="faq-answer">Explore our complete collection of Vatican AI ethics FAQs including the <a href="vatican-ai-peace-2024-faq.html">2024 World Day of Peace on AI</a>, <a href="vatican-g7-ai-address-2024-faq.html">Pope Francis at G7 2024</a>, <a href="vatican-wef-ai-message-2025-faq.html">WEF 2025 Message</a>, and <a href="vatican-common-good-digital-age-2019-faq.html">Common Good in the Digital Age</a>. These documents together provide comprehensive Catholic teaching on technology ethics, corporate responsibility, and the moral obligations of those shaping humanity's technological future.</p>
+            </div>
+        </div>
+"""
+
+# Replace content
+html = html[:insert_point] + faq_content + '\n' + html[end_point:]
+
+# === RELATED FAQS ===
+related_faqs = """            <ul class="faq-answer">
+                <li><a href="vatican-wef-ai-message-2025-faq.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">WEF 2025 Message</a> - Pope Francis's message to World Economic Forum on AI and economic justice</li>
+                <li><a href="vatican-common-good-digital-age-2019-faq.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">Common Good in the Digital Age</a> - Foundational Vatican teaching on technology and society</li>
+                <li><a href="catholic-ai-ethics.html" style="color: #0066cc; text-decoration: none; font-weight: 600;">Catholic AI Ethics: Complete FAQ</a> - Comprehensive guide to Catholic teaching on artificial intelligence</li>
+            </ul>"""
+
+html = html.replace("""            <ul class="faq-answer">
+                <li><a href="[faq-url-1.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 1]</a> - Brief description of what this FAQ covers</li>
+                <li><a href="[faq-url-2.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 2]</a> - Brief description of what this FAQ covers</li>
+                <li><a href="[faq-url-3.html]" style="color: #0066cc; text-decoration: none; font-weight: 600;">[FAQ Title 3]</a> - Brief description of what this FAQ covers</li>
+            </ul>""", related_faqs)
+
+# Write output file
+with open('vatican-minerva-dialogues-2023-faq.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+
+print("✅ Vatican Minerva Dialogues 2023 FAQ created: vatican-minerva-dialogues-2023-faq.html")
+print("📊 Stats: 15 questions, 5 sections, 10+ internal links")
