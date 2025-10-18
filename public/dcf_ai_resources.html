@@ -1303,9 +1303,76 @@
             }
         }
 
+        // Load Vatican Documents
+        async function loadVaticanDocuments() {
+            try {
+                // Fetch ALL Vatican documents
+                const { data: allDocuments, error } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*')
+                    .contains('tags', ['official-church-documents'])
+                    .in('status', ['published', 'approved']);
+                
+                if (error) throw error;
+                
+                // Randomly select 6 documents using JavaScript shuffle
+                const shuffled = allDocuments.sort(() => 0.5 - Math.random());
+                const documents = shuffled.slice(0, 6);
+                
+                // Get total count for "View All" link
+                const { count: totalDocuments } = await window.dcfSupabase
+                    .from('resources')
+                    .select('*', { count: 'exact', head: true })
+                    .contains('tags', ['official-church-documents'])
+                    .in('status', ['published', 'approved']);
+                
+                // Update View All link
+                const viewAllLink = document.getElementById('vaticanDocumentsViewAll');
+                if (viewAllLink && totalDocuments) {
+                    viewAllLink.textContent = `View All ${totalDocuments} Documents →`;
+                }
+                
+                // Render document cards
+                const documentsGrid = document.getElementById('vaticanDocumentsGrid');
+                if (!documents || documents.length === 0) {
+                    documentsGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No documents available</div>';
+                    return;
+                }
+                
+                documentsGrid.innerHTML = documents.map(doc => {
+                    // Extract year from date or use a relevant tag
+                    const year = doc.published_date ? new Date(doc.published_date).getFullYear() : 
+                                doc.created_at ? new Date(doc.created_at).getFullYear() : '';
+                    
+                    // Find an additional tag to display (exclude official-church-documents)
+                    const additionalTag = doc.tags?.find(t => 
+                        t !== 'official-church-documents' && 
+                        !t.includes('vatican')
+                    ) || year.toString();
+                    
+                    return `
+                        <div class="resource-card-no-image" onclick="window.location.href='${doc.page_url || '#'}'">
+                            <div class="resource-meta">
+                                <span class="meta-badge authority">Vatican Document</span>
+                                ${additionalTag ? `<span class="meta-badge">${additionalTag}</span>` : ''}
+                            </div>
+                            <h3 class="resource-title">${doc.title}</h3>
+                            <p class="resource-description">${doc.excerpt || doc.description || ''}</p>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading Vatican documents:', error);
+                document.getElementById('vaticanDocumentsGrid').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: #666;">Error loading documents</div>';
+            }
+        }
+
         // Call on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadFeaturedArticles();
+            loadVaticanDocuments();
             loadCuratedSections();
         });
 </script>
