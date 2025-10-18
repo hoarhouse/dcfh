@@ -1280,8 +1280,67 @@
             `).join('');
         }
 
+        // Load Featured Articles
+        async function loadFeaturedArticles() {
+            try {
+                // Get 6 random featured articles
+                const { data: articles, error } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*')
+                    .eq('status', 'published')
+                    .order('random()')
+                    .limit(6);
+                
+                if (error) throw error;
+                
+                // Get total count for "View All" link
+                const { count: totalArticles } = await window.dcfSupabase
+                    .from('blog_posts')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                // Update View All link
+                const viewAllLink = document.getElementById('featuredArticlesViewAll');
+                if (viewAllLink && totalArticles) {
+                    viewAllLink.textContent = `View All ${totalArticles} Articles →`;
+                }
+                
+                // Render article cards
+                const articlesGrid = document.getElementById('featuredArticlesGrid');
+                if (!articles || articles.length === 0) {
+                    articlesGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No articles available</div>';
+                    return;
+                }
+                
+                articlesGrid.innerHTML = articles.map(article => {
+                    const articleUrl = `../blog/${article.category_slug}/${article.slug}.html`;
+                    const imageUrl = article.featured_media || 'https://via.placeholder.com/400x300?text=Article';
+                    const categoryName = article.category_name || article.category_slug || 'Article';
+                    
+                    return `
+                        <div class="resource-card" onclick="window.location.href='${articleUrl}'">
+                            <img src="${imageUrl}" alt="${article.title}" class="resource-image" onerror="this.src='https://via.placeholder.com/400x300?text=DCF+Article'">
+                            <div class="resource-content">
+                                <div class="resource-meta">
+                                    <span class="meta-badge blog">${categoryName}</span>
+                                </div>
+                                <h3 class="resource-title">${article.title}</h3>
+                                <p class="resource-description">${article.excerpt || article.description || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading featured articles:', error);
+                document.getElementById('featuredArticlesGrid').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: #666;">Error loading articles</div>';
+            }
+        }
+
         // Call on page load
         document.addEventListener('DOMContentLoaded', function() {
+            loadFeaturedArticles();
             loadCuratedSections();
         });
 </script>
