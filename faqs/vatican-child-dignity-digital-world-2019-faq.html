@@ -512,5 +512,70 @@
             <a href="https://hoarhouse.github.io/dcfh/faqs/index.html" class="back-link">← Back to All FAQs</a>
         </div>
     </main>
+
+    <!-- Footer will be injected by dcf-ui.js -->
+    <footer id="main-footer"></footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/dcf-core.js"></script>
+    <script src="../js/dcf-ui.js"></script>
+    <script src="../js/dcf-auth.js"></script>
+    <script src="../js/dcf-analytics.js"></script>
+    <script src="../js/dcf-init.js"></script>
+
+    <script>
+        // Display view count when page loads
+        async function displayViewCount() {
+            // Wait for dcfSupabase to be available
+            if (!window.dcfSupabase) {
+                setTimeout(displayViewCount, 100);
+                return;
+            }
+
+            try {
+                const currentPath = window.location.pathname;
+                const normalizedPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
+                
+                // Construct the expected page URL format
+                const pagePath = normalizedPath.includes('/faqs/') 
+                    ? normalizedPath.split('/faqs/')[1] 
+                    : normalizedPath.split('/').pop();
+                
+                const expectedUrl = `/dcfh/faqs/${pagePath}`;
+                
+                // Get view count for this FAQ page
+                const { data, error } = await window.dcfSupabase
+                    .from('universal_analytics')
+                    .select('view_count')
+                    .eq('page_url', expectedUrl)
+                    .single();
+                
+                if (error || !data) {
+                    console.log('No view data for:', expectedUrl);
+                    const viewElement = document.getElementById('viewCount');
+                    if (viewElement) viewElement.style.display = 'none';
+                    return;
+                }
+                
+                const viewElement = document.getElementById('viewCount');
+                if (viewElement) {
+                    viewElement.textContent = `${data.view_count.toLocaleString()} views`;
+                }
+                
+            } catch (err) {
+                console.log('View count error:', err);
+                const viewElement = document.getElementById('viewCount');
+                if (viewElement) viewElement.style.display = 'none';
+            }
+        }
+
+        // Call when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', displayViewCount);
+        } else {
+            displayViewCount();
+        }
+    </script>
 </body>
 </html>
