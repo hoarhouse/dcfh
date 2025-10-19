@@ -53,9 +53,12 @@ def analyze_faq(filepath: str) -> Dict:
         results['score'] += 4
     
     # 5. Answer length (10 points for 250+ chars average)
-    answers = re.findall(r'<p class="faq-answer">(.*?)</p>|<div class="faq-answer">(.*?)</div>|<div class="answer">(.*?)</div>', content, re.DOTALL)
-    if answers:
-        avg_length = sum(len(a[0] or a[1] or a[2]) for a in answers) / len(answers)
+    # Find the FIRST answer paragraph after each question
+    faq_items = re.findall(r'<h3 class="faq-question">.*?</h3>\s*<p class="faq-answer">(.*?)</p>', content, re.DOTALL)
+    if faq_items:
+        # Clean HTML and calculate average
+        clean_answers = [re.sub(r'<[^>]+>', '', answer).strip() for answer in faq_items]
+        avg_length = sum(len(a) for a in clean_answers) / len(clean_answers) if clean_answers else 0
         results['elements']['avg_answer_length'] = int(avg_length)
         if avg_length >= 250:
             results['score'] += 10
