@@ -76,7 +76,7 @@ def analyze_faq(filepath: str) -> Dict:
         results['score'] += 5
     
     # 7. Case studies/examples (10 points)
-    case_studies = len(re.findall(r'<div class="case-study">|<div class="example">|For example|Consider the case|In practice', content, re.IGNORECASE))
+    case_studies = len(re.findall(r'<div class="case-study">|<div class="example">|<h3>Real-World Example:|<h3>Thought Experiment:|For example|Consider the case|In practice', content, re.IGNORECASE))
     results['elements']['case_studies'] = case_studies
     if case_studies >= 3:
         results['score'] += 10
