@@ -1,6 +1,8 @@
 # FAQ BUILDER MASTER GUIDE
 ## Complete Guide for Building LLM-Optimized FAQ Pages for DCF Hungary
 
+⚠️ **CRITICAL UPDATE (January 2025)**: LLM optimization is now MANDATORY. All FAQs must score 95%+ on analyze_faq_llm_optimization.py before deployment. See HOWTOBUILDANFAQ.md for requirements.
+
 ---
 
 ## 1. OVERVIEW
