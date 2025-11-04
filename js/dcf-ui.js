@@ -557,10 +557,14 @@ function populateTopNavigationOld() {
             text: 'Initiatives',
             dropdown: true,
             submenu: [
-                { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace Initiative' },
-                { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education Initiative' },
-                { href: basePath + 'initiatives/health/initiative_health.html', text: 'Health Initiative' },
-                { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research Initiative' }
+                { href: basePath + 'initiatives/peace/initiative_peace.html', text: 'Peace' },
+                { href: basePath + 'initiatives/technology/initiative_technology.html', text: 'Technology' },
+                { href: basePath + 'initiatives/academia/initiative_academia.html', text: 'Academia' },
+                { href: basePath + 'initiatives/education/initiative_education.html', text: 'Education' },
+                { href: basePath + 'initiatives/mentorship/initiative_mentorship.html', text: 'Mentorship' },
+                { href: basePath + 'initiatives/research/initiative_research.html', text: 'Research' },
+                { href: basePath + 'initiatives/regulatory/initiative_regulatory.html', text: 'Regulatory' },
+                { href: basePath + 'initiatives/theology/initiative_theology.html', text: 'Theology/Philosophy' }
             ]
         },
         { href: basePath + 'blog/index.html', text: 'Blog' },
