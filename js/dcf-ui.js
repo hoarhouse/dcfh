@@ -45,10 +45,14 @@ const LAUNCH_MENU = [
         href: 'initiatives/initiatives_home.html', 
         dropdown: true,
         items: [
-            { id: 'peace', text: 'Peace Initiative', href: 'initiatives/peace/initiative_peace.html' },
-            { id: 'education', text: 'Education Initiative', href: 'initiatives/education/initiative_education.html' },
-            { id: 'health', text: 'Health Initiative', href: 'initiatives/health/initiative_health.html' },
-            { id: 'research', text: 'Research Initiative', href: 'initiatives/research/initiative_research.html' }
+            { id: 'peace', text: 'Peace', href: 'initiatives/peace/initiative_peace.html' },
+            { id: 'technology', text: 'Technology', href: 'initiatives/technology/initiative_technology.html' },
+            { id: 'academia', text: 'Academia', href: 'initiatives/academia/initiative_academia.html' },
+            { id: 'education', text: 'Education', href: 'initiatives/education/initiative_education.html' },
+            { id: 'mentorship', text: 'Mentorship', href: 'initiatives/mentorship/initiative_mentorship.html' },
+            { id: 'research', text: 'Research', href: 'initiatives/research/initiative_research.html' },
+            { id: 'regulatory', text: 'Regulatory', href: 'initiatives/regulatory/initiative_regulatory.html' },
+            { id: 'theology', text: 'Theology/Philosophy', href: 'initiatives/theology/initiative_theology.html' }
         ]
     },
     { 
