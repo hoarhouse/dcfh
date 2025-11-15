@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SurveyVault - Interactive Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green: #10a37f;
+            --green-dark: #0d7d61;
+            --green-light: rgba(16, 163, 127, 0.1);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --bg-gray: #f5f5f7;
+            --border: #d2d2d7;
+            --success: #34c759;
+            --warning: #ff9500;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.47059;
+            letter-spacing: -0.022em;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 50%, #f5f5f7 100%);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0 max(22px, env(safe-area-inset-left));
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 21px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .back-btn {
+            background: var(--green);
+            color: white !important;
+            padding: 8px 20px;
+            border-radius: 980px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--green-dark);
+            transform: scale(1.05);
+        }
+
+        /* Demo Container */
+        .demo-container {
+            max-width: 1400px;
+            margin: 80px auto 0;
+            text-align: center;
+        }
+
+        .demo-title {
+            font-size: 56px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--text-primary);
+        }
+
+        .demo-subtitle {
+            font-size: 24px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+        }
+
+        /* Phone Mockups Container */
+        .phones-container {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+            margin: 60px 0;
+        }
+
+        .phone-mockup {
+            width: 320px;
+            height: 640px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .phone-mockup:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px 8px;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .time {
+            color: var(--text-primary);
+        }
+
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .app-header {
+            background: var(--green);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .app-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .screen-content {
+            flex: 1;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        /* Screen 1: Available Surveys */
+        .survey-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .survey-card {
+            background: var(--bg-gray);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .survey-card:hover {
+            background: var(--green-light);
+            border-color: var(--green);
+        }
+
+        .survey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .survey-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .survey-payment {
+            background: var(--green);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .survey-institution {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .survey-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .survey-time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .survey-participants {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Screen 2: Survey in Progress */
+        .survey-progress {
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-gray);
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--green);
+            width: 60%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .question-number {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .answer-option {
+            background: var(--bg-gray);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .answer-option:hover,
+        .answer-option.selected {
+            background: var(--green-light);
+            border-color: var(--green);
+        }
+
+        .next-btn {
+            background: var(--green);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .next-btn:hover {
+            background: var(--green-dark);
+        }
+
+        /* Screen 3: Payment Confirmation */
+        .payment-confirmation {
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            color: var(--success);
+            margin-bottom: 20px;
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .success-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .payment-amount {
+            background: var(--green);
+            color: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .amount-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .amount-value {
+            font-size: 48px;
+            font-weight: 600;
+        }
+
+        .payment-details {
+            background: var(--bg-gray);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+            font-weight: 600;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .continue-btn {
+            background: var(--green);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .continue-btn:hover {
+            background: var(--green-dark);
+        }
+
+        /* Screen Labels */
+        .screen-label {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--green);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .phones-container {
+                gap: 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .demo-title {
+                font-size: 36px;
+            }
+
+            .demo-subtitle {
+                font-size: 20px;
+            }
+
+            .phones-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 60px;
+            }
+        }
+
+        /* Interactive Elements */
+        .survey-card {
+            cursor: pointer;
+        }
+
+        .survey-card:active {
+            transform: scale(0.98);
+        }
+
+        .answer-option {
+            transition: all 0.2s;
+        }
+
+        .answer-option:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="./index.html" class="logo">SurveyVault</a>
+            <a href="./index.html" class="back-btn">← Back to SurveyVault</a>
+        </div>
+    </nav>
+
+    <!-- Demo Container -->
+    <div class="demo-container">
+        <h1 class="demo-title">SurveyVault Demo</h1>
+        <p class="demo-subtitle">Experience the simple 3-step process: Browse → Complete → Get Paid</p>
+
+        <div class="phones-container">
+            <!-- Screen 1: Available Surveys List -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <div class="time">9:41</div>
+                        <div class="battery">100% 🔋</div>
+                    </div>
+                    
+                    <div class="app-header">
+                        <div class="app-title">SurveyVault</div>
+                        <div class="app-subtitle">Available Surveys</div>
+                    </div>
+
+                    <div class="screen-content">
+                        <div class="survey-list">
+                            <div class="survey-card">
+                                <div class="survey-header">
+                                    <div class="survey-title">Sleep Quality Study</div>
+                                    <div class="survey-payment">€25</div>
+                                </div>
+                                <div class="survey-institution">University of Amsterdam Medical Center</div>
+                                <div class="survey-meta">
+                                    <div class="survey-time">⏱️ 8 minutes</div>
+                                    <div class="survey-participants">👥 247 participants</div>
+                                </div>
+                            </div>
+
+                            <div class="survey-card">
+                                <div class="survey-header">
+                                    <div class="survey-title">Exercise & Wellness</div>
+                                    <div class="survey-payment">€15</div>
+                                </div>
+                                <div class="survey-institution">German Sports Medicine Institute</div>
+                                <div class="survey-meta">
+                                    <div class="survey-time">⏱️ 5 minutes</div>
+                                    <div class="survey-participants">👥 156 participants</div>
+                                </div>
+                            </div>
+
+                            <div class="survey-card">
+                                <div class="survey-header">
+                                    <div class="survey-title">Nutrition Habits</div>
+                                    <div class="survey-payment">€20</div>
+                                </div>
+                                <div class="survey-institution">European Nutrition Research Council</div>
+                                <div class="survey-meta">
+                                    <div class="survey-time">⏱️ 6 minutes</div>
+                                    <div class="survey-participants">👥 89 participants</div>
+                                </div>
+                            </div>
+
+                            <div class="survey-card">
+                                <div class="survey-header">
+                                    <div class="survey-title">Mental Wellness Check</div>
+                                    <div class="survey-payment">€30</div>
+                                </div>
+                                <div class="survey-institution">Netherlands Institute of Mental Health</div>
+                                <div class="survey-meta">
+                                    <div class="survey-time">⏱️ 10 minutes</div>
+                                    <div class="survey-participants">👥 412 participants</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-label">1. Browse Available Surveys</div>
+            </div>
+
+            <!-- Screen 2: Survey in Progress -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <div class="time">9:43</div>
+                        <div class="battery">99% 🔋</div>
+                    </div>
+                    
+                    <div class="app-header">
+                        <div class="app-title">Sleep Quality Study</div>
+                        <div class="app-subtitle">University of Amsterdam</div>
+                    </div>
+
+                    <div class="screen-content">
+                        <div class="survey-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                            
+                            <div class="question-number">Question 3 of 5</div>
+                            
+                            <div class="question-text">
+                                How many hours of sleep do you typically get per night?
+                            </div>
+                            
+                            <div class="answer-options">
+                                <div class="answer-option">Less than 6 hours</div>
+                                <div class="answer-option selected">6-7 hours</div>
+                                <div class="answer-option">7-8 hours</div>
+                                <div class="answer-option">8-9 hours</div>
+                                <div class="answer-option">More than 9 hours</div>
+                            </div>
+                            
+                            <button class="next-btn">Next Question</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-label">2. Complete Survey Questions</div>
+            </div>
+
+            <!-- Screen 3: Payment Confirmation -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <div class="time">9:51</div>
+                        <div class="battery">98% 🔋</div>
+                    </div>
+                    
+                    <div class="app-header">
+                        <div class="app-title">Payment Confirmed</div>
+                        <div class="app-subtitle">Survey Completed</div>
+                    </div>
+
+                    <div class="screen-content">
+                        <div class="payment-confirmation">
+                            <div class="success-icon">✅</div>
+                            <div class="success-title">Survey Completed!</div>
+                            <div class="success-subtitle">Thank you for participating in the Sleep Quality Study</div>
+                            
+                            <div class="payment-amount">
+                                <div class="amount-label">You Earned</div>
+                                <div class="amount-value">€25.00</div>
+                            </div>
+                            
+                            <div class="payment-details">
+                                <div class="detail-row">
+                                    <span>Survey Payment:</span>
+                                    <span>€25.00</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Platform Fee:</span>
+                                    <span>€0.00</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Payment Method:</span>
+                                    <span>Bank Transfer</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Total Earned:</span>
+                                    <span style="color: var(--green);">€25.00</span>
+                                </div>
+                            </div>
+                            
+                            <button class="continue-btn">Continue to More Surveys</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-label">3. Instant Payment Confirmation</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 60px; text-align: center;">
+            <h3 style="font-size: 24px; margin-bottom: 20px; color: var(--text-primary);">It's That Simple</h3>
+            <p style="font-size: 18px; color: var(--text-secondary); max-width: 600px; margin: 0 auto 40px;">
+                Browse surveys that match your health profile, complete them anonymously in minutes, 
+                and get paid instantly. Your data stays private, your earnings are transparent, 
+                and researchers get the insights they need.
+            </p>
+            
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <a href="./index.html" style="background: var(--green); color: white; padding: 16px 32px; border-radius: 980px; text-decoration: none; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='var(--green-dark)'" onmouseout="this.style.background='var(--green)'">
+                    Learn More About SurveyVault
+                </a>
+                <a href="../index.html" style="background: transparent; color: var(--green); border: 2px solid var(--green); padding: 14px 32px; border-radius: 980px; text-decoration: none; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='var(--green)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--green)'">
+                    Explore ResearchPay Platform
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Survey card interaction
+            document.querySelectorAll('.survey-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            // Answer option interaction
+            document.querySelectorAll('.answer-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from siblings
+                    this.parentNode.querySelectorAll('.answer-option').forEach(sibling => {
+                        sibling.classList.remove('selected');
+                    });
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                });
+            });
+
+            // Button interactions
+            document.querySelectorAll('.next-btn, .continue-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            // Phone hover effects
+            document.querySelectorAll('.phone-mockup').forEach(phone => {
+                phone.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px)';
+                });
+                
+                phone.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
