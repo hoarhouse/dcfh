@@ -2,6 +2,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - initializing components...');
     
+    // Initialize mobile navigation
+    initMobileNavigation();
+    
     // Check if registration form exists (for index.html)
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
@@ -20,6 +23,82 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing countdown timer...');
     initCountdown();
 });
+
+// Mobile Navigation Functionality
+function initMobileNavigation() {
+    const hamburger = document.querySelector('.nav-hamburger');
+    const navMenu = document.querySelector('.nav-menu');
+    const navOverlay = document.querySelector('.nav-overlay');
+    const navLinks = document.querySelectorAll('.nav-menu a');
+    
+    if (!hamburger || !navMenu) {
+        console.log('Mobile navigation elements not found');
+        return;
+    }
+    
+    console.log('Initializing mobile navigation...');
+    
+    // Toggle menu function
+    function toggleMenu() {
+        const isActive = hamburger.classList.contains('active');
+        
+        if (isActive) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    }
+    
+    function openMenu() {
+        hamburger.classList.add('active');
+        navMenu.classList.add('active');
+        if (navOverlay) {
+            navOverlay.classList.add('active');
+        }
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeMenu() {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+        if (navOverlay) {
+            navOverlay.classList.remove('active');
+        }
+        document.body.style.overflow = '';
+    }
+    
+    // Event listeners
+    hamburger.addEventListener('click', toggleMenu);
+    
+    // Close menu when clicking overlay
+    if (navOverlay) {
+        navOverlay.addEventListener('click', closeMenu);
+    }
+    
+    // Close menu when clicking nav links
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            // Small delay to allow navigation to complete
+            setTimeout(closeMenu, 150);
+        });
+    });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && hamburger.classList.contains('active')) {
+            closeMenu();
+        }
+    });
+    
+    // Close menu on window resize (if desktop)
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && hamburger.classList.contains('active')) {
+            closeMenu();
+        }
+    });
+    
+    console.log('Mobile navigation initialized successfully');
+}
 
 // Registration Form Handler
 function handleRegistrationSubmit(e) {
