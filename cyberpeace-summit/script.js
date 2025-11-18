@@ -2,6 +2,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - initializing components...');
     
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+        console.log('Lucide icons initialized');
+    }
+    
     // Initialize mobile navigation
     initMobileNavigation();
     
