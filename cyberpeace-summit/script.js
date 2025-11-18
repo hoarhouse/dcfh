@@ -251,6 +251,7 @@ const CountdownTimer = {
     },
     
     createCountdownStructure() {
+        console.log('Creating countdown structure...');
         const countdownHTML = `
             <div class="countdown-item">
                 <span class="countdown-value" id="countdown-days">0</span>
@@ -272,6 +273,7 @@ const CountdownTimer = {
         
         this.countdownElement.innerHTML = countdownHTML;
         this.countdownElement.classList.add('countdown');
+        console.log('Countdown HTML structure created and inserted');
     },
     
     startCountdown() {
