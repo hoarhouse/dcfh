@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (contactForm) {
         contactForm.addEventListener('submit', handleContactSubmit);
     }
+    
+    // Initialize countdown timer
+    initCountdown();
 });
 
 // Registration Form Handler
@@ -221,6 +224,58 @@ window.viewContacts = function() {
     console.table(contacts);
     return contacts;
 };
+
+// Countdown Timer Function
+function initCountdown() {
+    // Check if countdown elements exist (only on index.html)
+    const countdownElement = document.getElementById('countdown');
+    if (!countdownElement) {
+        return;
+    }
+    
+    // Target date: March 2, 2026, 9:00 AM Budapest time (CET/CEST)
+    // Budapest is GMT+1 (CET) in winter, GMT+2 (CEST) in summer
+    // March 2, 2026 will be in CET (GMT+1)
+    const targetDate = new Date('2026-03-02T09:00:00+01:00').getTime();
+    
+    // Get DOM elements
+    const daysElement = document.getElementById('days');
+    const hoursElement = document.getElementById('hours');
+    const minutesElement = document.getElementById('minutes');
+    const secondsElement = document.getElementById('seconds');
+    
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+        
+        // If countdown is finished
+        if (distance < 0) {
+            daysElement.textContent = '000';
+            hoursElement.textContent = '00';
+            minutesElement.textContent = '00';
+            secondsElement.textContent = '00';
+            return;
+        }
+        
+        // Calculate time units
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Update DOM with proper formatting
+        daysElement.textContent = days.toString().padStart(3, '0');
+        hoursElement.textContent = hours.toString().padStart(2, '0');
+        minutesElement.textContent = minutes.toString().padStart(2, '0');
+        secondsElement.textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    // Update immediately
+    updateCountdown();
+    
+    // Update every second
+    setInterval(updateCountdown, 1000);
+}
 
 console.log('Budapest Digital Peace Summit 2026 - Site loaded');
 console.log('Use viewRegistrations() in console to see all registrations');
