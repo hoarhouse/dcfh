@@ -225,56 +225,149 @@ window.viewContacts = function() {
     return contacts;
 };
 
-// Countdown Timer Function
-function initCountdown() {
-    // Check if countdown elements exist (only on index.html)
-    const countdownElement = document.getElementById('countdown');
-    if (!countdownElement) {
-        return;
-    }
+// Professional Countdown Timer Object
+const CountdownTimer = {
+    targetDate: new Date('2026-03-02T09:00:00+01:00'),
+    countdownElement: null,
+    intervalId: null,
     
-    // Target date: March 2, 2026, 9:00 AM Budapest time (CET/CEST)
-    // Budapest is GMT+1 (CET) in winter, GMT+2 (CEST) in summer
-    // March 2, 2026 will be in CET (GMT+1)
-    const targetDate = new Date('2026-03-02T09:00:00+01:00').getTime();
-    
-    // Get DOM elements
-    const daysElement = document.getElementById('days');
-    const hoursElement = document.getElementById('hours');
-    const minutesElement = document.getElementById('minutes');
-    const secondsElement = document.getElementById('seconds');
-    
-    function updateCountdown() {
-        const now = new Date().getTime();
-        const distance = targetDate - now;
-        
-        // If countdown is finished
-        if (distance < 0) {
-            daysElement.textContent = '000';
-            hoursElement.textContent = '00';
-            minutesElement.textContent = '00';
-            secondsElement.textContent = '00';
+    init() {
+        this.countdownElement = document.getElementById('countdown');
+        if (!this.countdownElement) {
+            console.warn('Countdown element not found');
             return;
         }
         
-        // Calculate time units
+        this.createCountdownStructure();
+        this.startCountdown();
+    },
+    
+    createCountdownStructure() {
+        const countdownHTML = `
+            <div class="countdown-item">
+                <span class="countdown-value" id="countdown-days">0</span>
+                <span class="countdown-label">Days</span>
+            </div>
+            <div class="countdown-item">
+                <span class="countdown-value" id="countdown-hours">0</span>
+                <span class="countdown-label">Hours</span>
+            </div>
+            <div class="countdown-item">
+                <span class="countdown-value" id="countdown-minutes">0</span>
+                <span class="countdown-label">Minutes</span>
+            </div>
+            <div class="countdown-item">
+                <span class="countdown-value" id="countdown-seconds">0</span>
+                <span class="countdown-label">Seconds</span>
+            </div>
+        `;
+        
+        this.countdownElement.innerHTML = countdownHTML;
+        this.countdownElement.classList.add('countdown');
+    },
+    
+    startCountdown() {
+        this.updateCountdown();
+        
+        this.intervalId = setInterval(() => {
+            this.updateCountdown();
+        }, 1000);
+    },
+    
+    updateCountdown() {
+        const now = new Date().getTime();
+        const distance = this.targetDate.getTime() - now;
+        
+        if (distance < 0) {
+            this.handleCountdownExpired();
+            return;
+        }
+        
         const days = Math.floor(distance / (1000 * 60 * 60 * 24));
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         
-        // Update DOM with proper formatting
-        daysElement.textContent = days.toString().padStart(3, '0');
-        hoursElement.textContent = hours.toString().padStart(2, '0');
-        minutesElement.textContent = minutes.toString().padStart(2, '0');
-        secondsElement.textContent = seconds.toString().padStart(2, '0');
+        this.updateDisplay(days, hours, minutes, seconds);
+    },
+    
+    updateDisplay(days, hours, minutes, seconds) {
+        const daysElement = document.getElementById('countdown-days');
+        const hoursElement = document.getElementById('countdown-hours');
+        const minutesElement = document.getElementById('countdown-minutes');
+        const secondsElement = document.getElementById('countdown-seconds');
+        
+        if (daysElement) {
+            daysElement.textContent = this.formatNumber(days);
+            this.animateUpdate(daysElement);
+        }
+        
+        if (hoursElement) {
+            hoursElement.textContent = this.formatNumber(hours);
+            if (hours === 0 && days === 0) {
+                this.animateUpdate(hoursElement);
+            }
+        }
+        
+        if (minutesElement) {
+            minutesElement.textContent = this.formatNumber(minutes);
+            if (minutes === 0 && hours === 0 && days === 0) {
+                this.animateUpdate(minutesElement);
+            }
+        }
+        
+        if (secondsElement) {
+            const prevValue = secondsElement.textContent;
+            secondsElement.textContent = this.formatNumber(seconds);
+            if (prevValue !== secondsElement.textContent) {
+                this.animateUpdate(secondsElement);
+            }
+        }
+    },
+    
+    formatNumber(number) {
+        return number < 10 ? '0' + number : number.toString();
+    },
+    
+    animateUpdate(element) {
+        element.style.transform = 'scale(1.1)';
+        element.style.transition = 'transform 0.2s ease';
+        
+        setTimeout(() => {
+            element.style.transform = 'scale(1)';
+        }, 200);
+    },
+    
+    handleCountdownExpired() {
+        clearInterval(this.intervalId);
+        
+        if (this.countdownElement) {
+            this.countdownElement.innerHTML = `
+                <div class="countdown-expired">
+                    <h3>The Summit Has Begun!</h3>
+                    <p>Join us at the Budapest Digital Peace Summit</p>
+                </div>
+            `;
+            this.countdownElement.classList.add('countdown-expired-container');
+        }
+    },
+    
+    stop() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    },
+    
+    restart() {
+        this.stop();
+        this.startCountdown();
     }
-    
-    // Update immediately
-    updateCountdown();
-    
-    // Update every second
-    setInterval(updateCountdown, 1000);
+};
+
+// Countdown Timer Function (updated to use new object)
+function initCountdown() {
+    CountdownTimer.init();
 }
 
 console.log('Budapest Digital Peace Summit 2026 - Site loaded');
