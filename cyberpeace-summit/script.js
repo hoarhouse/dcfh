@@ -76,7 +76,7 @@ function handleRegistrationSubmit(e) {
     
     // Log for admin purposes (temporary)
     console.log('New registration:', registration);
-});
+}
 
 // Contact Form Handler
 function handleContactSubmit(e) {
