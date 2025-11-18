@@ -1,18 +1,23 @@
 // Registration Form Submission Handler
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing components...');
+    
     // Check if registration form exists (for index.html)
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegistrationSubmit);
+        console.log('Registration form initialized');
     }
     
     // Check if contact form exists (for contact.html)
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', handleContactSubmit);
+        console.log('Contact form initialized');
     }
     
     // Initialize countdown timer
+    console.log('Initializing countdown timer...');
     initCountdown();
 });
 
@@ -232,14 +237,17 @@ const CountdownTimer = {
     intervalId: null,
     
     init() {
+        console.log('CountdownTimer.init() called');
         this.countdownElement = document.getElementById('countdown');
         if (!this.countdownElement) {
-            console.warn('Countdown element not found');
+            console.error('Countdown element with ID "countdown" not found');
             return;
         }
         
+        console.log('Countdown element found:', this.countdownElement);
         this.createCountdownStructure();
         this.startCountdown();
+        console.log('Countdown timer initialized successfully');
     },
     
     createCountdownStructure() {
