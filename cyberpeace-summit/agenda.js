@@ -6,8 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to show all days (for Full Agenda view)
     function showAllDays() {
-        // Remove active class from all tabs (no single day is selected)
+        // Remove active class from all tabs
         dayTabs.forEach(t => t.classList.remove('active'));
+        
+        // Add active class to the "all" tab if it exists
+        dayTabs.forEach(tab => {
+            if (tab.getAttribute('data-day') === 'all') {
+                tab.classList.add('active');
+            }
+        });
         
         // Show all day schedules
         daySchedules.forEach(schedule => {
@@ -15,10 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
             schedule.style.display = 'block';
         });
         
-        // Hide the day tabs when showing full agenda
+        // Keep the tabs visible but show "all" as active
         const tabContainer = document.querySelector('.day-tabs');
         if (tabContainer) {
-            tabContainer.style.display = 'none';
+            tabContainer.style.display = 'flex';
         }
     }
     
