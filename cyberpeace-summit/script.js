@@ -102,12 +102,66 @@ function initMobileNavigation() {
     
     // Close menu on window resize (if desktop)
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 768 && hamburger.classList.contains('active')) {
+        if (window.innerWidth > 1024 && hamburger.classList.contains('active')) {
             closeMenu();
         }
     });
     
     console.log('Mobile navigation initialized successfully');
+}
+
+// Dropdown Menu Functionality
+function initDropdowns() {
+    const dropdownToggles = document.querySelectorAll('.has-dropdown > a');
+    const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+    
+    dropdownToggles.forEach(toggle => {
+        // Prevent default link behavior for dropdown toggles
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const parentLi = toggle.parentElement;
+            const isMobile = window.innerWidth <= 1024;
+            
+            if (isMobile) {
+                // Toggle active class for mobile dropdowns
+                parentLi.classList.toggle('active');
+                
+                // Close other dropdowns
+                document.querySelectorAll('.has-dropdown').forEach(item => {
+                    if (item !== parentLi) {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.has-dropdown')) {
+            document.querySelectorAll('.has-dropdown').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+    });
+    
+    // Handle hover for desktop
+    if (window.innerWidth > 1024) {
+        document.querySelectorAll('.has-dropdown').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                if (window.innerWidth > 1024) {
+                    item.classList.add('active');
+                }
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                if (window.innerWidth > 1024) {
+                    item.classList.remove('active');
+                }
+            });
+        });
+    }
 }
 
 // Registration Form Handler
