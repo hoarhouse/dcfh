@@ -4,8 +4,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const dayTabs = document.querySelectorAll('.day-tab');
     const daySchedules = document.querySelectorAll('.day-schedule');
     
+    // Function to show all days (for Full Agenda view)
+    function showAllDays() {
+        // Remove active class from all tabs (no single day is selected)
+        dayTabs.forEach(t => t.classList.remove('active'));
+        
+        // Show all day schedules
+        daySchedules.forEach(schedule => {
+            schedule.classList.add('active-day');
+            schedule.style.display = 'block';
+        });
+        
+        // Hide the day tabs when showing full agenda
+        const tabContainer = document.querySelector('.day-tabs');
+        if (tabContainer) {
+            tabContainer.style.display = 'none';
+        }
+    }
+    
     // Function to activate a specific day (make it globally accessible)
     function activateDay(dayId) {
+        // Show the tabs container
+        const tabContainer = document.querySelector('.day-tabs');
+        if (tabContainer) {
+            tabContainer.style.display = 'flex';
+        }
+        
         // Remove active class from all tabs
         dayTabs.forEach(t => t.classList.remove('active'));
         
@@ -53,9 +77,12 @@ document.addEventListener('DOMContentLoaded', function() {
             activateDay('day2');
         } else if (hash === '#day1') {
             activateDay('day1');
+        } else if (hash === '#full' || hash === '') {
+            // Show full agenda when no hash or #full
+            showAllDays();
         } else {
-            // Default to Day 1 if no hash
-            activateDay('day1');
+            // Default to showing full agenda
+            showAllDays();
         }
     }
     
@@ -65,18 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle hash changes (e.g., when user clicks back/forward)
     window.addEventListener('hashchange', checkUrlHash);
     
-    // Ensure at least one day is visible on load
-    // This is a failsafe in case styles aren't applied correctly
-    const visibleDays = document.querySelectorAll('.day-schedule.active-day');
-    if (visibleDays.length === 0) {
-        // No active day, activate day 1 as default
-        const day1 = document.getElementById('day1');
-        if (day1) {
-            day1.classList.add('active-day');
-            day1.style.display = 'block';
-        }
-    }
-    
-    // Make activateDay function globally accessible for dropdown navigation
+    // Make functions globally accessible for dropdown navigation
     window.activateDay = activateDay;
+    window.showAllDays = showAllDays;
 });
