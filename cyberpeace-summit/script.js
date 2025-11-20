@@ -30,19 +30,23 @@ document.addEventListener('DOMContentLoaded', function() {
     initCountdown();
 });
 
-// Mobile Navigation Functionality
+// Mobile Navigation and Dropdown Functionality
 function initMobileNavigation() {
     const hamburger = document.querySelector('.nav-hamburger');
     const navMenu = document.querySelector('.nav-menu');
     const navOverlay = document.querySelector('.nav-overlay');
     const navLinks = document.querySelectorAll('.nav-menu a');
+    const dropdownToggles = document.querySelectorAll('.nav-menu .has-dropdown > a');
     
     if (!hamburger || !navMenu) {
         console.log('Mobile navigation elements not found');
         return;
     }
     
-    console.log('Initializing mobile navigation...');
+    console.log('Initializing mobile navigation and dropdowns...');
+    
+    // Initialize dropdown functionality
+    initDropdowns();
     
     // Toggle menu function
     function toggleMenu() {
