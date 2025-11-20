@@ -64,4 +64,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle hash changes (e.g., when user clicks back/forward)
     window.addEventListener('hashchange', checkUrlHash);
+    
+    // Ensure at least one day is visible on load
+    // This is a failsafe in case styles aren't applied correctly
+    const visibleDays = document.querySelectorAll('.day-schedule.active-day');
+    if (visibleDays.length === 0) {
+        // No active day, activate day 1 as default
+        const day1 = document.getElementById('day1');
+        if (day1) {
+            day1.classList.add('active-day');
+            day1.style.display = 'block';
+        }
+    }
 });
