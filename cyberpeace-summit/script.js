@@ -146,6 +146,34 @@ function initDropdowns() {
         }
     });
     
+    // Handle dropdown menu item clicks for Day 1 and Day 2 on agenda page
+    document.querySelectorAll('.dropdown-menu a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            // Check if we're on agenda.html and clicking a day link
+            if (window.location.pathname.includes('agenda.html') && (href === '#day1' || href === '#day2')) {
+                e.preventDefault();
+                const dayId = href.substring(1); // Remove the #
+                
+                // Trigger the day change if the activateDay function exists
+                if (typeof window.activateDay === 'function') {
+                    window.activateDay(dayId);
+                } else {
+                    // Fallback: manually trigger the tab click
+                    const targetTab = document.querySelector(`[data-day="${dayId}"]`);
+                    if (targetTab) {
+                        targetTab.click();
+                    }
+                }
+                
+                // Close the dropdown
+                document.querySelectorAll('.has-dropdown').forEach(item => {
+                    item.classList.remove('active');
+                });
+            }
+        });
+    });
+    
     // Handle hover for desktop
     if (window.innerWidth > 1024) {
         document.querySelectorAll('.has-dropdown').forEach(item => {

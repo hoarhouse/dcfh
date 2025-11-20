@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dayTabs = document.querySelectorAll('.day-tab');
     const daySchedules = document.querySelectorAll('.day-schedule');
     
-    // Function to activate a specific day
+    // Function to activate a specific day (make it globally accessible)
     function activateDay(dayId) {
         // Remove active class from all tabs
         dayTabs.forEach(t => t.classList.remove('active'));
@@ -76,4 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
             day1.style.display = 'block';
         }
     }
+    
+    // Make activateDay function globally accessible for dropdown navigation
+    window.activateDay = activateDay;
 });
