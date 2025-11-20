@@ -63,10 +63,16 @@ document.addEventListener('DOMContentLoaded', function() {
     dayTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const selectedDay = this.getAttribute('data-day');
-            activateDay(selectedDay);
             
-            // Update URL hash without triggering scroll
-            history.replaceState(null, null, '#' + selectedDay);
+            if (selectedDay === 'all') {
+                showAllDays();
+                // Update URL hash to reflect full agenda view
+                history.replaceState(null, null, '#');
+            } else {
+                activateDay(selectedDay);
+                // Update URL hash without triggering scroll
+                history.replaceState(null, null, '#' + selectedDay);
+            }
         });
     });
     
