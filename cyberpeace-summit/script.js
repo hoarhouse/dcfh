@@ -526,7 +526,7 @@ const CountdownTimer = {
             this.countdownElement.innerHTML = `
                 <div class="countdown-expired">
                     <h3>The Summit Has Begun!</h3>
-                    <p>Join us at the Budapest Digital Peace Summit</p>
+                    <p>Join us at the Budapest Digital & AI Peace Summit</p>
                 </div>
             `;
             this.countdownElement.classList.add('countdown-expired-container');
@@ -551,6 +551,6 @@ function initCountdown() {
     CountdownTimer.init();
 }
 
-console.log('Budapest Digital Peace Summit 2026 - Site loaded');
+console.log('Budapest Digital & AI Peace Summit 2026 - Site loaded');
 console.log('Use viewRegistrations() in console to see all registrations');
 console.log('Use viewContacts() in console to see all contact submissions');
