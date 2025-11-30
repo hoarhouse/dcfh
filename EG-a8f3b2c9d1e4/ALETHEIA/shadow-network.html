@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Network - European Credential Intelligence | ALETHEIA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --cyan-light: #4DE5FF;
+            --cyan-dark: #00B4D8;
+            --dark-bg: #0a0a0f;
+            --dark-panel: #0F1420;
+            --dark-border: #1a2332;
+            --green: #10a37f;
+            --amber: #ff9500;
+            --red: #ff3b30;
+            --purple: #9747FF;
+            --text-primary: #ffffff;
+            --text-secondary: #86868b;
+            --text-dim: #4a4a52;
+            --grid: rgba(26, 35, 50, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            opacity: 0.5;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, rgba(10, 10, 15, 0.98), rgba(10, 10, 15, 0.95));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--dark-border);
+            padding: 20px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .header-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .header-message {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 1px solid var(--cyan-dark);
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            color: var(--cyan-light);
+        }
+
+        /* Dashboard Container */
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--dark-panel);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--cyan-dark));
+            opacity: 0.5;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Heat Map Panel */
+        .heat-map-panel {
+            grid-column: span 2;
+            grid-row: span 2;
+            min-height: 500px;
+        }
+
+        .eu-map {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-country {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .map-country:hover {
+            transform: scale(1.2);
+            border-color: var(--cyan);
+            box-shadow: 0 0 20px var(--cyan);
+            z-index: 10;
+        }
+
+        .intensity-high {
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.4), rgba(0, 212, 255, 0.1));
+        }
+
+        .intensity-medium {
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.25), rgba(0, 212, 255, 0.05));
+        }
+
+        .intensity-low {
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.02));
+        }
+
+        /* Country Tooltip */
+        .country-tooltip {
+            position: absolute;
+            background: var(--dark-panel);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            padding: 15px;
+            display: none;
+            z-index: 20;
+            min-width: 250px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .country-tooltip.active {
+            display: block;
+        }
+
+        .tooltip-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tooltip-stat {
+            font-size: 14px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tooltip-label {
+            color: var(--text-secondary);
+        }
+
+        .tooltip-value {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            grid-row: span 2;
+            max-height: 500px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .feed-container {
+            height: 450px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .feed-item {
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            animation: slideIn 0.5s ease;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feed-item:hover {
+            border-color: var(--cyan);
+            transform: translateX(5px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feed-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .feed-text {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .feed-time {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+
+        .feed-alert {
+            border-left: 3px solid var(--amber);
+        }
+
+        .feed-fraud {
+            border-left: 3px solid var(--red);
+        }
+
+        .feed-trend {
+            border-left: 3px solid var(--cyan);
+        }
+
+        .feed-system {
+            border-left: 3px solid var(--green);
+        }
+
+        /* Fraud Intelligence Panel */
+        .fraud-panel {
+            grid-column: span 3;
+        }
+
+        .fraud-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .fraud-card {
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .fraud-card:hover {
+            border-color: var(--red);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 59, 48, 0.1);
+        }
+
+        .fraud-headline {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--red);
+        }
+
+        .fraud-source {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .fraud-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .fraud-insight {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+            border: 1px solid var(--cyan-dark);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .fraud-insight-label {
+            color: var(--cyan);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* Workforce Mobility */
+        .mobility-panel {
+            grid-column: span 2;
+        }
+
+        .mobility-map {
+            position: relative;
+            height: 350px;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .flow-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            transform-origin: left center;
+            animation: flowAnimation 3s linear infinite;
+        }
+
+        @keyframes flowAnimation {
+            0% {
+                background-position: -100% 0;
+            }
+            100% {
+                background-position: 100% 0;
+            }
+        }
+
+        .flow-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .profession-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .filter-btn.active {
+            background: var(--cyan);
+            color: var(--dark-bg);
+            border-color: var(--cyan);
+        }
+
+        /* Regulatory Radar */
+        .regulatory-panel {
+            grid-column: span 1;
+        }
+
+        .regulatory-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .regulatory-item {
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .regulatory-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--amber);
+            margin-bottom: 8px;
+        }
+
+        .regulatory-progress {
+            background: var(--dark-border);
+            height: 4px;
+            border-radius: 2px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .regulatory-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--amber), var(--cyan));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .regulatory-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .aletheia-angle {
+            font-size: 11px;
+            color: var(--cyan);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Network Statistics Bar */
+        .stats-bar {
+            background: var(--dark-panel);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--cyan);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--dark-panel), var(--dark-bg));
+            border: 2px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 60px 40px;
+            margin: 40px auto;
+            max-width: 1200px;
+            text-align: center;
+        }
+
+        .cta-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .cta-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            padding: 16px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--dark-bg);
+        }
+
+        .cta-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(0, 212, 255, 0.4);
+        }
+
+        .cta-secondary {
+            background: transparent;
+            border: 2px solid var(--cyan);
+            color: var(--cyan);
+        }
+
+        .cta-secondary:hover {
+            background: var(--cyan);
+            color: var(--dark-bg);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid var(--dark-border);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+
+        .footer-link:hover {
+            opacity: 0.8;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .heat-map-panel {
+                grid-column: span 2;
+            }
+            
+            .fraud-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .mobility-panel {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .heat-map-panel,
+            .activity-feed,
+            .fraud-panel,
+            .mobility-panel,
+            .regulatory-panel {
+                grid-column: span 1;
+                grid-row: auto;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            animation: loading 2s linear infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                width: 0;
+                left: 0;
+            }
+            50% {
+                width: 100%;
+                left: 0;
+            }
+            100% {
+                width: 0;
+                left: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-top">
+                <a href="index.html" class="logo">ALETHEIA</a>
+                <h1 class="header-title">Shadow Network</h1>
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span>Live data - Last refresh: <span id="refreshTime">2</span>s ago</span>
+                </div>
+            </div>
+            <p class="header-subtitle">European Credential Intelligence - Real-time visibility into cross-border professional verification patterns</p>
+            <div class="header-message">
+                ⚡ This is what we can see from public data and aggregate intelligence. Imagine what's possible when licensing bodies join the federated network.
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard -->
+    <main class="dashboard">
+        <div class="dashboard-grid">
+            <!-- Heat Map Panel -->
+            <div class="panel heat-map-panel">
+                <h2 class="panel-title">🗺️ EU Credential Verification Heat Map</h2>
+                <div class="eu-map" id="euMap">
+                    <!-- Countries positioned roughly on EU map -->
+                    <div class="map-country intensity-high" style="left: 50%; top: 35%;" data-country="germany">🇩🇪</div>
+                    <div class="map-country intensity-high" style="left: 45%; top: 50%;" data-country="france">🇫🇷</div>
+                    <div class="map-country intensity-medium" style="left: 40%; top: 65%;" data-country="spain">🇪🇸</div>
+                    <div class="map-country intensity-medium" style="left: 55%; top: 65%;" data-country="italy">🇮🇹</div>
+                    <div class="map-country intensity-high" style="left: 60%; top: 45%;" data-country="poland">🇵🇱</div>
+                    <div class="map-country intensity-medium" style="left: 45%; top: 30%;" data-country="netherlands">🇳🇱</div>
+                    <div class="map-country intensity-low" style="left: 35%; top: 20%;" data-country="sweden">🇸🇪</div>
+                    <div class="map-country intensity-low" style="left: 30%; top: 75%;" data-country="portugal">🇵🇹</div>
+                    <div class="map-country intensity-medium" style="left: 65%; top: 55%;" data-country="romania">🇷🇴</div>
+                    <div class="map-country intensity-low" style="left: 70%; top: 75%;" data-country="greece">🇬🇷</div>
+                    <div class="map-country intensity-medium" style="left: 55%; top: 25%;" data-country="denmark">🇩🇰</div>
+                    <div class="map-country intensity-low" style="left: 50%; top: 55%;" data-country="austria">🇦🇹</div>
+                </div>
+                
+                <!-- Country Tooltip -->
+                <div class="country-tooltip" id="countryTooltip">
+                    <div class="tooltip-title">
+                        <span id="tooltipFlag">🇩🇪</span>
+                        <span id="tooltipName">Germany</span>
+                    </div>
+                    <div class="tooltip-stat">
+                        <span class="tooltip-label">Verification Demand Index</span>
+                        <span class="tooltip-value" id="tooltipIndex">87/100</span>
+                    </div>
+                    <div class="tooltip-stat">
+                        <span class="tooltip-label">Avg. Verification Delay</span>
+                        <span class="tooltip-value" id="tooltipDelay">23 days</span>
+                    </div>
+                    <div class="tooltip-stat">
+                        <span class="tooltip-label">Top Incoming</span>
+                        <span class="tooltip-value" id="tooltipIncoming">PL, RO, ES</span>
+                    </div>
+                    <div class="tooltip-stat">
+                        <span class="tooltip-label">Mobility Trend</span>
+                        <span class="tooltip-value" id="tooltipTrend">↑12%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Activity Feed -->
+            <div class="panel activity-feed">
+                <h2 class="panel-title">📊 Live Activity Feed</h2>
+                <div class="feed-container" id="feedContainer">
+                    <!-- Feed items dynamically added -->
+                </div>
+            </div>
+
+            <!-- Fraud Intelligence Panel -->
+            <div class="panel fraud-panel">
+                <h2 class="panel-title">🚨 Fraud Intelligence</h2>
+                <div class="fraud-cards">
+                    <div class="fraud-card">
+                        <div class="fraud-headline">Fake Surgeon Practiced 8 Months in German Hospital</div>
+                        <div class="fraud-source">Based on 2023 case reports</div>
+                        <div class="fraud-description">
+                            Individual with fraudulent Italian medical credentials performed procedures before detection.
+                        </div>
+                        <div class="fraud-insight">
+                            <div class="fraud-insight-label">Federated Insight:</div>
+                            ALETHEIA cross-reference would have flagged format mismatch instantly - pattern seen in 23 other fraudulent Italian credentials.
+                        </div>
+                    </div>
+                    
+                    <div class="fraud-card">
+                        <div class="fraud-headline">Credential Mill Network Exposed Across 6 Countries</div>
+                        <div class="fraud-source">Based on Europol 2024 operation</div>
+                        <div class="fraud-description">
+                            'International University of Medical Sciences' issued 2,400+ fake degrees to practicing 'professionals'.
+                        </div>
+                        <div class="fraud-insight">
+                            <div class="fraud-insight-label">Federated Insight:</div>
+                            Network-level analysis would have correlated registration and practice data across jurisdictions within days of first query.
+                        </div>
+                    </div>
+                    
+                    <div class="fraud-card">
+                        <div class="fraud-headline">Nursing Credential Fraud Ring in Nordic Region</div>
+                        <div class="fraud-source">Based on 2024 investigations</div>
+                        <div class="fraud-description">
+                            Organized group sold falsified nursing credentials to 200+ individuals across Scandinavia.
+                        </div>
+                        <div class="fraud-insight">
+                            <div class="fraud-insight-label">Federated Insight:</div>
+                            Real-time registry verification would have rejected 100% of these credentials on first check.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workforce Mobility Flows -->
+            <div class="panel mobility-panel">
+                <h2 class="panel-title">🔄 Workforce Mobility Flows</h2>
+                <div class="profession-filter">
+                    <button class="filter-btn active" onclick="filterProfession('all')">All</button>
+                    <button class="filter-btn" onclick="filterProfession('healthcare')">Healthcare</button>
+                    <button class="filter-btn" onclick="filterProfession('engineering')">Engineering</button>
+                    <button class="filter-btn" onclick="filterProfession('legal')">Legal</button>
+                    <button class="filter-btn" onclick="filterProfession('finance')">Finance</button>
+                </div>
+                <div class="mobility-map" id="mobilityMap">
+                    <!-- Flow lines will be added dynamically -->
+                </div>
+                <div style="margin-top: 15px; font-size: 13px; color: var(--text-secondary);">
+                    <strong style="color: var(--cyan);">Hot corridor:</strong> Poland→Germany nursing verifications up 45% this quarter<br>
+                    <strong style="color: var(--amber);">Emerging:</strong> Ukraine→Poland medical requests surging (expedited pathway)
+                </div>
+            </div>
+
+            <!-- Regulatory Radar -->
+            <div class="panel regulatory-panel">
+                <h2 class="panel-title">📋 Regulatory Radar</h2>
+                <div class="regulatory-items">
+                    <div class="regulatory-item">
+                        <div class="regulatory-title">eIDAS 2.0 Implementation</div>
+                        <div class="regulatory-progress">
+                            <div class="regulatory-progress-fill" style="width: 65%;"></div>
+                        </div>
+                        <div class="regulatory-text">
+                            Germany: Digital wallet pilot Q2 2025<br>
+                            France: Full compliance Q4 2025
+                        </div>
+                        <div class="aletheia-angle">
+                            ✓ MyD Wallet already eIDAS 2.0 certified
+                        </div>
+                    </div>
+                    
+                    <div class="regulatory-item">
+                        <div class="regulatory-title">EHDS Rollout</div>
+                        <div class="regulatory-progress">
+                            <div class="regulatory-progress-fill" style="width: 40%;"></div>
+                        </div>
+                        <div class="regulatory-text">
+                            2025: Primary use provisions active<br>
+                            2026: Secondary use provisions
+                        </div>
+                        <div class="aletheia-angle">
+                            ✓ Credential verification essential for EHDS
+                        </div>
+                    </div>
+                    
+                    <div class="regulatory-item">
+                        <div class="regulatory-title">NIS2 Directive</div>
+                        <div class="regulatory-progress">
+                            <div class="regulatory-progress-fill" style="width: 80%;"></div>
+                        </div>
+                        <div class="regulatory-text">
+                            Cybersecurity requirements for credential systems
+                        </div>
+                        <div class="aletheia-angle">
+                            ✓ Zero-data-sharing inherently NIS2 aligned
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Statistics Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="statBodies">247</div>
+                <div class="stat-label">Licensing Bodies</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statCountries">27</div>
+                <div class="stat-label">Countries Covered</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statCredentials">12.4M</div>
+                <div class="stat-label">Credentials Verifiable</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statQueries">8,421</div>
+                <div class="stat-label">Queries Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statResponse">2.3s</div>
+                <div class="stat-label">Avg Response Time</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statPatterns">1,247</div>
+                <div class="stat-label">Fraud Patterns</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2 class="cta-title">The Shadow Network shows fragments.<br>ALETHEIA connects them all.</h2>
+        <p class="cta-subtitle">
+            When licensing bodies join the federated network, this intelligence becomes actionable - 
+            real-time verification, fraud prevention, and workforce planning across all of Europe.
+        </p>
+        <div class="cta-buttons">
+            <a href="index.html" class="cta-button cta-primary">Learn About ALETHEIA</a>
+            <a href="mailto:contact@e-group.hu" class="cta-button cta-secondary">Request Full Intelligence Access</a>
+            <a href="mailto:join@e-group.hu" class="cta-button cta-secondary">Join the Network</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="index.html" class="footer-link">Main ALETHEIA Page</a>
+            <a href="credential-roulette.html" class="footer-link">Credential Roulette</a>
+            <a href="the-labyrinth.html" class="footer-link">The Labyrinth</a>
+        </div>
+        <p class="footer-text">
+            Data sources: Eurostat, EU Commission, aggregated public registry data<br>
+            Visualization based on public data and estimates. Real-time network data available to ALETHEIA members.<br>
+            <strong>Experience the credential challenge:</strong> <a href="credential-roulette.html" class="footer-link">Credential Roulette</a> | <a href="the-labyrinth.html" class="footer-link">The Labyrinth</a>
+        </p>
+    </footer>
+
+    <script>
+        // Country data
+        const countryData = {
+            germany: {
+                name: 'Germany',
+                flag: '🇩🇪',
+                index: 87,
+                delay: 23,
+                incoming: 'PL, RO, ES',
+                trend: '↑12%',
+                topProfessions: ['Nurses from Poland', 'Doctors from Romania', 'Engineers from Spain']
+            },
+            france: {
+                name: 'France',
+                flag: '🇫🇷',
+                index: 72,
+                delay: 18,
+                incoming: 'PT, ES, IT',
+                trend: '↑8%',
+                topProfessions: ['Healthcare from Portugal', 'Engineers from Spain', 'IT from Italy']
+            },
+            spain: {
+                name: 'Spain',
+                flag: '🇪🇸',
+                index: 58,
+                delay: 21,
+                incoming: 'RO, PT, IT',
+                trend: '↓3%',
+                topProfessions: ['Healthcare from Romania', 'Tourism from Portugal', 'Finance from Italy']
+            },
+            italy: {
+                name: 'Italy',
+                flag: '🇮🇹',
+                index: 61,
+                delay: 25,
+                incoming: 'RO, PL, GR',
+                trend: '↑5%',
+                topProfessions: ['Healthcare from Romania', 'Construction from Poland', 'Tourism from Greece']
+            },
+            poland: {
+                name: 'Poland',
+                flag: '🇵🇱',
+                index: 69,
+                delay: 20,
+                incoming: 'UA, BY, RU',
+                trend: '↑18%',
+                topProfessions: ['Medical from Ukraine', 'IT from Belarus', 'Engineering from Russia']
+            },
+            netherlands: {
+                name: 'Netherlands',
+                flag: '🇳🇱',
+                index: 75,
+                delay: 15,
+                incoming: 'DE, PL, ES',
+                trend: '↑14%',
+                topProfessions: ['IT professionals', 'Healthcare from Germany', 'Engineers from Spain']
+            },
+            sweden: {
+                name: 'Sweden',
+                flag: '🇸🇪',
+                index: 45,
+                delay: 12,
+                incoming: 'FI, NO, DK',
+                trend: '↑6%',
+                topProfessions: ['Healthcare from Finland', 'Engineers from Norway', 'IT from Denmark']
+            },
+            portugal: {
+                name: 'Portugal',
+                flag: '🇵🇹',
+                index: 42,
+                delay: 19,
+                incoming: 'BR, AO, ES',
+                trend: '↑22%',
+                topProfessions: ['Healthcare from Brazil', 'Engineers from Angola', 'Tourism from Spain']
+            },
+            romania: {
+                name: 'Romania',
+                flag: '🇷🇴',
+                index: 55,
+                delay: 28,
+                incoming: 'MD, UA, BG',
+                trend: '↓8%',
+                topProfessions: ['Medical from Moldova', 'IT from Ukraine', 'Construction from Bulgaria']
+            },
+            greece: {
+                name: 'Greece',
+                flag: '🇬🇷',
+                index: 38,
+                delay: 30,
+                incoming: 'AL, CY, BG',
+                trend: '↑4%',
+                topProfessions: ['Tourism from Albania', 'Finance from Cyprus', 'Healthcare from Bulgaria']
+            },
+            denmark: {
+                name: 'Denmark',
+                flag: '🇩🇰',
+                index: 52,
+                delay: 14,
+                incoming: 'SE, NO, DE',
+                trend: '↑10%',
+                topProfessions: ['Healthcare from Sweden', 'Engineering from Norway', 'IT from Germany']
+            },
+            austria: {
+                name: 'Austria',
+                flag: '🇦🇹',
+                index: 48,
+                delay: 17,
+                incoming: 'DE, CZ, HU',
+                trend: '↑7%',
+                topProfessions: ['Tourism from Germany', 'Healthcare from Czech', 'Construction from Hungary']
+            }
+        };
+
+        // Feed items pool
+        const feedItems = [
+            { type: 'volume', icon: '🏥', text: 'Healthcare sector: 847 medical credential verifications initiated today across EU' },
+            { type: 'trend', icon: '📈', text: 'Engineering: Cross-border verification requests up 23% this week' },
+            { type: 'fraud', icon: '⚠️', text: 'Alert: Credential mill "European Medical Academy of Excellence" flagged in 3 new cases' },
+            { type: 'system', icon: '✅', text: 'Network: 247 licensing bodies reporting nominal status' },
+            { type: 'volume', icon: '⚖️', text: 'Legal: 124 lawyer credential checks processed in Germany today' },
+            { type: 'fraud', icon: '🚨', text: 'Pattern detected: Suspicious nursing license sequence appearing across Baltic states' },
+            { type: 'trend', icon: '📊', text: 'Nursing verification backlog in France reaches 6-week average' },
+            { type: 'alert', icon: '🔄', text: 'New: Spain-Portugal mutual recognition agreement reducing verification time by 40%' },
+            { type: 'system', icon: '🔗', text: 'New node: Portuguese Nursing Council joined verification network' },
+            { type: 'fraud', icon: '⛔', text: 'Blocked: 12 verification attempts from blacklisted institution "Global University of Health Sciences"' },
+            { type: 'trend', icon: '📈', text: 'Trending: 34% increase in engineering credential requests Germany→Poland corridor' },
+            { type: 'volume', icon: '💼', text: 'Finance sector: 423 banking credential verifications processed this week' },
+            { type: 'alert', icon: '⏱️', text: 'Average query response time: 2.3 seconds across network' },
+            { type: 'system', icon: '🌐', text: 'Network expansion: 3 new Baltic licensing bodies integrated' },
+            { type: 'fraud', icon: '🔍', text: 'Investigation: Coordinated credential fraud attempt detected across 4 countries' }
+        ];
+
+        // Initialize country tooltips
+        function initCountryTooltips() {
+            const countries = document.querySelectorAll('.map-country');
+            const tooltip = document.getElementById('countryTooltip');
+            
+            countries.forEach(country => {
+                country.addEventListener('mouseenter', (e) => {
+                    const countryKey = country.dataset.country;
+                    const data = countryData[countryKey];
+                    
+                    if (data) {
+                        document.getElementById('tooltipFlag').textContent = data.flag;
+                        document.getElementById('tooltipName').textContent = data.name;
+                        document.getElementById('tooltipIndex').textContent = `${data.index}/100`;
+                        document.getElementById('tooltipDelay').textContent = `${data.delay} days`;
+                        document.getElementById('tooltipIncoming').textContent = data.incoming;
+                        document.getElementById('tooltipTrend').textContent = data.trend;
+                        
+                        tooltip.style.left = e.pageX + 10 + 'px';
+                        tooltip.style.top = e.pageY + 10 + 'px';
+                        tooltip.classList.add('active');
+                    }
+                });
+                
+                country.addEventListener('mouseleave', () => {
+                    tooltip.classList.remove('active');
+                });
+            });
+        }
+
+        // Activity feed
+        function initActivityFeed() {
+            const container = document.getElementById('feedContainer');
+            let feedIndex = 0;
+            
+            function addFeedItem() {
+                const item = feedItems[feedIndex % feedItems.length];
+                feedIndex++;
+                
+                const feedDiv = document.createElement('div');
+                feedDiv.className = `feed-item feed-${item.type}`;
+                feedDiv.innerHTML = `
+                    <div>
+                        <span class="feed-icon">${item.icon}</span>
+                        <span class="feed-text">${item.text}</span>
+                    </div>
+                    <div class="feed-time">Just now</div>
+                `;
+                
+                container.insertBefore(feedDiv, container.firstChild);
+                
+                // Remove old items
+                while (container.children.length > 8) {
+                    container.removeChild(container.lastChild);
+                }
+                
+                // Update timestamps
+                Array.from(container.children).forEach((child, index) => {
+                    if (index > 0) {
+                        const timeEl = child.querySelector('.feed-time');
+                        if (index === 1) timeEl.textContent = '15s ago';
+                        else if (index === 2) timeEl.textContent = '30s ago';
+                        else if (index === 3) timeEl.textContent = '1m ago';
+                        else if (index === 4) timeEl.textContent = '2m ago';
+                        else timeEl.textContent = `${index}m ago`;
+                    }
+                });
+            }
+            
+            // Add initial items
+            for (let i = 0; i < 5; i++) {
+                addFeedItem();
+            }
+            
+            // Add new items periodically
+            setInterval(addFeedItem, 4000 + Math.random() * 2000);
+        }
+
+        // Mobility flows
+        function initMobilityFlows() {
+            const map = document.getElementById('mobilityMap');
+            
+            const flows = [
+                { from: {x: 60, y: 45}, to: {x: 50, y: 35}, intensity: 3 }, // Poland to Germany
+                { from: {x: 65, y: 55}, to: {x: 50, y: 35}, intensity: 2 }, // Romania to Germany
+                { from: {x: 40, y: 65}, to: {x: 45, y: 30}, intensity: 1 }, // Spain to Netherlands
+                { from: {x: 30, y: 75}, to: {x: 45, y: 50}, intensity: 1 }, // Portugal to France
+                { from: {x: 70, y: 75}, to: {x: 50, y: 35}, intensity: 1 }, // Greece to Germany
+            ];
+            
+            flows.forEach((flow, index) => {
+                const line = document.createElement('div');
+                line.className = 'flow-line';
+                
+                const dx = flow.to.x - flow.from.x;
+                const dy = flow.to.y - flow.from.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                line.style.left = flow.from.x + '%';
+                line.style.top = flow.from.y + '%';
+                line.style.width = distance + '%';
+                line.style.height = flow.intensity * 2 + 'px';
+                line.style.transform = `rotate(${angle}deg)`;
+                line.style.animationDelay = index * 0.5 + 's';
+                
+                map.appendChild(line);
+                
+                // Add particles
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'flow-particle';
+                        particle.style.left = flow.from.x + '%';
+                        particle.style.top = flow.from.y + '%';
+                        
+                        map.appendChild(particle);
+                        
+                        // Animate particle
+                        let progress = 0;
+                        const animateParticle = () => {
+                            progress += 0.02;
+                            if (progress <= 1) {
+                                particle.style.left = flow.from.x + dx * progress + '%';
+                                particle.style.top = flow.from.y + dy * progress + '%';
+                                requestAnimationFrame(animateParticle);
+                            } else {
+                                particle.remove();
+                            }
+                        };
+                        requestAnimationFrame(animateParticle);
+                    }, i * 2000 + index * 1000);
+                }
+            });
+        }
+
+        // Profession filter
+        function filterProfession(profession) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // In a real implementation, this would filter the flow visualization
+            console.log('Filtering by:', profession);
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                bodies: document.getElementById('statBodies'),
+                queries: document.getElementById('statQueries'),
+                patterns: document.getElementById('statPatterns')
+            };
+            
+            setInterval(() => {
+                // Increment queries
+                const current = parseInt(stats.queries.textContent.replace(',', ''));
+                stats.queries.textContent = (current + Math.floor(Math.random() * 5) + 1).toLocaleString();
+                
+                // Occasionally increment other stats
+                if (Math.random() < 0.1) {
+                    const currentBodies = parseInt(stats.bodies.textContent);
+                    stats.bodies.textContent = currentBodies + 1;
+                }
+                
+                if (Math.random() < 0.05) {
+                    const currentPatterns = parseInt(stats.patterns.textContent.replace(',', ''));
+                    stats.patterns.textContent = (currentPatterns + 1).toLocaleString();
+                }
+            }, 5000);
+        }
+
+        // Update refresh timer
+        function updateRefreshTimer() {
+            const refreshEl = document.getElementById('refreshTime');
+            let seconds = 2;
+            
+            setInterval(() => {
+                seconds++;
+                if (seconds > 60) {
+                    seconds = 2;
+                }
+                refreshEl.textContent = seconds;
+            }, 1000);
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            initCountryTooltips();
+            initActivityFeed();
+            initMobilityFlows();
+            updateStats();
+            updateRefreshTimer();
+            
+            // Repeat mobility flows
+            setInterval(initMobilityFlows, 10000);
+        });
+    </script>
+</body>
+</html>
