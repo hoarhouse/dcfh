@@ -38,7 +38,7 @@ def add_text_box(slide, left, top, width, height, text, font_size=18,
     return textbox
 
 # Load existing presentation
-prs = Presentation('/Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Aegis/Argus_Product_Vision.pptx')
+prs = Presentation('/Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Argus/Argus_Product_Vision.pptx')
 
 # Get first slide
 slide1 = prs.slides[0]
@@ -82,6 +82,6 @@ add_text_box(slide1, 7, 4.9, 2, 0.3,
             font_size=14, color=TEXT_SECONDARY, alignment=PP_ALIGN.RIGHT)
 
 # Save the fixed presentation
-prs.save('/Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Aegis/Argus_Product_Vision.pptx')
+prs.save('/Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Argus/Argus_Product_Vision.pptx')
 print("✅ Slide 1 fixed - text spacing corrected!")
-print("Saved to: /Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Aegis/Argus_Product_Vision.pptx")
+print("Saved to: /Users/christopherhoar/Desktop/dcfh/EG-a8f3b2c9d1e4/Argus/Argus_Product_Vision.pptx")
