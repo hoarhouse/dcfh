@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bid Pattern Scanner - NEMESIS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --teal: #00B4D8;
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --dark-border: #1a2332;
+            --green: #10a37f;
+            --amber: #ff9500;
+            --red: #dc2626;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --bg-gray: #f5f5f7;
+            --border: #d2d2d7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.47059;
+            letter-spacing: -0.022em;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--dark-card) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(15, 20, 32, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--dark-border);
+            padding: 0 max(22px, env(safe-area-inset-left));
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 21px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 22px;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--cyan);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 30px;
+            color: var(--cyan);
+            letter-spacing: 0.5px;
+        }
+
+        h1 {
+            font-size: 56px;
+            line-height: 1.1;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subhead {
+            font-size: 24px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 18px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 30px;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Input Screen */
+        .input-screen {
+            display: none;
+        }
+
+        .form-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 14px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .form-select option {
+            background: var(--dark-card);
+        }
+
+        .range-input {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .range-value {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+            color: var(--cyan);
+        }
+
+        /* Analysis Screen */
+        .analysis-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .scanning-animation {
+            margin: 60px 0;
+        }
+
+        .scanner-circle {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            border: 3px solid var(--cyan);
+            border-radius: 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            top: 50%;
+            left: 0;
+            transform-origin: center;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes scan {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .scanning-text {
+            margin-top: 30px;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Screen */
+        .results-screen {
+            display: none;
+        }
+
+        .score-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 50px;
+            margin-bottom: 40px;
+            text-align: center;
+            border: 1px solid var(--dark-border);
+        }
+
+        .score-title {
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .score-display {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .score-low { color: var(--green); }
+        .score-medium { color: var(--amber); }
+        .score-high { color: var(--red); }
+
+        .score-label {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .red-flags-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .red-flags-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+            color: var(--red);
+        }
+
+        .red-flag-item {
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--red);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .red-flag-severity {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--red);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .red-flag-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .recommendations-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .recommendations-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+            color: var(--cyan);
+        }
+
+        .recommendation-item {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 4px solid var(--cyan);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        /* Cross-Links Section */
+        .cross-links {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #0F1420 100%);
+            padding: 80px 22px;
+            margin-top: 80px;
+        }
+
+        .cross-links-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cross-links-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .cross-links-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .cross-links-subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .tool-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--cyan);
+            transform: translateY(-3px);
+        }
+
+        .tool-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tool-icon {
+            font-size: 36px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .tool-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .tool-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+        }
+
+        .back-to-hub {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .hub-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .hub-link:hover {
+            gap: 12px;
+        }
+
+        /* Nav Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-button {
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-button {
+            background: transparent;
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+        }
+
+        .back-button:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .next-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+        }
+
+        .next-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px 22px;
+            border-top: 1px solid var(--dark-border);
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        .footer-links {
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: var(--cyan);
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 14px;
+        }
+
+        .footer-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="index.html" class="logo">NEMESIS</a>
+            <div class="breadcrumb">
+                <a href="index.html">NEMESIS</a> > 
+                <a href="demos.html">Tools</a> > 
+                Bid Pattern Scanner
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="badge">PATTERN ANALYSIS TOOL</div>
+            <h1>Bid Pattern Scanner</h1>
+            <p class="subhead">
+                See what NEMESIS reveals about procurement patterns. Input your tender categories and discover potential red flags.
+            </p>
+            
+            <button class="start-button" onclick="startScan()">
+                Start Scan →
+            </button>
+        </div>
+
+        <!-- Input Screen -->
+        <div class="input-screen" id="inputScreen">
+            <div class="form-container">
+                <h2 style="margin-bottom: 30px; color: var(--cyan);">Enter Your Procurement Profile</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Procurement Sector</label>
+                    <select class="form-select" id="sector">
+                        <option value="">Select a sector...</option>
+                        <option value="construction">Construction</option>
+                        <option value="it">IT Services</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="transport">Transport</option>
+                        <option value="energy">Energy</option>
+                        <option value="consulting">Consulting</option>
+                        <option value="supplies">Office Supplies</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Annual Tender Volume (€ millions)</label>
+                    <input type="number" class="form-input" id="volume" placeholder="e.g., 50" min="1" max="1000">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Average Contract Size</label>
+                    <select class="form-select" id="contractSize">
+                        <option value="">Select range...</option>
+                        <option value="small">&lt;€50,000</option>
+                        <option value="medium">€50,000 - €500,000</option>
+                        <option value="large">€500,000 - €5M</option>
+                        <option value="xlarge">&gt;€5M</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Number of Regular Bidders</label>
+                    <input type="range" class="range-input" id="bidders" min="2" max="50" value="10" oninput="updateBidderCount(this.value)">
+                    <div class="range-value" id="bidderCount">10</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Geographic Scope</label>
+                    <select class="form-select" id="scope">
+                        <option value="">Select scope...</option>
+                        <option value="municipal">Municipal</option>
+                        <option value="regional">Regional</option>
+                        <option value="national">National</option>
+                        <option value="eu">EU-wide</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="nav-button back-button" onclick="backToWelcome()">
+                    ← Back
+                </button>
+                <button class="nav-button next-button" onclick="runAnalysis()">
+                    Analyze →
+                </button>
+            </div>
+        </div>
+
+        <!-- Analysis Screen -->
+        <div class="analysis-screen" id="analysisScreen">
+            <div class="scanning-animation">
+                <div class="scanner-circle">
+                    <div class="scanner-line"></div>
+                </div>
+                <p class="scanning-text">Analyzing procurement patterns...</p>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div class="results-screen" id="resultsScreen">
+            <div class="score-container">
+                <h2 class="score-title">PATTERN RISK SCORE</h2>
+                <div class="score-display" id="scoreDisplay">--</div>
+                <div class="score-label" id="scoreLabel">Calculating...</div>
+                <p class="text-secondary" id="scoreContext">--</p>
+            </div>
+
+            <div class="red-flags-container">
+                <h2 class="red-flags-title">Red Flags Detected</h2>
+                <div id="redFlags">
+                    <!-- Red flags will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div class="recommendations-container">
+                <h2 class="recommendations-title">What NEMESIS Would Investigate</h2>
+                <div id="recommendations">
+                    <!-- Recommendations will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="nav-button back-button" onclick="resetScanner()">
+                    ← Scan Again
+                </button>
+                <button class="nav-button next-button" onclick="window.location.href='index.html#contact'">
+                    Request Full Analysis →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cross-Links Section -->
+    <section class="cross-links">
+        <div class="cross-links-container">
+            <div class="cross-links-header">
+                <h2 class="cross-links-title">Try Other NEMESIS Tools</h2>
+                <p class="cross-links-subtitle">Continue exploring procurement integrity capabilities</p>
+            </div>
+            
+            <div class="tools-grid">
+                <a href="corruption-risk-radar.html" class="tool-card">
+                    <span class="tool-icon">📊</span>
+                    <h3 class="tool-name">Corruption Risk Radar</h3>
+                    <p class="tool-desc">Comprehensive assessment of your procurement integrity controls</p>
+                </a>
+                
+                <a href="network-exposure-map.html" class="tool-card">
+                    <span class="tool-icon">🌐</span>
+                    <h3 class="tool-name">Network Exposure Map</h3>
+                    <p class="tool-desc">Visualize cross-border bidder connections and shell company patterns</p>
+                </a>
+            </div>
+            
+            <div class="back-to-hub">
+                <a href="demos.html" class="hub-link">← Back to All Tools</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-links">
+            <a href="index.html">Back to NEMESIS</a>
+            <a href="demos.html">All Tools</a>
+        </div>
+        <p class="footer-text">
+            © 2025 E-Group. NEMESIS — Federated Procurement Integrity Network.
+        </p>
+    </footer>
+
+    <script>
+        function startScan() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('inputScreen').style.display = 'block';
+        }
+
+        function backToWelcome() {
+            document.getElementById('inputScreen').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'block';
+        }
+
+        function updateBidderCount(value) {
+            document.getElementById('bidderCount').textContent = value;
+        }
+
+        function runAnalysis() {
+            const sector = document.getElementById('sector').value;
+            const volume = document.getElementById('volume').value;
+            const contractSize = document.getElementById('contractSize').value;
+            const bidders = document.getElementById('bidders').value;
+            const scope = document.getElementById('scope').value;
+
+            if (!sector || !volume || !contractSize || !scope) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            document.getElementById('inputScreen').style.display = 'none';
+            document.getElementById('analysisScreen').style.display = 'block';
+
+            // Simulate analysis
+            setTimeout(() => {
+                showResults();
+            }, 3000);
+        }
+
+        function showResults() {
+            const bidders = parseInt(document.getElementById('bidders').value);
+            const sector = document.getElementById('sector').value;
+            
+            // Calculate risk score based on inputs
+            let score = 35; // Base score
+            if (bidders < 5) score += 30;
+            else if (bidders < 10) score += 15;
+            if (sector === 'construction' || sector === 'healthcare') score += 20;
+            
+            // Generate red flags based on score and inputs
+            const redFlags = [];
+            if (bidders < 5) {
+                redFlags.push({
+                    severity: 'HIGH',
+                    text: 'Limited competition detected - only ' + bidders + ' regular bidders for this market size'
+                });
+            }
+            if (score > 50) {
+                redFlags.push({
+                    severity: 'MEDIUM',
+                    text: 'Bid rotation pattern matches known cartel behavior in similar markets'
+                });
+            }
+            if (sector === 'construction') {
+                redFlags.push({
+                    severity: 'MEDIUM',
+                    text: 'Sector shows elevated risk - construction has highest corruption rates EU-wide'
+                });
+            }
+
+            // Display results
+            document.getElementById('analysisScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'block';
+
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const scoreLabel = document.getElementById('scoreLabel');
+            const scoreContext = document.getElementById('scoreContext');
+            
+            scoreDisplay.textContent = score;
+            if (score < 40) {
+                scoreDisplay.className = 'score-display score-low';
+                scoreLabel.textContent = 'Low Risk';
+                scoreContext.textContent = 'Patterns appear normal compared to EU benchmarks';
+            } else if (score < 70) {
+                scoreDisplay.className = 'score-display score-medium';
+                scoreLabel.textContent = 'Medium Risk';
+                scoreContext.textContent = 'Several concerning patterns warrant closer examination';
+            } else {
+                scoreDisplay.className = 'score-display score-high';
+                scoreLabel.textContent = 'High Risk';
+                scoreContext.textContent = 'Multiple red flags indicate potential integrity issues';
+            }
+
+            // Display red flags
+            const redFlagsContainer = document.getElementById('redFlags');
+            redFlagsContainer.innerHTML = '';
+            redFlags.forEach(flag => {
+                const flagElement = document.createElement('div');
+                flagElement.className = 'red-flag-item';
+                flagElement.innerHTML = `
+                    <span class="red-flag-severity">${flag.severity}</span>
+                    <p class="red-flag-text">${flag.text}</p>
+                `;
+                redFlagsContainer.appendChild(flagElement);
+            });
+
+            // Display recommendations
+            const recommendations = [
+                'Cross-reference bidding patterns across neighboring jurisdictions',
+                'Analyze beneficial ownership of top 5 winning bidders',
+                'Check for synchronized bid submission timing patterns',
+                'Review specification changes that favor specific suppliers'
+            ];
+
+            const recommendationsContainer = document.getElementById('recommendations');
+            recommendationsContainer.innerHTML = '';
+            recommendations.forEach(rec => {
+                const recElement = document.createElement('div');
+                recElement.className = 'recommendation-item';
+                recElement.innerHTML = `<p>${rec}</p>`;
+                recommendationsContainer.appendChild(recElement);
+            });
+        }
+
+        function resetScanner() {
+            document.getElementById('resultsScreen').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'block';
+            
+            // Reset form
+            document.getElementById('sector').value = '';
+            document.getElementById('volume').value = '';
+            document.getElementById('contractSize').value = '';
+            document.getElementById('bidders').value = 10;
+            document.getElementById('scope').value = '';
+            updateBidderCount(10);
+        }
+    </script>
+</body>
+</html>
