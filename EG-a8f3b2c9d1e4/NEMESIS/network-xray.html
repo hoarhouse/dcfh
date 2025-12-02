@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procurement Network X-Ray - NEMESIS</title>
+    
+    <!-- Vis.js Network Graph Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/dist/vis-network.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --teal: #00B4D8;
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --green: #10a37f;
+            --red: #dc2626;
+            --amber: #ff9500;
+            --text-primary: white;
+            --text-secondary: #86868b;
+            --border: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg), var(--dark-card));
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, white, var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 21px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .company-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            color: white;
+            padding: 18px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .company-input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .analyze-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .analyze-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .examples {
+            margin-top: 20px;
+        }
+
+        .examples-label {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .example-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .example-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: none;
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            margin-bottom: 40px;
+        }
+
+        .network-animation {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .node-pulse {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: nodePulse 2s infinite;
+        }
+
+        .node-pulse:nth-child(1) { top: 10%; left: 50%; animation-delay: 0s; }
+        .node-pulse:nth-child(2) { top: 30%; left: 20%; animation-delay: 0.3s; }
+        .node-pulse:nth-child(3) { top: 30%; left: 80%; animation-delay: 0.6s; }
+        .node-pulse:nth-child(4) { top: 70%; left: 30%; animation-delay: 0.9s; }
+        .node-pulse:nth-child(5) { top: 70%; left: 70%; animation-delay: 1.2s; }
+
+        @keyframes nodePulse {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .loading-step {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        /* Company Profile Header */
+        .profile-header {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .profile-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        .risk-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .risk-low { background: var(--green); }
+        .risk-medium { background: var(--amber); }
+        .risk-high { background: var(--red); }
+        .risk-critical { background: #991b1b; }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .country-flags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .flag {
+            width: 24px;
+            height: 18px;
+            border-radius: 2px;
+            font-size: 16px;
+        }
+
+        /* Network Graph Container */
+        .network-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+        }
+
+        #network-graph {
+            width: 100%;
+            height: 600px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        /* Graph Controls */
+        .graph-controls {
+            position: absolute;
+            top: 50px;
+            right: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .control-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .filter-toggle input {
+            margin-right: 8px;
+        }
+
+        .filter-toggle label {
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Relationship Cards Grid */
+        .relationships-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .relationship-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .relationship-card.alert {
+            border-color: var(--red);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .card-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .card-list li {
+            padding: 5px 0;
+            color: white;
+        }
+
+        /* Suspicious Patterns Section */
+        .patterns-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .patterns-title {
+            color: var(--red);
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .pattern-alert {
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--red);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .pattern-type {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pattern-description {
+            color: var(--text-secondary);
+        }
+
+        /* NEMESIS Teaser */
+        .teaser-section {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .teaser-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--cyan);
+        }
+
+        .teaser-content {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .blurred-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            filter: blur(4px);
+            user-select: none;
+        }
+
+        .unlock-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .unlock-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 20, 32, 0.95);
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .footer-note {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .footer-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 32px; }
+            .input-wrapper { flex-direction: column; }
+            #network-graph { height: 400px; }
+            .graph-controls { display: none; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="index.html" class="logo">← NEMESIS</a>
+            <ul class="nav-links">
+                <li><a href="index.html#what-is">About</a></li>
+                <li><a href="index.html#problem">Problem</a></li>
+                <li><a href="index.html#solution">Solution</a></li>
+                <li><a href="demos.html">Tools</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge">Interactive Visualization</div>
+            <h1>Procurement Network X-Ray</h1>
+            <p class="subtitle">Visualize corporate relationships and bidding patterns across EU tenders</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    class="company-input" 
+                    id="companyInput"
+                    placeholder="Enter company name (e.g., Bauwerk GmbH, Constructions Européennes SA...)"
+                >
+                <button class="analyze-button" id="analyzeButton" onclick="analyzeNetwork()">
+                    Analyze Network
+                </button>
+            </div>
+            
+            <div class="examples">
+                <div class="examples-label">Try these examples:</div>
+                <div class="example-buttons">
+                    <button class="example-btn" onclick="loadExample('Nordic Infrastructure AB')">
+                        Nordic Infrastructure AB (Clean)
+                    </button>
+                    <button class="example-btn" onclick="loadExample('Bauwerk Consortium')">
+                        Bauwerk Consortium (Cartel)
+                    </button>
+                    <button class="example-btn" onclick="loadExample('EuroServices Holdings')">
+                        EuroServices Holdings (Shell Network)
+                    </button>
+                    <button class="example-btn" onclick="loadExample('Mediterranean Construction Group')">
+                        Mediterranean Construction (Bid-Rigging)
+                    </button>
+                    <button class="example-btn" onclick="loadExample('Deutsche Bauindustrie AG')">
+                        Deutsche Bauindustrie AG (Large Contractor)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="network-animation">
+                <div class="node-pulse"></div>
+                <div class="node-pulse"></div>
+                <div class="node-pulse"></div>
+                <div class="node-pulse"></div>
+                <div class="node-pulse"></div>
+            </div>
+            <div class="loading-text" id="loadingText">Searching EU procurement records...</div>
+            <div class="loading-step" id="loadingStep">Scanning 27 national databases</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Company Profile Header -->
+            <div class="profile-header">
+                <div class="profile-main">
+                    <h2 class="company-name" id="companyName">Company Name</h2>
+                    <span class="risk-badge" id="riskBadge">LOW RISK</span>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat">
+                        <span class="stat-label">Total Contract Value</span>
+                        <span class="stat-value" id="totalValue">€0M</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Countries Active</span>
+                        <span class="stat-value">
+                            <div class="country-flags" id="countryFlags"></div>
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">EU Procurement Period</span>
+                        <span class="stat-value" id="period">2018-2024</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Contracts</span>
+                        <span class="stat-value" id="contractCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Graph -->
+            <div class="network-container">
+                <div id="network-graph"></div>
+                
+                <!-- Graph Controls -->
+                <div class="graph-controls">
+                    <div class="control-title">Show Connections</div>
+                    <div class="filter-toggle">
+                        <input type="checkbox" id="showAddress" checked>
+                        <label for="showAddress">Same Address</label>
+                    </div>
+                    <div class="filter-toggle">
+                        <input type="checkbox" id="showDirector" checked>
+                        <label for="showDirector">Shared Directors</label>
+                    </div>
+                    <div class="filter-toggle">
+                        <input type="checkbox" id="showBidding" checked>
+                        <label for="showBidding">Bid Together</label>
+                    </div>
+                    <div class="filter-toggle">
+                        <input type="checkbox" id="showNonCompete" checked>
+                        <label for="showNonCompete">Never Compete</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationship Cards -->
+            <div class="relationships-grid" id="relationshipCards">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <!-- Suspicious Patterns -->
+            <div class="patterns-section" id="patternsSection" style="display: none;">
+                <h3 class="patterns-title">⚠️ Suspicious Patterns Detected</h3>
+                <div id="patternsList">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- NEMESIS Teaser -->
+            <div class="teaser-section">
+                <h2 class="teaser-title">What Full NEMESIS Access Reveals</h2>
+                <div class="blurred-preview">
+                    <p>Extended network: 47 additional connected entities across 12 countries</p>
+                    <p>Historical pattern analysis: 6 years of bidding behavior</p>
+                    <p>Cross-reference with beneficial ownership registries</p>
+                    <p>Real-time monitoring alerts</p>
+                </div>
+                <p class="teaser-content" id="teaserContent">
+                    With full NEMESIS access, you would see the complete procurement network spanning multiple jurisdictions, 
+                    historical bidding patterns, and real-time alerts for suspicious activity.
+                </p>
+                <a href="index.html#contact" class="unlock-button">Request Full Access →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-note">
+            Demonstration using synthesized data patterns. Production NEMESIS connects to live EU procurement and corporate registries.
+        </p>
+        <a href="index.html" class="footer-link">← Back to NEMESIS Main Page</a>
+    </footer>
+
+    <script>
+        // Company network data
+        const companyNetworks = {
+            'Nordic Infrastructure AB': {
+                risk: 'low',
+                totalValue: '€12.4M',
+                countries: ['🇸🇪', '🇩🇰', '🇫🇮'],
+                period: '2019-2024',
+                contracts: 23,
+                nodes: [
+                    {id: 1, label: 'Nordic Infrastructure AB', group: 'target', value: 30, color: '#00D4FF'},
+                    {id: 2, label: 'Stockholm Municipality', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 3, label: 'Copenhagen Metro', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 4, label: 'Helsinki Transport', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 5, label: 'Svensk Byggteknik AB', group: 'clean', color: '#10a37f'},
+                    {id: 6, label: 'Nordic Partners AS', group: 'clean', color: '#10a37f'}
+                ],
+                edges: [
+                    {from: 1, to: 2, color: '#86868b', width: 2, title: 'Won 5 contracts'},
+                    {from: 1, to: 3, color: '#86868b', width: 2, title: 'Won 3 contracts'},
+                    {from: 1, to: 4, color: '#86868b', width: 2, title: 'Won 2 contracts'},
+                    {from: 1, to: 5, color: '#10a37f', width: 1, dashes: true, title: 'Competed fairly'},
+                    {from: 1, to: 6, color: '#10a37f', width: 1, dashes: true, title: 'Competed fairly'}
+                ],
+                relationships: [
+                    {
+                        type: 'normal',
+                        icon: '✅',
+                        title: 'Clean Competition',
+                        content: 'Healthy bidding patterns observed. Wins and losses against multiple competitors.'
+                    }
+                ],
+                patterns: []
+            },
+            'Bauwerk Consortium': {
+                risk: 'critical',
+                totalValue: '€89.7M',
+                countries: ['🇩🇪', '🇦🇹', '🇨🇿'],
+                period: '2018-2024',
+                contracts: 156,
+                nodes: [
+                    {id: 1, label: 'Bauwerk Consortium', group: 'target', value: 40, color: '#00D4FF'},
+                    {id: 2, label: 'Alpine Konstruktion GmbH', group: 'suspicious', color: '#ff9500'},
+                    {id: 3, label: 'Donau Bauwerke AG', group: 'suspicious', color: '#ff9500'},
+                    {id: 4, label: 'Praha Construction sro', group: 'suspicious', color: '#ff9500'},
+                    {id: 5, label: 'Tirol Bau GmbH', group: 'high-risk', color: '#dc2626'},
+                    {id: 6, label: 'Munich Municipality', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 7, label: 'Vienna Public Works', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 8, label: 'Prague Infrastructure', group: 'authority', shape: 'square', color: '#86868b'}
+                ],
+                edges: [
+                    {from: 1, to: 2, color: '#dc2626', width: 3, title: 'Same address: Industriestraße 47, Vienna'},
+                    {from: 1, to: 3, color: '#dc2626', width: 3, title: 'Same address: Industriestraße 47, Vienna'},
+                    {from: 1, to: 4, color: '#ff9500', width: 2, dashes: true, title: 'Shared director: Hans Mueller'},
+                    {from: 1, to: 5, color: '#dc2626', width: 4, smooth: {type: 'curvedCW'}, title: 'Never competed (0 of 89 opportunities)'},
+                    {from: 2, to: 3, color: '#dc2626', width: 3, title: 'Same address'},
+                    {from: 2, to: 5, color: '#dc2626', width: 4, smooth: {type: 'curvedCW'}, title: 'Never competed'},
+                    {from: 3, to: 4, color: '#ff9500', width: 2, dashes: true, title: 'Always bid together (45 tenders)'},
+                    {from: 1, to: 6, color: '#86868b', width: 2},
+                    {from: 2, to: 7, color: '#86868b', width: 2},
+                    {from: 4, to: 8, color: '#86868b', width: 2}
+                ],
+                relationships: [
+                    {
+                        type: 'alert',
+                        icon: '🚨',
+                        title: 'Shared Address Alert',
+                        content: '3 companies registered at Industriestraße 47, Vienna. Classic shell company indicator.',
+                        list: ['Bauwerk Consortium', 'Alpine Konstruktion GmbH', 'Donau Bauwerke AG']
+                    },
+                    {
+                        type: 'alert',
+                        icon: '👤',
+                        title: 'Director Network',
+                        content: 'Hans Mueller appears as director in 4 companies winning EU contracts.',
+                        list: ['Bauwerk Consortium', 'Praha Construction sro', 'Hidden Entity 1', 'Hidden Entity 2']
+                    },
+                    {
+                        type: 'alert',
+                        icon: '🤝',
+                        title: 'Bid Collusion Pattern',
+                        content: 'These companies bid together on 45 tenders but have NEVER competed against each other.',
+                        list: ['Win rate when together: 78%', 'Industry average: 34%', 'Statistical probability of chance: <0.001%']
+                    }
+                ],
+                patterns: [
+                    {
+                        type: 'Circular Ownership',
+                        description: 'Complex ownership structure detected with cross-holdings between entities'
+                    },
+                    {
+                        type: 'Bid Rotation',
+                        description: 'Companies take turns winning contracts from Munich municipality'
+                    },
+                    {
+                        type: 'Market Division',
+                        description: 'Geographic market split: Bauwerk (Germany), Alpine (Austria), Praha (Czech)'
+                    }
+                ]
+            },
+            'EuroServices Holdings': {
+                risk: 'high',
+                totalValue: '€34.2M',
+                countries: ['🇮🇹', '🇪🇸', '🇵🇹'],
+                period: '2020-2024',
+                contracts: 67,
+                nodes: [
+                    {id: 1, label: 'EuroServices Holdings', group: 'target', value: 35, color: '#00D4FF'},
+                    {id: 2, label: 'Mediterranean Solutions SL', group: 'suspicious', color: '#ff9500'},
+                    {id: 3, label: 'Iberian Tech Lda', group: 'suspicious', color: '#ff9500'},
+                    {id: 4, label: 'Roma Digital Srl', group: 'high-risk', color: '#dc2626'},
+                    {id: 5, label: 'Valencia Services SA', group: 'high-risk', color: '#dc2626'},
+                    {id: 6, label: 'Shadow Holdings Ltd', group: 'high-risk', color: '#dc2626'},
+                    {id: 7, label: 'Italian Health Ministry', group: 'authority', shape: 'square', color: '#86868b'}
+                ],
+                edges: [
+                    {from: 1, to: 2, arrows: 'to,from', color: '#dc2626', width: 3, title: 'Circular ownership: A owns 30% of B'},
+                    {from: 2, to: 3, arrows: 'to,from', color: '#dc2626', width: 3, title: 'B owns 25% of C'},
+                    {from: 3, to: 1, arrows: 'to', color: '#dc2626', width: 3, smooth: {type: 'curvedCW'}, title: 'C owns 20% of A'},
+                    {from: 1, to: 4, color: '#ff9500', width: 2, title: 'Incorporated 3 months before first win'},
+                    {from: 1, to: 5, color: '#ff9500', width: 2, title: 'Incorporated 2 months before first win'},
+                    {from: 1, to: 6, color: '#dc2626', width: 3, dashes: true, title: 'Hidden beneficial owner'},
+                    {from: 4, to: 7, color: '#86868b', width: 2}
+                ],
+                relationships: [
+                    {
+                        type: 'alert',
+                        icon: '🏢',
+                        title: 'Fresh Shell Companies',
+                        content: 'Multiple entities incorporated just months before winning major contracts.',
+                        list: ['Roma Digital Srl: Created 3 months before €5M win', 'Valencia Services: Created 2 months before €3M win']
+                    },
+                    {
+                        type: 'alert',
+                        icon: '🔄',
+                        title: 'Circular Ownership',
+                        content: 'Complex ownership loops designed to obscure beneficial ownership.',
+                        list: ['EuroServices → Mediterranean (30%)', 'Mediterranean → Iberian (25%)', 'Iberian → EuroServices (20%)']
+                    }
+                ],
+                patterns: [
+                    {
+                        type: 'Shell Company Network',
+                        description: 'Multiple companies created shortly before winning contracts'
+                    },
+                    {
+                        type: 'Ownership Obfuscation',
+                        description: 'Circular ownership structure hiding true beneficial owners'
+                    }
+                ]
+            },
+            'Mediterranean Construction Group': {
+                risk: 'high',
+                totalValue: '€56.8M',
+                countries: ['🇮🇹', '🇬🇷', '🇪🇸', '🇫🇷'],
+                period: '2019-2024',
+                contracts: 89,
+                nodes: [
+                    {id: 1, label: 'Mediterranean Construction', group: 'target', value: 35, color: '#00D4FF'},
+                    {id: 2, label: 'Hellenic Builders SA', group: 'suspicious', color: '#ff9500'},
+                    {id: 3, label: 'Costa Construcciones SL', group: 'suspicious', color: '#ff9500'},
+                    {id: 4, label: 'Phantom Bidder 1', group: 'high-risk', color: '#dc2626'},
+                    {id: 5, label: 'Phantom Bidder 2', group: 'high-risk', color: '#dc2626'},
+                    {id: 6, label: 'Phantom Bidder 3', group: 'high-risk', color: '#dc2626'},
+                    {id: 7, label: 'Rome Infrastructure', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 8, label: 'Athens Public Works', group: 'authority', shape: 'square', color: '#86868b'}
+                ],
+                edges: [
+                    {from: 1, to: 2, color: '#ff9500', width: 3, title: 'Always bid together (67 tenders)'},
+                    {from: 1, to: 3, color: '#ff9500', width: 3, title: 'Always bid together (67 tenders)'},
+                    {from: 2, to: 3, color: '#ff9500', width: 3, title: 'Price always within 2%'},
+                    {from: 1, to: 4, color: '#dc2626', width: 2, dashes: true, title: 'Cover bidder: 0% win rate'},
+                    {from: 1, to: 5, color: '#dc2626', width: 2, dashes: true, title: 'Cover bidder: 0% win rate'},
+                    {from: 1, to: 6, color: '#dc2626', width: 2, dashes: true, title: 'Cover bidder: 0% win rate'},
+                    {from: 1, to: 7, color: '#86868b', width: 2},
+                    {from: 2, to: 8, color: '#86868b', width: 2}
+                ],
+                relationships: [
+                    {
+                        type: 'alert',
+                        icon: '🎯',
+                        title: 'Bid Clustering',
+                        content: 'All bids consistently within 2% of each other - statistical impossibility.',
+                        list: ['67 tenders with clustered bids', 'Average variance: 1.8%', 'Natural variance should be: 15-25%']
+                    },
+                    {
+                        type: 'alert',
+                        icon: '👻',
+                        title: 'Phantom Bidders',
+                        content: '3 companies bid frequently but have won 0 contracts (0.0% win rate).',
+                        list: ['Phantom Bidder 1: 45 bids, 0 wins', 'Phantom Bidder 2: 38 bids, 0 wins', 'Phantom Bidder 3: 41 bids, 0 wins']
+                    }
+                ],
+                patterns: [
+                    {
+                        type: 'Bid-Rigging Ring',
+                        description: 'Coordinated bidding with cover bidders to simulate competition'
+                    },
+                    {
+                        type: 'Price Fixing',
+                        description: 'Bid prices consistently clustered within 2% range'
+                    },
+                    {
+                        type: 'Phantom Competition',
+                        description: 'Multiple bidders with 0% win rate providing false competition'
+                    }
+                ]
+            },
+            'Deutsche Bauindustrie AG': {
+                risk: 'medium',
+                totalValue: '€234.5M',
+                countries: ['🇩🇪', '🇵🇱', '🇳🇱', '🇧🇪', '🇫🇷'],
+                period: '2015-2024',
+                contracts: 412,
+                nodes: [
+                    {id: 1, label: 'Deutsche Bauindustrie AG', group: 'target', value: 45, color: '#00D4FF'},
+                    {id: 2, label: 'DB Infrastructure GmbH', group: 'clean', color: '#10a37f'},
+                    {id: 3, label: 'DB Poland Sp.z.o.o', group: 'clean', color: '#10a37f'},
+                    {id: 4, label: 'Competitor: Hochtief AG', group: 'clean', color: '#10a37f'},
+                    {id: 5, label: 'Joint Venture Partner', group: 'suspicious', color: '#ff9500'},
+                    {id: 6, label: 'Berlin Transport', group: 'authority', shape: 'square', color: '#86868b'},
+                    {id: 7, label: 'EU Commission', group: 'authority', shape: 'square', color: '#86868b'}
+                ],
+                edges: [
+                    {from: 1, to: 2, color: '#10a37f', width: 3, title: 'Legitimate subsidiary'},
+                    {from: 1, to: 3, color: '#10a37f', width: 3, title: 'Legitimate subsidiary'},
+                    {from: 1, to: 4, color: '#10a37f', width: 1, dashes: true, title: 'Healthy competition'},
+                    {from: 1, to: 5, color: '#ff9500', width: 2, title: 'Frequent joint ventures (legitimate)'},
+                    {from: 1, to: 6, color: '#86868b', width: 2},
+                    {from: 1, to: 7, color: '#86868b', width: 2}
+                ],
+                relationships: [
+                    {
+                        type: 'normal',
+                        icon: '✅',
+                        title: 'Large Legitimate Contractor',
+                        content: 'Major construction company with transparent structure and healthy competition patterns.'
+                    },
+                    {
+                        type: 'normal',
+                        icon: '🤝',
+                        title: 'Legitimate Joint Ventures',
+                        content: 'Forms joint ventures for large projects - standard practice for mega-projects.',
+                        list: ['All JVs properly disclosed', 'Competes against JV partners on other tenders', 'Win rate: 31% (industry standard)']
+                    }
+                ],
+                patterns: []
+            }
+        };
+
+        let network = null;
+        let currentData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('companyInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    analyzeNetwork();
+                }
+            });
+
+            // Add filter listeners
+            ['showAddress', 'showDirector', 'showBidding', 'showNonCompete'].forEach(id => {
+                document.getElementById(id).addEventListener('change', updateEdgeVisibility);
+            });
+        });
+
+        // Load example
+        function loadExample(companyName) {
+            document.getElementById('companyInput').value = companyName;
+            analyzeNetwork();
+        }
+
+        // Analyze network
+        async function analyzeNetwork() {
+            const input = document.getElementById('companyInput').value.trim();
+            
+            if (!input) {
+                alert('Please enter a company name');
+                return;
+            }
+
+            // Get company data
+            currentData = companyNetworks[input] || generateRandomNetwork(input);
+
+            // Show loading
+            await showLoadingState();
+
+            // Display results
+            displayResults(currentData, input);
+        }
+
+        // Generate random network for unknown companies
+        function generateRandomNetwork(companyName) {
+            const risks = ['low', 'medium', 'high', 'critical'];
+            const hash = hashString(companyName);
+            const risk = risks[hash % 4];
+            
+            return {
+                risk: risk,
+                totalValue: `€${(hash % 100 + 10)}.${hash % 10}M`,
+                countries: ['🇩🇪', '🇫🇷', '🇮🇹'].slice(0, (hash % 3) + 1),
+                period: '2019-2024',
+                contracts: (hash % 200) + 20,
+                nodes: [
+                    {id: 1, label: companyName, group: 'target', value: 35, color: '#00D4FF'},
+                    {id: 2, label: 'Related Company A', group: risk === 'low' ? 'clean' : 'suspicious', color: risk === 'low' ? '#10a37f' : '#ff9500'},
+                    {id: 3, label: 'Related Company B', group: risk === 'critical' ? 'high-risk' : 'clean', color: risk === 'critical' ? '#dc2626' : '#10a37f'},
+                    {id: 4, label: 'Contracting Authority', group: 'authority', shape: 'square', color: '#86868b'}
+                ],
+                edges: [
+                    {from: 1, to: 2, color: risk === 'low' ? '#10a37f' : '#ff9500', width: 2},
+                    {from: 1, to: 3, color: risk === 'critical' ? '#dc2626' : '#10a37f', width: 2},
+                    {from: 1, to: 4, color: '#86868b', width: 2}
+                ],
+                relationships: [
+                    {
+                        type: risk === 'low' ? 'normal' : 'alert',
+                        icon: risk === 'low' ? '✅' : '⚠️',
+                        title: 'Network Analysis',
+                        content: `Generated analysis for ${companyName}`
+                    }
+                ],
+                patterns: risk !== 'low' ? [{
+                    type: 'Pattern Detected',
+                    description: 'Requires deeper investigation'
+                }] : []
+            };
+        }
+
+        // Hash string for consistent random
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        // Show loading state
+        async function showLoadingState() {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+
+            const steps = [
+                { text: 'Searching EU procurement records...', step: 'Scanning 27 national databases' },
+                { text: 'Mapping corporate relationships...', step: 'Analyzing ownership structures' },
+                { text: 'Identifying shared directors...', step: 'Cross-referencing beneficial owners' },
+                { text: 'Detecting bidding patterns...', step: 'Computing statistical anomalies' }
+            ];
+
+            for (let i = 0; i < steps.length; i++) {
+                document.getElementById('loadingText').textContent = steps[i].text;
+                document.getElementById('loadingStep').textContent = steps[i].step;
+                await sleep(600);
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+        }
+
+        // Display results
+        function displayResults(data, companyName) {
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Update profile header
+            document.getElementById('companyName').textContent = companyName;
+            
+            const badge = document.getElementById('riskBadge');
+            badge.textContent = data.risk.toUpperCase() + ' RISK';
+            badge.className = 'risk-badge risk-' + data.risk;
+
+            document.getElementById('totalValue').textContent = data.totalValue;
+            document.getElementById('period').textContent = data.period;
+            document.getElementById('contractCount').textContent = data.contracts;
+
+            // Update country flags
+            const flagsContainer = document.getElementById('countryFlags');
+            flagsContainer.innerHTML = data.countries.map(flag => 
+                `<span class="flag">${flag}</span>`
+            ).join('');
+
+            // Create network graph
+            createNetworkGraph(data);
+
+            // Display relationship cards
+            displayRelationshipCards(data.relationships);
+
+            // Display patterns if any
+            displayPatterns(data.patterns);
+
+            // Update teaser
+            const additionalEntities = 20 + Math.floor(Math.random() * 50);
+            const countries = 5 + Math.floor(Math.random() * 10);
+            document.getElementById('teaserContent').textContent = 
+                `With full NEMESIS access, you would see ${additionalEntities} additional connected entities across ${countries} countries, ` +
+                `complete historical bidding analysis, and real-time monitoring of all related entities.`;
+
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Create network graph
+        function createNetworkGraph(data) {
+            const container = document.getElementById('network-graph');
+            
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    size: 25,
+                    font: {
+                        size: 14,
+                        color: '#ffffff'
+                    },
+                    borderWidth: 3,
+                    shadow: true
+                },
+                edges: {
+                    width: 2,
+                    shadow: true,
+                    smooth: {
+                        type: 'dynamic'
+                    }
+                },
+                physics: {
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 150,
+                        springConstant: 0.08
+                    },
+                    stabilization: {
+                        iterations: 150
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200,
+                    zoomView: true
+                }
+            };
+
+            // Create network
+            network = new vis.Network(container, data, options);
+
+            // Add click handler
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    network.focus(params.nodes[0], {
+                        scale: 1.5,
+                        animation: true
+                    });
+                }
+            });
+        }
+
+        // Update edge visibility based on filters
+        function updateEdgeVisibility() {
+            if (!network || !currentData) return;
+
+            const showAddress = document.getElementById('showAddress').checked;
+            const showDirector = document.getElementById('showDirector').checked;
+            const showBidding = document.getElementById('showBidding').checked;
+            const showNonCompete = document.getElementById('showNonCompete').checked;
+
+            // Filter edges based on checkboxes
+            const filteredEdges = currentData.edges.filter(edge => {
+                const title = edge.title || '';
+                if (title.includes('address') && !showAddress) return false;
+                if (title.includes('director') && !showDirector) return false;
+                if (title.includes('bid together') && !showBidding) return false;
+                if (title.includes('Never competed') && !showNonCompete) return false;
+                return true;
+            });
+
+            // Update network
+            network.setData({
+                nodes: currentData.nodes,
+                edges: filteredEdges
+            });
+        }
+
+        // Display relationship cards
+        function displayRelationshipCards(relationships) {
+            const container = document.getElementById('relationshipCards');
+            container.innerHTML = '';
+
+            relationships.forEach(rel => {
+                const card = document.createElement('div');
+                card.className = `relationship-card ${rel.type === 'alert' ? 'alert' : ''}`;
+                
+                let listHTML = '';
+                if (rel.list) {
+                    listHTML = `<ul class="card-list">${rel.list.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-icon">${rel.icon}</div>
+                        <div class="card-title">${rel.title}</div>
+                    </div>
+                    <div class="card-content">
+                        ${rel.content}
+                        ${listHTML}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Display suspicious patterns
+        function displayPatterns(patterns) {
+            const section = document.getElementById('patternsSection');
+            const list = document.getElementById('patternsList');
+            
+            if (patterns.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            list.innerHTML = patterns.map(pattern => `
+                <div class="pattern-alert">
+                    <div class="pattern-type">
+                        <span>🚨</span>
+                        <span>${pattern.type}</span>
+                    </div>
+                    <div class="pattern-description">${pattern.description}</div>
+                </div>
+            `).join('');
+        }
+
+        // Sleep helper
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
