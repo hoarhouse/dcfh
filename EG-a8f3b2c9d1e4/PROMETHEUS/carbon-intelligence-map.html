@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sector Carbon Intelligence Map - PROMETHEUS</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Heat plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --teal: #00B4D8;
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --green: #10a37f;
+            --red: #dc2626;
+            --amber: #ff9500;
+            --yellow: #eab308;
+            --orange: #f97316;
+            --text-primary: white;
+            --text-secondary: #86868b;
+            --border: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg), var(--dark-card));
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, white, var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .generate-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .generate-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .hotspots {
+            margin-top: 20px;
+        }
+
+        .hotspots-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .hotspot-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hotspot-chip {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hotspot-chip:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: none;
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .globe-animation {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .globe {
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--cyan);
+            border-radius: 50%;
+            position: relative;
+            animation: rotate 3s linear infinite;
+        }
+
+        .globe::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -3px;
+            right: -3px;
+            height: 3px;
+            background: var(--cyan);
+        }
+
+        .globe::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            bottom: -3px;
+            left: 50%;
+            width: 3px;
+            background: var(--cyan);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .data-points {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .data-point {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: fadeIn 0.5s ease forwards;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .loading-step {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        /* Sector Summary */
+        .sector-summary {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .sector-title {
+            font-size: 24px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .sector-stats {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .summary-card-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .summary-card-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--cyan);
+            margin-bottom: 5px;
+        }
+
+        .summary-card-detail {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Map Container */
+        .map-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 12px;
+            background: var(--dark-bg);
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            z-index: 999;
+        }
+
+        .layer-toggle {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .layer-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .layer-checkbox input {
+            cursor: pointer;
+        }
+
+        /* Country Popup */
+        .country-popup {
+            background: rgba(15, 20, 32, 0.98);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 250px;
+        }
+
+        .popup-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+
+        .popup-stats {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .popup-risk {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            font-weight: 600;
+        }
+
+        /* Region Detail Panel */
+        .region-detail {
+            position: fixed;
+            right: -400px;
+            top: 80px;
+            bottom: 20px;
+            width: 380px;
+            background: rgba(15, 20, 32, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            z-index: 1001;
+            transition: right 0.3s ease;
+        }
+
+        .region-detail.active {
+            right: 20px;
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .detail-close:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 5px;
+        }
+
+        .detail-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .detail-list {
+            list-style: none;
+        }
+
+        .detail-list li {
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .detail-bar {
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .detail-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            transition: width 1s ease;
+        }
+
+        .risk-warning {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .risk-warning-title {
+            color: var(--red);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .risk-warning-text {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Data Gap Visualization */
+        .data-gap-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .gap-title {
+            font-size: 24px;
+            color: var(--cyan);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .gap-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .gap-column {
+            text-align: center;
+        }
+
+        .gap-column-title {
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .region-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .region-name {
+            flex: 0 0 120px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .region-percent {
+            flex: 0 0 50px;
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .region-bar-container {
+            flex: 1;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+
+        .region-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            transition: width 1s ease;
+        }
+
+        .gap-message {
+            background: rgba(220, 38, 38, 0.1);
+            border: 2px solid var(--red);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .gap-message-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--red);
+            margin-bottom: 10px;
+        }
+
+        .gap-message-detail {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Hotspots Table */
+        .hotspots-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .risk-critical { background: var(--red); color: white; }
+        .risk-high { background: var(--orange); color: white; }
+        .risk-moderate { background: var(--yellow); color: black; }
+        .risk-low { background: var(--green); color: white; }
+
+        .trend-arrow {
+            font-size: 16px;
+        }
+
+        /* Insight Box */
+        .insight-box {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .insight-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-content {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .insight-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .insight-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .insight-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+            font-size: 20px;
+        }
+
+        .insight-footer {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        /* Greenwashing Risk */
+        .greenwash-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .risk-region {
+            margin-bottom: 20px;
+        }
+
+        .risk-region-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .risk-region-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .risk-region-score {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .risk-bar {
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--yellow), var(--red));
+            transition: width 1s ease;
+        }
+
+        .risk-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* Solution Comparison */
+        .solution-section {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .comparison-column {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .comparison-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--cyan);
+        }
+
+        .map-preview {
+            height: 200px;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stats-table {
+            font-size: 14px;
+        }
+
+        .stats-table tr {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 20, 32, 0.95);
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .footer-note {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .footer-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 28px; }
+            .gap-comparison { grid-template-columns: 1fr; }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .summary-cards { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            #map { height: 400px; }
+            .region-detail { 
+                width: calc(100% - 40px);
+                right: -100%;
+            }
+            .region-detail.active {
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="index.html" class="logo">← PROMETHEUS</a>
+            <ul class="nav-links">
+                <li><a href="index.html#what-is">About</a></li>
+                <li><a href="index.html#problem">Problem</a></li>
+                <li><a href="index.html#solution">Solution</a></li>
+                <li><a href="demos.html">Tools</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge">Global Supply Chain Intelligence</div>
+            <h1>Sector Carbon Intelligence Map</h1>
+            <p class="subtitle">See where emissions hide and data disappears across your global supply chain</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <select class="input-field" id="sectorSelect">
+                <option value="">Select Industry Sector...</option>
+                <option value="electronics">Consumer Electronics & Semiconductors</option>
+                <option value="automotive">Automotive & EV Manufacturing</option>
+                <option value="fashion">Fashion & Textiles</option>
+                <option value="food">Food & Agriculture</option>
+                <option value="pharma">Pharmaceuticals & Chemicals</option>
+                <option value="construction">Construction & Building Materials</option>
+                <option value="renewable">Renewable Energy Equipment</option>
+                <option value="packaging">Packaging & Plastics</option>
+            </select>
+
+            <button class="generate-button" onclick="generateMap()">
+                Generate Intelligence Map
+            </button>
+
+            <div class="hotspots">
+                <div class="hotspots-label">Explore these hotspots:</div>
+                <div class="hotspot-chips">
+                    <span class="hotspot-chip" onclick="loadHotspot('electronics', 'asia')">Electronics + Asia Pacific</span>
+                    <span class="hotspot-chip" onclick="loadHotspot('fashion', 'southasia')">Fashion + South Asia</span>
+                    <span class="hotspot-chip" onclick="loadHotspot('automotive', 'global')">EV Batteries + Global</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="globe-animation">
+                <div class="globe">
+                    <div class="data-points" id="dataPoints"></div>
+                </div>
+            </div>
+            <div class="loading-text" id="loadingText">Mapping global supply chains...</div>
+            <div class="loading-step" id="loadingStep">Analyzing emission concentrations</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Sector Summary -->
+            <div class="sector-summary">
+                <h2 class="sector-title" id="sectorTitle">CONSUMER ELECTRONICS - GLOBAL CARBON INTELLIGENCE</h2>
+                <div class="sector-stats" id="sectorStats">
+                    Total Sector Scope 3: ~890M tonnes CO2e annually<br>
+                    Supply Chain Span: 47 countries<br>
+                    Primary Data Coverage: 12%
+                </div>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-card-label">Emission Hotspots</div>
+                        <div class="summary-card-value" id="hotspotCount">7</div>
+                        <div class="summary-card-detail">regions</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label">Data Deserts</div>
+                        <div class="summary-card-value" id="desertCount">23</div>
+                        <div class="summary-card-detail">countries <5% data</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label">Audit Risk</div>
+                        <div class="summary-card-value" style="color: var(--red);">HIGH</div>
+                        <div class="summary-card-detail" id="auditRisk">78% of emissions</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <div class="layer-toggle">
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="emissionsLayer" checked onchange="toggleLayer('emissions')">
+                            <span>Emission Heat Map</span>
+                        </label>
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="dataLayer" checked onchange="toggleLayer('data')">
+                            <span>Data Coverage</span>
+                        </label>
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="riskLayer" onchange="toggleLayer('risk')">
+                            <span>Greenwashing Risk</span>
+                        </label>
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="flowsLayer" onchange="toggleLayer('flows')">
+                            <span>Supply Flows</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Region Detail Panel -->
+            <div class="region-detail" id="regionDetail">
+                <div class="detail-close" onclick="closeDetail()">×</div>
+                <h3 class="detail-title" id="detailTitle">CHINA - GUANGDONG PROVINCE</h3>
+                <p class="detail-subtitle" id="detailSubtitle">Electronics Manufacturing Hub</p>
+                
+                <div class="detail-section">
+                    <div class="detail-section-title">Emission Profile</div>
+                    <ul class="detail-list" id="emissionProfile">
+                        <li><span>Total contribution</span><span>23% of sector</span></li>
+                        <li><span>Absolute emissions</span><span>~205M tonnes</span></li>
+                        <li><span>Grid intensity</span><span>0.58 kg CO2/kWh</span></li>
+                    </ul>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-section-title">Top Emission Sources</div>
+                    <ol class="detail-list" id="emissionSources">
+                        <li>Semiconductor fabrication - 34%</li>
+                        <li>PCB manufacturing - 22%</li>
+                        <li>Display panel production - 18%</li>
+                        <li>Battery cell assembly - 15%</li>
+                        <li>Final assembly - 11%</li>
+                    </ol>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-section-title">Data Coverage</div>
+                    <div class="detail-bar">
+                        <div class="detail-bar-fill" id="coverageBar" style="width: 8%;"></div>
+                    </div>
+                    <ul class="detail-list" id="dataCoverage">
+                        <li><span>Suppliers identified</span><span>2,340</span></li>
+                        <li><span>Suppliers reporting</span><span>187</span></li>
+                        <li><span>Primary data</span><span>8%</span></li>
+                        <li><span>Data quality</span><span style="color: var(--red);">🔴 POOR</span></li>
+                    </ul>
+                </div>
+
+                <div class="risk-warning">
+                    <div class="risk-warning-title">⚠️ Audit Risk Factors</div>
+                    <div class="risk-warning-text" id="riskFactors">
+                        • High emissions, minimal data<br>
+                        • Energy grid 73% coal<br>
+                        • Limited supplier disclosure culture<br>
+                        • Complex subcontracting obscures sources
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-section-title">What's Hidden</div>
+                    <ul class="detail-list" id="hiddenData">
+                        <li><span>Reported estimate</span><span>180M tonnes</span></li>
+                        <li><span>Actual range</span><span>140-380M tonnes</span></li>
+                        <li><span>Underreporting risk</span><span>111%</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Data Gap Visualization -->
+            <div class="data-gap-section">
+                <h2 class="gap-title">WHERE YOUR EMISSIONS COME FROM<br>vs.<br>WHERE YOU HAVE DATA</h2>
+                
+                <div class="gap-comparison">
+                    <div class="gap-column">
+                        <div class="gap-column-title">Emissions by Region</div>
+                        <div id="emissionsByRegion">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="gap-column">
+                        <div class="gap-column-title">Data Coverage by Region</div>
+                        <div id="dataByRegion">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gap-message">
+                    <div class="gap-message-text">THE GAP: <span id="gapPercent">67%</span> of your emissions come from regions where you have only <span id="gapData">11%</span> data coverage.</div>
+                    <div class="gap-message-detail">This is why your Scope 3 report is fiction.</div>
+                </div>
+            </div>
+
+            <!-- Top Hotspots Table -->
+            <div class="hotspots-section">
+                <h2 class="section-title">Top 10 Emission Hotspots</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Region</th>
+                                <th>% of Emissions</th>
+                                <th>Data Coverage</th>
+                                <th>Risk</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hotspotsTable">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Insight Box -->
+            <div class="insight-box">
+                <h3 class="insight-title">
+                    💡 THE PROMETHEUS INSIGHT
+                </h3>
+                <div class="insight-content">
+                    <strong id="insightPercent">73%</strong> of electronics emissions originate from regions with <strong>&lt;15%</strong> primary data coverage.
+                </div>
+                <ul class="insight-list">
+                    <li>Your reported Scope 3 is largely guesswork</li>
+                    <li>Auditors can challenge 73% of your figures</li>
+                    <li>Competitors with better data have advantage</li>
+                    <li>Regulators are closing in on estimate-based reports</li>
+                </ul>
+                <div class="insight-footer">
+                    The only solution: Get primary data from suppliers<br>
+                    WITHOUT requiring them to reveal production secrets.<br><br>
+                    That's what federated carbon intelligence does.
+                </div>
+            </div>
+
+            <!-- Greenwashing Risk Scorecard -->
+            <div class="greenwash-section">
+                <h2 class="section-title">Greenwashing Vulnerability Index</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Regions where your carbon claims are most attackable:</p>
+                
+                <div id="greenwashRegions">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Solution Section -->
+            <div class="solution-section">
+                <h2 class="section-title" style="text-align: center;">What PROMETHEUS Solves</h2>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-column">
+                        <h3 class="comparison-title">Today: The Blind Map</h3>
+                        <div class="map-preview">Gray/hatched areas showing "NO DATA"</div>
+                        <div class="stats-table">
+                            <tr><td>Asia Pacific coverage</td><td style="color: var(--red);">11%</td></tr>
+                            <tr><td>Global primary data</td><td style="color: var(--red);">12%</td></tr>
+                            <tr><td>Uncertainty range</td><td style="color: var(--red);">±180%</td></tr>
+                            <tr><td>Audit-ready categories</td><td style="color: var(--red);">3/15</td></tr>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-column">
+                        <h3 class="comparison-title">With PROMETHEUS Network</h3>
+                        <div class="map-preview">Green coverage spreading globally</div>
+                        <div class="stats-table">
+                            <tr><td>Asia Pacific coverage</td><td style="color: var(--green);">78%</td></tr>
+                            <tr><td>Global primary data</td><td style="color: var(--green);">84%</td></tr>
+                            <tr><td>Uncertainty range</td><td style="color: var(--green);">±22%</td></tr>
+                            <tr><td>Audit-ready categories</td><td style="color: var(--green);">14/15</td></tr>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; font-size: 18px; margin: 30px 0;">
+                    "3,400+ suppliers connected via federated learning.<br>
+                    Primary data from regions that never shared before.<br>
+                    No production secrets exposed - just emission factors."
+                </p>
+
+                <div style="text-align: center;">
+                    <a href="index.html#how-it-works" class="cta-button">Connect Your Supply Chain →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-note">
+            Intelligence based on trade flow data, published emission factors, CDP disclosure patterns, and supply chain research.
+        </p>
+        <p class="footer-note">
+            Sources: UN Comtrade, IEA energy statistics, CDP supply chain program, academic supply chain mapping studies.
+        </p>
+        <a href="index.html" class="footer-link">← Back to PROMETHEUS Main Page</a>
+    </footer>
+
+    <script>
+        // Sector data profiles
+        const sectorData = {
+            electronics: {
+                title: 'CONSUMER ELECTRONICS - GLOBAL CARBON INTELLIGENCE',
+                totalEmissions: '~890M tonnes CO2e annually',
+                countries: 47,
+                coverage: 12,
+                hotspots: 7,
+                deserts: 23,
+                auditRisk: 78,
+                regions: [
+                    { name: 'China - Guangdong', lat: 23.1, lng: 113.3, emissions: 23, coverage: 8, risk: 'critical' },
+                    { name: 'China - Jiangsu', lat: 32.0, lng: 119.1, emissions: 14, coverage: 6, risk: 'critical' },
+                    { name: 'Taiwan', lat: 23.7, lng: 121.0, emissions: 11, coverage: 34, risk: 'high' },
+                    { name: 'South Korea', lat: 37.5, lng: 127.0, emissions: 8, coverage: 45, risk: 'moderate' },
+                    { name: 'Vietnam', lat: 14.0, lng: 108.2, emissions: 7, coverage: 4, risk: 'critical' },
+                    { name: 'India - Tamil Nadu', lat: 11.1, lng: 78.6, emissions: 5, coverage: 7, risk: 'critical' },
+                    { name: 'Malaysia', lat: 4.2, lng: 101.9, emissions: 4, coverage: 12, risk: 'high' },
+                    { name: 'Japan', lat: 36.2, lng: 138.2, emissions: 4, coverage: 62, risk: 'low' },
+                    { name: 'Germany', lat: 51.1, lng: 10.4, emissions: 3, coverage: 71, risk: 'low' },
+                    { name: 'Mexico', lat: 23.6, lng: -102.5, emissions: 3, coverage: 18, risk: 'high' }
+                ],
+                emissionsByRegion: {
+                    'Asia Pacific': 67,
+                    'Europe': 12,
+                    'North America': 9,
+                    'South America': 6,
+                    'Africa': 4,
+                    'Middle East': 2
+                },
+                dataByRegion: {
+                    'Asia Pacific': 11,
+                    'Europe': 67,
+                    'North America': 72,
+                    'South America': 14,
+                    'Africa': 3,
+                    'Middle East': 8
+                },
+                insight: '89% of chip emissions from 4 fabs with 0% primary data'
+            },
+            automotive: {
+                title: 'AUTOMOTIVE & EV - GLOBAL CARBON INTELLIGENCE',
+                totalEmissions: '~1.2B tonnes CO2e annually',
+                countries: 52,
+                coverage: 18,
+                hotspots: 8,
+                deserts: 19,
+                auditRisk: 72,
+                regions: [
+                    { name: 'China - Battery Belt', lat: 31.2, lng: 121.4, emissions: 28, coverage: 12, risk: 'critical' },
+                    { name: 'Germany', lat: 51.1, lng: 10.4, emissions: 12, coverage: 68, risk: 'low' },
+                    { name: 'Japan', lat: 36.2, lng: 138.2, emissions: 10, coverage: 65, risk: 'low' },
+                    { name: 'Mexico', lat: 23.6, lng: -102.5, emissions: 8, coverage: 22, risk: 'high' },
+                    { name: 'USA - Midwest', lat: 42.0, lng: -87.6, emissions: 7, coverage: 58, risk: 'moderate' },
+                    { name: 'South Korea', lat: 37.5, lng: 127.0, emissions: 6, coverage: 52, risk: 'moderate' },
+                    { name: 'India', lat: 20.5, lng: 78.9, emissions: 5, coverage: 15, risk: 'critical' },
+                    { name: 'Thailand', lat: 15.8, lng: 100.9, emissions: 4, coverage: 18, risk: 'high' }
+                ],
+                emissionsByRegion: {
+                    'Asia Pacific': 58,
+                    'Europe': 18,
+                    'North America': 15,
+                    'South America': 5,
+                    'Africa': 3,
+                    'Middle East': 1
+                },
+                dataByRegion: {
+                    'Asia Pacific': 18,
+                    'Europe': 65,
+                    'North America': 58,
+                    'South America': 12,
+                    'Africa': 5,
+                    'Middle East': 10
+                },
+                insight: 'Battery supply chain is 67% of EV footprint, 12% data coverage'
+            },
+            fashion: {
+                title: 'FASHION & TEXTILES - GLOBAL CARBON INTELLIGENCE',
+                totalEmissions: '~2.1B tonnes CO2e annually',
+                countries: 63,
+                coverage: 9,
+                hotspots: 9,
+                deserts: 31,
+                auditRisk: 84,
+                regions: [
+                    { name: 'Bangladesh', lat: 23.6, lng: 90.3, emissions: 18, coverage: 5, risk: 'critical' },
+                    { name: 'Vietnam', lat: 14.0, lng: 108.2, emissions: 15, coverage: 8, risk: 'critical' },
+                    { name: 'China - Guangdong', lat: 23.1, lng: 113.3, emissions: 14, coverage: 12, risk: 'critical' },
+                    { name: 'India - Cotton Belt', lat: 22.2, lng: 78.9, emissions: 12, coverage: 3, risk: 'critical' },
+                    { name: 'Turkey', lat: 38.9, lng: 35.2, emissions: 8, coverage: 28, risk: 'high' },
+                    { name: 'Pakistan', lat: 30.3, lng: 69.3, emissions: 6, coverage: 4, risk: 'critical' },
+                    { name: 'Indonesia', lat: -0.7, lng: 113.9, emissions: 5, coverage: 6, risk: 'critical' },
+                    { name: 'Cambodia', lat: 12.5, lng: 104.9, emissions: 4, coverage: 2, risk: 'critical' }
+                ],
+                emissionsByRegion: {
+                    'Asia Pacific': 71,
+                    'Europe': 12,
+                    'North America': 8,
+                    'South America': 5,
+                    'Africa': 3,
+                    'Middle East': 1
+                },
+                dataByRegion: {
+                    'Asia Pacific': 8,
+                    'Europe': 52,
+                    'North America': 65,
+                    'South America': 10,
+                    'Africa': 2,
+                    'Middle East': 15
+                },
+                insight: 'Tier 2/3 (fabric, dyeing) = 70% of emissions, 6% data'
+            },
+            food: {
+                title: 'FOOD & AGRICULTURE - GLOBAL CARBON INTELLIGENCE',
+                totalEmissions: '~13.7B tonnes CO2e annually',
+                countries: 145,
+                coverage: 7,
+                hotspots: 12,
+                deserts: 89,
+                auditRisk: 91,
+                regions: [
+                    { name: 'Brazil - Amazon', lat: -3.4, lng: -62.2, emissions: 14, coverage: 4, risk: 'critical' },
+                    { name: 'USA - Midwest', lat: 41.5, lng: -93.0, emissions: 12, coverage: 42, risk: 'moderate' },
+                    { name: 'Indonesia - Palm', lat: -0.7, lng: 113.9, emissions: 8, coverage: 3, risk: 'critical' },
+                    { name: 'India - Agriculture', lat: 23.0, lng: 78.0, emissions: 8, coverage: 2, risk: 'critical' },
+                    { name: 'China - Agriculture', lat: 35.0, lng: 105.0, emissions: 7, coverage: 8, risk: 'critical' },
+                    { name: 'Argentina - Soy', lat: -34.0, lng: -64.0, emissions: 6, coverage: 12, risk: 'high' }
+                ],
+                emissionsByRegion: {
+                    'Asia Pacific': 35,
+                    'South America': 28,
+                    'North America': 18,
+                    'Europe': 10,
+                    'Africa': 7,
+                    'Middle East': 2
+                },
+                dataByRegion: {
+                    'Asia Pacific': 6,
+                    'South America': 8,
+                    'North America': 42,
+                    'Europe': 58,
+                    'Africa': 1,
+                    'Middle East': 5
+                },
+                insight: 'Farm-level emissions are 60% of footprint with <3% primary data'
+            }
+        };
+
+        // Set default data for other sectors
+        ['pharma', 'construction', 'renewable', 'packaging'].forEach(id => {
+            if (!sectorData[id]) {
+                sectorData[id] = sectorData.electronics; // Use electronics as default
+            }
+        });
+
+        let map = null;
+        let heatLayer = null;
+        let markersLayer = null;
+        let currentSector = null;
+
+        // Initialize map
+        function initMap() {
+            if (map) return; // Already initialized
+
+            map = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                minZoom: 2,
+                maxZoom: 8,
+                zoomControl: true,
+                scrollWheelZoom: true
+            });
+
+            // Dark theme tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CARTO'
+            }).addTo(map);
+        }
+
+        // Generate intelligence map
+        async function generateMap() {
+            const sectorKey = document.getElementById('sectorSelect').value;
+            if (!sectorKey) {
+                alert('Please select an industry sector');
+                return;
+            }
+
+            currentSector = sectorData[sectorKey];
+            
+            // Show loading
+            await showLoadingState();
+            
+            // Display results
+            displayResults(currentSector);
+        }
+
+        // Load hotspot preset
+        function loadHotspot(sector, region) {
+            document.getElementById('sectorSelect').value = sector;
+            generateMap();
+        }
+
+        // Show loading animation
+        async function showLoadingState() {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+
+            // Add data points animation
+            const dataPoints = document.getElementById('dataPoints');
+            dataPoints.innerHTML = '';
+            
+            // Create random data points
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const point = document.createElement('div');
+                    point.className = 'data-point';
+                    point.style.left = Math.random() * 100 + '%';
+                    point.style.top = Math.random() * 100 + '%';
+                    dataPoints.appendChild(point);
+                }, i * 100);
+            }
+
+            const steps = [
+                { text: 'Mapping global supply chains...', step: 'Analyzing emission concentrations' },
+                { text: 'Analyzing emission concentrations...', step: 'Assessing data coverage' },
+                { text: 'Assessing data coverage...', step: 'Calculating risk exposure' },
+                { text: 'Calculating risk exposure...', step: 'Generating intelligence map' }
+            ];
+
+            for (let i = 0; i < steps.length; i++) {
+                document.getElementById('loadingText').textContent = steps[i].text;
+                document.getElementById('loadingStep').textContent = steps[i].step;
+                await sleep(800);
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+        }
+
+        // Display results
+        function displayResults(sector) {
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Update summary
+            document.getElementById('sectorTitle').textContent = sector.title;
+            document.getElementById('sectorStats').innerHTML = `
+                Total Sector Scope 3: ${sector.totalEmissions}<br>
+                Supply Chain Span: ${sector.countries} countries<br>
+                Primary Data Coverage: ${sector.coverage}%
+            `;
+            document.getElementById('hotspotCount').textContent = sector.hotspots;
+            document.getElementById('desertCount').textContent = sector.deserts;
+            document.getElementById('auditRisk').textContent = sector.auditRisk + '% of emissions';
+
+            // Initialize map
+            setTimeout(() => {
+                initMap();
+                displayMap(sector);
+            }, 100);
+
+            // Display data gap
+            displayDataGap(sector);
+
+            // Display hotspots table
+            displayHotspotsTable(sector.regions);
+
+            // Update insight
+            document.getElementById('insightPercent').textContent = (100 - sector.coverage) + '%';
+
+            // Display greenwashing risk
+            displayGreenwashRisk(sector);
+
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Display map with layers
+        function displayMap(sector) {
+            if (!map) return;
+
+            // Clear existing layers
+            if (heatLayer) map.removeLayer(heatLayer);
+            if (markersLayer) map.removeLayer(markersLayer);
+
+            // Create heat map data
+            const heatData = sector.regions.map(r => [r.lat, r.lng, r.emissions / 100]);
+            
+            heatLayer = L.heatLayer(heatData, {
+                radius: 35,
+                blur: 25,
+                maxZoom: 8,
+                gradient: {
+                    0.2: '#00D4FF',
+                    0.4: '#FFD700',
+                    0.6: '#FF6B00',
+                    0.8: '#dc2626',
+                    1.0: '#8B0000'
+                }
+            }).addTo(map);
+
+            // Add markers for regions
+            markersLayer = L.layerGroup();
+            
+            sector.regions.forEach(region => {
+                const color = region.risk === 'critical' ? '#dc2626' :
+                             region.risk === 'high' ? '#f97316' :
+                             region.risk === 'moderate' ? '#eab308' : '#10a37f';
+
+                const marker = L.circleMarker([region.lat, region.lng], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.6
+                });
+
+                // Create popup
+                const popupContent = `
+                    <div class="country-popup">
+                        <div class="popup-header">${region.name}</div>
+                        <div class="popup-stats">
+                            Sector emissions: ${region.emissions}%<br>
+                            Primary data: ${region.coverage}%<br>
+                            Uncertainty: ±${Math.round(300 - region.coverage * 2)}%
+                        </div>
+                        <div class="popup-risk">
+                            Risk level: ${region.risk === 'critical' ? '🔴 CRITICAL' :
+                                         region.risk === 'high' ? '🟠 HIGH' :
+                                         region.risk === 'moderate' ? '🟡 MODERATE' : '🟢 LOW'}
+                        </div>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                marker.on('click', () => showRegionDetail(region));
+                
+                markersLayer.addLayer(marker);
+            });
+
+            markersLayer.addTo(map);
+
+            // Fit map to bounds
+            const bounds = L.latLngBounds(sector.regions.map(r => [r.lat, r.lng]));
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Show region detail panel
+        function showRegionDetail(region) {
+            const detail = document.getElementById('regionDetail');
+            
+            document.getElementById('detailTitle').textContent = region.name.toUpperCase();
+            document.getElementById('coverageBar').style.width = region.coverage + '%';
+            
+            // Update detail data
+            document.getElementById('emissionProfile').innerHTML = `
+                <li><span>Total contribution</span><span>${region.emissions}% of sector</span></li>
+                <li><span>Absolute emissions</span><span>~${Math.round(region.emissions * 8.9)}M tonnes</span></li>
+                <li><span>Grid intensity</span><span>${(0.3 + Math.random() * 0.4).toFixed(2)} kg CO2/kWh</span></li>
+            `;
+
+            document.getElementById('dataCoverage').innerHTML = `
+                <li><span>Suppliers identified</span><span>${Math.round(100 + region.emissions * 100)}</span></li>
+                <li><span>Suppliers reporting</span><span>${Math.round(region.coverage * 2)}</span></li>
+                <li><span>Primary data</span><span>${region.coverage}%</span></li>
+                <li><span>Data quality</span><span style="color: ${region.coverage < 20 ? 'var(--red)' : region.coverage < 50 ? 'var(--orange)' : 'var(--green)'};">
+                    ${region.coverage < 20 ? '🔴 POOR' : region.coverage < 50 ? '🟠 MODERATE' : '🟢 GOOD'}</span></li>
+            `;
+
+            detail.classList.add('active');
+        }
+
+        // Close detail panel
+        function closeDetail() {
+            document.getElementById('regionDetail').classList.remove('active');
+        }
+
+        // Display data gap visualization
+        function displayDataGap(sector) {
+            const emissionsHtml = Object.entries(sector.emissionsByRegion).map(([region, percent]) => `
+                <div class="region-bar">
+                    <span class="region-name">${region}</span>
+                    <div class="region-bar-container">
+                        <div class="region-bar-fill" style="width: ${percent}%;"></div>
+                    </div>
+                    <span class="region-percent">${percent}%</span>
+                </div>
+            `).join('');
+
+            const dataHtml = Object.entries(sector.dataByRegion).map(([region, percent]) => `
+                <div class="region-bar">
+                    <span class="region-name">${region}</span>
+                    <div class="region-bar-container">
+                        <div class="region-bar-fill" style="width: ${percent}%; background: ${percent > 50 ? 'var(--green)' : percent > 20 ? 'var(--yellow)' : 'var(--red)'};"></div>
+                    </div>
+                    <span class="region-percent">${percent}%</span>
+                </div>
+            `).join('');
+
+            document.getElementById('emissionsByRegion').innerHTML = emissionsHtml;
+            document.getElementById('dataByRegion').innerHTML = dataHtml;
+
+            // Calculate gap
+            const gapPercent = sector.emissionsByRegion['Asia Pacific'];
+            const gapData = sector.dataByRegion['Asia Pacific'];
+            document.getElementById('gapPercent').textContent = gapPercent + '%';
+            document.getElementById('gapData').textContent = gapData + '%';
+        }
+
+        // Display hotspots table
+        function displayHotspotsTable(regions) {
+            const tableHtml = regions.slice(0, 10).map((region, index) => {
+                const riskClass = region.risk === 'critical' ? 'risk-critical' :
+                                 region.risk === 'high' ? 'risk-high' :
+                                 region.risk === 'moderate' ? 'risk-moderate' : 'risk-low';
+                
+                const riskText = region.risk === 'critical' ? 'CRITICAL' :
+                                region.risk === 'high' ? 'HIGH' :
+                                region.risk === 'moderate' ? 'MODERATE' : 'LOW';
+
+                const trend = region.emissions > 10 ? '↗️↗️' :
+                             region.emissions > 5 ? '↗️' :
+                             region.emissions > 3 ? '→' : '↘️';
+
+                return `
+                    <tr onclick="zoomToRegion(${region.lat}, ${region.lng})">
+                        <td>${index + 1}</td>
+                        <td>${region.name}</td>
+                        <td>${region.emissions}%</td>
+                        <td>${region.coverage}%</td>
+                        <td><span class="risk-indicator ${riskClass}">${riskText}</span></td>
+                        <td class="trend-arrow">${trend}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('hotspotsTable').innerHTML = tableHtml;
+        }
+
+        // Zoom to region on map
+        function zoomToRegion(lat, lng) {
+            if (map) {
+                map.setView([lat, lng], 5);
+            }
+        }
+
+        // Display greenwashing risk
+        function displayGreenwashRisk(sector) {
+            const risks = [
+                { name: 'China (all regions)', score: 94, desc: 'High emissions + Low data + Audit difficulty' },
+                { name: 'Southeast Asia', score: 87, desc: 'Rapid growth + Minimal reporting + Subcontracting' },
+                { name: 'India', score: 78, desc: 'Large base + Improving but gaps + Grid variability' },
+                { name: 'South America', score: 62, desc: 'Agricultural inputs + Deforestation uncertainty' },
+                { name: 'Eastern Europe', score: 45, desc: 'Improving coverage + EU regulatory pressure helping' }
+            ];
+
+            const risksHtml = risks.map(risk => `
+                <div class="risk-region">
+                    <div class="risk-region-header">
+                        <span class="risk-region-name">${risk.name}</span>
+                        <span class="risk-region-score">${risk.score}% vulnerable</span>
+                    </div>
+                    <div class="risk-bar">
+                        <div class="risk-bar-fill" style="width: ${risk.score}%;"></div>
+                    </div>
+                    <div class="risk-description">${risk.desc}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('greenwashRegions').innerHTML = risksHtml;
+        }
+
+        // Toggle map layers
+        function toggleLayer(layer) {
+            // Implementation would toggle specific map layers
+            console.log('Toggle layer:', layer);
+        }
+
+        // Sleep helper
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
