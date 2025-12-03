@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Mobility Barrier Map - ALETHEIA</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Curve plugin for flow lines -->
+    <script src="https://unpkg.com/leaflet-curve@1.0.0/leaflet.curve.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --teal: #00B4D8;
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --green: #10a37f;
+            --red: #dc2626;
+            --amber: #ff9500;
+            --yellow: #eab308;
+            --orange: #f97316;
+            --text-primary: white;
+            --text-secondary: #86868b;
+            --border: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg), var(--dark-card));
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        /* Container */
+        .container {
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, white, var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .map-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .map-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .bottlenecks {
+            margin-top: 20px;
+        }
+
+        .bottlenecks-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .bottleneck-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bottleneck-chip {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .bottleneck-chip:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: none;
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .map-loading-animation {
+            width: 200px;
+            height: 120px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .flowing-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: flow 2s infinite;
+        }
+
+        @keyframes flow {
+            0% { left: 20%; top: 50%; opacity: 0; }
+            50% { left: 50%; top: 30%; opacity: 1; }
+            100% { left: 80%; top: 50%; opacity: 0; }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .loading-step {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        /* Mobility Summary */
+        .mobility-summary {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            text-align: center;
+        }
+
+        .summary-title {
+            font-size: 24px;
+            color: var(--cyan);
+            margin-bottom: 20px;
+        }
+
+        .summary-main {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .outcome-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .outcome-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .outcome-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .outcome-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .outcome-percent {
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+        }
+
+        .summary-stat {
+            font-size: 16px;
+        }
+
+        .economic-impact {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--red);
+            margin-top: 20px;
+        }
+
+        /* Map Container */
+        .map-container {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 12px;
+            background: var(--dark-bg);
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            z-index: 999;
+        }
+
+        .layer-toggle {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .layer-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Country Popup */
+        .country-popup {
+            background: rgba(15, 20, 32, 0.98);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 280px;
+        }
+
+        .popup-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+
+        .popup-section {
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .popup-section:last-child {
+            border-bottom: none;
+        }
+
+        .popup-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .popup-value {
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        /* Route Analysis Panel */
+        .route-panel {
+            position: fixed;
+            right: -500px;
+            top: 80px;
+            bottom: 20px;
+            width: 480px;
+            background: rgba(15, 20, 32, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            z-index: 1001;
+            transition: right 0.3s ease;
+        }
+
+        .route-panel.active {
+            right: 20px;
+        }
+
+        .panel-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 20px;
+        }
+
+        .route-table {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .route-table th {
+            text-align: left;
+            padding: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .route-table td {
+            padding: 8px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Human Stories */
+        .stories-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: var(--cyan);
+        }
+
+        .stories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .story-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .story-quote {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--cyan);
+        }
+
+        .story-person {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .story-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .story-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        /* Bottleneck Routes Table */
+        .routes-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .routes-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .routes-table th {
+            text-align: left;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--cyan);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .routes-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        .routes-table tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+            cursor: pointer;
+        }
+
+        /* Economic Impact */
+        .economic-section {
+            background: rgba(220, 38, 38, 0.05);
+            border: 2px solid var(--red);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .impact-title {
+            font-size: 24px;
+            color: var(--red);
+            margin-bottom: 30px;
+        }
+
+        .impact-main {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--red);
+            margin-bottom: 10px;
+        }
+
+        .impact-label {
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .impact-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .breakdown-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .breakdown-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+
+        .breakdown-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Shortage Paradox */
+        .paradox-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .paradox-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 30px;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .paradox-left, .paradox-right {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .paradox-arrow {
+            font-size: 48px;
+            color: var(--cyan);
+            text-align: center;
+        }
+
+        .paradox-country {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .paradox-stat {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .barrier-box {
+            background: rgba(220, 38, 38, 0.1);
+            border: 2px solid var(--red);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .barrier-stat {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        /* Country Efficiency */
+        .efficiency-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .efficiency-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .efficiency-list {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .efficiency-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .efficiency-title.good {
+            color: var(--green);
+        }
+
+        .efficiency-title.bad {
+            color: var(--red);
+        }
+
+        .efficiency-item {
+            display: grid;
+            grid-template-columns: 30px 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        /* ALETHEIA Solution */
+        .solution-section {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .comparison-column {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .comparison-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .comparison-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .unlocked-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .unlocked-item {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .check-mark {
+            color: var(--green);
+            font-size: 20px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 20, 32, 0.95);
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .footer-note {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .footer-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 28px; }
+            .outcome-grid { grid-template-columns: 1fr; }
+            .stories-grid { grid-template-columns: 1fr; }
+            .paradox-grid { grid-template-columns: 1fr; }
+            .efficiency-grid { grid-template-columns: 1fr; }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .route-panel { width: calc(100% - 40px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="index.html" class="logo">← ALETHEIA</a>
+            <ul class="nav-links">
+                <li><a href="index.html#what-is">About</a></li>
+                <li><a href="index.html#problem">Problem</a></li>
+                <li><a href="index.html#solution">Solution</a></li>
+                <li><a href="demos.html">Tools</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge">EU Professional Mobility</div>
+            <h1>Professional Mobility Barrier Map</h1>
+            <p class="subtitle">See where talent is trapped by credential verification bottlenecks</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <select class="input-field" id="professionSelect">
+                <option value="">Select Profession...</option>
+                <option value="nurses">Nurses</option>
+                <option value="doctors">Medical Doctors</option>
+                <option value="dentists">Dentists</option>
+                <option value="pharmacists">Pharmacists</option>
+                <option value="physiotherapists">Physiotherapists</option>
+                <option value="engineers">Civil Engineers</option>
+                <option value="architects">Architects</option>
+                <option value="lawyers">Lawyers</option>
+                <option value="accountants">Accountants</option>
+                <option value="teachers">Teachers</option>
+                <option value="veterinarians">Veterinarians</option>
+                <option value="midwives">Midwives</option>
+            </select>
+
+            <button class="map-button" onclick="mapMobility()">
+                Map Mobility Barriers
+            </button>
+
+            <div class="bottlenecks">
+                <div class="bottlenecks-label">Critical bottlenecks:</div>
+                <div class="bottleneck-chips">
+                    <span class="bottleneck-chip" onclick="loadBottleneck('nurses')">Nurses (Highest demand)</span>
+                    <span class="bottleneck-chip" onclick="loadBottleneck('doctors')">Doctors (Longest waits)</span>
+                    <span class="bottleneck-chip" onclick="loadBottleneck('engineers')">Engineers (Most applications)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="map-loading-animation">
+                <div class="flowing-dot"></div>
+                <div class="flowing-dot" style="animation-delay: 0.5s;"></div>
+                <div class="flowing-dot" style="animation-delay: 1s;"></div>
+            </div>
+            <div class="loading-text" id="loadingText">Mapping migration demand...</div>
+            <div class="loading-step" id="loadingStep">Analyzing verification bottlenecks</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Mobility Summary -->
+            <div class="mobility-summary">
+                <h2 class="summary-title">EU PROFESSIONAL MOBILITY: <span id="professionTitle">NURSES</span></h2>
+                <div class="summary-main">
+                    <span id="totalApplications">45,200</span> nurses sought cross-border recognition<br>
+                    in the past 12 months
+                </div>
+                
+                <div class="outcome-grid">
+                    <div class="outcome-card">
+                        <div class="outcome-value" id="completedCount">18,400</div>
+                        <div class="outcome-label">Completed</div>
+                        <div class="outcome-percent" id="completedPercent">(41%)</div>
+                    </div>
+                    <div class="outcome-card">
+                        <div class="outcome-value" style="color: var(--red);" id="gaveUpCount">12,600</div>
+                        <div class="outcome-label">Gave Up</div>
+                        <div class="outcome-percent" id="gaveUpPercent">(28%)</div>
+                    </div>
+                    <div class="outcome-card">
+                        <div class="outcome-value" style="color: var(--yellow);" id="waitingCount">14,200</div>
+                        <div class="outcome-label">Still Waiting</div>
+                        <div class="outcome-percent" id="waitingPercent">(31%)</div>
+                    </div>
+                </div>
+
+                <div class="summary-stats">
+                    <div class="summary-stat">Average wait: <strong id="avgWait">67 days</strong></div>
+                    <div class="summary-stat">Average cost: <strong id="avgCost">€420</strong></div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    EU nursing shortage: <strong id="shortage">1.2 million</strong> unfilled positions
+                </div>
+
+                <div class="economic-impact">
+                    €<span id="economicImpact">2.8 BILLION</span> in economic value trapped in queues
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <div class="layer-toggle">
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="flowsLayer" checked onchange="toggleLayer('flows')">
+                            <span>Migration Flows</span>
+                        </label>
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="bottlenecksLayer" checked onchange="toggleLayer('bottlenecks')">
+                            <span>Bottlenecks</span>
+                        </label>
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="successLayer" onchange="toggleLayer('success')">
+                            <span>Success Rates</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Analysis Panel (hidden by default, slides in) -->
+            <div class="route-panel" id="routePanel">
+                <div class="panel-close" onclick="closePanel()">×</div>
+                <h3 class="panel-title" id="panelTitle">GERMANY - NURSING MOBILITY ANALYSIS</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <div class="popup-label">INBOUND APPLICATIONS (Top Origins)</div>
+                    <table class="route-table" id="routeTable">
+                        <!-- Populated by JavaScript -->
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div class="popup-label">CRITICAL BOTTLENECKS</div>
+                    <div id="bottleneckDetails" style="margin-top: 10px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <div class="popup-label">ECONOMIC IMPACT</div>
+                    <div id="economicDetails" style="margin-top: 10px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Human Stories -->
+            <div class="stories-section">
+                <h2 class="section-title">The Human Cost Stories</h2>
+                
+                <div class="stories-grid">
+                    <div class="story-card">
+                        <div class="story-quote">"I WAITED 134 DAYS. THE JOB OFFER EXPIRED."</div>
+                        <div class="story-person">Maria, 34, Nurse from Romania</div>
+                        <div class="story-person">Destination: Munich, Germany</div>
+                        <div class="story-text">
+                            "I had a job offer from a hospital desperate for nurses. 
+                            I submitted everything in February. By June, still waiting. 
+                            The hospital couldn't hold the position. I'm now working in a warehouse."
+                        </div>
+                        <div class="story-stats">
+                            <span>Wait: 134 days</span>
+                            <span>Cost: €890</span>
+                            <span>Outcome: Gave up</span>
+                        </div>
+                    </div>
+
+                    <div class="story-card">
+                        <div class="story-quote">"THEY ASKED FOR THE SAME DOCUMENT THREE TIMES"</div>
+                        <div class="story-person">Piotr, 41, Civil Engineer from Poland</div>
+                        <div class="story-person">Destination: Amsterdam, Netherlands</div>
+                        <div class="story-text">
+                            "Every time I thought I was done, another request. 
+                            The same certificate of good standing - but with different apostille, 
+                            different translation, different date. €340 just in repeated document fees."
+                        </div>
+                        <div class="story-stats">
+                            <span>Wait: 78 days</span>
+                            <span>Cost: €520</span>
+                            <span>Outcome: Approved</span>
+                        </div>
+                    </div>
+
+                    <div class="story-card">
+                        <div class="story-quote">"MY LICENSE WAS VALID FOR 15 YEARS. NOT HERE."</div>
+                        <div class="story-person">Elena, 52, Pharmacist from Greece</div>
+                        <div class="story-person">Destination: Frankfurt, Germany</div>
+                        <div class="story-text">
+                            "I've been a pharmacist since 2008. Germany said I need 'adaptation period' - 
+                            6 months working under supervision. At 52, starting over like a trainee. 
+                            The job I was offered doesn't exist anymore."
+                        </div>
+                        <div class="story-stats">
+                            <span>Wait: 67 days</span>
+                            <span>+ 6 months adaptation</span>
+                            <span>Outcome: Partial</span>
+                        </div>
+                    </div>
+
+                    <div class="story-card">
+                        <div class="story-quote">"I DIDN'T KNOW MY APPLICATION WAS REJECTED"</div>
+                        <div class="story-person">Andrei, 29, Doctor from Bulgaria</div>
+                        <div class="story-person">Destination: Lyon, France</div>
+                        <div class="story-text">
+                            "After 4 months, I called to check status. They said it was rejected 6 weeks ago - 
+                            letter sent to wrong address. Had to start completely over. Another €600, 
+                            another 4 months. I moved to UK instead."
+                        </div>
+                        <div class="story-stats">
+                            <span>Total: 8 months</span>
+                            <span>Cost: €1,400</span>
+                            <span>Changed plans</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Worst Bottleneck Routes -->
+            <div class="routes-section">
+                <h2 class="section-title">Top 20 Most Blocked Professional Routes</h2>
+                
+                <table class="routes-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Route</th>
+                            <th>Profession</th>
+                            <th>Applied</th>
+                            <th>Success</th>
+                            <th>Avg Wait</th>
+                            <th>Dropout</th>
+                        </tr>
+                    </thead>
+                    <tbody id="routesTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Economic Impact -->
+            <div class="economic-section">
+                <h2 class="impact-title">THE COST OF CREDENTIAL BARRIERS</h2>
+                <div style="margin-bottom: 30px;">FOR <span id="professionEconomic">NURSES</span> IN THE EU:</div>
+                
+                <div>
+                    Currently in verification queues: <strong id="queueCount">14,200</strong> professionals<br>
+                    Average wait time: <strong id="avgWaitEco">67</strong> days<br>
+                    Average destination salary: <strong id="avgSalary">€3,200</strong>/month
+                </div>
+
+                <div style="margin: 30px 0; padding: 30px; background: rgba(0, 0, 0, 0.3); border-radius: 12px;">
+                    <div class="impact-main">€<span id="monthlyLost">45.4</span> MILLION</div>
+                    <div class="impact-label">Lost wages PER MONTH</div>
+                    
+                    <div class="impact-main" style="margin-top: 20px;">€<span id="yearlyLost">544</span> MILLION</div>
+                    <div class="impact-label">Lost wages PER YEAR</div>
+                </div>
+
+                <div class="impact-breakdown">
+                    <div class="breakdown-item">
+                        <div class="breakdown-value">€2.1B</div>
+                        <div class="breakdown-label">Healthcare system costs</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-value">€890M</div>
+                        <div class="breakdown-label">Talent leaving EU</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-value">€120M</div>
+                        <div class="breakdown-label">Administrative burden</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-value">€340M</div>
+                        <div class="breakdown-label">Recruitment restart costs</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; font-size: 24px; font-weight: bold;">
+                    TOTAL ANNUAL ECONOMIC LOSS: €<span id="totalLoss">4.0</span> BILLION
+                </div>
+            </div>
+
+            <!-- Shortage Paradox -->
+            <div class="paradox-section">
+                <h2 class="section-title">The EU Professional Mobility Paradox</h2>
+                
+                <div class="paradox-grid">
+                    <div class="paradox-left">
+                        <div style="text-align: center; margin-bottom: 20px; color: var(--text-secondary);">
+                            PROFESSIONALS WAITING
+                        </div>
+                        <div>
+                            <div class="paradox-country">🇷🇴 Romania</div>
+                            <div class="paradox-stat">4,200 nurses want out</div>
+                            <div class="paradox-stat">Can't get credentials verified fast enough</div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="paradox-country">🇵🇱 Poland</div>
+                            <div class="paradox-stat">2,800 doctors seeking recognition abroad</div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="paradox-country">🇪🇸 Spain</div>
+                            <div class="paradox-stat">Youth unemployment: 28%</div>
+                            <div class="paradox-stat">Engineers emigrating</div>
+                        </div>
+                    </div>
+
+                    <div class="paradox-arrow">➡️</div>
+
+                    <div class="paradox-right">
+                        <div style="text-align: center; margin-bottom: 20px; color: var(--text-secondary);">
+                            UNFILLED POSITIONS
+                        </div>
+                        <div>
+                            <div class="paradox-country">🇩🇪 Germany</div>
+                            <div class="paradox-stat">186,000 nursing vacancies</div>
+                            <div class="paradox-stat">Can't fill positions fast enough</div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="paradox-country">🇳🇱 Netherlands</div>
+                            <div class="paradox-stat">12,400 doctor shortage in hospitals</div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="paradox-country">🇸🇪 Sweden</div>
+                            <div class="paradox-stat">Begging for engineers</div>
+                            <div class="paradox-stat">Can't process fast enough</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="barrier-box">
+                    <div style="font-size: 18px; margin-bottom: 20px;">THE BARRIER BETWEEN THEM:</div>
+                    <div class="barrier-stat">47 DAYS AVERAGE</div>
+                    <div class="barrier-stat">€420 AVERAGE</div>
+                    <div class="barrier-stat">14 DOCUMENTS</div>
+                    <div class="barrier-stat">6 AGENCIES</div>
+                    <div style="margin-top: 20px; font-size: 16px;">
+                        Because credential databases don't talk to each other
+                    </div>
+                </div>
+
+                <div style="text-align: center; font-size: 20px; font-weight: 600; color: var(--cyan);">
+                    ALETHEIA removes the barrier.<br>
+                    30 seconds. €15. One query.
+                </div>
+            </div>
+
+            <!-- Country Efficiency -->
+            <div class="efficiency-section">
+                <h2 class="section-title">Destination Country Efficiency Ranking</h2>
+                <p style="margin-bottom: 20px;">Which countries process professional credentials fastest?</p>
+                
+                <div class="efficiency-grid">
+                    <div class="efficiency-list">
+                        <div class="efficiency-title good">MOST EFFICIENT</div>
+                        <div class="efficiency-item">
+                            <span>1</span>
+                            <span>🇩🇰 Denmark</span>
+                            <span>21 days</span>
+                            <span>84%</span>
+                            <span>€180</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>2</span>
+                            <span>🇳🇱 Netherlands</span>
+                            <span>28 days</span>
+                            <span>79%</span>
+                            <span>€220</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>3</span>
+                            <span>🇸🇪 Sweden</span>
+                            <span>31 days</span>
+                            <span>76%</span>
+                            <span>€195</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>4</span>
+                            <span>🇫🇮 Finland</span>
+                            <span>34 days</span>
+                            <span>81%</span>
+                            <span>€210</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>5</span>
+                            <span>🇮🇪 Ireland</span>
+                            <span>38 days</span>
+                            <span>74%</span>
+                            <span>€280</span>
+                        </div>
+                    </div>
+
+                    <div class="efficiency-list">
+                        <div class="efficiency-title bad">LEAST EFFICIENT</div>
+                        <div class="efficiency-item">
+                            <span>23</span>
+                            <span>🇮🇹 Italy</span>
+                            <span>78 days</span>
+                            <span>52%</span>
+                            <span>€480</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>24</span>
+                            <span>🇪🇸 Spain</span>
+                            <span>82 days</span>
+                            <span>49%</span>
+                            <span>€520</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>25</span>
+                            <span>🇬🇷 Greece</span>
+                            <span>89 days</span>
+                            <span>44%</span>
+                            <span>€560</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>26</span>
+                            <span>🇫🇷 France</span>
+                            <span>94 days</span>
+                            <span>47%</span>
+                            <span>€610</span>
+                        </div>
+                        <div class="efficiency-item">
+                            <span>27</span>
+                            <span>🇧🇪 Belgium</span>
+                            <span>98 days</span>
+                            <span>41%</span>
+                            <span>€590</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; margin-top: 20px;">
+                    <strong>Why the difference?</strong><br>
+                    Top performers: Digital systems, dedicated units<br>
+                    Bottom performers: Paper-based, understaffed, fragmented<br><br>
+                    <strong style="color: var(--cyan);">WITH ALETHEIA: All countries achieve &lt;1 day verification</strong>
+                </p>
+            </div>
+
+            <!-- ALETHEIA Solution -->
+            <div class="solution-section">
+                <h2 class="section-title">Professional Mobility: Today vs. With ALETHEIA</h2>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-column">
+                        <h3 class="comparison-title">TODAY</h3>
+                        <div class="comparison-item">
+                            <span>Applications/year</span>
+                            <span>180,000</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Average processing</span>
+                            <span style="color: var(--red);">67 days</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Success rate</span>
+                            <span style="color: var(--red);">58%</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Dropout rate</span>
+                            <span style="color: var(--red);">28%</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Average cost</span>
+                            <span style="color: var(--red);">€420</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Professionals stuck</span>
+                            <span style="color: var(--red);">52,000</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Economic value trapped</span>
+                            <span style="color: var(--red);">€4.0B/year</span>
+                        </div>
+                    </div>
+
+                    <div class="comparison-column">
+                        <h3 class="comparison-title">WITH ALETHEIA</h3>
+                        <div class="comparison-item">
+                            <span>Applications/year</span>
+                            <span>180,000</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Average processing</span>
+                            <span style="color: var(--green);">&lt;1 day</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Success rate</span>
+                            <span style="color: var(--green);">94%</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Dropout rate</span>
+                            <span style="color: var(--green);">&lt;5%</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Average cost</span>
+                            <span style="color: var(--green);">€15</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Professionals stuck</span>
+                            <span style="color: var(--green);">~0</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Economic value trapped</span>
+                            <span style="color: var(--green);">~€0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin: 30px 0;">
+                    <h3 style="margin-bottom: 15px;">UNLOCKED MOBILITY:</h3>
+                    <ul class="unlocked-list">
+                        <li class="unlocked-item">
+                            <span class="check-mark">🟢</span>
+                            <span>14,200 nurses → German hospitals (immediate)</span>
+                        </li>
+                        <li class="unlocked-item">
+                            <span class="check-mark">🟢</span>
+                            <span>3,400 doctors → French clinics (immediate)</span>
+                        </li>
+                        <li class="unlocked-item">
+                            <span class="check-mark">🟢</span>
+                            <span>2,800 engineers → Dutch infrastructure (immediate)</span>
+                        </li>
+                        <li class="unlocked-item">
+                            <span class="check-mark">🟢</span>
+                            <span>1,200 teachers → Irish schools (immediate)</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div style="text-align: center;">
+                    <h3 style="margin-bottom: 15px;">EVERYONE WINS:</h3>
+                    <p style="font-size: 16px; line-height: 1.8;">
+                        ✓ Professionals: Work where opportunities exist<br>
+                        ✓ Employers: Fill critical shortages faster<br>
+                        ✓ Patients: Better healthcare access<br>
+                        ✓ Governments: Reduced administrative burden<br>
+                        ✓ EU: Single market actually works
+                    </p>
+                    
+                    <a href="index.html#how-it-works" class="cta-button" style="margin-top: 30px;">
+                        See How ALETHEIA Works →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-note">
+            Data synthesized from EU Commission professional mobility statistics, ENIC-NARIC recognition reports,
+            and national authority processing data.
+        </p>
+        <p class="footer-note">
+            Sources: European Commission Regulated Professions Database, Eurostat labour mobility statistics,
+            OECD International Migration Outlook
+        </p>
+        <a href="index.html" class="footer-link">← Back to ALETHEIA Main Page</a>
+    </footer>
+
+    <script>
+        // Profession data
+        const professionData = {
+            nurses: {
+                title: 'NURSES',
+                total: 45200,
+                completed: 18400,
+                gaveUp: 12600,
+                waiting: 14200,
+                avgWait: 67,
+                avgCost: 420,
+                shortage: '1.2 million',
+                economicImpact: 2.8,
+                monthlyLost: 45.4,
+                yearlyLost: 544,
+                totalLoss: 4.0,
+                avgSalary: 3200,
+                routes: [
+                    { origin: 'Romania', dest: 'Germany', applied: 2800, success: 40, wait: 89, dropout: 24 },
+                    { origin: 'Poland', dest: 'Germany', applied: 4200, success: 52, wait: 47, dropout: 19 },
+                    { origin: 'Bulgaria', dest: 'UK', applied: 890, success: 47, wait: 78, dropout: 26 },
+                    { origin: 'Spain', dest: 'France', applied: 1400, success: 61, wait: 44, dropout: 15 },
+                    { origin: 'Italy', dest: 'Germany', applied: 1100, success: 65, wait: 38, dropout: 17 }
+                ]
+            },
+            doctors: {
+                title: 'MEDICAL DOCTORS',
+                total: 28000,
+                completed: 14560,
+                gaveUp: 6720,
+                waiting: 6720,
+                avgWait: 89,
+                avgCost: 580,
+                shortage: '340,000',
+                economicImpact: 2.8,
+                monthlyLost: 38.2,
+                yearlyLost: 458,
+                totalLoss: 2.8,
+                avgSalary: 4800,
+                routes: [
+                    { origin: 'Bulgaria', dest: 'Germany', applied: 1200, success: 35, wait: 94, dropout: 31 },
+                    { origin: 'Romania', dest: 'France', applied: 1400, success: 42, wait: 87, dropout: 28 },
+                    { origin: 'Spain', dest: 'France', applied: 1800, success: 48, wait: 81, dropout: 19 },
+                    { origin: 'Poland', dest: 'UK', applied: 780, success: 62, wait: 45, dropout: 16 },
+                    { origin: 'Greece', dest: 'Germany', applied: 680, success: 55, wait: 62, dropout: 20 }
+                ]
+            },
+            engineers: {
+                title: 'CIVIL ENGINEERS',
+                total: 19000,
+                completed: 12160,
+                gaveUp: 3420,
+                waiting: 3420,
+                avgWait: 48,
+                avgCost: 320,
+                shortage: '890,000',
+                economicImpact: 1.9,
+                monthlyLost: 28.5,
+                yearlyLost: 342,
+                totalLoss: 1.9,
+                avgSalary: 3600,
+                routes: [
+                    { origin: 'Greece', dest: 'Netherlands', applied: 890, success: 58, wait: 56, dropout: 21 },
+                    { origin: 'Portugal', dest: 'Germany', applied: 780, success: 67, wait: 41, dropout: 14 },
+                    { origin: 'Poland', dest: 'Netherlands', applied: 1100, success: 67, wait: 41, dropout: 14 },
+                    { origin: 'Spain', dest: 'UK', applied: 920, success: 71, wait: 34, dropout: 12 },
+                    { origin: 'Italy', dest: 'Switzerland', applied: 540, success: 72, wait: 29, dropout: 11 }
+                ]
+            },
+            teachers: {
+                title: 'TEACHERS',
+                total: 31000,
+                completed: 14880,
+                gaveUp: 8680,
+                waiting: 7440,
+                avgWait: 52,
+                avgCost: 340,
+                shortage: '230,000',
+                economicImpact: 1.2,
+                monthlyLost: 20.1,
+                yearlyLost: 241,
+                totalLoss: 1.2,
+                avgSalary: 2800,
+                routes: [
+                    { origin: 'Spain', dest: 'UK', applied: 2200, success: 48, wait: 72, dropout: 22 },
+                    { origin: 'Italy', dest: 'Ireland', applied: 1400, success: 56, wait: 48, dropout: 19 },
+                    { origin: 'Poland', dest: 'Germany', applied: 1800, success: 62, wait: 45, dropout: 16 },
+                    { origin: 'Romania', dest: 'France', applied: 890, success: 51, wait: 69, dropout: 23 },
+                    { origin: 'Portugal', dest: 'UK', applied: 620, success: 69, wait: 31, dropout: 13 }
+                ]
+            }
+        };
+
+        // Set default data for other professions
+        ['dentists', 'pharmacists', 'physiotherapists', 'architects', 'lawyers', 
+         'accountants', 'veterinarians', 'midwives'].forEach(prof => {
+            if (!professionData[prof]) {
+                professionData[prof] = professionData.nurses; // Use nurses as default
+            }
+        });
+
+        // EU country coordinates
+        const countryCoords = {
+            'Germany': [51.1657, 10.4515],
+            'France': [46.2276, 2.2137],
+            'UK': [55.3781, -3.4360],
+            'Netherlands': [52.1326, 5.2913],
+            'Spain': [40.4637, -3.7492],
+            'Italy': [41.8719, 12.5674],
+            'Poland': [51.9194, 19.1451],
+            'Romania': [45.9432, 24.9668],
+            'Greece': [39.0742, 21.8243],
+            'Sweden': [60.1282, 18.6435],
+            'Belgium': [50.5039, 4.4699],
+            'Bulgaria': [42.7339, 25.4858],
+            'Portugal': [39.3999, -8.2245],
+            'Ireland': [53.4129, -8.2439],
+            'Denmark': [56.2639, 9.5018],
+            'Finland': [61.9241, 25.7482],
+            'Austria': [47.5162, 14.5501],
+            'Croatia': [45.1000, 15.2000],
+            'Czech Republic': [49.7500, 15.5000],
+            'Hungary': [47.1625, 19.5033],
+            'Slovakia': [48.6690, 19.6990],
+            'Slovenia': [46.1512, 14.9955],
+            'Lithuania': [55.1694, 23.8813],
+            'Latvia': [56.8796, 24.6032],
+            'Estonia': [58.5953, 25.0136],
+            'Cyprus': [35.1264, 33.4299],
+            'Malta': [35.9375, 14.3754],
+            'Luxembourg': [49.8153, 6.1296],
+            'Switzerland': [46.8182, 8.2275],
+            'Norway': [60.4720, 8.4689]
+        };
+
+        let map = null;
+        let flowsLayer = null;
+        let currentProfession = null;
+
+        function loadBottleneck(profession) {
+            document.getElementById('professionSelect').value = profession;
+            mapMobility();
+        }
+
+        async function mapMobility() {
+            const profession = document.getElementById('professionSelect').value;
+            
+            if (!profession) {
+                alert('Please select a profession');
+                return;
+            }
+
+            currentProfession = professionData[profession];
+
+            // Show loading
+            await showLoadingState();
+
+            // Display results
+            displayResults(currentProfession);
+        }
+
+        async function showLoadingState() {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+
+            const steps = [
+                { text: 'Mapping migration demand...', step: 'Analyzing verification bottlenecks' },
+                { text: 'Analyzing verification bottlenecks...', step: 'Calculating economic impact' },
+                { text: 'Calculating economic impact...', step: 'Identifying trapped talent' },
+                { text: 'Identifying trapped talent...', step: 'Generating mobility map' }
+            ];
+
+            for (let i = 0; i < steps.length; i++) {
+                document.getElementById('loadingText').textContent = steps[i].text;
+                document.getElementById('loadingStep').textContent = steps[i].step;
+                await sleep(600);
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+        }
+
+        function displayResults(data) {
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Update summary
+            document.getElementById('professionTitle').textContent = data.title;
+            document.getElementById('totalApplications').textContent = data.total.toLocaleString();
+            document.getElementById('completedCount').textContent = data.completed.toLocaleString();
+            document.getElementById('completedPercent').textContent = `(${Math.round(data.completed / data.total * 100)}%)`;
+            document.getElementById('gaveUpCount').textContent = data.gaveUp.toLocaleString();
+            document.getElementById('gaveUpPercent').textContent = `(${Math.round(data.gaveUp / data.total * 100)}%)`;
+            document.getElementById('waitingCount').textContent = data.waiting.toLocaleString();
+            document.getElementById('waitingPercent').textContent = `(${Math.round(data.waiting / data.total * 100)}%)`;
+            document.getElementById('avgWait').textContent = data.avgWait + ' days';
+            document.getElementById('avgCost').textContent = '€' + data.avgCost;
+            document.getElementById('shortage').textContent = data.shortage;
+            document.getElementById('economicImpact').textContent = data.economicImpact + ' BILLION';
+
+            // Update economic section
+            document.getElementById('professionEconomic').textContent = data.title;
+            document.getElementById('queueCount').textContent = data.waiting.toLocaleString();
+            document.getElementById('avgWaitEco').textContent = data.avgWait;
+            document.getElementById('avgSalary').textContent = '€' + data.avgSalary;
+            document.getElementById('monthlyLost').textContent = data.monthlyLost;
+            document.getElementById('yearlyLost').textContent = data.yearlyLost;
+            document.getElementById('totalLoss').textContent = data.totalLoss;
+
+            // Initialize map
+            if (!map) {
+                initMap();
+            }
+
+            // Display routes
+            displayFlows(data.routes);
+            displayRoutesTable(data.routes);
+
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function initMap() {
+            map = L.map('map', {
+                center: [50, 10],
+                zoom: 4,
+                minZoom: 3,
+                maxZoom: 7
+            });
+
+            // Dark theme tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CARTO'
+            }).addTo(map);
+
+            // Add country markers
+            Object.entries(countryCoords).forEach(([country, coords]) => {
+                const marker = L.circleMarker(coords, {
+                    radius: 8,
+                    fillColor: '#00D4FF',
+                    color: '#fff',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.3
+                });
+
+                marker.bindPopup(createPopupContent(country));
+                marker.on('click', () => showCountryPanel(country));
+                marker.addTo(map);
+            });
+        }
+
+        function displayFlows(routes) {
+            if (flowsLayer) {
+                map.removeLayer(flowsLayer);
+            }
+
+            flowsLayer = L.layerGroup();
+
+            routes.forEach(route => {
+                const origin = countryCoords[route.origin];
+                const dest = countryCoords[route.dest];
+                
+                if (origin && dest) {
+                    // Create curved line
+                    const midPoint = [
+                        (origin[0] + dest[0]) / 2,
+                        (origin[1] + dest[1]) / 2 + 2
+                    ];
+
+                    const curve = L.curve(
+                        ['M', origin, 'Q', midPoint, dest],
+                        {
+                            color: route.dropout > 20 ? '#dc2626' : '#00D4FF',
+                            weight: Math.min(route.applied / 500, 6),
+                            opacity: 0.6,
+                            dashArray: '5, 10'
+                        }
+                    );
+
+                    curve.bindPopup(`
+                        <div style="padding: 10px;">
+                            <strong>${route.origin} → ${route.dest}</strong><br>
+                            Applied: ${route.applied}<br>
+                            Success: ${route.success}%<br>
+                            Avg wait: ${route.wait} days<br>
+                            Dropout: ${route.dropout}%
+                        </div>
+                    `);
+
+                    flowsLayer.addLayer(curve);
+                }
+            });
+
+            flowsLayer.addTo(map);
+        }
+
+        function createPopupContent(country) {
+            return `
+                <div class="country-popup">
+                    <div class="popup-header">🏳️ ${country}</div>
+                    <div class="popup-section">
+                        <div class="popup-label">INBOUND DEMAND</div>
+                        <div class="popup-value">View detailed analysis →</div>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <strong>Click for detailed analysis</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showCountryPanel(country) {
+            const panel = document.getElementById('routePanel');
+            document.getElementById('panelTitle').textContent = `${country.toUpperCase()} - ${currentProfession.title} MOBILITY ANALYSIS`;
+            
+            // Populate route table
+            const tableBody = document.getElementById('routeTable');
+            tableBody.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Origin</th>
+                        <th>Applied</th>
+                        <th>Success</th>
+                        <th>Wait</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${currentProfession.routes.filter(r => r.dest === country)
+                        .map(r => `
+                            <tr>
+                                <td>${r.origin}</td>
+                                <td>${r.applied}</td>
+                                <td>${r.success}%</td>
+                                <td>${r.wait}d</td>
+                            </tr>
+                        `).join('') || '<tr><td colspan="4">No data for this country</td></tr>'}
+                </tbody>
+            `;
+
+            panel.classList.add('active');
+        }
+
+        function closePanel() {
+            document.getElementById('routePanel').classList.remove('active');
+        }
+
+        function displayRoutesTable(routes) {
+            const tbody = document.getElementById('routesTableBody');
+            
+            // Expand routes with more examples
+            const allRoutes = [
+                ...routes,
+                { origin: 'Portugal', dest: 'France', prof: 'Nurses', applied: 780, success: 61, wait: 44, dropout: 15 },
+                { origin: 'Croatia', dest: 'Germany', prof: 'Doctors', applied: 680, success: 55, wait: 62, dropout: 20 },
+                { origin: 'Czech', dest: 'Germany', prof: 'Engineers', applied: 540, success: 72, wait: 29, dropout: 11 },
+                { origin: 'Hungary', dest: 'Austria', prof: 'Nurses', applied: 920, success: 71, wait: 34, dropout: 12 },
+                { origin: 'Lithuania', dest: 'Sweden', prof: 'Doctors', applied: 340, success: 51, wait: 69, dropout: 23 },
+                { origin: 'Latvia', dest: 'Germany', prof: 'Nurses', applied: 280, success: 59, wait: 52, dropout: 18 },
+                { origin: 'Estonia', dest: 'Finland', prof: 'Doctors', applied: 190, success: 74, wait: 28, dropout: 9 },
+                { origin: 'Slovenia', dest: 'Italy', prof: 'Engineers', applied: 240, success: 68, wait: 35, dropout: 14 },
+                { origin: 'Slovakia', dest: 'Austria', prof: 'Nurses', applied: 620, success: 69, wait: 31, dropout: 13 },
+                { origin: 'Romania', dest: 'Italy', prof: 'Nurses', applied: 1600, success: 56, wait: 48, dropout: 19 },
+                { origin: 'Poland', dest: 'Ireland', prof: 'Doctors', applied: 780, success: 62, wait: 45, dropout: 16 },
+                { origin: 'Bulgaria', dest: 'France', prof: 'Pharmacists', applied: 420, success: 42, wait: 87, dropout: 28 },
+                { origin: 'Greece', dest: 'Germany', prof: 'Architects', applied: 340, success: 55, wait: 62, dropout: 20 },
+                { origin: 'Spain', dest: 'Netherlands', prof: 'Engineers', applied: 890, success: 58, wait: 56, dropout: 21 },
+                { origin: 'Italy', dest: 'Belgium', prof: 'Teachers', applied: 520, success: 41, wait: 98, dropout: 31 }
+            ];
+
+            tbody.innerHTML = allRoutes.slice(0, 20).map((route, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${route.origin} → ${route.dest}</td>
+                    <td>${route.prof || currentProfession.title.slice(0, -1)}</td>
+                    <td>${route.applied.toLocaleString()}</td>
+                    <td>${route.success}%</td>
+                    <td>${route.wait} days</td>
+                    <td style="color: ${route.dropout > 20 ? 'var(--red)' : 'var(--yellow)'};">${route.dropout}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleLayer(layer) {
+            // Layer toggle implementation
+            console.log('Toggle layer:', layer);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
