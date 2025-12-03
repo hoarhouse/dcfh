@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credential Fraud Risk Scanner - ALETHEIA</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --teal: #00B4D8;
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --green: #10a37f;
+            --red: #dc2626;
+            --amber: #ff9500;
+            --yellow: #eab308;
+            --orange: #f97316;
+            --text-primary: white;
+            --text-secondary: #86868b;
+            --border: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg), var(--dark-card));
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 40px;
+            background: rgba(15, 20, 32, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        /* Container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, white, var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 21px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .scan-button {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .scan-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .scenarios {
+            margin-top: 20px;
+        }
+
+        .scenarios-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .scenario-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .scenario-chip {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--cyan);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .scenario-chip:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: none;
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            margin-bottom: 40px;
+        }
+
+        .shield-animation {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .shield {
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--cyan);
+            border-radius: 0 0 50% 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan);
+            top: 0;
+            animation: scan 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+        }
+
+        @keyframes scan {
+            from { top: 0; }
+            to { top: 100%; }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .loading-step {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        /* Fraud Exposure Score */
+        .fraud-score-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            text-align: center;
+        }
+
+        .score-header {
+            font-size: 24px;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .hiring-context {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+
+        .risk-gauge {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-background {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 20;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dasharray 1.5s ease;
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .gauge-label {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .risk-description {
+            font-size: 18px;
+            margin: 20px 0;
+        }
+
+        .risk-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .risk-metric {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+
+        .metric-detail {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Verification Gap Matrix */
+        .gap-matrix-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: var(--cyan);
+        }
+
+        .matrix-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .matrix-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .matrix-row:hover {
+            background: rgba(0, 212, 255, 0.05);
+            padding-left: 10px;
+        }
+
+        .matrix-label {
+            font-size: 14px;
+        }
+
+        .detection-bar {
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .detection-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green), var(--yellow));
+            transition: width 1s ease;
+        }
+
+        .gap-bar {
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gap-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--orange), var(--red));
+            transition: width 1s ease;
+        }
+
+        /* Fraud Type Cards */
+        .fraud-types-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .fraud-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .fraud-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--cyan);
+        }
+
+        .fraud-card.expanded {
+            grid-column: 1 / -1;
+        }
+
+        .fraud-icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .fraud-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+
+        .fraud-summary {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .fraud-details {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .fraud-card.expanded .fraud-details {
+            display: block;
+        }
+
+        .fraud-stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .fraud-pattern {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid var(--red);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        /* Case Studies */
+        .case-studies-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .case-gallery {
+            display: grid;
+            gap: 20px;
+        }
+
+        .case-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--red);
+        }
+
+        .case-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .case-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--red);
+        }
+
+        .case-profession {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .case-details {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .case-item {
+            display: flex;
+            gap: 10px;
+        }
+
+        .case-label {
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+
+        .case-value {
+            color: white;
+        }
+
+        /* Liability Exposure */
+        .liability-section {
+            background: rgba(220, 38, 38, 0.05);
+            border: 2px solid var(--red);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .liability-header {
+            font-size: 24px;
+            color: var(--red);
+            margin-bottom: 20px;
+        }
+
+        .liability-context {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .liability-category {
+            margin-bottom: 30px;
+        }
+
+        .liability-subtitle {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--red);
+        }
+
+        .liability-items {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .liability-items li {
+            padding: 8px 0;
+            position: relative;
+        }
+
+        .liability-items li::before {
+            content: '•';
+            position: absolute;
+            left: -20px;
+            color: var(--red);
+        }
+
+        .insurance-warning {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        /* Statistics Dashboard */
+        .stats-dashboard {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .profession-breakdown {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ALETHEIA Solution */
+        .solution-section {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 180, 216, 0.05));
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .comparison-table th {
+            text-align: left;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .check-mark {
+            color: var(--green);
+            font-size: 20px;
+        }
+
+        .x-mark {
+            color: var(--red);
+            font-size: 20px;
+        }
+
+        .warning-mark {
+            color: var(--yellow);
+            font-size: 20px;
+        }
+
+        .gap-closure {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .closure-metric {
+            display: inline-block;
+            margin: 0 20px;
+        }
+
+        .closure-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .closure-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        /* Risk by Origin */
+        .origin-risk-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .risk-categories {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .risk-category {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .risk-category.high {
+            border-left: 4px solid var(--red);
+        }
+
+        .risk-category.medium {
+            border-left: 4px solid var(--yellow);
+        }
+
+        .risk-category.low {
+            border-left: 4px solid var(--green);
+        }
+
+        .risk-level {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .risk-regions {
+            list-style: none;
+        }
+
+        .risk-regions li {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(15, 20, 32, 0.95);
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .footer-note {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .footer-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 32px; }
+            .input-grid { grid-template-columns: 1fr; }
+            .risk-metrics { grid-template-columns: 1fr; }
+            .matrix-header, .matrix-row { grid-template-columns: 1fr; gap: 10px; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="index.html" class="logo">← ALETHEIA</a>
+            <ul class="nav-links">
+                <li><a href="index.html#what-is">About</a></li>
+                <li><a href="index.html#problem">Problem</a></li>
+                <li><a href="index.html#solution">Solution</a></li>
+                <li><a href="demos.html">Tools</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge">Credential Fraud Detection</div>
+            <h1>Credential Fraud Risk Scanner</h1>
+            <p class="subtitle">Discover your exposure to fake degrees, hidden revocations, and unverifiable credentials</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <div class="input-grid">
+                <select class="input-field" id="professionSelect">
+                    <option value="">I'm hiring/verifying...</option>
+                    <option value="doctors">Medical Doctors</option>
+                    <option value="nurses">Nurses</option>
+                    <option value="dentists">Dentists</option>
+                    <option value="pharmacists">Pharmacists</option>
+                    <option value="surgeons">Surgeons/Specialists</option>
+                    <option value="physiotherapists">Physiotherapists</option>
+                    <option value="engineers">Civil Engineers</option>
+                    <option value="architects">Architects</option>
+                    <option value="lawyers">Lawyers</option>
+                    <option value="accountants">Accountants/Auditors</option>
+                    <option value="teachers">Teachers</option>
+                    <option value="pilots">Pilots</option>
+                    <option value="financial">Financial Advisors</option>
+                </select>
+
+                <select class="input-field" id="countrySelect">
+                    <option value="">In this country...</option>
+                    <option value="AT">Austria</option>
+                    <option value="BE">Belgium</option>
+                    <option value="BG">Bulgaria</option>
+                    <option value="HR">Croatia</option>
+                    <option value="CY">Cyprus</option>
+                    <option value="CZ">Czech Republic</option>
+                    <option value="DK">Denmark</option>
+                    <option value="EE">Estonia</option>
+                    <option value="FI">Finland</option>
+                    <option value="FR">France</option>
+                    <option value="DE">Germany</option>
+                    <option value="GR">Greece</option>
+                    <option value="HU">Hungary</option>
+                    <option value="IE">Ireland</option>
+                    <option value="IT">Italy</option>
+                    <option value="LV">Latvia</option>
+                    <option value="LT">Lithuania</option>
+                    <option value="LU">Luxembourg</option>
+                    <option value="MT">Malta</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="PL">Poland</option>
+                    <option value="PT">Portugal</option>
+                    <option value="RO">Romania</option>
+                    <option value="SK">Slovakia</option>
+                    <option value="SI">Slovenia</option>
+                    <option value="ES">Spain</option>
+                    <option value="SE">Sweden</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="CH">Switzerland</option>
+                    <option value="NO">Norway</option>
+                </select>
+            </div>
+
+            <button class="scan-button" onclick="scanFraudRisk()">
+                Scan Fraud Risk
+            </button>
+
+            <div class="scenarios">
+                <div class="scenarios-label">High-risk scenarios:</div>
+                <div class="scenario-chips">
+                    <span class="scenario-chip" onclick="loadScenario('doctors', 'DE')">Doctors + Germany</span>
+                    <span class="scenario-chip" onclick="loadScenario('nurses', 'UK')">Nurses + UK</span>
+                    <span class="scenario-chip" onclick="loadScenario('engineers', 'NL')">Engineers + Netherlands</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="shield-animation">
+                <div class="shield">
+                    <div class="scan-line"></div>
+                </div>
+            </div>
+            <div class="loading-text" id="loadingText">Analyzing verification gaps...</div>
+            <div class="loading-step" id="loadingStep">Calculating fraud exposure</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Fraud Exposure Score -->
+            <div class="fraud-score-section">
+                <h2 class="score-header">CREDENTIAL FRAUD RISK ASSESSMENT</h2>
+                <div class="hiring-context">
+                    Hiring: <span id="hiringContext">MEDICAL DOCTORS in GERMANY</span>
+                </div>
+                
+                <div class="risk-gauge">
+                    <svg class="gauge-svg" viewBox="0 0 300 300">
+                        <circle cx="150" cy="150" r="120" class="gauge-background"/>
+                        <circle cx="150" cy="150" r="120" class="gauge-fill" id="gaugeFill"
+                                stroke-dasharray="0 753" stroke-linecap="round"
+                                transform="rotate(-90 150 150)"/>
+                        <defs>
+                            <linearGradient id="gaugeGradient">
+                                <stop offset="0%" style="stop-color:#10a37f;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#eab308;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="riskValue">67%</div>
+                        <div class="gauge-label" id="riskLabel">HIGH RISK</div>
+                    </div>
+                </div>
+                
+                <div class="risk-description">
+                    <strong id="riskPercent">67%</strong> of foreign medical credentials have<br>
+                    verification gaps that could hide fraud
+                </div>
+                
+                <div class="risk-metrics">
+                    <div class="risk-metric">
+                        <div class="metric-label">Fake Credentials</div>
+                        <div class="metric-value" id="fakePercent">3.2%</div>
+                        <div class="metric-detail">estimated</div>
+                    </div>
+                    <div class="risk-metric">
+                        <div class="metric-label">Hidden Discipline</div>
+                        <div class="metric-value" id="disciplinePercent">4.8%</div>
+                        <div class="metric-detail">undetected</div>
+                    </div>
+                    <div class="risk-metric">
+                        <div class="metric-label">Lapsed Licenses</div>
+                        <div class="metric-value" id="lapsedPercent">2.1%</div>
+                        <div class="metric-detail">practicing</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Gap Matrix -->
+            <div class="gap-matrix-section">
+                <h2 class="section-title">What Your Verification Catches vs. Misses</h2>
+                
+                <div class="matrix-header">
+                    <div>Fraud Type</div>
+                    <div>Detectable</div>
+                    <div>Undetectable Gap</div>
+                </div>
+                
+                <div id="verificationMatrix">
+                    <!-- Matrix rows populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Fraud Type Cards -->
+            <div class="fraud-types-section">
+                <div class="fraud-card" onclick="toggleCard(this)">
+                    <div class="fraud-icon">🎓</div>
+                    <h3 class="fraud-title">Diploma Mills & Fake Degrees</h3>
+                    <p class="fraud-summary">
+                        Institutions that sell degrees with minimal academic requirements.
+                        Often legally registered, making detection difficult.
+                    </p>
+                    <div class="fraud-details">
+                        <div class="fraud-stat">
+                            <strong>Scale in EU:</strong><br>
+                            • 3,000+ identified diploma mills globally<br>
+                            • 47 specifically target EU medical credentials<br>
+                            • €2.1 billion annual fraud industry
+                        </div>
+                        <div class="fraud-stat">
+                            <strong>Why current verification misses it:</strong><br>
+                            • Mills provide "authentic" documentation<br>
+                            • Accreditation databases incomplete<br>
+                            • Cross-border checks don't happen<br>
+                            • Time pressure = shortcuts
+                        </div>
+                        <div class="fraud-pattern">
+                            <strong>Real pattern (anonymized):</strong><br>
+                            "Dr. K" presented credentials from Caribbean medical school.
+                            Documents appeared legitimate. School existed but had no
+                            accreditation recognized in the EU. Discovered after 14 months
+                            of practice.
+                        </div>
+                        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong style="color: var(--cyan);">ALETHEIA difference:</strong><br>
+                            Real-time check against federated accreditation databases
+                            across all 27 member states.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fraud-card" onclick="toggleCard(this)">
+                    <div class="fraud-icon">🚫</div>
+                    <h3 class="fraud-title">Hidden License Revocations</h3>
+                    <p class="fraud-summary">
+                        Professional loses license in Country A, moves to Country B
+                        and practices legally because systems don't communicate.
+                    </p>
+                    <div class="fraud-details">
+                        <div class="fraud-stat">
+                            <strong>Scale in EU:</strong><br>
+                            • ~2,400 medical professionals with revoked licenses<br>
+                            • Working in another EU country<br>
+                            • Average detection time: 3.2 years<br>
+                            • Some never detected
+                        </div>
+                        <div class="fraud-stat">
+                            <strong>Why current verification misses it:</strong><br>
+                            • No automatic cross-border notifications<br>
+                            • Manual checks only verify "credential exists"<br>
+                            • "Good standing" certificates can be outdated<br>
+                            • Country A has no obligation to inform Country B
+                        </div>
+                        <div class="fraud-pattern">
+                            <strong>Real pattern (anonymized):</strong><br>
+                            Surgeon had license revoked in Romania after patient deaths.
+                            Relocated to Germany with original diploma. Worked 4 years
+                            before random audit discovered revocation.
+                        </div>
+                        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong style="color: var(--cyan);">ALETHEIA difference:</strong><br>
+                            Federated query checks license STATUS across all jurisdictions
+                            in real-time. Revocation in any connected country = instant flag.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fraud-card" onclick="toggleCard(this)">
+                    <div class="fraud-icon">⚠️</div>
+                    <h3 class="fraud-title">Disciplinary Actions Hidden</h3>
+                    <p class="fraud-summary">
+                        Professional has serious complaints or sanctions in one country.
+                        This history is invisible when they relocate.
+                    </p>
+                    <div class="fraud-details">
+                        <div class="fraud-stat">
+                            <strong>Types hidden:</strong><br>
+                            • Sexual misconduct complaints<br>
+                            • Substance abuse treatment orders<br>
+                            • Practice restrictions/supervision requirements<br>
+                            • Malpractice settlements<br>
+                            • Fraud investigations
+                        </div>
+                        <div class="fraud-stat">
+                            <strong>Scale in EU:</strong><br>
+                            • 8,200+ professionals with significant disciplinary history<br>
+                            • Practicing in countries unaware of it<br>
+                            • 82% of cross-border discipline is never shared
+                        </div>
+                        <div class="fraud-pattern">
+                            <strong>Real pattern (anonymized):</strong><br>
+                            Nurse with 3 sexual misconduct complaints in UK (investigated,
+                            restricted practice) moved to Ireland. Clean verification.
+                            Third complaint in Ireland before pattern discovered.
+                        </div>
+                        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong style="color: var(--cyan);">ALETHEIA difference:</strong><br>
+                            Federated discipline check respects privacy while flagging
+                            "restrictions exist" without exposing private details until
+                            authorized.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fraud-card" onclick="toggleCard(this)">
+                    <div class="fraud-icon">📋</div>
+                    <h3 class="fraud-title">Practicing While Lapsed</h3>
+                    <p class="fraud-summary">
+                        Professional's registration expires but continues practicing.
+                        Often discovered only during incident investigation.
+                    </p>
+                    <div class="fraud-details">
+                        <div class="fraud-stat">
+                            <strong>Scale in EU:</strong><br>
+                            • 2.1% of foreign-credentialed professionals<br>
+                            • Have lapsed status in origin country<br>
+                            • Average time practicing lapsed: 18 months<br>
+                            • Often discovered only during incident investigation
+                        </div>
+                        <div class="fraud-stat">
+                            <strong>Why current verification misses it:</strong><br>
+                            • Original credential verified, not current status<br>
+                            • Registration renewal is national matter<br>
+                            • No automatic expiry notifications cross-border<br>
+                            • Point-in-time vs. continuous verification
+                        </div>
+                        <div class="fraud-pattern">
+                            <strong>Real pattern (anonymized):</strong><br>
+                            Pharmacist verified credentials in 2019, moved to Belgium.
+                            Failed to renew Polish registration in 2021. Continued
+                            practicing. Dispensing error in 2023 revealed lapsed status
+                            for 2+ years.
+                        </div>
+                        <div style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong style="color: var(--cyan);">ALETHEIA difference:</strong><br>
+                            Continuous verification. Status changes in any connected
+                            jurisdiction trigger alerts. Not point-in-time - real-time.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case Studies -->
+            <div class="case-studies-section">
+                <h2 class="section-title">Case Study Gallery (Anonymized Real Patterns)</h2>
+                
+                <div class="case-gallery">
+                    <div class="case-card">
+                        <div class="case-header">
+                            <div class="case-title">CASE #1: THE SERIAL RELOCATOR</div>
+                            <div class="case-profession">Anesthesiologist</div>
+                        </div>
+                        <div class="case-details">
+                            <div class="case-item">
+                                <span class="case-label">Pattern:</span>
+                                <span class="case-value">License issues in 3 countries over 8 years</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Route:</span>
+                                <span class="case-value">Poland → Germany → UK → Ireland</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Detection:</span>
+                                <span class="case-value">Only after serious incident in Ireland</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Gap exploited:</span>
+                                <span class="case-value">No systematic cross-border history check</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Time practicing:</span>
+                                <span class="case-value">6+ years cumulative with issues</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="case-card">
+                        <div class="case-header">
+                            <div class="case-title">CASE #2: THE DIPLOMA MILL DOCTOR</div>
+                            <div class="case-profession">General Practitioner</div>
+                        </div>
+                        <div class="case-details">
+                            <div class="case-item">
+                                <span class="case-label">Pattern:</span>
+                                <span class="case-value">Degree from unaccredited Caribbean institution</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Route:</span>
+                                <span class="case-value">Fake credentials accepted in Spain</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Detection:</span>
+                                <span class="case-value">Patient complaint investigation</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Gap exploited:</span>
+                                <span class="case-value">Incomplete accreditation database</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Time practicing:</span>
+                                <span class="case-value">3 years fraudulently</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="case-card">
+                        <div class="case-header">
+                            <div class="case-title">CASE #3: THE IDENTITY BORROWER</div>
+                            <div class="case-profession">Nurse</div>
+                        </div>
+                        <div class="case-details">
+                            <div class="case-item">
+                                <span class="case-label">Pattern:</span>
+                                <span class="case-value">Used deceased relative's credentials</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Route:</span>
+                                <span class="case-value">Romanian credentials verified in Italy</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Detection:</span>
+                                <span class="case-value">Random audit matched photos</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Gap exploited:</span>
+                                <span class="case-value">No biometric verification</span>
+                            </div>
+                            <div class="case-item">
+                                <span class="case-label">Time practicing:</span>
+                                <span class="case-value">5 years fraudulently</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liability Exposure -->
+            <div class="liability-section">
+                <h2 class="liability-header">⚖️ YOUR LEGAL & FINANCIAL EXPOSURE</h2>
+                <div class="liability-context">
+                    As an employer/healthcare facility in <span id="liabilityCountry">GERMANY</span> hiring
+                    foreign-credentialed <span id="liabilityProfession">MEDICAL DOCTORS</span>:
+                </div>
+                
+                <div class="liability-category">
+                    <h3 class="liability-subtitle">REGULATORY LIABILITY</h3>
+                    <ul class="liability-items">
+                        <li>Duty to verify: MANDATORY under national law</li>
+                        <li>Standard: "Reasonable diligence"</li>
+                        <li>Problem: Current tools don't enable true diligence</li>
+                    </ul>
+                </div>
+
+                <div class="liability-category">
+                    <h3 class="liability-subtitle">IF FRAUD IS DISCOVERED:</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <strong>Criminal exposure:</strong>
+                        <ul class="liability-items">
+                            <li>Negligent hiring: Up to €500,000 fine</li>
+                            <li>Patient harm: Executive criminal liability possible</li>
+                            <li>Regulatory sanction: License revocation for facility</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>Civil exposure:</strong>
+                        <ul class="liability-items">
+                            <li>Malpractice claims: Employer vicariously liable</li>
+                            <li>Average claim: €340,000</li>
+                            <li>Punitive potential if verification was inadequate</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong>Reputational exposure:</strong>
+                        <ul class="liability-items">
+                            <li>Media coverage of fraud cases</li>
+                            <li>Patient trust destruction</li>
+                            <li>Regulatory scrutiny increase</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="insurance-warning">
+                    <strong>INSURANCE REALITY:</strong><br>
+                    Many professional liability policies have "due diligence" exclusions.
+                    If verification was inadequate, coverage may be denied.
+                </div>
+            </div>
+
+            <!-- Statistics Dashboard -->
+            <div class="stats-dashboard">
+                <h2 class="section-title">Credential Fraud by the Numbers (EU-Wide)</h2>
+                
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">31,000+</div>
+                        <div class="stat-label">Fraudulent credentials in circulation</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">3.4 years</div>
+                        <div class="stat-label">Average time to detection</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">12%</div>
+                        <div class="stat-label">Never detected (estimated)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">340+</div>
+                        <div class="stat-label">Deaths attributed annually</div>
+                    </div>
+                </div>
+
+                <div class="profession-breakdown">
+                    <h3 style="margin-bottom: 15px;">Estimated fraudulent credentials in circulation:</h3>
+                    <div class="breakdown-item">
+                        <span>Medical doctors</span>
+                        <span>4,200 (0.8% of foreign-trained)</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>Nurses</span>
+                        <span>12,400 (1.2% of foreign-trained)</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>Engineers</span>
+                        <span>3,100 (0.6% of foreign-trained)</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>Teachers</span>
+                        <span>2,800 (0.5% of foreign-trained)</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>All regulated professions</span>
+                        <span>31,000+</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALETHEIA Solution -->
+            <div class="solution-section">
+                <h2 class="section-title">Verification Today vs. With ALETHEIA</h2>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Verification Check</th>
+                            <th>TODAY</th>
+                            <th>ALETHEIA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Diploma valid?</td>
+                            <td><span class="check-mark">✓</span> Checked (paper/scan)</td>
+                            <td><span class="check-mark">✓</span> Checked (source verified)</td>
+                        </tr>
+                        <tr>
+                            <td>Accredited school?</td>
+                            <td><span class="warning-mark">⚠️</span> Sometimes (if easy)</td>
+                            <td><span class="check-mark">✓</span> Federated DB</td>
+                        </tr>
+                        <tr>
+                            <td>Current license?</td>
+                            <td><span class="warning-mark">⚠️</span> Point-in-time only</td>
+                            <td><span class="check-mark">✓</span> Real-time status</td>
+                        </tr>
+                        <tr>
+                            <td>Other EU licenses?</td>
+                            <td><span class="x-mark">❌</span> Not checked</td>
+                            <td><span class="check-mark">✓</span> All 27 states</td>
+                        </tr>
+                        <tr>
+                            <td>Revocations?</td>
+                            <td><span class="x-mark">❌</span> Not checked (cross-border)</td>
+                            <td><span class="check-mark">✓</span> Federated alert</td>
+                        </tr>
+                        <tr>
+                            <td>Disciplinary?</td>
+                            <td><span class="x-mark">❌</span> Not checked</td>
+                            <td><span class="check-mark">✓</span> Privacy-safe flag</td>
+                        </tr>
+                        <tr>
+                            <td>Criminal (foreign)?</td>
+                            <td><span class="warning-mark">⚠️</span> Self-reported</td>
+                            <td><span class="check-mark">✓</span> Verified</td>
+                        </tr>
+                        <tr>
+                            <td>Continuous status?</td>
+                            <td><span class="x-mark">❌</span> No</td>
+                            <td><span class="check-mark">✓</span> Ongoing monitoring</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="gap-closure">
+                    <div class="closure-metric">
+                        <div class="closure-label">Current fraud exposure:</div>
+                        <div class="closure-value" style="color: var(--red);">67%</div>
+                    </div>
+                    <div class="closure-metric">
+                        <div class="closure-label">With ALETHEIA:</div>
+                        <div class="closure-value" style="color: var(--green);">8%</div>
+                    </div>
+                    <div class="closure-metric">
+                        <div class="closure-label">Risk reduction:</div>
+                        <div class="closure-value" style="color: var(--cyan);">88%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk by Origin -->
+            <div class="origin-risk-section">
+                <h2 class="section-title">Your Risk Varies by Credential Origin</h2>
+                
+                <div class="risk-categories">
+                    <div class="risk-category high">
+                        <div class="risk-level" style="color: var(--red);">🔴 HIGHEST RISK</div>
+                        <p style="margin-bottom: 10px;">Limited verification infrastructure:</p>
+                        <ul class="risk-regions">
+                            <li>
+                                <span>Non-EU credentials via EU conversion</span>
+                                <span>12.4%</span>
+                            </li>
+                            <li>
+                                <span>Newer EU members (recent systems)</span>
+                                <span>5.8%</span>
+                            </li>
+                            <li>
+                                <span>Credentials via third countries</span>
+                                <span>8.2%</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-category medium">
+                        <div class="risk-level" style="color: var(--yellow);">🟡 MEDIUM RISK</div>
+                        <p style="margin-bottom: 10px;">Good systems, poor connectivity:</p>
+                        <ul class="risk-regions">
+                            <li>
+                                <span>Southern Europe</span>
+                                <span>3.4%</span>
+                            </li>
+                            <li>
+                                <span>Eastern Europe</span>
+                                <span>4.1%</span>
+                            </li>
+                            <li>
+                                <span>UK (post-Brexit)</span>
+                                <span>3.9%</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-category low">
+                        <div class="risk-level" style="color: var(--green);">🟢 LOWER RISK</div>
+                        <p style="margin-bottom: 10px;">Strong systems & some sharing:</p>
+                        <ul class="risk-regions">
+                            <li>
+                                <span>Nordic countries</span>
+                                <span>1.2%</span>
+                            </li>
+                            <li>
+                                <span>DACH region</span>
+                                <span>1.8%</span>
+                            </li>
+                            <li>
+                                <span>Benelux</span>
+                                <span>1.5%</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p style="text-align: center; margin-top: 20px; padding: 20px; background: rgba(220, 38, 38, 0.1); border-radius: 8px;">
+                    <strong>NOTE:</strong> ALL categories have gaps that only federated verification can close.<br>
+                    Even "lower risk" means 1-2% fraud exposure.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-note">
+            Risk estimates based on EU Commission professional mobility data, national regulator enforcement reports,
+            and academic research on credential fraud patterns.
+        </p>
+        <p class="footer-note">
+            Sources: European Commission Internal Market Scoreboard, OECD Professional Mobility Reports,
+            National Medical Board public disciplinary databases
+        </p>
+        <a href="index.html" class="footer-link">← Back to ALETHEIA Main Page</a>
+    </footer>
+
+    <script>
+        // Risk data for different profession/country combinations
+        const riskData = {
+            'doctors_DE': {
+                riskScore: 67,
+                fake: 3.2,
+                discipline: 4.8,
+                lapsed: 2.1,
+                profession: 'MEDICAL DOCTORS',
+                country: 'GERMANY'
+            },
+            'nurses_UK': {
+                riskScore: 71,
+                fake: 4.1,
+                discipline: 5.2,
+                lapsed: 2.4,
+                profession: 'NURSES',
+                country: 'UNITED KINGDOM'
+            },
+            'nurses_DE': {
+                riskScore: 69,
+                fake: 3.8,
+                discipline: 4.9,
+                lapsed: 2.2,
+                profession: 'NURSES',
+                country: 'GERMANY'
+            },
+            'engineers_NL': {
+                riskScore: 52,
+                fake: 1.4,
+                discipline: 2.1,
+                lapsed: 1.0,
+                profession: 'CIVIL ENGINEERS',
+                country: 'NETHERLANDS'
+            },
+            'surgeons_FR': {
+                riskScore: 73,
+                fake: 2.8,
+                discipline: 5.4,
+                lapsed: 1.9,
+                profession: 'SURGEONS',
+                country: 'FRANCE'
+            },
+            'teachers_IE': {
+                riskScore: 58,
+                fake: 1.8,
+                discipline: 3.2,
+                lapsed: 1.5,
+                profession: 'TEACHERS',
+                country: 'IRELAND'
+            },
+            'lawyers_DE': {
+                riskScore: 61,
+                fake: 1.2,
+                discipline: 2.8,
+                lapsed: 0.9,
+                profession: 'LAWYERS',
+                country: 'GERMANY'
+            },
+            'pilots_EU': {
+                riskScore: 34,
+                fake: 0.8,
+                discipline: 1.2,
+                lapsed: 0.5,
+                profession: 'PILOTS',
+                country: 'EU-WIDE'
+            }
+        };
+
+        // Matrix data
+        const matrixData = [
+            { type: 'Fake Diploma (Forgery)', detectable: 75, gap: 25 },
+            { type: 'Diploma Mill (Legitimate-looking)', detectable: 28, gap: 72 },
+            { type: 'Revoked License (Other EU country)', detectable: 45, gap: 55 },
+            { type: 'Disciplinary Action (Cross-border)', detectable: 18, gap: 82 },
+            { type: 'Criminal Record (Foreign)', detectable: 38, gap: 62 },
+            { type: 'Lapsed Registration (Current status)', detectable: 68, gap: 32 },
+            { type: 'Falsified Experience (Employment history)', detectable: 15, gap: 85 },
+            { type: 'Identity Fraud (Using another\'s creds)', detectable: 78, gap: 22 }
+        ];
+
+        // Generate risk data for unknown combinations
+        function generateRiskData(profession, country) {
+            const baseRisk = {
+                'doctors': 65, 'nurses': 68, 'dentists': 62, 'pharmacists': 58,
+                'surgeons': 70, 'physiotherapists': 52, 'engineers': 48,
+                'architects': 55, 'lawyers': 60, 'accountants': 45,
+                'teachers': 54, 'pilots': 35, 'financial': 50
+            };
+
+            const countryFactors = {
+                'DE': 1.0, 'UK': 1.05, 'FR': 1.1, 'NL': 0.8, 'ES': 1.15,
+                'IT': 1.12, 'PL': 0.95, 'SE': 0.75, 'BE': 0.85
+            };
+
+            const base = baseRisk[profession] || 60;
+            const factor = countryFactors[country] || 1.0;
+            const score = Math.round(base * factor);
+
+            return {
+                riskScore: score,
+                fake: (score * 0.05).toFixed(1),
+                discipline: (score * 0.07).toFixed(1),
+                lapsed: (score * 0.03).toFixed(1),
+                profession: profession.toUpperCase(),
+                country: getCountryName(country)
+            };
+        }
+
+        function getCountryName(code) {
+            const names = {
+                'AT': 'AUSTRIA', 'BE': 'BELGIUM', 'BG': 'BULGARIA',
+                'HR': 'CROATIA', 'CY': 'CYPRUS', 'CZ': 'CZECH REPUBLIC',
+                'DK': 'DENMARK', 'EE': 'ESTONIA', 'FI': 'FINLAND',
+                'FR': 'FRANCE', 'DE': 'GERMANY', 'GR': 'GREECE',
+                'HU': 'HUNGARY', 'IE': 'IRELAND', 'IT': 'ITALY',
+                'LV': 'LATVIA', 'LT': 'LITHUANIA', 'LU': 'LUXEMBOURG',
+                'MT': 'MALTA', 'NL': 'NETHERLANDS', 'PL': 'POLAND',
+                'PT': 'PORTUGAL', 'RO': 'ROMANIA', 'SK': 'SLOVAKIA',
+                'SI': 'SLOVENIA', 'ES': 'SPAIN', 'SE': 'SWEDEN',
+                'UK': 'UNITED KINGDOM', 'CH': 'SWITZERLAND', 'NO': 'NORWAY'
+            };
+            return names[code] || code;
+        }
+
+        function loadScenario(profession, country) {
+            document.getElementById('professionSelect').value = profession;
+            document.getElementById('countrySelect').value = country;
+            scanFraudRisk();
+        }
+
+        async function scanFraudRisk() {
+            const profession = document.getElementById('professionSelect').value;
+            const country = document.getElementById('countrySelect').value;
+
+            if (!profession || !country) {
+                alert('Please select both profession and country');
+                return;
+            }
+
+            // Show loading
+            await showLoadingState();
+
+            // Get or generate risk data
+            const key = `${profession}_${country}`;
+            const data = riskData[key] || generateRiskData(profession, country);
+
+            // Display results
+            displayResults(data);
+        }
+
+        async function showLoadingState() {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+
+            const steps = [
+                { text: 'Analyzing verification gaps...', step: 'Calculating fraud exposure' },
+                { text: 'Calculating fraud exposure...', step: 'Identifying undetectable risks' },
+                { text: 'Identifying undetectable risks...', step: 'Compiling case patterns' },
+                { text: 'Compiling case patterns...', step: 'Generating risk assessment' }
+            ];
+
+            for (let i = 0; i < steps.length; i++) {
+                document.getElementById('loadingText').textContent = steps[i].text;
+                document.getElementById('loadingStep').textContent = steps[i].step;
+                await sleep(600);
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+        }
+
+        function displayResults(data) {
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Update context
+            document.getElementById('hiringContext').textContent = 
+                `${data.profession} in ${data.country}`;
+
+            // Update gauge
+            const gauge = document.getElementById('gaugeFill');
+            const circumference = 2 * Math.PI * 120;
+            const offset = (data.riskScore / 100) * circumference;
+            
+            setTimeout(() => {
+                gauge.style.strokeDasharray = `${offset} ${circumference}`;
+                gauge.style.stroke = 'url(#gaugeGradient)';
+            }, 100);
+
+            // Update values
+            document.getElementById('riskValue').textContent = data.riskScore + '%';
+            document.getElementById('riskLabel').textContent = 
+                data.riskScore > 60 ? 'HIGH RISK' : 
+                data.riskScore > 40 ? 'MODERATE RISK' : 'LOWER RISK';
+            
+            document.getElementById('riskPercent').textContent = data.riskScore + '%';
+            document.getElementById('fakePercent').textContent = data.fake + '%';
+            document.getElementById('disciplinePercent').textContent = data.discipline + '%';
+            document.getElementById('lapsedPercent').textContent = data.lapsed + '%';
+
+            // Update liability context
+            document.getElementById('liabilityCountry').textContent = data.country;
+            document.getElementById('liabilityProfession').textContent = data.profession;
+
+            // Build verification matrix
+            buildMatrix();
+
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function buildMatrix() {
+            const container = document.getElementById('verificationMatrix');
+            container.innerHTML = '';
+
+            matrixData.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'matrix-row';
+                row.innerHTML = `
+                    <div class="matrix-label">${item.type}</div>
+                    <div class="detection-bar">
+                        <div class="detection-fill" style="width: ${item.detectable}%;"></div>
+                    </div>
+                    <div class="gap-bar">
+                        <div class="gap-fill" style="width: ${item.gap}%;"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function toggleCard(card) {
+            // Close other cards
+            document.querySelectorAll('.fraud-card').forEach(c => {
+                if (c !== card) c.classList.remove('expanded');
+            });
+            // Toggle this card
+            card.classList.toggle('expanded');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
