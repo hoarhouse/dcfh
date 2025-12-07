@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eIDAS 2.0 Wallet Readiness Assessment - HYPERION</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00D4FF;
+            --cyan-dark: #00a3cc;
+            --blue: #1a73e8;
+            --blue-dark: #1557b0;
+            --green: #10a37f;
+            --red: #dc2626;
+            --orange: #ff9500;
+            --yellow: #fbbf24;
+            --purple: #8b5cf6;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --bg-gray: #f5f5f7;
+            --border: rgba(255, 255, 255, 0.1);
+            --dark-bg: #0A0E1A;
+            --dark-card: #0F1420;
+            --dark-border: #2a3548;
+            --dark-lighter: #1a1f2e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.47059;
+            letter-spacing: -0.022em;
+            color: var(--text-primary);
+            background: var(--dark-bg);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+        }
+
+        .breadcrumb {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb a {
+            color: var(--cyan);
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .breadcrumb a:hover {
+            opacity: 0.8;
+        }
+
+        .breadcrumb span {
+            color: var(--text-secondary);
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 22px 60px;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 60px 0;
+            display: none;
+        }
+
+        .welcome-screen.active {
+            display: block;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 30px;
+        }
+
+        .welcome-screen h1 {
+            font-size: 56px;
+            line-height: 1.07143;
+            font-weight: 600;
+            letter-spacing: -0.005em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-screen .subhead {
+            font-size: 21px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 40px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin: 50px 0;
+            padding: 30px;
+            background: var(--dark-card);
+            border-radius: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--cyan);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .start-button {
+            display: inline-block;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 100px;
+            font-size: 17px;
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            margin-top: 30px;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+        }
+
+        .disclaimer {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 20px;
+            opacity: 0.7;
+        }
+
+        /* Assessment Flow */
+        .assessment-flow {
+            display: none;
+        }
+
+        .assessment-flow.active {
+            display: block;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 50px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--dark-card);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--cyan-dark));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .progress-step {
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .progress-step.active {
+            opacity: 1;
+            color: var(--cyan);
+        }
+
+        .progress-step.completed {
+            opacity: 0.8;
+            color: var(--green);
+        }
+
+        /* Assessment Step */
+        .assessment-step {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .assessment-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-header {
+            margin-bottom: 40px;
+        }
+
+        .step-title {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .step-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .radio-group {
+            display: grid;
+            gap: 12px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-item:hover {
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .radio-item input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .radio-label {
+            flex: 1;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .checkbox-group {
+            display: grid;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px;
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .checkbox-item.selected {
+            border-color: var(--cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            flex: 1;
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .helper-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+
+        /* Explanation Box */
+        .explanation-box {
+            background: var(--dark-card);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .explanation-box h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 15px;
+        }
+
+        .loa-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .loa-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .loa-level {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .loa-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .loa-example {
+            font-size: 13px;
+            color: var(--cyan);
+            margin-top: 5px;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            gap: 20px;
+        }
+
+        .nav-button {
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .prev-button {
+            background: var(--dark-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .prev-button:hover {
+            background: var(--dark-lighter);
+            border-color: var(--cyan);
+        }
+
+        .next-button {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+            flex: 1;
+            max-width: 300px;
+            margin-left: auto;
+        }
+
+        .next-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+        }
+
+        .next-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Results Screen */
+        .results-screen {
+            display: none;
+        }
+
+        .results-screen.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Score Display */
+        .score-display {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1), transparent);
+            pointer-events: none;
+        }
+
+        .score-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--text-primary);
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .score-label {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .score-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* Category Breakdown */
+        .category-breakdown {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .category-breakdown h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--cyan);
+        }
+
+        .category-item {
+            margin-bottom: 25px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .category-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .category-score {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+        }
+
+        .category-bar {
+            height: 8px;
+            background: var(--dark-lighter);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .category-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--cyan-dark));
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        /* Gap Analysis Cards */
+        .gap-analysis {
+            margin-bottom: 40px;
+        }
+
+        .gap-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--border);
+        }
+
+        .gap-card.critical {
+            border-left-color: var(--red);
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
+        }
+
+        .gap-card.moderate {
+            border-left-color: var(--yellow);
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+        }
+
+        .gap-card.strength {
+            border-left-color: var(--green);
+            background: linear-gradient(135deg, rgba(16, 163, 127, 0.1), rgba(16, 163, 127, 0.05));
+        }
+
+        .gap-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .gap-icon {
+            font-size: 24px;
+        }
+
+        .gap-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .gap-description {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .gap-metadata {
+            display: grid;
+            gap: 10px;
+        }
+
+        .gap-meta-item {
+            display: flex;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .gap-meta-label {
+            font-weight: 500;
+            color: var(--cyan);
+        }
+
+        .gap-meta-value {
+            color: var(--text-secondary);
+        }
+
+        /* Timeline */
+        .timeline-section {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .timeline-section h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--cyan);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background: var(--cyan);
+            border-radius: 50%;
+            border: 3px solid var(--dark-card);
+        }
+
+        .timeline-date {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 5px;
+        }
+
+        .timeline-content {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .timeline-warning {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid var(--orange);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .timeline-warning-icon {
+            color: var(--orange);
+            margin-right: 10px;
+        }
+
+        /* HYPERION Section */
+        .hyperion-section {
+            background: linear-gradient(135deg, var(--dark-card), var(--dark-lighter));
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            border: 1px solid var(--cyan);
+        }
+
+        .hyperion-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hyperion-intro {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .solution-mapping {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .solution-mapping table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .solution-mapping th {
+            background: var(--dark-lighter);
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cyan);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .solution-mapping td {
+            padding: 15px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .solution-mapping tr:last-child td {
+            border-bottom: none;
+        }
+
+        .certifications-box {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .certifications-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 15px;
+        }
+
+        .certification-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .certification-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .certification-check {
+            color: var(--green);
+        }
+
+        /* CTA Buttons */
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-block;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            flex: 1;
+        }
+
+        .cta-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+        }
+
+        .cta-secondary {
+            background: var(--dark-card);
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+        }
+
+        .cta-secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 22px;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+
+        .footer-disclaimer {
+            font-size: 13px;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            max-width: 700px;
+            margin: 0 auto 20px;
+            line-height: 1.5;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.8;
+        }
+
+        .copyright {
+            font-size: 13px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .welcome-screen h1 {
+                font-size: 42px;
+            }
+
+            .stats-bar {
+                gap: 30px;
+            }
+
+            .progress-steps {
+                font-size: 11px;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            .next-button {
+                max-width: 100%;
+            }
+
+            .solution-mapping {
+                overflow-x: auto;
+            }
+
+            .solution-mapping table {
+                min-width: 500px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .cta-button {
+                width: 100%;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            nav, .nav-buttons, .start-button, .cta-buttons {
+                display: none;
+            }
+
+            .score-display, .category-breakdown, .gap-card, .timeline-section, .hyperion-section {
+                page-break-inside: avoid;
+                border: 1px solid #ccc;
+            }
+
+            * {
+                color: black !important;
+                background: white !important;
+            }
+        }
+
+        /* Circular Progress */
+        .circular-progress {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+        }
+
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 10;
+        }
+
+        .circular-progress .bg-circle {
+            stroke: var(--dark-lighter);
+        }
+
+        .circular-progress .progress-circle {
+            stroke: var(--cyan);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <div class="breadcrumb">
+                <a href="index.html">HYPERION</a> <span>›</span> 
+                <a href="demos.html">Tools</a> <span>›</span> 
+                <span>eIDAS 2.0 Wallet Readiness</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div class="welcome-screen active" id="welcome">
+            <div class="badge">Readiness Assessment</div>
+            <h1>Is Your Organization Ready for eIDAS 2.0?</h1>
+            <p class="subhead">
+                The European Digital Identity Regulation (eIDAS 2.0) mandates that all EU Member States offer Digital Identity Wallets to citizens by 2026. 
+                Organizations must be ready to accept and verify these credentials — and increasingly, to issue machine identities that meet the same standards.
+            </p>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-value">2026</span>
+                    <span class="stat-label">Mandatory wallet availability deadline</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">450M+</span>
+                    <span class="stat-label">EU citizens to receive digital wallets</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">27</span>
+                    <span class="stat-label">Member States implementing simultaneously</span>
+                </div>
+            </div>
+
+            <button class="start-button" onclick="startAssessment()">Assess Your Readiness →</button>
+            <p class="disclaimer">8-minute assessment. Covers identity issuance, verification, and infrastructure readiness.</p>
+        </div>
+
+        <!-- Assessment Flow -->
+        <div class="assessment-flow" id="assessment">
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-steps">
+                    <span class="progress-step active" id="step-1-indicator">Profile</span>
+                    <span class="progress-step" id="step-2-indicator">Infrastructure</span>
+                    <span class="progress-step" id="step-3-indicator">Assurance</span>
+                    <span class="progress-step" id="step-4-indicator">Credentials</span>
+                    <span class="progress-step" id="step-5-indicator">Technical</span>
+                    <span class="progress-step" id="step-6-indicator">Compliance</span>
+                    <span class="progress-step" id="step-7-indicator">Machine ID</span>
+                    <span class="progress-step" id="step-8-indicator">Timeline</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Organization Profile -->
+            <div class="assessment-step active" id="step-1">
+                <div class="step-header">
+                    <h2 class="step-title">Organization Profile</h2>
+                    <p class="step-description">Tell us about your organization and its relationship with digital identity.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>What type of organization are you?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="org-public" name="org-type" value="public" onchange="validateStep()">
+                            <label for="org-public" class="radio-label">Public sector / Government agency</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-financial" name="org-type" value="financial" onchange="validateStep()">
+                            <label for="org-financial" class="radio-label">Financial services (banking, insurance, investment)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-healthcare" name="org-type" value="healthcare" onchange="validateStep()">
+                            <label for="org-healthcare" class="radio-label">Healthcare provider or health tech</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-telecom" name="org-type" value="telecom" onchange="validateStep()">
+                            <label for="org-telecom" class="radio-label">Telecommunications / Digital infrastructure</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-tech" name="org-type" value="tech" onchange="validateStep()">
+                            <label for="org-tech" class="radio-label">Technology / Software provider</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-manufacturing" name="org-type" value="manufacturing" onchange="validateStep()">
+                            <label for="org-manufacturing" class="radio-label">Manufacturing / Industrial</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-retail" name="org-type" value="retail" onchange="validateStep()">
+                            <label for="org-retail" class="radio-label">Retail / E-commerce</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-professional" name="org-type" value="professional" onchange="validateStep()">
+                            <label for="org-professional" class="radio-label">Professional services (legal, accounting, consulting)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-education" name="org-type" value="education" onchange="validateStep()">
+                            <label for="org-education" class="radio-label">Education / Research</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="org-other" name="org-type" value="other" onchange="validateStep()">
+                            <label for="org-other" class="radio-label">Other private sector</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What is your primary relationship with digital identity? (Select all that apply)</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-verify" onchange="validateStep()">
+                            <label for="rel-verify" class="checkbox-label">We verify customer/user identities (identity verification)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-issue" onchange="validateStep()">
+                            <label for="rel-issue" class="checkbox-label">We issue credentials to users (identity provider)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-signatures" onchange="validateStep()">
+                            <label for="rel-signatures" class="checkbox-label">We accept electronic signatures on documents</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-devices" onchange="validateStep()">
+                            <label for="rel-devices" class="checkbox-label">We need to authenticate devices/machines (IoT, compute nodes)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-trust" onchange="validateStep()">
+                            <label for="rel-trust" class="checkbox-label">We provide trust services (certificates, timestamps, etc.)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rel-product" onchange="validateStep()">
+                            <label for="rel-product" class="checkbox-label">We are building identity into our product/platform</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" style="visibility: hidden;">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()" disabled id="next-1">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Current Identity Infrastructure -->
+            <div class="assessment-step" id="step-2">
+                <div class="step-header">
+                    <h2 class="step-title">Current Identity Infrastructure</h2>
+                    <p class="step-description">What identity systems and standards do you currently use?</p>
+                </div>
+
+                <div class="form-group">
+                    <label>What identity systems do you currently use?</label>
+                    
+                    <div class="form-section-title">Commercial Identity Providers:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idp-okta" onchange="updateInfrastructure()">
+                            <label for="idp-okta" class="checkbox-label">Okta</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idp-azure" onchange="updateInfrastructure()">
+                            <label for="idp-azure" class="checkbox-label">Microsoft Entra ID (Azure AD)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idp-auth0" onchange="updateInfrastructure()">
+                            <label for="idp-auth0" class="checkbox-label">Auth0</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idp-ping" onchange="updateInfrastructure()">
+                            <label for="idp-ping" class="checkbox-label">Ping Identity</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idp-other" onchange="updateInfrastructure()">
+                            <label for="idp-other" class="checkbox-label">Other commercial IdP</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Government/National Systems:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="gov-national" onchange="updateInfrastructure()">
+                            <label for="gov-national" class="checkbox-label">National eID scheme</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="gov-bankid" onchange="updateInfrastructure()">
+                            <label for="gov-bankid" class="checkbox-label">Bank ID (Nordic countries)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="gov-other" onchange="updateInfrastructure()">
+                            <label for="gov-other" class="checkbox-label">Other government identity system</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Standards-Based:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="std-saml" onchange="updateInfrastructure()">
+                            <label for="std-saml" class="checkbox-label">SAML 2.0 federation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="std-oidc" onchange="updateInfrastructure()">
+                            <label for="std-oidc" class="checkbox-label">OpenID Connect</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="std-oauth" onchange="updateInfrastructure()">
+                            <label for="std-oauth" class="checkbox-label">OAuth 2.0</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="std-fido" onchange="updateInfrastructure()">
+                            <label for="std-fido" class="checkbox-label">FIDO2 / WebAuthn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="std-x509" onchange="updateInfrastructure()">
+                            <label for="std-x509" class="checkbox-label">X.509 certificates / PKI</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Custom/Legacy:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="custom-built" onchange="updateInfrastructure()">
+                            <label for="custom-built" class="checkbox-label">Custom-built identity system</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="custom-password" onchange="updateInfrastructure()">
+                            <label for="custom-password" class="checkbox-label">Username/password only</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="custom-none" onchange="updateInfrastructure()">
+                            <label for="custom-none" class="checkbox-label">No centralized identity system</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Do you currently issue any verifiable credentials?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="vc-yes-w3c" name="vc-issue" value="yes-w3c" onchange="validateStep()">
+                            <label for="vc-yes-w3c" class="radio-label">Yes, we issue W3C Verifiable Credentials</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="vc-yes-other" name="vc-issue" value="yes-other" onchange="validateStep()">
+                            <label for="vc-yes-other" class="radio-label">Yes, we issue other digital credentials (not W3C VC format)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="vc-planned" name="vc-issue" value="planned" onchange="validateStep()">
+                            <label for="vc-planned" class="radio-label">No, but we plan to within 24 months</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="vc-no" name="vc-issue" value="no" onchange="validateStep()">
+                            <label for="vc-no" class="radio-label">No, and we have no current plans</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="vc-unsure" name="vc-issue" value="unsure" onchange="validateStep()">
+                            <label for="vc-unsure" class="radio-label">Not sure what verifiable credentials are</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Level of Assurance -->
+            <div class="assessment-step" id="step-3">
+                <div class="step-header">
+                    <h2 class="step-title">Level of Assurance</h2>
+                    <p class="step-description">Understanding your current and required identity assurance levels.</p>
+                </div>
+
+                <div class="explanation-box">
+                    <h4>LEVELS OF ASSURANCE (LoA) - eIDAS 2.0 Definition</h4>
+                    <div class="loa-item">
+                        <div class="loa-level">LOW:</div>
+                        <div class="loa-description">Limited confidence in claimed identity</div>
+                        <div class="loa-example">→ Example: Email verification only</div>
+                    </div>
+                    <div class="loa-item">
+                        <div class="loa-level">SUBSTANTIAL:</div>
+                        <div class="loa-description">Moderate confidence in claimed identity with authoritative sources</div>
+                        <div class="loa-example">→ Example: Document verification + liveness check</div>
+                    </div>
+                    <div class="loa-item">
+                        <div class="loa-level">HIGH:</div>
+                        <div class="loa-description">High confidence through in-person or equivalent remote proofing</div>
+                        <div class="loa-example">→ Example: Government-issued eID, qualified certificates</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What Level of Assurance do your current identity processes achieve?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="loa-current-high" name="loa-current" value="high" onchange="validateStep()">
+                            <label for="loa-current-high" class="radio-label">High — We verify against government-issued ID with strong binding</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-current-substantial" name="loa-current" value="substantial" onchange="validateStep()">
+                            <label for="loa-current-substantial" class="radio-label">Substantial — We verify documents and perform identity proofing</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-current-low" name="loa-current" value="low" onchange="validateStep()">
+                            <label for="loa-current-low" class="radio-label">Low — Basic verification (email, phone, self-asserted)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-current-mixed" name="loa-current" value="mixed" onchange="validateStep()">
+                            <label for="loa-current-mixed" class="radio-label">Mixed — Different LoA for different use cases</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-current-unknown" name="loa-current" value="unknown" onchange="validateStep()">
+                            <label for="loa-current-unknown" class="radio-label">Unknown — We haven't assessed against eIDAS LoA framework</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What Level of Assurance do your use cases REQUIRE?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="loa-required-high" name="loa-required" value="high" onchange="validateStep()">
+                            <label for="loa-required-high" class="radio-label">High — Regulatory requirement or high-value transactions</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-required-substantial" name="loa-required" value="substantial" onchange="validateStep()">
+                            <label for="loa-required-substantial" class="radio-label">Substantial — Moderate risk, need reliable identity</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-required-low" name="loa-required" value="low" onchange="validateStep()">
+                            <label for="loa-required-low" class="radio-label">Low — Convenience use cases, low risk</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-required-mixed" name="loa-required" value="mixed" onchange="validateStep()">
+                            <label for="loa-required-mixed" class="radio-label">Mixed — Different requirements for different use cases</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="loa-required-unsure" name="loa-required" value="unsure" onchange="validateStep()">
+                            <label for="loa-required-unsure" class="radio-label">Not sure — Need guidance on appropriate LoA</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()" disabled id="next-3">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Credential Types -->
+            <div class="assessment-step" id="step-4">
+                <div class="step-header">
+                    <h2 class="step-title">Credential Types</h2>
+                    <p class="step-description">Which types of credentials/attributes do you need to verify or issue?</p>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-section-title">Identity Attributes:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-name" onchange="updateCredentials()">
+                            <label for="cred-name" class="checkbox-label">Full legal name</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-dob" onchange="updateCredentials()">
+                            <label for="cred-dob" class="checkbox-label">Date of birth</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-nationality" onchange="updateCredentials()">
+                            <label for="cred-nationality" class="checkbox-label">Nationality</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-address" onchange="updateCredentials()">
+                            <label for="cred-address" class="checkbox-label">Address</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-id" onchange="updateCredentials()">
+                            <label for="cred-id" class="checkbox-label">Government ID number</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-biometric" onchange="updateCredentials()">
+                            <label for="cred-biometric" class="checkbox-label">Photograph / Biometric</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Professional Credentials:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-license" onchange="updateCredentials()">
+                            <label for="cred-license" class="checkbox-label">Professional licenses (medical, legal, engineering, etc.)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-education" onchange="updateCredentials()">
+                            <label for="cred-education" class="checkbox-label">Educational qualifications (degrees, certifications)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-employment" onchange="updateCredentials()">
+                            <label for="cred-employment" class="checkbox-label">Employment verification</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Organizational Credentials:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-entity" onchange="updateCredentials()">
+                            <label for="cred-entity" class="checkbox-label">Legal entity identity (company registration)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-representative" onchange="updateCredentials()">
+                            <label for="cred-representative" class="checkbox-label">Authorized representative status</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-vat" onchange="updateCredentials()">
+                            <label for="cred-vat" class="checkbox-label">VAT registration</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Device/Machine Identity:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-iot" onchange="updateCredentials()">
+                            <label for="cred-iot" class="checkbox-label">IoT device certificates</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-server" onchange="updateCredentials()">
+                            <label for="cred-server" class="checkbox-label">Server/infrastructure identity</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-compute" onchange="updateCredentials()">
+                            <label for="cred-compute" class="checkbox-label">Compute node attestation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cred-photonic" onchange="updateCredentials()">
+                            <label for="cred-photonic" class="checkbox-label">Photonic processor identity</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Technical Capabilities -->
+            <div class="assessment-step" id="step-5">
+                <div class="step-header">
+                    <h2 class="step-title">Technical Capabilities</h2>
+                    <p class="step-description">Which technical standards does your infrastructure currently support?</p>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-section-title">Wallet Interaction Standards:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-oid4vc" onchange="updateTechnical()">
+                            <label for="tech-oid4vc" class="checkbox-label">OpenID Connect for Verifiable Credentials (OID4VC)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-oid4vp" onchange="updateTechnical()">
+                            <label for="tech-oid4vp" class="checkbox-label">OpenID for Verifiable Presentations (OID4VP)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-siop" onchange="updateTechnical()">
+                            <label for="tech-siop" class="checkbox-label">Self-Issued OpenID Provider v2 (SIOPv2)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-mdl" onchange="updateTechnical()">
+                            <label for="tech-mdl" class="checkbox-label">ISO/IEC 18013-5 (mDL / mobile driving license)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-none-wallet" onchange="updateTechnical()">
+                            <label for="tech-none-wallet" class="checkbox-label">None of the above</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Credential Formats:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-w3cvc" onchange="updateTechnical()">
+                            <label for="tech-w3cvc" class="checkbox-label">W3C Verifiable Credentials (JSON-LD)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-sdjwt" onchange="updateTechnical()">
+                            <label for="tech-sdjwt" class="checkbox-label">SD-JWT (Selective Disclosure JWT)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-mdoc" onchange="updateTechnical()">
+                            <label for="tech-mdoc" class="checkbox-label">ISO mDOC</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-x509only" onchange="updateTechnical()">
+                            <label for="tech-x509only" class="checkbox-label">X.509 certificates only</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-none-format" onchange="updateTechnical()">
+                            <label for="tech-none-format" class="checkbox-label">None of the above</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Cryptographic Capabilities:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-ecdsa" onchange="updateTechnical()">
+                            <label for="tech-ecdsa" class="checkbox-label">ECDSA (P-256, P-384)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-eddsa" onchange="updateTechnical()">
+                            <label for="tech-eddsa" class="checkbox-label">EdDSA (Ed25519)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-rsa" onchange="updateTechnical()">
+                            <label for="tech-rsa" class="checkbox-label">RSA (2048+)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-bbs" onchange="updateTechnical()">
+                            <label for="tech-bbs" class="checkbox-label">BBS+ signatures (for selective disclosure)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-hsm" onchange="updateTechnical()">
+                            <label for="tech-hsm" class="checkbox-label">Hardware-backed key storage (HSM, TPM, Secure Enclave)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-crypto-unsure" onchange="updateTechnical()">
+                            <label for="tech-crypto-unsure" class="checkbox-label">Not sure</label>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title" style="margin-top: 20px;">Trust Frameworks:</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-eutrust" onchange="updateTechnical()">
+                            <label for="tech-eutrust" class="checkbox-label">EU Trust List integration</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-ebsi" onchange="updateTechnical()">
+                            <label for="tech-ebsi" class="checkbox-label">EBSI/ESSIF compatibility</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-did" onchange="updateTechnical()">
+                            <label for="tech-did" class="checkbox-label">DID methods (did:web, did:key, did:ebsi, etc.)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-qtsp" onchange="updateTechnical()">
+                            <label for="tech-qtsp" class="checkbox-label">Qualified Trust Service Provider status</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tech-none-trust" onchange="updateTechnical()">
+                            <label for="tech-none-trust" class="checkbox-label">None of the above</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 6: Regulatory Compliance -->
+            <div class="assessment-step" id="step-6">
+                <div class="step-header">
+                    <h2 class="step-title">Regulatory Compliance</h2>
+                    <p class="step-description">Understanding your current regulatory landscape and compliance status.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Which regulations currently apply to your identity processes?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-gdpr" onchange="updateRegulatory()">
+                            <label for="reg-gdpr" class="checkbox-label">GDPR (General Data Protection Regulation)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-eidas" onchange="updateRegulatory()">
+                            <label for="reg-eidas" class="checkbox-label">Current eIDAS Regulation (EU 910/2014)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-psd2" onchange="updateRegulatory()">
+                            <label for="reg-psd2" class="checkbox-label">PSD2 / Strong Customer Authentication</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-aml" onchange="updateRegulatory()">
+                            <label for="reg-aml" class="checkbox-label">AML/KYC (Anti-Money Laundering / Know Your Customer)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-nis2" onchange="updateRegulatory()">
+                            <label for="reg-nis2" class="checkbox-label">NIS2 Directive</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-dora" onchange="updateRegulatory()">
+                            <label for="reg-dora" class="checkbox-label">DORA (Digital Operational Resilience Act)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-none" onchange="updateRegulatory()">
+                            <label for="reg-none" class="checkbox-label">None specifically</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reg-unsure" onchange="updateRegulatory()">
+                            <label for="reg-unsure" class="checkbox-label">Not sure</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Are you currently a Trust Service Provider under eIDAS?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="tsp-qualified" name="tsp-status" value="qualified" onchange="validateStep()">
+                            <label for="tsp-qualified" class="radio-label">Yes, Qualified Trust Service Provider (QTSP)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tsp-nonqualified" name="tsp-status" value="nonqualified" onchange="validateStep()">
+                            <label for="tsp-nonqualified" class="radio-label">Yes, non-qualified Trust Service Provider</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tsp-plan" name="tsp-status" value="plan" onchange="validateStep()">
+                            <label for="tsp-plan" class="radio-label">No, but we plan to become one</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tsp-no" name="tsp-status" value="no" onchange="validateStep()">
+                            <label for="tsp-no" class="radio-label">No, and we don't plan to become one</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tsp-unsure" name="tsp-status" value="unsure" onchange="validateStep()">
+                            <label for="tsp-unsure" class="radio-label">Not sure what this means</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Do you issue or accept Qualified Electronic Signatures (QES)?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="qes-issue" name="qes-status" value="issue" onchange="validateStep()">
+                            <label for="qes-issue" class="radio-label">Yes, we issue QES</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-accept" name="qes-status" value="accept" onchange="validateStep()">
+                            <label for="qes-accept" class="radio-label">Yes, we accept QES</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-both" name="qes-status" value="both" onchange="validateStep()">
+                            <label for="qes-both" class="radio-label">Yes, both issue and accept</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-plan" name="qes-status" value="plan" onchange="validateStep()">
+                            <label for="qes-plan" class="radio-label">No, but we plan to within 24 months</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-aes" name="qes-status" value="aes" onchange="validateStep()">
+                            <label for="qes-aes" class="radio-label">No, we use Advanced Electronic Signatures (AES) only</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-basic" name="qes-status" value="basic" onchange="validateStep()">
+                            <label for="qes-basic" class="radio-label">No, we use basic electronic signatures only</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qes-none" name="qes-status" value="none" onchange="validateStep()">
+                            <label for="qes-none" class="radio-label">We don't use electronic signatures</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()" disabled id="next-6">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 7: Machine/Device Identity -->
+            <div class="assessment-step" id="step-7">
+                <div class="step-header">
+                    <h2 class="step-title">Machine/Device Identity</h2>
+                    <p class="step-description">Understanding your non-human identity requirements.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Do you need to verify or manage non-human identities?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="machine-primary" name="machine-need" value="primary" onchange="showMachineDetails()">
+                            <label for="machine-primary" class="radio-label">Yes, this is a primary use case for us</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="machine-secondary" name="machine-need" value="secondary" onchange="showMachineDetails()">
+                            <label for="machine-secondary" class="radio-label">Yes, but secondary to human identity</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="machine-future" name="machine-need" value="future" onchange="showMachineDetails()">
+                            <label for="machine-future" class="radio-label">Not currently, but planning for future</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="machine-no" name="machine-need" value="no" onchange="hideMachineDetails()">
+                            <label for="machine-no" class="radio-label">No, human identity only</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="machine-details" class="hide">
+                    <div class="form-group">
+                        <label>What types of non-human entities need identity?</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-cloud" onchange="updateMachine()">
+                                <label for="machine-cloud" class="checkbox-label">Cloud servers / virtual machines</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-iot" onchange="updateMachine()">
+                                <label for="machine-iot" class="checkbox-label">IoT devices / sensors</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-edge" onchange="updateMachine()">
+                                <label for="machine-edge" class="checkbox-label">Edge computing nodes</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-ai" onchange="updateMachine()">
+                                <label for="machine-ai" class="checkbox-label">AI/ML model instances</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-photonic" onchange="updateMachine()">
+                                <label for="machine-photonic" class="checkbox-label">Photonic compute nodes</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-industrial" onchange="updateMachine()">
+                                <label for="machine-industrial" class="checkbox-label">Industrial control systems</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="machine-api" onchange="updateMachine()">
+                                <label for="machine-api" class="checkbox-label">API services / microservices</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>What are your requirements for machine identity?</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-attestation" onchange="updateMachine()">
+                                <label for="req-attestation" class="checkbox-label">Cryptographic attestation of hardware</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-geographic" onchange="updateMachine()">
+                                <label for="req-geographic" class="checkbox-label">Geographic/jurisdictional verification</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-ownership" onchange="updateMachine()">
+                                <label for="req-ownership" class="checkbox-label">Organizational ownership verification</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-compliance" onchange="updateMachine()">
+                                <label for="req-compliance" class="checkbox-label">Compliance certification verification</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-revocation" onchange="updateMachine()">
+                                <label for="req-revocation" class="checkbox-label">Real-time revocation checking</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-federated" onchange="updateMachine()">
+                                <label for="req-federated" class="checkbox-label">Federated trust across organizations</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="req-airgap" onchange="updateMachine()">
+                                <label for="req-airgap" class="checkbox-label">Air-gapped / offline capability</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="nextStep()" disabled id="next-7">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 8: Timeline & Resources -->
+            <div class="assessment-step" id="step-8">
+                <div class="step-header">
+                    <h2 class="step-title">Timeline & Resources</h2>
+                    <p class="step-description">Understanding your implementation timeline and available resources.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>When do you need to be eIDAS 2.0 ready?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="timeline-implementing" name="timeline" value="implementing" onchange="validateStep()">
+                            <label for="timeline-implementing" class="radio-label">Already implementing — need to be ready 2025</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="timeline-planning" name="timeline" value="planning" onchange="validateStep()">
+                            <label for="timeline-planning" class="radio-label">Planning phase — targeting 2026 deadline</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="timeline-exploratory" name="timeline" value="exploratory" onchange="validateStep()">
+                            <label for="timeline-exploratory" class="radio-label">Exploratory — evaluating options for 2026+</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="timeline-reactive" name="timeline" value="reactive" onchange="validateStep()">
+                            <label for="timeline-reactive" class="radio-label">Reactive — will respond when mandated</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="timeline-na" name="timeline" value="na" onchange="validateStep()">
+                            <label for="timeline-na" class="radio-label">Not applicable — don't expect to need compliance</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What resources do you have for implementation?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-team" onchange="updateResources()">
+                            <label for="res-team" class="checkbox-label">Dedicated identity/IAM team</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-budget" onchange="updateResources()">
+                            <label for="res-budget" class="checkbox-label">Budget allocated for identity modernization</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-executive" onchange="updateResources()">
+                            <label for="res-executive" class="checkbox-label">Executive sponsorship for eIDAS 2.0 readiness</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-vendor" onchange="updateResources()">
+                            <label for="res-vendor" class="checkbox-label">Existing vendor relationships for identity</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-expertise" onchange="updateResources()">
+                            <label for="res-expertise" class="checkbox-label">In-house cryptography/security expertise</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="res-none" onchange="updateResources()">
+                            <label for="res-none" class="checkbox-label">None of the above currently</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-button prev-button" onclick="previousStep()">Previous</button>
+                    <button class="nav-button next-button" onclick="calculateResults()" disabled id="next-8">Calculate Results</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div class="results-screen" id="results">
+            <!-- Overall Score Display -->
+            <div class="score-display">
+                <h2 class="score-title">YOUR READINESS SCORE</h2>
+                <div class="circular-progress">
+                    <svg width="200" height="200">
+                        <circle class="bg-circle" cx="100" cy="100" r="90"></circle>
+                        <circle class="progress-circle" id="scoreCircle" cx="100" cy="100" r="90"
+                                stroke-dasharray="565.48" stroke-dashoffset="565.48"></circle>
+                    </svg>
+                    <div class="score-value" id="scoreValue">0</div>
+                </div>
+                <div class="score-label" id="scoreLabel">Calculating...</div>
+                <div class="score-description" id="scoreDescription"></div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="category-breakdown">
+                <h3>READINESS BY CATEGORY</h3>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Identity Infrastructure</span>
+                        <span class="category-score" id="cat-infrastructure">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-infrastructure" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Standards Compliance</span>
+                        <span class="category-score" id="cat-standards">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-standards" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Technical Capabilities</span>
+                        <span class="category-score" id="cat-technical">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-technical" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Regulatory Alignment</span>
+                        <span class="category-score" id="cat-regulatory">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-regulatory" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Machine Identity</span>
+                        <span class="category-score" id="cat-machine">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-machine" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="category-name">Organizational Readiness</span>
+                        <span class="category-score" id="cat-organizational">0%</span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" id="bar-organizational" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gap Analysis -->
+            <div class="gap-analysis" id="gapAnalysis">
+                <!-- Gap cards will be inserted here dynamically -->
+            </div>
+
+            <!-- Implementation Timeline -->
+            <div class="timeline-section">
+                <h3>YOUR RECOMMENDED IMPLEMENTATION TIMELINE</h3>
+                <div class="timeline" id="timeline">
+                    <!-- Timeline items will be inserted here dynamically -->
+                </div>
+                <div class="timeline-warning">
+                    <span class="timeline-warning-icon">⚠️</span>
+                    <span id="timelineWarning">Timeline will be calculated based on your gaps...</span>
+                </div>
+            </div>
+
+            <!-- HYPERION Relevance Section -->
+            <div class="hyperion-section">
+                <h3 class="hyperion-title">HYPERION: eIDAS 2.0 MACHINE IDENTITY READY TODAY</h3>
+                <p class="hyperion-intro">
+                    E-Group's MyD Wallet is the FIRST eIDAS 2.0 certified digital wallet — 
+                    and HYPERION extends this to machine/device identity for photonic AI infrastructure.
+                </p>
+
+                <div class="solution-mapping">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>YOUR GAPS</th>
+                                <th>HYPERION SOLUTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="solutionMapping">
+                            <!-- Will be populated based on gaps -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="certifications-box">
+                    <div class="certifications-title">MyD WALLET CERTIFICATIONS</div>
+                    <div class="certification-list">
+                        <div class="certification-item">
+                            <span class="certification-check">✓</span>
+                            <span>eIDAS 2.0 Certified</span>
+                        </div>
+                        <div class="certification-item">
+                            <span class="certification-check">✓</span>
+                            <span>GDPR Compliant</span>
+                        </div>
+                        <div class="certification-item">
+                            <span class="certification-check">✓</span>
+                            <span>ISO 27001</span>
+                        </div>
+                        <div class="certification-item">
+                            <span class="certification-check">✓</span>
+                            <span>SOC 2 Type II</span>
+                        </div>
+                        <div class="certification-item">
+                            <span class="certification-check">✓</span>
+                            <span>Common Criteria EAL4+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; margin-top: 30px; font-weight: 500; color: var(--cyan);">
+                    HYPERION is the only solution providing eIDAS 2.0 compliant identity for photonic compute infrastructure.
+                </p>
+
+                <div class="cta-buttons">
+                    <button class="cta-button cta-primary" onclick="downloadResults()">Download Full Assessment Report (PDF)</button>
+                    <a href="index.html" class="cta-button cta-secondary">Learn About HYPERION →</a>
+                    <a href="mailto:hyperion@e-group.com" class="cta-button cta-secondary">Request Architecture Review</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-disclaimer">
+            This assessment provides general guidance based on publicly available eIDAS 2.0 requirements. 
+            Implementation requirements may vary by Member State and specific use case. 
+            Consult qualified advisors for definitive compliance guidance.
+        </p>
+        <div class="footer-links">
+            <a href="index.html">HYPERION Main</a>
+            <a href="demos.html">More Tools</a>
+            <a href="nis2-checker.html">NIS2 Checker</a>
+            <a href="mailto:hyperion@e-group.com">Contact</a>
+        </div>
+        <p class="copyright">© 2024 E-Group. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 8;
+
+        // Assessment data storage
+        let assessmentData = {
+            orgType: '',
+            identityRelationship: [],
+            infrastructure: [],
+            vcIssue: '',
+            loaCurrent: '',
+            loaRequired: '',
+            credentials: [],
+            technical: [],
+            regulatory: [],
+            tspStatus: '',
+            qesStatus: '',
+            machineNeed: '',
+            machineTypes: [],
+            machineRequirements: [],
+            timeline: '',
+            resources: []
+        };
+
+        // Scoring categories
+        let scores = {
+            infrastructure: 0,
+            standards: 0,
+            technical: 0,
+            regulatory: 0,
+            machine: 0,
+            organizational: 0,
+            total: 0
+        };
+
+        function startAssessment() {
+            document.getElementById('welcome').classList.remove('active');
+            document.getElementById('assessment').classList.add('active');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Update step indicators
+            for (let i = 1; i <= totalSteps; i++) {
+                const indicator = document.getElementById(`step-${i}-indicator`);
+                if (i < currentStep) {
+                    indicator.classList.remove('active');
+                    indicator.classList.add('completed');
+                } else if (i === currentStep) {
+                    indicator.classList.add('active');
+                    indicator.classList.remove('completed');
+                } else {
+                    indicator.classList.remove('active', 'completed');
+                }
+            }
+        }
+
+        function validateStep() {
+            let isValid = false;
+            
+            switch(currentStep) {
+                case 1:
+                    const orgType = document.querySelector('input[name="org-type"]:checked');
+                    const relationships = document.querySelectorAll('#step-1 .checkbox-item input:checked');
+                    isValid = orgType && relationships.length > 0;
+                    if (isValid) {
+                        assessmentData.orgType = orgType.value;
+                        assessmentData.identityRelationship = Array.from(relationships).map(cb => cb.id);
+                    }
+                    break;
+                    
+                case 3:
+                    const loaCurrent = document.querySelector('input[name="loa-current"]:checked');
+                    const loaRequired = document.querySelector('input[name="loa-required"]:checked');
+                    isValid = loaCurrent && loaRequired;
+                    if (isValid) {
+                        assessmentData.loaCurrent = loaCurrent.value;
+                        assessmentData.loaRequired = loaRequired.value;
+                    }
+                    break;
+                    
+                case 6:
+                    const tspStatus = document.querySelector('input[name="tsp-status"]:checked');
+                    const qesStatus = document.querySelector('input[name="qes-status"]:checked');
+                    isValid = tspStatus && qesStatus;
+                    if (isValid) {
+                        assessmentData.tspStatus = tspStatus.value;
+                        assessmentData.qesStatus = qesStatus.value;
+                    }
+                    break;
+                    
+                case 7:
+                    const machineNeed = document.querySelector('input[name="machine-need"]:checked');
+                    isValid = machineNeed !== null;
+                    if (isValid) {
+                        assessmentData.machineNeed = machineNeed.value;
+                    }
+                    break;
+                    
+                case 8:
+                    const timeline = document.querySelector('input[name="timeline"]:checked');
+                    isValid = timeline !== null;
+                    if (isValid) {
+                        assessmentData.timeline = timeline.value;
+                    }
+                    break;
+                    
+                default:
+                    isValid = true; // Other steps don't have strict validation
+            }
+            
+            // Enable/disable next button
+            const nextButton = document.getElementById(`next-${currentStep}`);
+            if (nextButton) {
+                nextButton.disabled = !isValid;
+            }
+            
+            return isValid;
+        }
+
+        function updateInfrastructure() {
+            const checkboxes = document.querySelectorAll('#step-2 input[type="checkbox"]:checked');
+            assessmentData.infrastructure = Array.from(checkboxes).map(cb => cb.id);
+            
+            // Update VC issue status if needed
+            const vcRadio = document.querySelector('input[name="vc-issue"]:checked');
+            if (vcRadio) {
+                assessmentData.vcIssue = vcRadio.value;
+            }
+        }
+
+        function updateCredentials() {
+            const checkboxes = document.querySelectorAll('#step-4 input[type="checkbox"]:checked');
+            assessmentData.credentials = Array.from(checkboxes).map(cb => cb.id);
+        }
+
+        function updateTechnical() {
+            const checkboxes = document.querySelectorAll('#step-5 input[type="checkbox"]:checked');
+            assessmentData.technical = Array.from(checkboxes).map(cb => cb.id);
+        }
+
+        function updateRegulatory() {
+            const checkboxes = document.querySelectorAll('#step-6 .checkbox-group input[type="checkbox"]:checked');
+            assessmentData.regulatory = Array.from(checkboxes).map(cb => cb.id);
+        }
+
+        function updateMachine() {
+            const types = document.querySelectorAll('#machine-details input[id^="machine-"]:checked');
+            const reqs = document.querySelectorAll('#machine-details input[id^="req-"]:checked');
+            assessmentData.machineTypes = Array.from(types).map(cb => cb.id);
+            assessmentData.machineRequirements = Array.from(reqs).map(cb => cb.id);
+        }
+
+        function updateResources() {
+            const checkboxes = document.querySelectorAll('#step-8 input[type="checkbox"]:checked');
+            assessmentData.resources = Array.from(checkboxes).map(cb => cb.id);
+        }
+
+        function showMachineDetails() {
+            document.getElementById('machine-details').classList.remove('hide');
+            validateStep();
+        }
+
+        function hideMachineDetails() {
+            document.getElementById('machine-details').classList.add('hide');
+            validateStep();
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                // Save current step data
+                switch(currentStep) {
+                    case 2:
+                        updateInfrastructure();
+                        break;
+                    case 4:
+                        updateCredentials();
+                        break;
+                    case 5:
+                        updateTechnical();
+                        break;
+                    case 6:
+                        updateRegulatory();
+                        break;
+                    case 7:
+                        updateMachine();
+                        break;
+                    case 8:
+                        updateResources();
+                        break;
+                }
+                
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                updateProgress();
+                
+                // Focus on first input of new step
+                const newStep = document.getElementById(`step-${currentStep}`);
+                const firstInput = newStep.querySelector('input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 300);
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                currentStep--;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                updateProgress();
+            }
+        }
+
+        function calculateResults() {
+            // Save final step data
+            updateResources();
+            
+            // Hide assessment, show results
+            document.getElementById('assessment').classList.remove('active');
+            document.getElementById('results').classList.add('active');
+            
+            // Calculate scores for each category
+            calculateCategoryScores();
+            
+            // Display results
+            displayResults();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function calculateCategoryScores() {
+            // Identity Infrastructure (20 points max)
+            scores.infrastructure = 0;
+            if (assessmentData.infrastructure.includes('idp-okta') || 
+                assessmentData.infrastructure.includes('idp-azure') || 
+                assessmentData.infrastructure.includes('idp-auth0')) {
+                scores.infrastructure += 5;
+            }
+            if (assessmentData.infrastructure.includes('gov-national') || 
+                assessmentData.infrastructure.includes('gov-bankid')) {
+                scores.infrastructure += 5;
+            }
+            if (assessmentData.infrastructure.includes('std-oidc') || 
+                assessmentData.infrastructure.includes('std-saml')) {
+                scores.infrastructure += 5;
+            }
+            if (assessmentData.vcIssue === 'yes-w3c') {
+                scores.infrastructure += 5;
+            }
+
+            // Standards Compliance (20 points max)
+            scores.standards = 0;
+            if (assessmentData.technical.includes('tech-oid4vc')) scores.standards += 5;
+            if (assessmentData.technical.includes('tech-oid4vp')) scores.standards += 5;
+            if (assessmentData.technical.includes('tech-w3cvc')) scores.standards += 5;
+            if (assessmentData.technical.includes('tech-sdjwt') || 
+                assessmentData.technical.includes('tech-mdoc')) scores.standards += 5;
+
+            // Technical Capabilities (20 points max)
+            scores.technical = 0;
+            if (assessmentData.technical.includes('tech-ecdsa') || 
+                assessmentData.technical.includes('tech-eddsa')) scores.technical += 5;
+            if (assessmentData.technical.includes('tech-hsm')) scores.technical += 5;
+            if (assessmentData.technical.includes('tech-bbs')) scores.technical += 5;
+            if (assessmentData.technical.includes('tech-did')) scores.technical += 5;
+
+            // Regulatory Alignment (15 points max)
+            scores.regulatory = 0;
+            if (assessmentData.regulatory.includes('reg-gdpr')) scores.regulatory += 5;
+            if (assessmentData.regulatory.includes('reg-eidas')) scores.regulatory += 5;
+            if (assessmentData.tspStatus === 'qualified') scores.regulatory += 5;
+
+            // Machine Identity (15 points max)
+            scores.machine = 0;
+            if (assessmentData.machineNeed === 'primary' || assessmentData.machineNeed === 'secondary') {
+                scores.machine += 5;
+                if (assessmentData.machineRequirements.includes('req-attestation')) scores.machine += 5;
+                if (assessmentData.machineRequirements.includes('req-federated')) scores.machine += 5;
+            }
+
+            // Organizational Readiness (10 points max)
+            scores.organizational = 0;
+            if (assessmentData.resources.includes('res-team')) scores.organizational += 3;
+            if (assessmentData.resources.includes('res-budget')) scores.organizational += 3;
+            if (assessmentData.resources.includes('res-executive')) scores.organizational += 2;
+            if (assessmentData.timeline === 'implementing' || assessmentData.timeline === 'planning') {
+                scores.organizational += 2;
+            }
+
+            // Calculate total
+            scores.total = scores.infrastructure + scores.standards + scores.technical + 
+                          scores.regulatory + scores.machine + scores.organizational;
+        }
+
+        function displayResults() {
+            // Display overall score
+            const scorePercentage = scores.total;
+            const scoreCircle = document.getElementById('scoreCircle');
+            const circumference = 2 * Math.PI * 90;
+            const offset = circumference - (scorePercentage / 100) * circumference;
+            
+            setTimeout(() => {
+                scoreCircle.style.strokeDashoffset = offset;
+                document.getElementById('scoreValue').textContent = scorePercentage;
+            }, 100);
+
+            // Determine readiness level
+            let scoreLabel = '';
+            let scoreDescription = '';
+            if (scorePercentage >= 91) {
+                scoreLabel = 'READY';
+                scoreDescription = 'Comprehensive readiness, maintain and optimize';
+            } else if (scorePercentage >= 76) {
+                scoreLabel = 'STRONG';
+                scoreDescription = 'Well-positioned, minor enhancements needed';
+            } else if (scorePercentage >= 51) {
+                scoreLabel = 'MODERATE';
+                scoreDescription = 'Good foundation, specific gaps to address';
+            } else if (scorePercentage >= 26) {
+                scoreLabel = 'DEVELOPING';
+                scoreDescription = 'Basic capabilities, substantial modernization needed';
+            } else {
+                scoreLabel = 'CRITICAL';
+                scoreDescription = 'Major infrastructure gaps, significant work required';
+            }
+            
+            document.getElementById('scoreLabel').textContent = scoreLabel;
+            document.getElementById('scoreDescription').textContent = scoreDescription;
+
+            // Display category scores
+            displayCategoryScore('infrastructure', scores.infrastructure, 20);
+            displayCategoryScore('standards', scores.standards, 20);
+            displayCategoryScore('technical', scores.technical, 20);
+            displayCategoryScore('regulatory', scores.regulatory, 15);
+            displayCategoryScore('machine', scores.machine, 15);
+            displayCategoryScore('organizational', scores.organizational, 10);
+
+            // Generate gap analysis
+            generateGapAnalysis();
+
+            // Generate timeline
+            generateTimeline();
+
+            // Map solutions
+            mapSolutions();
+        }
+
+        function displayCategoryScore(category, score, maxScore) {
+            const percentage = Math.round((score / maxScore) * 100);
+            document.getElementById(`cat-${category}`).textContent = percentage + '%';
+            
+            setTimeout(() => {
+                document.getElementById(`bar-${category}`).style.width = percentage + '%';
+            }, 500);
+        }
+
+        function generateGapAnalysis() {
+            const gapContainer = document.getElementById('gapAnalysis');
+            let gaps = [];
+
+            // Check for critical gaps
+            if (!assessmentData.technical.includes('tech-oid4vc') && !assessmentData.technical.includes('tech-oid4vp')) {
+                gaps.push({
+                    severity: 'critical',
+                    title: 'OID4VC/OID4VP Support',
+                    description: 'Your infrastructure does not support OpenID for Verifiable Credentials, which is the primary protocol for EU Digital Identity Wallet interactions.',
+                    impact: 'Cannot accept credentials from EU Digital Wallets',
+                    effort: 'Medium (3-6 months with existing IdP)',
+                    recommendation: 'Evaluate OID4VC-capable identity providers',
+                    reference: 'eIDAS 2.0 Reference: Article 5a, Annex IV'
+                });
+            }
+
+            if (!assessmentData.technical.includes('tech-sdjwt') && !assessmentData.technical.includes('tech-bbs')) {
+                gaps.push({
+                    severity: 'moderate',
+                    title: 'Selective Disclosure',
+                    description: 'Your current credential formats don\'t support selective disclosure, which is required for privacy-preserving attribute sharing under eIDAS 2.0.',
+                    impact: 'Cannot implement data minimization requirements',
+                    effort: 'Medium (credential format migration required)',
+                    recommendation: 'Adopt SD-JWT or BBS+ capable credentials',
+                    reference: 'eIDAS 2.0 Reference: Article 5a(4)(c)'
+                });
+            }
+
+            if (assessmentData.machineNeed !== 'no' && scores.machine < 10) {
+                gaps.push({
+                    severity: 'critical',
+                    title: 'Machine Identity Framework',
+                    description: 'You indicated need for device/compute node identity but have no current framework for non-human identity under eIDAS 2.0 standards.',
+                    impact: 'Cannot verify photonic/AI infrastructure identity',
+                    effort: 'High (new capability required)',
+                    recommendation: 'HYPERION provides eIDAS 2.0 compliant machine identity via MyD Wallet integration',
+                    reference: 'eIDAS 2.0 Reference: Article 45b (device attestation)'
+                });
+            }
+
+            // Add strength if applicable
+            if (assessmentData.regulatory.includes('reg-gdpr') && assessmentData.regulatory.includes('reg-eidas')) {
+                gaps.push({
+                    severity: 'strength',
+                    title: 'Regulatory Compliance Foundation',
+                    description: 'Your existing GDPR and current eIDAS compliance provides strong foundation for eIDAS 2.0 transition.',
+                    impact: 'Existing data protection processes apply',
+                    effort: '',
+                    recommendation: 'Map current controls to eIDAS 2.0 requirements',
+                    reference: ''
+                });
+            }
+
+            // Render gap cards
+            let gapHTML = '';
+            gaps.forEach(gap => {
+                const iconMap = {
+                    'critical': '🔴',
+                    'moderate': '🟡',
+                    'strength': '🟢'
+                };
+
+                gapHTML += `
+                    <div class="gap-card ${gap.severity}">
+                        <div class="gap-header">
+                            <span class="gap-icon">${iconMap[gap.severity]}</span>
+                            <span class="gap-title">${gap.severity.toUpperCase()} ${gap.severity === 'strength' ? '' : 'GAP'}: ${gap.title}</span>
+                        </div>
+                        <div class="gap-description">${gap.description}</div>
+                        <div class="gap-metadata">
+                            ${gap.impact ? `<div class="gap-meta-item"><span class="gap-meta-label">Impact:</span> <span class="gap-meta-value">${gap.impact}</span></div>` : ''}
+                            ${gap.effort ? `<div class="gap-meta-item"><span class="gap-meta-label">Effort:</span> <span class="gap-meta-value">${gap.effort}</span></div>` : ''}
+                            ${gap.recommendation ? `<div class="gap-meta-item"><span class="gap-meta-label">Recommendation:</span> <span class="gap-meta-value">${gap.recommendation}</span></div>` : ''}
+                            ${gap.reference ? `<div class="gap-meta-item"><span class="gap-meta-label">${gap.reference}</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            gapContainer.innerHTML = gapHTML;
+        }
+
+        function generateTimeline() {
+            const timelineContainer = document.getElementById('timeline');
+            let timelineItems = [];
+
+            // Generate timeline based on gaps
+            if (!assessmentData.infrastructure.length || assessmentData.infrastructure.includes('custom-password')) {
+                timelineItems.push({ date: '2025 Q1', task: 'Audit current identity infrastructure' });
+            }
+
+            if (!assessmentData.technical.includes('tech-oid4vc')) {
+                timelineItems.push({ date: '2025 Q2', task: 'Implement OID4VC/OID4VP protocols' });
+            }
+
+            if (!assessmentData.technical.includes('tech-sdjwt')) {
+                timelineItems.push({ date: '2025 Q3', task: 'Migrate to selective disclosure credentials' });
+            }
+
+            if (assessmentData.machineNeed !== 'no' && scores.machine < 10) {
+                timelineItems.push({ date: '2025 Q4', task: 'Deploy machine identity framework (HYPERION)' });
+            }
+
+            timelineItems.push({ date: '2026 Q1', task: 'Integration testing with EU wallet sandboxes' });
+            timelineItems.push({ date: '2026 Q2', task: 'Production deployment and certification' });
+
+            // Render timeline
+            let timelineHTML = '';
+            timelineItems.forEach(item => {
+                timelineHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-date">${item.date}</div>
+                        <div class="timeline-content">${item.task}</div>
+                    </div>
+                `;
+            });
+
+            timelineContainer.innerHTML = timelineHTML;
+
+            // Update warning based on timeline
+            const monthsRequired = timelineItems.length * 3;
+            const warning = monthsRequired > 12 
+                ? `⚠️ Based on your gaps, you need ${monthsRequired}-${monthsRequired+3} months for full readiness. Current trajectory may not meet 2026 deadline without acceleration.`
+                : `✓ Your implementation timeline aligns with the 2026 deadline.`;
+            document.getElementById('timelineWarning').textContent = warning;
+        }
+
+        function mapSolutions() {
+            const mappingContainer = document.getElementById('solutionMapping');
+            let mappings = [];
+
+            if (scores.machine < 10) {
+                mappings.push({
+                    gap: 'No machine identity framework',
+                    solution: 'eIDAS 2.0 compliant node identity via MyD integration'
+                });
+            }
+
+            if (!assessmentData.technical.includes('tech-sdjwt')) {
+                mappings.push({
+                    gap: 'Missing selective disclosure',
+                    solution: 'Built-in SD-JWT and privacy-preserving attribute sharing'
+                });
+            }
+
+            if (!assessmentData.technical.includes('tech-hsm')) {
+                mappings.push({
+                    gap: 'No hardware attestation',
+                    solution: 'DID/VC-based cryptographic device binding'
+                });
+            }
+
+            if (!assessmentData.technical.includes('tech-ebsi')) {
+                mappings.push({
+                    gap: 'Cross-border federation gaps',
+                    solution: 'Pre-built EU trust framework integration (EBSI compatible)'
+                });
+            }
+
+            if (assessmentData.machineRequirements.includes('req-airgap')) {
+                mappings.push({
+                    gap: 'Air-gapped requirements',
+                    solution: 'Offline-capable identity verification for classified environments'
+                });
+            }
+
+            // Render mappings
+            let mappingHTML = '';
+            mappings.forEach(mapping => {
+                mappingHTML += `
+                    <tr>
+                        <td>${mapping.gap}</td>
+                        <td>${mapping.solution}</td>
+                    </tr>
+                `;
+            });
+
+            mappingContainer.innerHTML = mappingHTML || '<tr><td colspan="2">Your organization is well-positioned for eIDAS 2.0</td></tr>';
+        }
+
+        function downloadResults() {
+            // In a real implementation, this would generate a PDF
+            // For now, we'll trigger print dialog
+            window.print();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up checkbox visual feedback
+            const checkboxItems = document.querySelectorAll('.checkbox-item');
+            checkboxItems.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            item.classList.add('selected');
+                        } else {
+                            item.classList.remove('selected');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
