@@ -513,6 +513,31 @@
         }
 
         @media (max-width: 768px) {
+            .industry-filters {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .industry-btn {
+                width: 200px;
+                text-align: center;
+            }
+
+            .time-scale-toggle {
+                flex-direction: column;
+                width: 200px;
+            }
+
+            .time-btn {
+                width: 100%;
+            }
+
+            .screenshot-btn {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+
             .header h1 {
                 font-size: 36px;
             }
@@ -678,37 +703,104 @@
 
     <script>
         // Initial values
-        let mainCount = 847000000;
+        let baseMainCount = 847000000;
+        let mainCount = baseMainCount;
         let startTime = Date.now();
         let pageLoadTime = Date.now();
         let decisionsCount = 0;
+        let currentIndustry = 'all';
+        let currentTimeScale = 'now';
+        let isPaused = false;
+
+        // Industry percentages
+        const industryPercentages = {
+            all: 1.0,
+            finance: 0.18,
+            healthcare: 0.12,
+            government: 0.08,
+            retail: 0.22,
+            manufacturing: 0.15
+        };
+
+        // Time scale multipliers
+        const timeScaleMultipliers = {
+            now: 1,
+            today: 86400,
+            week: 604800,
+            year: 31536000
+        };
+
+        // Time scale labels
+        const timeScaleLabels = {
+            now: 'RIGHT NOW',
+            today: 'TODAY',
+            week: 'THIS WEEK',
+            year: 'THIS YEAR'
+        };
         
         // Growth rates (per 100ms)
         const mainGrowthRate = 230; // ~2300 per second
         const decisionsPerSecond = 4500000; // 4.5M decisions per second globally
         
-        // Format number with commas
+        // Format number with commas and abbreviations for large numbers
         function formatNumber(num) {
+            if (num >= 1e12) {
+                return (num / 1e12).toFixed(2) + 'T';
+            } else if (num >= 1e9) {
+                return (num / 1e9).toFixed(2) + 'B';
+            } else if (num >= 1e6) {
+                return (num / 1e6).toFixed(2) + 'M';
+            } else if (num >= 1e3) {
+                return (num / 1e3).toFixed(1) + 'K';
+            }
             return Math.floor(num).toLocaleString('en-US');
+        }
+
+        // Update counter display based on filters
+        function updateCounterDisplay() {
+            const industryMultiplier = industryPercentages[currentIndustry];
+            const timeMultiplier = timeScaleMultipliers[currentTimeScale];
+            
+            // Calculate displayed count
+            const displayCount = mainCount * industryMultiplier * timeMultiplier;
+            
+            // Update main counter label
+            const industryLabel = currentIndustry === 'all' ? '' : ` in ${currentIndustry.charAt(0).toUpperCase() + currentIndustry.slice(1)}`;
+            const timeLabel = timeScaleLabels[currentTimeScale];
+            document.getElementById('mainCounterLabel').textContent = `AI Agent Actions ${timeLabel}${industryLabel}`;
+            
+            // Update main counter
+            document.getElementById('mainCounter').textContent = formatNumber(displayCount);
+            
+            // Update subtitle based on time scale
+            if (currentTimeScale === 'now') {
+                document.getElementById('counterSubtitle').textContent = `Growing by ~${formatNumber(2300 * industryMultiplier)} agents per second`;
+            } else {
+                document.getElementById('counterSubtitle').textContent = `Cumulative ${timeLabel.toLowerCase()}`;
+            }
+            
+            // Update breakdown counters
+            document.getElementById('financialCounter').textContent = formatNumber(displayCount * 0.12);
+            document.getElementById('healthcareCounter').textContent = formatNumber(displayCount * 0.08);
+            document.getElementById('unsupervisedCounter').textContent = formatNumber(displayCount * 0.67);
+            document.getElementById('verifiedCounter').textContent = formatNumber(displayCount * 0.03);
         }
         
         // Update main counter
         function updateMainCounter() {
+            if (isPaused) return;
+            
             // Add some randomization for organic feel
             const randomFactor = 0.8 + Math.random() * 0.4; // 80% to 120%
             mainCount += mainGrowthRate * randomFactor;
             
-            document.getElementById('mainCounter').textContent = formatNumber(mainCount);
-            
-            // Update breakdown counters based on percentages
-            document.getElementById('financialCounter').textContent = formatNumber(mainCount * 0.12);
-            document.getElementById('healthcareCounter').textContent = formatNumber(mainCount * 0.08);
-            document.getElementById('unsupervisedCounter').textContent = formatNumber(mainCount * 0.67);
-            document.getElementById('verifiedCounter').textContent = formatNumber(mainCount * 0.03);
+            updateCounterDisplay();
         }
         
         // Update timer and decisions
         function updateTimers() {
+            if (isPaused) return;
+            
             const now = Date.now();
             const timeElapsed = (now - pageLoadTime) / 1000; // in seconds
             
@@ -728,6 +820,60 @@
             document.getElementById('traceableCounter').textContent = formatNumber(decisionsCount * 0.03);
         }
         
+        // Industry filter buttons
+        document.querySelectorAll('.industry-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.industry-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentIndustry = this.dataset.industry;
+                updateCounterDisplay();
+            });
+        });
+
+        // Time scale toggle buttons
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentTimeScale = this.dataset.scale;
+                updateCounterDisplay();
+            });
+        });
+
+        // Screenshot mode
+        document.getElementById('screenshotBtn').addEventListener('click', function() {
+            const isScreenshotMode = document.body.classList.contains('screenshot-mode');
+            
+            if (!isScreenshotMode) {
+                // Enter screenshot mode
+                document.body.classList.add('screenshot-mode');
+                document.getElementById('screenshotBtnText').textContent = 'Exit Screenshot';
+                
+                // Update timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZoneName: 'short'
+                });
+                document.getElementById('screenshotTimestamp').textContent = `Captured: ${timestamp}`;
+                
+                // Pause counters
+                isPaused = true;
+            } else {
+                // Exit screenshot mode
+                document.body.classList.remove('screenshot-mode');
+                document.getElementById('screenshotBtnText').textContent = 'Share';
+                
+                // Resume counters
+                isPaused = false;
+            }
+        });
+
         // Smooth counter animation using requestAnimationFrame
         let lastUpdate = 0;
         function animate(timestamp) {
@@ -738,6 +884,9 @@
             }
             requestAnimationFrame(animate);
         }
+        
+        // Initial display update
+        updateCounterDisplay();
         
         // Start animation
         requestAnimationFrame(animate);
